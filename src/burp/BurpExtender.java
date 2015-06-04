@@ -20,11 +20,15 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.Document;
 
+import org.apache.commons.lang3.StringEscapeUtils;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.net.URLDecoder;
+import java.io.PrintWriter;
+
 
 public class BurpExtender implements IBurpExtender, ITab {
 	
@@ -33,10 +37,12 @@ public class BurpExtender implements IBurpExtender, ITab {
 	private JPanel panel;
 	private JTextArea inputArea;
 	private JTextArea outputArea;
+	private PrintWriter stderr;
 	
 	public void registerExtenderCallbacks(final IBurpExtenderCallbacks callbacks) {
 		this.callbacks = callbacks;
 		helpers = callbacks.getHelpers();
+		stderr = new PrintWriter(callbacks.getStderr(), true);
 		callbacks.setExtensionName("Hackvertor");
 		 SwingUtilities.invokeLater(new Runnable() 
 	        {
@@ -155,6 +161,19 @@ public class BurpExtender implements IBurpExtender, ITab {
 	                });
 	                selectOutputButton.setForeground(Color.white);
 	                selectOutputButton.setBackground(Color.black);
+	                final JButton clearTagsButton = new JButton("Clear tags");
+	                clearTagsButton.addActionListener(new ActionListener() {
+	                  public void actionPerformed(ActionEvent e) {	                	 	                	 
+	                	  String input = inputArea.getText();
+	                	  input = input.replaceAll("<@\\w+_\\d+>","");
+	                	  input = input.replaceAll("<@/\\w+_\\d+>","");
+	                	  inputArea.setText(input);	                	  
+	                	  outputArea.setText("");
+	                	  inputArea.requestFocus();
+	                  }
+	                });
+	                clearTagsButton.setForeground(Color.white);
+	                clearTagsButton.setBackground(Color.black);
 	                final JButton clearButton = new JButton("Clear");
 	                clearButton.addActionListener(new ActionListener() {
 	                  public void actionPerformed(ActionEvent e) {	                	 	                	 
@@ -176,22 +195,28 @@ public class BurpExtender implements IBurpExtender, ITab {
 	                c.gridx = 1;
 	                c.gridy = 0;
 	                c.ipady = 0;
-	                buttonsPanel.add(swapButton,c);
+	                buttonsPanel.add(clearTagsButton,c);	              
 	                c.fill = GridBagConstraints.HORIZONTAL;
 	                c.weightx = 0.5;
 	                c.gridx = 2;
 	                c.gridy = 0;
 	                c.ipady = 0;
-	                buttonsPanel.add(selectInputButton,c);
+	                buttonsPanel.add(swapButton,c);
 	                c.fill = GridBagConstraints.HORIZONTAL;
 	                c.weightx = 0.5;
 	                c.gridx = 3;
 	                c.gridy = 0;
 	                c.ipady = 0;
-	                buttonsPanel.add(selectOutputButton,c);
+	                buttonsPanel.add(selectInputButton,c);
 	                c.fill = GridBagConstraints.HORIZONTAL;
 	                c.weightx = 0.5;
 	                c.gridx = 4;
+	                c.gridy = 0;
+	                c.ipady = 0;
+	                buttonsPanel.add(selectOutputButton,c);
+	                c.fill = GridBagConstraints.HORIZONTAL;
+	                c.weightx = 0.5;
+	                c.gridx = 5;
 	                c.gridy = 0;
 	                c.ipady = 0;
 	                buttonsPanel.add(convertButton,c);
@@ -270,37 +295,60 @@ public class BurpExtender implements IBurpExtender, ITab {
 		public void init() {
 			tags.add(new Tag("Encode","base64"));
 			tags.add(new Tag("Encode","htmlentities"));
-			tags.add(new Tag("Encode","hex"));
 			tags.add(new Tag("Encode","urlencode"));
 			tags.add(new Tag("Decode","decode_base64"));
 			tags.add(new Tag("Decode","decode_htmlentities"));
-			tags.add(new Tag("Decode","decode_urlencode"));
+			tags.add(new Tag("Decode","decode_url"));
+		}
+		public String htmlentities(String str) {
+			str = StringEscapeUtils.escapeHtml4(str);
+			return str;
+		}
+		public String decode_htmlentities(String str) {
+			str = StringEscapeUtils.unescapeHtml4(str);
+			return str;
+		}
+		public String base64Encode(String str) {
+			return helpers.base64Encode(str);
+		}
+		public String decode_base64(String str) {
+			try{
+				str = helpers.bytesToString(helpers.base64Decode(str));
+			} catch(Exception e){ 
+				stderr.println(e.getMessage());
+			}
+			return str;
+		}
+		public String urlencode(String str) {
+			try {
+	            str = URLEncoder.encode(str, "UTF-8");		          
+	        } catch (UnsupportedEncodingException e) {
+	        	stderr.println(e.getMessage());
+	        }
+			return str;
+		}
+		public String decode_url(String str) {
+			try {
+	            str = URLDecoder.decode(str, "UTF-8");		          
+	        } catch (UnsupportedEncodingException e) {
+	        	stderr.println(e.getMessage());
+	        }
+			return str;
 		}
 		private String callTag(String tag, String output) {
 			if(tag.equals("htmlentities")) {
-				output = output.replace("<", "&lt;");
-				output = output.replace("&", "&amp;");
+				output = this.htmlentities(output);
+			} else if(tag.equals("decode_htmlentities")) {
+				output = this.decode_htmlentities(output);
 			} else if(tag.equals("base64")) {
-				return helpers.base64Encode(output);
+				output = this.base64Encode(output);
 			} else if(tag.equals("decode_base64")) {
-				try{
-					output = helpers.bytesToString(helpers.base64Decode(output));
-				} catch(Exception e){ 
-					output = e.toString(); 
-				}
+				output = this.decode_base64(output);
 			} else if(tag.equals("urlencode")) {
-				try {
-		            output = URLEncoder.encode(output, "UTF-8");		          
-		        } catch (UnsupportedEncodingException ex) {
-		            output = ex.toString();
-		        }
-			} else if(tag.equals("decode_urlencode")) {
-				try {
-		            output = URLDecoder.decode(output, "UTF-8");		          
-		        } catch (UnsupportedEncodingException ex) {
-		            output = ex.toString();
-		        }
-			}
+				output = this.urlencode(output);
+			} else if(tag.equals("decode_url")) {
+				output = this.decode_url(output);
+			}			
 			return output;
 		}
 		public String convert(String input) {
