@@ -30,6 +30,9 @@ import javax.swing.event.DocumentListener;
 
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.unbescape.css.CssEscape;
+import org.unbescape.css.CssStringEscapeLevel;
+import org.unbescape.css.CssStringEscapeType;
 import org.unbescape.html.HtmlEscape;
 import org.unbescape.html.HtmlEscapeLevel;
 import org.unbescape.html.HtmlEscapeType;
@@ -300,32 +303,45 @@ public class BurpExtender implements IBurpExtender, ITab {
 			tabs.addTab("Encode", createButtons("Encode"));
         	tabs.addTab("Decode", createButtons("Decode"));
         	tabs.addTab("String", createButtons("String"));
+        	tabs.addTab("Convert", createButtons("Convert"));
 		}
 		public void init() {
 			tags.add(new Tag("Encode","base64"));
-			tags.add(new Tag("Encode","htmlentities"));
-			tags.add(new Tag("Encode","html5entities"));
-			tags.add(new Tag("Encode","hexentities"));
-			tags.add(new Tag("Encode","decentities"));
-			tags.add(new Tag("Encode","unicode"));
+			tags.add(new Tag("Encode","html_entities"));
+			tags.add(new Tag("Encode","html5_entities"));
+			tags.add(new Tag("Encode","hex_entities"));
+			tags.add(new Tag("Encode","hex_escapes"));
+			tags.add(new Tag("Encode","octal_escapes"));
+			tags.add(new Tag("Encode","dec_entities"));
+			tags.add(new Tag("Encode","unicode_escapes"));
+			tags.add(new Tag("Encode","css_escapes"));
+			tags.add(new Tag("Encode","css_escapes6"));
 			tags.add(new Tag("Encode","urlencode"));
 			tags.add(new Tag("Decode","decode_base64"));
-			tags.add(new Tag("Decode","decode_htmlentities"));
-			tags.add(new Tag("Decode","decode_html5entities"));
-			tags.add(new Tag("Decode","decode_unicode"));
+			tags.add(new Tag("Decode","decode_html_entities"));
+			tags.add(new Tag("Decode","decode_html5_entities"));
+			tags.add(new Tag("Decode","decode_js_string"));
 			tags.add(new Tag("Decode","decode_url"));
+			tags.add(new Tag("Decode","decode_css_escapes"));
+			tags.add(new Tag("Decode","decode_octal_escapes"));
+			tags.add(new Tag("Decode","decode_unicode_escapes"));
+			tags.add(new Tag("Convert","dec2hex"));
+			tags.add(new Tag("Convert","dec2oct"));
+			tags.add(new Tag("Convert","dec2bin"));
+			tags.add(new Tag("Convert","hex2dec"));
+			tags.add(new Tag("Convert","oct2dec"));
+			tags.add(new Tag("Convert","bin2dec"));
 			tags.add(new Tag("String","uppercase"));
 			tags.add(new Tag("String","lowercase"));
 			tags.add(new Tag("String","capitalise"));
 			tags.add(new Tag("String","uncapitalise"));
+			tags.add(new Tag("String","from_charcode"));
 		}
-		public String htmlentities(String str) {
-			str = StringEscapeUtils.escapeHtml4(str);
-			return str;
+		public String html_entities(String str) {
+			return StringEscapeUtils.escapeHtml4(str);
 		}
-		public String decode_htmlentities(String str) {
-			str = StringEscapeUtils.unescapeHtml4(str);
-			return str;
+		public String decode_html_entities(String str) {
+			return StringEscapeUtils.unescapeHtml4(str);
 		}
 		public String base64Encode(String str) {
 			return helpers.base64Encode(str);
@@ -366,47 +382,144 @@ public class BurpExtender implements IBurpExtender, ITab {
 		public String uncapitalise(String str) {
 			return StringUtils.uncapitalize(str);
 		}
-		public String html5entities(String str) {
-			str = HtmlEscape.escapeHtml(str, HtmlEscapeType.HTML5_NAMED_REFERENCES_DEFAULT_TO_DECIMAL, HtmlEscapeLevel.LEVEL_3_ALL_NON_ALPHANUMERIC);
+		public String html5_entities(String str) {
+			return HtmlEscape.escapeHtml(str, HtmlEscapeType.HTML5_NAMED_REFERENCES_DEFAULT_TO_DECIMAL, HtmlEscapeLevel.LEVEL_3_ALL_NON_ALPHANUMERIC);
+		}
+		public String decode_html5_entities(String str) {
+			return HtmlEscape.unescapeHtml(str);
+		}
+		public String hex_entities(String str) {
+			return HtmlEscape.escapeHtml(str, HtmlEscapeType.HEXADECIMAL_REFERENCES,HtmlEscapeLevel.LEVEL_4_ALL_CHARACTERS);
+		}
+		public String dec_entities(String str) {
+			return HtmlEscape.escapeHtml(str, HtmlEscapeType.DECIMAL_REFERENCES,HtmlEscapeLevel.LEVEL_4_ALL_CHARACTERS);
+		}
+		public String hex_escapes(String str) {
+			return JavaScriptEscape.escapeJavaScript(str,JavaScriptEscapeType.XHEXA_DEFAULT_TO_UHEXA, JavaScriptEscapeLevel.LEVEL_4_ALL_CHARACTERS);
+		}
+		public String octal_escapes(String str) {
+			StringBuilder converted = new StringBuilder();
+			for(int i=0;i<str.length();i++) {
+				converted.append("\\" + Integer.toOctalString(Character.codePointAt(str, i)));
+			}
+			return converted.toString();
+		}
+		public String decode_octal_escapes(String str) {
+			return this.decode_js_string(str);
+		}
+		public String css_escapes(String str) {
+			return CssEscape.escapeCssString(str,CssStringEscapeType.BACKSLASH_ESCAPES_DEFAULT_TO_COMPACT_HEXA, CssStringEscapeLevel.LEVEL_4_ALL_CHARACTERS);
+		}
+		public String css_escapes6(String str) {
+			return CssEscape.escapeCssString(str,CssStringEscapeType.BACKSLASH_ESCAPES_DEFAULT_TO_SIX_DIGIT_HEXA, CssStringEscapeLevel.LEVEL_4_ALL_CHARACTERS);
+		}
+		public String unicode_escapes(String str) {
+			return JavaScriptEscape.escapeJavaScript(str,JavaScriptEscapeType.UHEXA, JavaScriptEscapeLevel.LEVEL_4_ALL_CHARACTERS);
+		}
+		public String decode_js_string(String str) {
+			return JavaScriptEscape.unescapeJavaScript(str);
+		}
+		public String decode_css_escapes(String str) {
+			return CssEscape.unescapeCss(str);
+		}
+		public String dec2hex(String str) {
+			try{
+				str = Integer.toHexString(Integer.parseInt(str));
+			} catch(NumberFormatException e){ 
+				stderr.println(e.getMessage()); 
+			}
 			return str;
 		}
-		public String decode_html5entities(String str) {
-			str = HtmlEscape.unescapeHtml(str);
+		public String dec2oct(String str) {
+			try{
+				str = Integer.toOctalString(Integer.parseInt(str));
+			} catch(NumberFormatException e){ 
+				stderr.println(e.getMessage()); 
+			}
 			return str;
 		}
-		public String hexentities(String str) {
-			str = HtmlEscape.escapeHtml(str, HtmlEscapeType.HEXADECIMAL_REFERENCES,HtmlEscapeLevel.LEVEL_4_ALL_CHARACTERS);
+		public String dec2bin(String str) {
+			try{
+				str = Integer.toBinaryString(Integer.parseInt(str));
+			} catch(NumberFormatException e){ 
+				stderr.println(e.getMessage()); 
+			}
 			return str;
 		}
-		public String decentities(String str) {
-			str = HtmlEscape.escapeHtml(str, HtmlEscapeType.DECIMAL_REFERENCES,HtmlEscapeLevel.LEVEL_4_ALL_CHARACTERS);
+		public String hex2dec(String str) {
+			try{
+				str = Integer.toString(Integer.parseInt(str,16));
+			} catch(NumberFormatException e){ 
+				stderr.println(e.getMessage()); 
+			}
 			return str;
 		}
-		public String unicode(String str) {
-			str = JavaScriptEscape.escapeJavaScript(str,JavaScriptEscapeType.UHEXA, JavaScriptEscapeLevel.LEVEL_4_ALL_CHARACTERS);
+		public String oct2dec(String str) {
+			try{
+				str = Integer.toString(Integer.parseInt(str,8));
+			} catch(NumberFormatException e){ 
+				stderr.println(e.getMessage()); 
+			}
 			return str;
 		}
-		public String decode_unicode(String str) {
-			str = JavaScriptEscape.unescapeJavaScript(str);
+		public String bin2dec(String str) {
+			try{
+				str = Integer.toString(Integer.parseInt(str,2));
+			} catch(NumberFormatException e){ 
+				stderr.println(e.getMessage()); 
+			}
 			return str;
+		}
+		public String from_charcode(String str) {
+		   String[] chars = str.split(",");
+		   String output = "";
+		   if(str.length() == 1) {
+			   try {
+				   output = Character.toString((char) Integer.parseInt(str));
+			   } catch(NumberFormatException e){ 
+					stderr.println(e.getMessage()); 
+			   }
+			   return output;
+		   } else {
+			   for(int i=0;i<chars.length;i++) {
+				   try {
+					   output += Character.toString((char) Integer.parseInt(chars[i]));
+				   } catch(NumberFormatException e){ 
+						stderr.println(e.getMessage()); 
+				   }
+			   }
+			   return output;
+		   }
 		}
 		private String callTag(String tag, String output) {
-			if(tag.equals("htmlentities")) {
-				output = this.htmlentities(output);
-			} else if(tag.equals("decode_htmlentities")) {
-				output = this.decode_htmlentities(output);
-			} else if(tag.equals("html5entities")) {
-				output = this.html5entities(output);
-			} else if(tag.equals("hexentities")) {
-				output = this.hexentities(output);
-			} else if(tag.equals("decentities")) {
-				output = this.decentities(output);
-			} else if(tag.equals("unicode")) {
-				output = this.unicode(output);
-			} else if(tag.equals("decode_unicode")) {
-				output = this.decode_unicode(output);
-			} else if(tag.equals("decode_html5entities")) {
-				output = this.decode_html5entities(output);	
+			if(tag.equals("html_entities")) {
+				output = this.html_entities(output);
+			} else if(tag.equals("decode_html_entities")) {
+				output = this.decode_html_entities(output);
+			} else if(tag.equals("html5_entities")) {
+				output = this.html5_entities(output);
+			} else if(tag.equals("hex_entities")) {
+				output = this.hex_entities(output);
+			} else if(tag.equals("hex_escapes")) {
+				output = this.hex_escapes(output);
+			} else if(tag.equals("octal_escapes")) {
+				output = this.octal_escapes(output);
+			} else if(tag.equals("decode_octal_escapes")) {
+				output = this.decode_octal_escapes(output);	
+			} else if(tag.equals("css_escapes")) {
+				output = this.css_escapes(output);
+			} else if(tag.equals("css_escapes6")) {
+				output = this.css_escapes6(output);
+			} else if(tag.equals("dec_entities")) {
+				output = this.dec_entities(output);
+			} else if(tag.equals("unicode_escapes")) {
+				output = this.unicode_escapes(output);
+			} else if(tag.equals("decode_unicode_escapes")) {
+				output = this.decode_js_string(output);
+			} else if(tag.equals("decode_js_string")) {
+				output = this.decode_js_string(output);	
+			} else if(tag.equals("decode_html5_entities")) {
+				output = this.decode_html5_entities(output);	
 			} else if(tag.equals("base64")) {
 				output = this.base64Encode(output);
 			} else if(tag.equals("decode_base64")) {
@@ -415,6 +528,8 @@ public class BurpExtender implements IBurpExtender, ITab {
 				output = this.urlencode(output);
 			} else if(tag.equals("decode_url")) {
 				output = this.decode_url(output);
+			} else if(tag.equals("decode_css_escapes")) {
+				output = this.decode_css_escapes(output);	
 			} else if(tag.equals("uppercase")) {
 				output = this.uppercase(output);
 			} else if(tag.equals("lowercase")) {
@@ -423,6 +538,20 @@ public class BurpExtender implements IBurpExtender, ITab {
 				output = this.capitalise(output);
 			} else if(tag.equals("uncapitalise")) {
 				output = this.uncapitalise(output);
+			} else if(tag.equals("from_charcode")) {
+				output = this.from_charcode(output);	
+			} else if(tag.equals("dec2hex")) {
+				output = this.dec2hex(output);
+			} else if(tag.equals("dec2oct")) {
+				output = this.dec2oct(output);
+			} else if(tag.equals("dec2bin")) {
+				output = this.dec2bin(output);
+			} else if(tag.equals("hex2dec")) {
+				output = this.hex2dec(output);
+			} else if(tag.equals("oct2dec")) {
+				output = this.oct2dec(output);
+			} else if(tag.equals("bin2dec")) {
+				output = this.bin2dec(output);
 			}
 			return output;
 		}
