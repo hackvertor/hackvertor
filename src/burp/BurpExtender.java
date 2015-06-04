@@ -3,31 +3,39 @@ package burp;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.event.*;
-import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.swing.JTabbedPane;
-import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
-import javax.swing.JButton;
-import javax.swing.JPanel;
-import javax.swing.JTextArea;
-import javax.swing.JLabel;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-import javax.swing.text.Document;
-
-import org.apache.commons.lang3.StringEscapeUtils;
-
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.net.URLDecoder;
-import java.io.PrintWriter;
+
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JTabbedPane;
+import javax.swing.JTextArea;
+import javax.swing.SwingUtilities;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+
+import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.unbescape.html.HtmlEscape;
+import org.unbescape.html.HtmlEscapeLevel;
+import org.unbescape.html.HtmlEscapeType;
+import org.unbescape.javascript.JavaScriptEscape;
+import org.unbescape.javascript.JavaScriptEscapeLevel;
+import org.unbescape.javascript.JavaScriptEscapeType;
 
 
 public class BurpExtender implements IBurpExtender, ITab {
@@ -38,6 +46,7 @@ public class BurpExtender implements IBurpExtender, ITab {
 	private JTextArea inputArea;
 	private JTextArea outputArea;
 	private PrintWriter stderr;
+	private Hackvertor hv;
 	
 	public void registerExtenderCallbacks(final IBurpExtenderCallbacks callbacks) {
 		this.callbacks = callbacks;
@@ -50,7 +59,7 @@ public class BurpExtender implements IBurpExtender, ITab {
 	            public void run()
 	            {	   
 	            	JTabbedPane tabs = new JTabbedPane();
-	            	final Hackvertor hv = new Hackvertor();
+	            	hv = new Hackvertor();
 	            	hv.init();
 	            	hv.buildTabs(tabs);
 	            	       	
@@ -167,8 +176,7 @@ public class BurpExtender implements IBurpExtender, ITab {
 	                	  String input = inputArea.getText();
 	                	  input = input.replaceAll("<@\\w+_\\d+>","");
 	                	  input = input.replaceAll("<@/\\w+_\\d+>","");
-	                	  inputArea.setText(input);	                	  
-	                	  outputArea.setText("");
+	                	  inputArea.setText(input);	                	  	                	  
 	                	  inputArea.requestFocus();
 	                  }
 	                });
@@ -291,14 +299,25 @@ public class BurpExtender implements IBurpExtender, ITab {
 		public void buildTabs(JTabbedPane tabs) {
 			tabs.addTab("Encode", createButtons("Encode"));
         	tabs.addTab("Decode", createButtons("Decode"));
+        	tabs.addTab("String", createButtons("String"));
 		}
 		public void init() {
 			tags.add(new Tag("Encode","base64"));
 			tags.add(new Tag("Encode","htmlentities"));
+			tags.add(new Tag("Encode","html5entities"));
+			tags.add(new Tag("Encode","hexentities"));
+			tags.add(new Tag("Encode","decentities"));
+			tags.add(new Tag("Encode","unicode"));
 			tags.add(new Tag("Encode","urlencode"));
 			tags.add(new Tag("Decode","decode_base64"));
 			tags.add(new Tag("Decode","decode_htmlentities"));
+			tags.add(new Tag("Decode","decode_html5entities"));
+			tags.add(new Tag("Decode","decode_unicode"));
 			tags.add(new Tag("Decode","decode_url"));
+			tags.add(new Tag("String","uppercase"));
+			tags.add(new Tag("String","lowercase"));
+			tags.add(new Tag("String","capitalise"));
+			tags.add(new Tag("String","uncapitalise"));
 		}
 		public String htmlentities(String str) {
 			str = StringEscapeUtils.escapeHtml4(str);
@@ -335,11 +354,59 @@ public class BurpExtender implements IBurpExtender, ITab {
 	        }
 			return str;
 		}
+		public String uppercase(String str) {
+			return StringUtils.upperCase(str);
+		}
+		public String lowercase(String str) {
+			return StringUtils.lowerCase(str);
+		}
+		public String capitalise(String str) {
+			return StringUtils.capitalize(str);
+		}
+		public String uncapitalise(String str) {
+			return StringUtils.uncapitalize(str);
+		}
+		public String html5entities(String str) {
+			str = HtmlEscape.escapeHtml(str, HtmlEscapeType.HTML5_NAMED_REFERENCES_DEFAULT_TO_DECIMAL, HtmlEscapeLevel.LEVEL_3_ALL_NON_ALPHANUMERIC);
+			return str;
+		}
+		public String decode_html5entities(String str) {
+			str = HtmlEscape.unescapeHtml(str);
+			return str;
+		}
+		public String hexentities(String str) {
+			str = HtmlEscape.escapeHtml(str, HtmlEscapeType.HEXADECIMAL_REFERENCES,HtmlEscapeLevel.LEVEL_4_ALL_CHARACTERS);
+			return str;
+		}
+		public String decentities(String str) {
+			str = HtmlEscape.escapeHtml(str, HtmlEscapeType.DECIMAL_REFERENCES,HtmlEscapeLevel.LEVEL_4_ALL_CHARACTERS);
+			return str;
+		}
+		public String unicode(String str) {
+			str = JavaScriptEscape.escapeJavaScript(str,JavaScriptEscapeType.UHEXA, JavaScriptEscapeLevel.LEVEL_4_ALL_CHARACTERS);
+			return str;
+		}
+		public String decode_unicode(String str) {
+			str = JavaScriptEscape.unescapeJavaScript(str);
+			return str;
+		}
 		private String callTag(String tag, String output) {
 			if(tag.equals("htmlentities")) {
 				output = this.htmlentities(output);
 			} else if(tag.equals("decode_htmlentities")) {
 				output = this.decode_htmlentities(output);
+			} else if(tag.equals("html5entities")) {
+				output = this.html5entities(output);
+			} else if(tag.equals("hexentities")) {
+				output = this.hexentities(output);
+			} else if(tag.equals("decentities")) {
+				output = this.decentities(output);
+			} else if(tag.equals("unicode")) {
+				output = this.unicode(output);
+			} else if(tag.equals("decode_unicode")) {
+				output = this.decode_unicode(output);
+			} else if(tag.equals("decode_html5entities")) {
+				output = this.decode_html5entities(output);	
 			} else if(tag.equals("base64")) {
 				output = this.base64Encode(output);
 			} else if(tag.equals("decode_base64")) {
@@ -348,7 +415,15 @@ public class BurpExtender implements IBurpExtender, ITab {
 				output = this.urlencode(output);
 			} else if(tag.equals("decode_url")) {
 				output = this.decode_url(output);
-			}			
+			} else if(tag.equals("uppercase")) {
+				output = this.uppercase(output);
+			} else if(tag.equals("lowercase")) {
+				output = this.lowercase(output);
+			} else if(tag.equals("capitalise")) {
+				output = this.capitalise(output);
+			} else if(tag.equals("uncapitalise")) {
+				output = this.uncapitalise(output);
+			}
 			return output;
 		}
 		public String convert(String input) {
@@ -364,9 +439,9 @@ public class BurpExtender implements IBurpExtender, ITab {
 				 m = Pattern.compile("<@"+tagNameWithID+">([\\d\\D]*?)<@/"+tagNameWithID+">").matcher(output);
 				 if(m.find()) {
 					code = m.group(1); 
-				 } 			
+				 } 	
 				 String result = this.callTag(tagName,code);
-				 output = output.replaceAll("<@"+tagNameWithID+">[\\d\\D]*?<@/"+tagNameWithID+">", result);
+				 output = output.replaceAll("<@"+tagNameWithID+">[\\d\\D]*?<@/"+tagNameWithID+">", result.replace("\\","\\\\").replace("$","\\$"));
 			 }
 			return output;			
 		}
@@ -394,7 +469,9 @@ public class BurpExtender implements IBurpExtender, ITab {
 	                	  String tagStart = "<@"+btn.getText()+"_"+tagCounter+">";
 	                	  String tagEnd = "<@/"+btn.getText()+"_"+tagCounter+">";	                	 
 	                	  inputArea.replaceSelection(tagStart+selectedText+tagEnd);
-	                	  tagCounter++;
+	                	  tagCounter++;	 
+	                	  outputArea.setText(hv.convert(inputArea.getText()));
+	                	  outputArea.selectAll();
 	                  }
 	                });
 					panel.add(btn,c);
