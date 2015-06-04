@@ -18,16 +18,19 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.unbescape.css.CssEscape;
@@ -39,6 +42,8 @@ import org.unbescape.html.HtmlEscapeType;
 import org.unbescape.javascript.JavaScriptEscape;
 import org.unbescape.javascript.JavaScriptEscapeLevel;
 import org.unbescape.javascript.JavaScriptEscapeType;
+
+import java.security.MessageDigest;
 
 
 public class BurpExtender implements IBurpExtender, ITab {
@@ -70,7 +75,9 @@ public class BurpExtender implements IBurpExtender, ITab {
 	            	panel = new JPanel(new GridBagLayout());
 	            	
 	            	GridBagConstraints c = new GridBagConstraints();	            	
-	            	inputArea = new JTextArea();	         
+	            	inputArea = new JTextArea(20,10);
+	            	inputArea.setLineWrap(true);
+	            	final JScrollPane inputScroll = new JScrollPane(inputArea);
 	            	final JLabel inputLabel = new JLabel("Input:");
 	            	                          	              	            	
                 	DocumentListener documentListener = new DocumentListener() {
@@ -101,9 +108,10 @@ public class BurpExtender implements IBurpExtender, ITab {
 	                            e.consume();
 	                        }
 	                    }
-	                });
-	                inputArea.setPreferredSize(new Dimension(750, 500));	                	              
-	                outputArea = new JTextArea();
+	                });	              	                	              
+	                outputArea = new JTextArea(20,10);
+	                outputArea.setLineWrap(true);
+	                final JScrollPane outputScroll = new JScrollPane(outputArea);
 	                final JLabel outputLabel = new JLabel("Output:");
 	                DocumentListener documentListener2 = new DocumentListener() {
             	      public void changedUpdate(DocumentEvent documentEvent) {
@@ -133,9 +141,8 @@ public class BurpExtender implements IBurpExtender, ITab {
 	                            e.consume();
 	                        }
 	                    }
-	                });	                
-	                outputArea.setPreferredSize(new Dimension(750, 500));
-	            	panel.setPreferredSize(new Dimension(800,600));	            	
+	                });	                	               
+	            	panel.setPreferredSize(new Dimension(800,600));	         
 	            	final JButton swapButton = new JButton("Swap");
 	            	swapButton.setBackground(Color.black);
 	            	swapButton.setForeground(Color.white);
@@ -251,7 +258,7 @@ public class BurpExtender implements IBurpExtender, ITab {
 	                c.gridy = 2;	              
 	                c.ipady = 100;
 	                c.gridwidth = 1;
-	                panel.add(inputArea,c);
+	                panel.add(inputScroll,c);
 	                c.fill = GridBagConstraints.HORIZONTAL;
 	                c.weightx = 0.5;
 	                c.gridx = 1;
@@ -265,7 +272,7 @@ public class BurpExtender implements IBurpExtender, ITab {
 	                c.gridy = 2;
 	                c.ipady = 100;
 	                c.gridwidth = 1;
-	                panel.add(outputArea,c);	 
+	                panel.add(outputScroll,c);	 
 	                c.fill = GridBagConstraints.HORIZONTAL;
 	                c.weightx = 0.5;
 	                c.gridx = 0;
@@ -302,8 +309,9 @@ public class BurpExtender implements IBurpExtender, ITab {
 		public void buildTabs(JTabbedPane tabs) {
 			tabs.addTab("Encode", createButtons("Encode"));
         	tabs.addTab("Decode", createButtons("Decode"));
-        	tabs.addTab("String", createButtons("String"));
         	tabs.addTab("Convert", createButtons("Convert"));
+        	tabs.addTab("String", createButtons("String"));
+        	tabs.addTab("Hash", createButtons("Hash"));
 		}
 		public void init() {
 			tags.add(new Tag("Encode","base64"));
@@ -331,11 +339,21 @@ public class BurpExtender implements IBurpExtender, ITab {
 			tags.add(new Tag("Convert","hex2dec"));
 			tags.add(new Tag("Convert","oct2dec"));
 			tags.add(new Tag("Convert","bin2dec"));
+			tags.add(new Tag("Convert","ascii2bin"));
+			tags.add(new Tag("Convert","bin2ascii"));
 			tags.add(new Tag("String","uppercase"));
 			tags.add(new Tag("String","lowercase"));
 			tags.add(new Tag("String","capitalise"));
 			tags.add(new Tag("String","uncapitalise"));
 			tags.add(new Tag("String","from_charcode"));
+			tags.add(new Tag("String","to_charcode"));
+			tags.add(new Tag("String","repeat"));
+			tags.add(new Tag("Hash","sha1"));
+			tags.add(new Tag("Hash","sha256"));
+			tags.add(new Tag("Hash","sha384"));
+			tags.add(new Tag("Hash","sha512"));
+			tags.add(new Tag("Hash","md2"));
+			tags.add(new Tag("Hash","md5"));
 		}
 		public String html_entities(String str) {
 			return StringEscapeUtils.escapeHtml4(str);
@@ -491,6 +509,58 @@ public class BurpExtender implements IBurpExtender, ITab {
 			   return output;
 		   }
 		}
+		public String to_charcode(String str) {
+			ArrayList<Integer> output = new ArrayList<Integer>();
+			for(int i=0;i<str.length();i++) {
+				output.add(Character.codePointAt(str, i));
+			}
+			return StringUtils.join(output,",");
+		}
+		public String ascii2bin(String str) {
+			String output = "";
+			for(int i=0;i<str.length();i++) {
+			   try {
+				   output += Integer.toBinaryString(Character.codePointAt(str, i));
+				   output += " ";
+			   } catch(NumberFormatException e){ 
+					stderr.println(e.getMessage()); 
+			   }
+		   }
+			return output;
+		}
+		public String bin2ascii(String str) {
+			String[] chars = str.split(" ");
+			String output = "";
+			for(int i=0;i<chars.length;i++) {
+				   try {
+					   output += Character.toString((char) Integer.parseInt(chars[i],2));
+				   } catch(NumberFormatException e){ 
+						stderr.println(e.getMessage()); 
+				   }
+			   }
+			return output;
+		}
+		public String sha1(String str) {			
+			return DigestUtils.sha1Hex(str);
+		}
+		public String sha256(String str) {
+			return DigestUtils.sha256Hex(str);
+		}
+		public String sha384(String str) {
+			return DigestUtils.sha384Hex(str);
+		}
+		public String sha512(String str) {
+			return DigestUtils.sha512Hex(str);
+		}
+		public String md2(String str) {
+			return DigestUtils.md2Hex(str);
+		}
+		public String md5(String str) {
+			return DigestUtils.md5Hex(str);
+		}
+		public String repeat(String str) {
+			return str;
+		}
 		private String callTag(String tag, String output) {
 			if(tag.equals("html_entities")) {
 				output = this.html_entities(output);
@@ -539,7 +609,11 @@ public class BurpExtender implements IBurpExtender, ITab {
 			} else if(tag.equals("uncapitalise")) {
 				output = this.uncapitalise(output);
 			} else if(tag.equals("from_charcode")) {
-				output = this.from_charcode(output);	
+				output = this.from_charcode(output);
+			} else if(tag.equals("to_charcode")) {
+				output = this.to_charcode(output);
+			} else if(tag.equals("repeat")) {
+				output = this.repeat(output);
 			} else if(tag.equals("dec2hex")) {
 				output = this.dec2hex(output);
 			} else if(tag.equals("dec2oct")) {
@@ -552,6 +626,22 @@ public class BurpExtender implements IBurpExtender, ITab {
 				output = this.oct2dec(output);
 			} else if(tag.equals("bin2dec")) {
 				output = this.bin2dec(output);
+			} else if(tag.equals("ascii2bin")) {
+				output = this.ascii2bin(output);
+			} else if(tag.equals("bin2ascii")) {
+				output = this.bin2ascii(output);
+			} else if(tag.equals("sha1")) {
+				output = this.sha1(output);
+			} else if(tag.equals("sha256")) {
+				output = this.sha256(output);
+			} else if(tag.equals("sha384")) {
+				output = this.sha384(output);
+			} else if(tag.equals("sha512")) {
+				output = this.sha512(output);
+			} else if(tag.equals("md2")) {
+				output = this.md2(output);
+			} else if(tag.equals("md5")) {
+				output = this.md5(output);
 			}
 			return output;
 		}
