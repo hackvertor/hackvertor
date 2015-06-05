@@ -283,13 +283,15 @@ public class BurpExtender implements IBurpExtender, ITab {
 			tags.add(new Tag("Convert","bin2dec"));
 			tags.add(new Tag("Convert","ascii2bin"));
 			tags.add(new Tag("Convert","bin2ascii"));
+			tags.add(new Tag("Convert","ascii2hex"));
+			tags.add(new Tag("Convert","hex2ascii"));
 			tags.add(new Tag("String","uppercase"));
 			tags.add(new Tag("String","lowercase"));
 			tags.add(new Tag("String","capitalise"));
 			tags.add(new Tag("String","uncapitalise"));
 			tags.add(new Tag("String","from_charcode"));
 			tags.add(new Tag("String","to_charcode"));
-			tags.add(new Tag("String","repeat"));
+			tags.add(new Tag("String","reverse"));
 			tags.add(new Tag("Hash","sha1"));
 			tags.add(new Tag("Hash","sha256"));
 			tags.add(new Tag("Hash","sha384"));
@@ -482,6 +484,33 @@ public class BurpExtender implements IBurpExtender, ITab {
 			   }
 			return output;
 		}
+		public String ascii2hex(String str) {
+			String output = "";
+			for(int i=0;i<str.length();i++) {
+			   try {
+				   output += Integer.toHexString(Character.codePointAt(str, i));				 
+			   } catch(NumberFormatException e){ 
+					stderr.println(e.getMessage()); 
+			   }
+			}
+			return output;
+		}
+		public String hex2ascii(String str) {
+			String output = "";
+			if(str.length() % 2 != 0) {
+				stderr.println("Invalid hex string");
+				return "";
+			}
+			for(int i=0;i<str.length();i+=2) {
+			   try {				   
+				   String chars = str.charAt(i)+""+str.charAt(i+1);
+				   output += Character.toString((char) Integer.parseInt(chars,16)); 				 
+			   } catch(NumberFormatException e){ 
+					stderr.println(e.getMessage()); 
+			   }
+			}
+			return output;
+		}
 		public String sha1(String str) {			
 			return DigestUtils.sha1Hex(str);
 		}
@@ -500,8 +529,8 @@ public class BurpExtender implements IBurpExtender, ITab {
 		public String md5(String str) {
 			return DigestUtils.md5Hex(str);
 		}
-		public String repeat(String str) {
-			return str;
+		public String reverse(String str) {
+			return new StringBuilder(str).reverse().toString();
 		}
 		private String callTag(String tag, String output) {
 			if(tag.equals("html_entities")) {
@@ -554,8 +583,8 @@ public class BurpExtender implements IBurpExtender, ITab {
 				output = this.from_charcode(output);
 			} else if(tag.equals("to_charcode")) {
 				output = this.to_charcode(output);
-			} else if(tag.equals("repeat")) {
-				output = this.repeat(output);
+			} else if(tag.equals("reverse")) {
+				output = this.reverse(output);
 			} else if(tag.equals("dec2hex")) {
 				output = this.dec2hex(output);
 			} else if(tag.equals("dec2oct")) {
@@ -572,6 +601,10 @@ public class BurpExtender implements IBurpExtender, ITab {
 				output = this.ascii2bin(output);
 			} else if(tag.equals("bin2ascii")) {
 				output = this.bin2ascii(output);
+			} else if(tag.equals("hex2ascii")) {
+				output = this.hex2ascii(output);
+			} else if(tag.equals("ascii2hex")) {
+				output = this.ascii2hex(output);	
 			} else if(tag.equals("sha1")) {
 				output = this.sha1(output);
 			} else if(tag.equals("sha256")) {
