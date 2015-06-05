@@ -55,7 +55,16 @@ public class BurpExtender implements IBurpExtender, ITab {
 	private JTextArea outputArea;
 	private PrintWriter stderr;
 	private Hackvertor hv;
-	
+	public GridBagConstraints createConstraints(int x, int y, int gridWidth) {
+		GridBagConstraints c = new GridBagConstraints();
+		c.fill = GridBagConstraints.HORIZONTAL;
+        c.weightx = 0.5;
+        c.gridx = x;
+        c.gridy = y;
+        c.ipady = 0;
+        c.gridwidth = gridWidth;
+		return c;
+	}
 	public void registerExtenderCallbacks(final IBurpExtenderCallbacks callbacks) {
 		this.callbacks = callbacks;
 		helpers = callbacks.getHelpers();
@@ -72,11 +81,10 @@ public class BurpExtender implements IBurpExtender, ITab {
 	            	hv.buildTabs(tabs);
 	            	       	
 	            	JPanel buttonsPanel = new JPanel(new GridBagLayout());
-	            	panel = new JPanel(new GridBagLayout());
-	            	
-	            	GridBagConstraints c = new GridBagConstraints();	            	
+	            	panel = new JPanel(new GridBagLayout());	            	        	     	         
 	            	inputArea = new JTextArea(20,10);
 	            	inputArea.setLineWrap(true);
+	       
 	            	final JScrollPane inputScroll = new JScrollPane(inputArea);
 	            	final JLabel inputLabel = new JLabel("Input:");
 	            	                          	              	            	
@@ -141,8 +149,7 @@ public class BurpExtender implements IBurpExtender, ITab {
 	                            e.consume();
 	                        }
 	                    }
-	                });	                	               
-	            	panel.setPreferredSize(new Dimension(800,600));	         
+	                });	                	               	            		         
 	            	final JButton swapButton = new JButton("Swap");
 	            	swapButton.setBackground(Color.black);
 	            	swapButton.setForeground(Color.white);
@@ -202,86 +209,19 @@ public class BurpExtender implements IBurpExtender, ITab {
 	                });
 	                clearButton.setForeground(Color.white);
 	                clearButton.setBackground(Color.black);
-	                c.fill = GridBagConstraints.HORIZONTAL;
-	                c.weightx = 0.5;
-	                c.gridx = 0;
-	                c.gridy = 0;
-	                c.ipady = 0;
-	                buttonsPanel.add(clearButton,c);
-	                c.fill = GridBagConstraints.HORIZONTAL;
-	                c.weightx = 0.5;
-	                c.gridx = 1;
-	                c.gridy = 0;
-	                c.ipady = 0;
-	                buttonsPanel.add(clearTagsButton,c);	              
-	                c.fill = GridBagConstraints.HORIZONTAL;
-	                c.weightx = 0.5;
-	                c.gridx = 2;
-	                c.gridy = 0;
-	                c.ipady = 0;
-	                buttonsPanel.add(swapButton,c);
-	                c.fill = GridBagConstraints.HORIZONTAL;
-	                c.weightx = 0.5;
-	                c.gridx = 3;
-	                c.gridy = 0;
-	                c.ipady = 0;
-	                buttonsPanel.add(selectInputButton,c);
-	                c.fill = GridBagConstraints.HORIZONTAL;
-	                c.weightx = 0.5;
-	                c.gridx = 4;
-	                c.gridy = 0;
-	                c.ipady = 0;
-	                buttonsPanel.add(selectOutputButton,c);
-	                c.fill = GridBagConstraints.HORIZONTAL;
-	                c.weightx = 0.5;
-	                c.gridx = 5;
-	                c.gridy = 0;
-	                c.ipady = 0;
-	                buttonsPanel.add(convertButton,c);
-	                c.fill = GridBagConstraints.HORIZONTAL;
-	                c.weightx = 0.5;
-	                c.gridx = 0;
-	                c.gridy = 0;
-	                c.ipady = 0;
-	                c.gridwidth = 4;
-	                panel.add(tabs,c);
-	              	c.fill = GridBagConstraints.HORIZONTAL;
-	                c.weightx = 0.5;
-	                c.gridx = 0;
-	                c.gridy = 1;
-	                c.ipady = 0;
-	                c.gridwidth = 1;
-	                panel.add(inputLabel,c);
-	                c.fill = GridBagConstraints.HORIZONTAL;
-	                c.weightx = 0.5;
-	                c.gridx = 0;
-	                c.gridy = 2;	              
-	                c.ipady = 100;
-	                c.gridwidth = 1;
-	                panel.add(inputScroll,c);
-	                c.fill = GridBagConstraints.HORIZONTAL;
-	                c.weightx = 0.5;
-	                c.gridx = 1;
-	                c.gridy = 1;
-	                c.ipady = 0;
-	                c.gridwidth = 1;
-	                panel.add(outputLabel,c);
-	                c.fill = GridBagConstraints.HORIZONTAL;
-	                c.weightx = 0.5;
-	                c.gridx = 1;
-	                c.gridy = 2;
-	                c.ipady = 100;
-	                c.gridwidth = 1;
-	                panel.add(outputScroll,c);	 
-	                c.fill = GridBagConstraints.HORIZONTAL;
-	                c.weightx = 0.5;
-	                c.gridx = 0;
-	                c.gridy = 3;
-	                c.ipady = 0;	
-	                c.gridwidth = 1;
-	                panel.add(buttonsPanel,c);	                            
+	                buttonsPanel.add(clearButton,createConstraints(0,0,1));	               
+	                buttonsPanel.add(clearTagsButton,createConstraints(1,0,1));	              	               
+	                buttonsPanel.add(swapButton,createConstraints(2,0,1));	              
+	                buttonsPanel.add(selectInputButton,createConstraints(3,0,1));	              
+	                buttonsPanel.add(selectOutputButton,createConstraints(4,0,1));	              
+	                buttonsPanel.add(convertButton,createConstraints(5,0,1));	               
+	                panel.add(tabs,createConstraints(0,0,4));	              
+	                panel.add(inputLabel,createConstraints(0,1,1));	                
+	                panel.add(inputScroll,createConstraints(0,2,1));	               
+	                panel.add(outputLabel,createConstraints(1,1,1));	             
+	                panel.add(outputScroll,createConstraints(1,2,1));	 	                
+	                panel.add(buttonsPanel,createConstraints(0,3,1));	                            
 	                callbacks.customizeUiComponent(panel);
-	                
 	                callbacks.addSuiteTab(BurpExtender.this);	          
 	            }
 	        });
