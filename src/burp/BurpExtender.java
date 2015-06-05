@@ -2,7 +2,6 @@ package burp;
 
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
@@ -18,10 +17,9 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.swing.BoxLayout;
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
@@ -43,9 +41,6 @@ import org.unbescape.javascript.JavaScriptEscape;
 import org.unbescape.javascript.JavaScriptEscapeLevel;
 import org.unbescape.javascript.JavaScriptEscapeType;
 
-import java.security.MessageDigest;
-
-
 public class BurpExtender implements IBurpExtender, ITab {
 	
 	private IBurpExtenderCallbacks callbacks;
@@ -58,11 +53,12 @@ public class BurpExtender implements IBurpExtender, ITab {
 	public GridBagConstraints createConstraints(int x, int y, int gridWidth) {
 		GridBagConstraints c = new GridBagConstraints();
 		c.fill = GridBagConstraints.HORIZONTAL;
-        c.weightx = 0.5;
+        c.weightx = 0.5; 
+        c.weighty = 0;
         c.gridx = x;
         c.gridy = y;
         c.ipady = 0;
-        c.gridwidth = gridWidth;
+        c.gridwidth = gridWidth;            
 		return c;
 	}
 	public void registerExtenderCallbacks(final IBurpExtenderCallbacks callbacks) {
@@ -80,14 +76,15 @@ public class BurpExtender implements IBurpExtender, ITab {
 	            	hv.init();
 	            	hv.buildTabs(tabs);
 	            	       	
-	            	JPanel buttonsPanel = new JPanel(new GridBagLayout());
+	            	JPanel buttonsPanel = new JPanel(new GridBagLayout());	            
 	            	panel = new JPanel(new GridBagLayout());	            	        	     	         
 	            	inputArea = new JTextArea(20,10);
-	            	inputArea.setLineWrap(true);
-	       
+	            	inputArea.setLineWrap(true);	            
+	            	
 	            	final JScrollPane inputScroll = new JScrollPane(inputArea);
 	            	final JLabel inputLabel = new JLabel("Input:");
-	            	                          	              	            	
+	            	inputLabel.setBackground(Color.decode("#FEFEFE"));	
+	            	inputLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#CCCCCC"), 1));
                 	DocumentListener documentListener = new DocumentListener() {
             	      public void changedUpdate(DocumentEvent documentEvent) {
             	    	  updateLen(documentEvent);
@@ -121,6 +118,8 @@ public class BurpExtender implements IBurpExtender, ITab {
 	                outputArea.setLineWrap(true);
 	                final JScrollPane outputScroll = new JScrollPane(outputArea);
 	                final JLabel outputLabel = new JLabel("Output:");
+	                outputLabel.setBackground(Color.decode("#FEFEFE"));
+	                outputLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#CCCCCC"), 1));
 	                DocumentListener documentListener2 = new DocumentListener() {
             	      public void changedUpdate(DocumentEvent documentEvent) {
             	    	  updateLen(documentEvent);
@@ -214,13 +213,16 @@ public class BurpExtender implements IBurpExtender, ITab {
 	                buttonsPanel.add(swapButton,createConstraints(2,0,1));	              
 	                buttonsPanel.add(selectInputButton,createConstraints(3,0,1));	              
 	                buttonsPanel.add(selectOutputButton,createConstraints(4,0,1));	              
-	                buttonsPanel.add(convertButton,createConstraints(5,0,1));	               
+	                buttonsPanel.add(convertButton,createConstraints(5,0,1));	               	                
 	                panel.add(tabs,createConstraints(0,0,4));	              
 	                panel.add(inputLabel,createConstraints(0,1,1));	                
 	                panel.add(inputScroll,createConstraints(0,2,1));	               
 	                panel.add(outputLabel,createConstraints(1,1,1));	             
 	                panel.add(outputScroll,createConstraints(1,2,1));	 	                
-	                panel.add(buttonsPanel,createConstraints(0,3,1));	                            
+	                panel.add(buttonsPanel,createConstraints(0,3,1));
+	                GridBagConstraints c = createConstraints(0,4,1);
+	                c.weighty = 1;
+	                panel.add(new JPanel(),c);
 	                callbacks.customizeUiComponent(panel);
 	                callbacks.addSuiteTab(BurpExtender.this);	          
 	            }
