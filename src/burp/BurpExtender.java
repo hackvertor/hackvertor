@@ -21,10 +21,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.imageio.ImageIO;
+import javax.swing.AbstractAction;
+import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
@@ -46,7 +50,7 @@ import org.unbescape.javascript.JavaScriptEscape;
 import org.unbescape.javascript.JavaScriptEscapeLevel;
 import org.unbescape.javascript.JavaScriptEscapeType;
 
-public class BurpExtender implements IBurpExtender, ITab {
+public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	
 	private IBurpExtenderCallbacks callbacks;
 	private IExtensionHelpers helpers;
@@ -72,6 +76,8 @@ public class BurpExtender implements IBurpExtender, ITab {
 		helpers = callbacks.getHelpers();
 		stderr = new PrintWriter(callbacks.getStderr(), true);
 		callbacks.setExtensionName("Hackvertor");
+		callbacks.registerContextMenuFactory(this);
+		
 		 SwingUtilities.invokeLater(new Runnable() 
 	        {
 	            @Override
@@ -252,6 +258,49 @@ public class BurpExtender implements IBurpExtender, ITab {
 		return "Hackvertor";
 	}
 	
+	@Override
+    public List<JMenuItem> createMenuItems(IContextMenuInvocation invocation) {
+		int[] bounds = invocation.getSelectionBounds();
+		if(bounds == null) {
+			return null;
+		}
+        List<JMenuItem> menu = new ArrayList<>();
+        Action hackvertorAction = new HackvertorAction("Send to Hackvertor", invocation);
+        JMenuItem sendToHackvertor = new JMenuItem(hackvertorAction); 
+        menu.add(sendToHackvertor);
+        return menu;
+    }
+	class HackvertorAction extends AbstractAction {
+
+        IContextMenuInvocation invocation;
+        
+        public HackvertorAction(String text, IContextMenuInvocation invocation) {
+            super(text);
+            this.invocation = invocation;	          
+        }
+        
+        @Override
+        public void actionPerformed(ActionEvent e) {
+        	byte[] message = null;
+        	switch (invocation.getInvocationContext()) {
+        		case IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST:
+        		case IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST:
+        			message = invocation.getSelectedMessages()[0].getRequest();		        			
+        		break;
+        		case IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE:     		
+        			message = invocation.getSelectedMessages()[0].getResponse();	        		
+        		break;	    
+        	}
+        	int[] bounds = invocation.getSelectionBounds(); 	        
+        	if(bounds != null && message != null) {	 	        		
+        		hv.setInput(new String(message).substring(bounds[0], bounds[1]));
+        	}
+        }
+        
+    }
+	public void alert(String msg) {
+		JOptionPane.showMessageDialog(null, msg);
+	}
 	public Component getUiComponent()
     {
         return panel;
@@ -657,6 +706,10 @@ public class BurpExtender implements IBurpExtender, ITab {
 				 output = output.replaceAll("<@"+tagNameWithID+">[\\d\\D]*?<@/"+tagNameWithID+">", result.replace("\\","\\\\").replace("$","\\$"));
 			 }
 			return output;			
+		}
+		public void setInput(String input) {
+			inputArea.setText(input);
+			inputArea.selectAll();
 		}
 		private JPanel createButtons(String category) {
 			panel = new JPanel(new GridBagLayout());
