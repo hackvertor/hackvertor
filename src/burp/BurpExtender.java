@@ -8,6 +8,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -17,7 +20,9 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -57,6 +62,7 @@ public class BurpExtender implements IBurpExtender, ITab {
         c.weighty = 0;
         c.gridx = x;
         c.gridy = y;
+        c.ipadx = 0;
         c.ipady = 0;
         c.gridwidth = gridWidth;            
 		return c;
@@ -75,9 +81,16 @@ public class BurpExtender implements IBurpExtender, ITab {
 	            	hv = new Hackvertor();
 	            	hv.init();
 	            	hv.buildTabs(tabs);
-	            	       	
+	            	
+	            	BufferedImage img = null;
+	            	try {
+	            	    img = ImageIO.read(new File("./images/logo.gif"));
+	            	} catch (IOException e) {
+	            	}
+	            	JLabel logoLabel = new JLabel(new ImageIcon(img));
+	            	
 	            	JPanel buttonsPanel = new JPanel(new GridBagLayout());	            
-	            	panel = new JPanel(new GridBagLayout());	            	        	     	         
+	            	panel = new JPanel(new GridBagLayout());	            
 	            	inputArea = new JTextArea(20,10);
 	            	inputArea.setLineWrap(true);	            
 	            	
@@ -214,13 +227,19 @@ public class BurpExtender implements IBurpExtender, ITab {
 	                buttonsPanel.add(selectInputButton,createConstraints(3,0,1));	              
 	                buttonsPanel.add(selectOutputButton,createConstraints(4,0,1));	              
 	                buttonsPanel.add(convertButton,createConstraints(5,0,1));	               	                
-	                panel.add(tabs,createConstraints(0,0,4));	              
-	                panel.add(inputLabel,createConstraints(0,1,1));	                
-	                panel.add(inputScroll,createConstraints(0,2,1));	               
-	                panel.add(outputLabel,createConstraints(1,1,1));	             
-	                panel.add(outputScroll,createConstraints(1,2,1));	 	                
-	                panel.add(buttonsPanel,createConstraints(0,3,1));
-	                GridBagConstraints c = createConstraints(0,4,1);
+	                GridBagConstraints c = createConstraints(0,0,4);
+	                c.anchor = GridBagConstraints.EAST;	
+	                c.fill = GridBagConstraints.NONE;
+	                c.ipadx = 20;
+	                c.ipady = 20;
+	                panel.add(logoLabel,c);
+	                panel.add(tabs,createConstraints(0,1,4));	              
+	                panel.add(inputLabel,createConstraints(0,2,1));	                
+	                panel.add(inputScroll,createConstraints(0,3,1));	               
+	                panel.add(outputLabel,createConstraints(1,2,1));	             
+	                panel.add(outputScroll,createConstraints(1,3,1));	 	                
+	                panel.add(buttonsPanel,createConstraints(0,4,1));
+	                c = createConstraints(0,5,1);
 	                c.weighty = 1;
 	                panel.add(new JPanel(),c);
 	                callbacks.customizeUiComponent(panel);
