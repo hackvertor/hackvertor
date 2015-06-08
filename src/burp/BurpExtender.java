@@ -2,6 +2,7 @@ package burp;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Container;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
@@ -26,6 +27,7 @@ import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -96,7 +98,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	            	JLabel logoLabel = new JLabel(new ImageIcon(img));
 	            	
 	            	JPanel buttonsPanel = new JPanel(new GridBagLayout());	            
-	            	panel = new JPanel(new GridBagLayout());	            
+	            	panel = new JPanel(new GridBagLayout());  
 	            	inputArea = new JTextArea(20,10);
 	            	inputArea.setLineWrap(true);	            
 	            	
@@ -249,7 +251,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                c.weighty = 1;
 	                panel.add(new JPanel(),c);
 	                callbacks.customizeUiComponent(panel);
-	                callbacks.addSuiteTab(BurpExtender.this);	          
+	                callbacks.addSuiteTab(BurpExtender.this);		                
 	            }
 	        });
 		
@@ -261,7 +263,18 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	@Override
     public List<JMenuItem> createMenuItems(IContextMenuInvocation invocation) {
 		int[] bounds = invocation.getSelectionBounds();
-		if(bounds == null) {
+		
+		switch (invocation.getInvocationContext()) {
+			case IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST:
+			case IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST:
+			case IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE:
+			case IContextMenuInvocation.CONTEXT_INTRUDER_PAYLOAD_POSITIONS:
+			break;
+			default:
+				return null;
+		}
+		
+		if(bounds[0] == bounds[1]) {
 			return null;
 		}
         List<JMenuItem> menu = new ArrayList<>();
@@ -285,15 +298,23 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
         	switch (invocation.getInvocationContext()) {
         		case IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST:
         		case IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST:
+        		case IContextMenuInvocation.CONTEXT_INTRUDER_PAYLOAD_POSITIONS:
         			message = invocation.getSelectedMessages()[0].getRequest();		        			
         		break;
         		case IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE:     		
         			message = invocation.getSelectedMessages()[0].getResponse();	        		
         		break;	    
-        	}
+        	}  	
         	int[] bounds = invocation.getSelectionBounds(); 	        
-        	if(bounds != null && message != null) {	 	        		
-        		hv.setInput(new String(message).substring(bounds[0], bounds[1]));
+        	if(bounds[0] != bounds[1] && message != null) {	   
+        		//JTabbedPane tabs = panel.getParent().getParent();
+        		/*
+        		Container tabComponent = panel.getParent();
+        		int tabIndex = tabs.indexOfTabComponent(tabComponent);
+        		tabs.setSelectedIndex(tabIndex);
+        		*/ 
+        		
+        		hv.setInput((new String(message).substring(bounds[0], bounds[1])).trim());        		
         	}
         }
         
@@ -301,8 +322,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	public void alert(String msg) {
 		JOptionPane.showMessageDialog(null, msg);
 	}
-	public Component getUiComponent()
-    {
+	public Component getUiComponent() {
         return panel;
     }
 	class Tag {
