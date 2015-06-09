@@ -3,8 +3,10 @@ package burp;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
@@ -36,6 +38,8 @@ import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
+import javax.swing.event.CaretEvent;
+import javax.swing.event.CaretListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
@@ -103,9 +107,10 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	            	inputArea.setLineWrap(true);	            
 	            	
 	            	final JScrollPane inputScroll = new JScrollPane(inputArea);
-	            	final JLabel inputLabel = new JLabel("Input:");
-	            	inputLabel.setBackground(Color.decode("#FEFEFE"));	
-	            	inputLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#CCCCCC"), 1));
+	            	final JLabel inputLabel = new JLabel("Input:");	      
+	            	inputLabel.setOpaque(true);
+	            	inputLabel.setBackground(Color.decode("#FFF5BF"));	
+	            	inputLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
                 	DocumentListener documentListener = new DocumentListener() {
             	      public void changedUpdate(DocumentEvent documentEvent) {
             	    	  updateLen(documentEvent);
@@ -121,10 +126,10 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
                       	inputLabel.setText("Input:"+len); 
             	      }
             	    };
-            	    inputArea.getDocument().addDocumentListener(documentListener);                	
+            	    inputArea.getDocument().addDocumentListener(documentListener);              	  
 	            	inputArea.addKeyListener(new KeyAdapter() {
 	                    @Override
-	                    public void keyPressed(KeyEvent e) {	                    
+	                    public void keyPressed(KeyEvent e) {
 	                        if (e.getKeyCode() == KeyEvent.VK_TAB) {
 	                            if (e.getModifiers() > 0) {
 	                            	inputArea.transferFocusBackward();
@@ -139,8 +144,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                outputArea.setLineWrap(true);
 	                final JScrollPane outputScroll = new JScrollPane(outputArea);
 	                final JLabel outputLabel = new JLabel("Output:");
-	                outputLabel.setBackground(Color.decode("#FEFEFE"));
-	                outputLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#CCCCCC"), 1));
+	                outputLabel.setOpaque(true);
+	                outputLabel.setBackground(Color.decode("#FFF5BF"));
+	                outputLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
 	                DocumentListener documentListener2 = new DocumentListener() {
             	      public void changedUpdate(DocumentEvent documentEvent) {
             	    	  updateLen(documentEvent);
@@ -241,10 +247,14 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                c.ipadx = 20;
 	                c.ipady = 20;
 	                panel.add(logoLabel,c);
-	                panel.add(tabs,createConstraints(0,1,4));	              
-	                panel.add(inputLabel,createConstraints(0,2,1));	                
-	                panel.add(inputScroll,createConstraints(0,3,1));	               
-	                panel.add(outputLabel,createConstraints(1,2,1));	             
+	                panel.add(tabs,createConstraints(0,1,4));
+	                c = createConstraints(0,2,1);
+	                c.insets = new Insets(5,5,5,5);
+	                panel.add(inputLabel,c);	                
+	                panel.add(inputScroll,createConstraints(0,3,1));
+	                c = createConstraints(1,2,1);
+	                c.insets = new Insets(5,5,5,5);
+	                panel.add(outputLabel,c);	             
 	                panel.add(outputScroll,createConstraints(1,3,1));	 	                
 	                panel.add(buttonsPanel,createConstraints(0,4,1));
 	                c = createConstraints(0,5,1);
@@ -313,8 +323,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
         		int tabIndex = tabs.indexOfTabComponent(tabComponent);
         		tabs.setSelectedIndex(tabIndex);
         		*/ 
-        		
-        		hv.setInput((new String(message).substring(bounds[0], bounds[1])).trim());        		
+        		hv.setInput((new String(message).substring(bounds[0], bounds[1])).trim()); 
         	}
         }
         
