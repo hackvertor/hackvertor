@@ -103,9 +103,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	            	
 	            	JPanel buttonsPanel = new JPanel(new GridBagLayout());	            
 	            	panel = new JPanel(new GridBagLayout());  
-	            	inputArea = new JTextArea(20,10);
+	            	inputArea = new JTextArea(20,10);    
 	            	inputArea.setLineWrap(true);	            
-	            	
+	            		         
 	            	final JScrollPane inputScroll = new JScrollPane(inputArea);
 	            	final JLabel inputLabel = new JLabel("Input:");	      
 	            	inputLabel.setOpaque(true);
@@ -140,7 +140,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                        }
 	                    }
 	                });	              	                	              
-	                outputArea = new JTextArea(20,10);
+	                outputArea = new JTextArea(20,10);	              
 	                outputArea.setLineWrap(true);
 	                final JScrollPane outputScroll = new JScrollPane(outputArea);
 	                final JLabel outputLabel = new JLabel("Output:");
@@ -216,9 +216,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                final JButton clearTagsButton = new JButton("Clear tags");
 	                clearTagsButton.addActionListener(new ActionListener() {
 	                  public void actionPerformed(ActionEvent e) {	                	 	                	 
-	                	  String input = inputArea.getText();
-	                	  input = input.replaceAll("<@\\w+_\\d+>","");
-	                	  input = input.replaceAll("<@/\\w+_\\d+>","");
+	                	  String input = inputArea.getText();	                	 
+	                	  input = input.replaceAll("<@/?\\w+_\\d+>","");
 	                	  inputArea.setText(input);	                	  	                	  
 	                	  inputArea.requestFocus();
 	                  }
