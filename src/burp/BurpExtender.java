@@ -105,8 +105,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	            	panel = new JPanel(new GridBagLayout());  
 	            	inputArea = new JTextArea(20,10);    
 	            	inputArea.setLineWrap(true);	            
-	            		         
+	            	inputArea.setMinimumSize(new Dimension(300,500));	         
 	            	final JScrollPane inputScroll = new JScrollPane(inputArea);
+	            	inputScroll.setMinimumSize(new Dimension(300,500));
 	            	final JLabel inputLabel = new JLabel("Input:");	      
 	            	inputLabel.setOpaque(true);
 	            	inputLabel.setBackground(Color.decode("#FFF5BF"));	
@@ -140,9 +141,11 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                        }
 	                    }
 	                });	              	                	              
-	                outputArea = new JTextArea(20,10);	              
+	                outputArea = new JTextArea(20,10);
+	                outputArea.setMinimumSize(new Dimension(300,500));
 	                outputArea.setLineWrap(true);
 	                final JScrollPane outputScroll = new JScrollPane(outputArea);
+	                outputScroll.setMinimumSize(new Dimension(300,500));
 	                final JLabel outputLabel = new JLabel("Output:");
 	                outputLabel.setOpaque(true);
 	                outputLabel.setBackground(Color.decode("#FFF5BF"));
