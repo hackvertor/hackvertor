@@ -257,11 +257,12 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                c.weighty = 1;
 	                panel.add(new JPanel(),c);
 	                callbacks.customizeUiComponent(panel);
-	                callbacks.addSuiteTab(BurpExtender.this);		                
+	                callbacks.addSuiteTab(BurpExtender.this);
 	            }
 	        });
 		
 	}
+	@Override
 	public String getTabCaption() {
 		return "Hackvertor";
 	}
@@ -328,6 +329,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	public void alert(String msg) {
 		JOptionPane.showMessageDialog(null, msg);
 	}
+	@Override
 	public Component getUiComponent() {
         return panel;
     }
