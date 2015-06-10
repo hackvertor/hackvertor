@@ -10,19 +10,20 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.BorderFactory;
@@ -35,9 +36,16 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
+import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.event.UndoableEditEvent;
+import javax.swing.event.UndoableEditListener;
+import javax.swing.text.Document;
+import javax.swing.undo.CannotRedoException;
+import javax.swing.undo.CannotUndoException;
+import javax.swing.undo.UndoManager;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
@@ -103,7 +111,47 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	            	panel = new JPanel(new GridBagLayout());  
 	            	inputArea = new JTextArea(20,10);    
 	            	inputArea.setLineWrap(true);	            
-	            	inputArea.setMinimumSize(new Dimension(300,500));	         
+	            	inputArea.setMinimumSize(new Dimension(300,500));	
+	            	final UndoManager undo = new UndoManager();
+            	    Document doc = inputArea.getDocument();
+            	    
+            	   // Listen for undo and redo events            	
+            	   doc.addUndoableEditListener(new UndoableEditListener() {
+            	       public void undoableEditHappened(UndoableEditEvent evt) {
+            	           undo.addEdit(evt.getEdit());
+            	       }
+            	   });
+            	    
+            	   // Create an undo action and add it to the text component
+            	   inputArea.getActionMap().put("Undo",
+            	       new AbstractAction("Undo") {
+            	           public void actionPerformed(ActionEvent evt) {
+            	               try {
+            	                   if (undo.canUndo()) {
+            	                       undo.undo();
+            	                   }
+            	               } catch (CannotUndoException e) {
+            	               }
+            	           }
+            	      });
+            	    
+            	   // Bind the undo action to ctl-Z
+            	   inputArea.getInputMap().put(KeyStroke.getKeyStroke("control Z"), "Undo");
+            	    
+            	   // Create a redo action and add it to the text component
+            	   inputArea.getActionMap().put("Redo",
+            	       new AbstractAction("Redo") {
+            	           public void actionPerformed(ActionEvent evt) {
+            	               try {
+            	                   if (undo.canRedo()) {
+            	                       undo.redo();
+            	                   }
+            	               } catch (CannotRedoException e) {
+            	               }
+            	           }
+            	       });
+            	                	  
+            	    inputArea.getInputMap().put(KeyStroke.getKeyStroke("control Y"), "Redo");
 	            	final JScrollPane inputScroll = new JScrollPane(inputArea);
 	            	inputScroll.setMinimumSize(new Dimension(300,500));
 	            	final JLabel inputLabel = new JLabel("Input:");	      
@@ -141,7 +189,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                });	              	                	              
 	                outputArea = new JTextArea(20,10);
 	                outputArea.setMinimumSize(new Dimension(300,500));
-	                outputArea.setLineWrap(true);
+	                outputArea.setLineWrap(true);	            
 	                final JScrollPane outputScroll = new JScrollPane(outputArea);
 	                outputScroll.setMinimumSize(new Dimension(300,500));
 	                final JLabel outputLabel = new JLabel("Output:");
@@ -348,12 +396,13 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	class Hackvertor {	
 		private int tagCounter = 0;
 		private ArrayList<Tag> tags = new ArrayList<Tag>();
-		public void buildTabs(JTabbedPane tabs) {
+		public void buildTabs(JTabbedPane tabs) {			
 			tabs.addTab("Encode", createButtons("Encode"));
         	tabs.addTab("Decode", createButtons("Decode"));
         	tabs.addTab("Convert", createButtons("Convert"));
         	tabs.addTab("String", createButtons("String"));
         	tabs.addTab("Hash", createButtons("Hash"));
+        	tabs.addTab("Charsets", createButtons("Charsets"));
 		}
 		public void init() {
 			tags.add(new Tag("Encode","base64"));
@@ -398,6 +447,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			tags.add(new Tag("Hash","sha512"));
 			tags.add(new Tag("Hash","md2"));
 			tags.add(new Tag("Hash","md5"));
+			tags.add(new Tag("Charsets","cp1026"));
 		}
 		public String html_entities(String str) {
 			return StringEscapeUtils.escapeHtml4(str);
@@ -632,6 +682,17 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 		public String reverse(String str) {
 			return new StringBuilder(str).reverse().toString();
 		}
+		public String convertCharset(String input, String charsetName) {
+			Charset charset = Charset.forName(charsetName);	
+		    CharsetEncoder encoder = charset.newEncoder();
+		    ByteBuffer bbuf = null;
+			try {
+				bbuf = encoder.encode(CharBuffer.wrap(input));
+			} catch (CharacterCodingException e) {
+				stderr.println(e.getMessage());
+			}		
+		    return new String(bbuf.array());
+		}
 		private String callTag(String tag, String output) {
 			if(tag.equals("html_entities")) {
 				output = this.html_entities(output);
@@ -717,6 +778,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 				output = this.md2(output);
 			} else if(tag.equals("md5")) {
 				output = this.md5(output);
+			} else if(tag.equals("cp1026")) {
+				output = this.convertCharset(output,"CP1026");
 			}
 			return output;
 		}
