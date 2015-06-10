@@ -2,7 +2,6 @@ package burp;
 
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -29,7 +28,6 @@ import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -38,8 +36,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
-import javax.swing.event.CaretEvent;
-import javax.swing.event.CaretListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
@@ -57,8 +53,7 @@ import org.unbescape.javascript.JavaScriptEscapeLevel;
 import org.unbescape.javascript.JavaScriptEscapeType;
 
 public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
-	
-	private IBurpExtenderCallbacks callbacks;
+
 	private IExtensionHelpers helpers;
 	private JPanel panel;
 	private JTextArea inputArea;
@@ -78,7 +73,6 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 		return c;
 	}
 	public void registerExtenderCallbacks(final IBurpExtenderCallbacks callbacks) {
-		this.callbacks = callbacks;
 		helpers = callbacks.getHelpers();
 		stderr = new PrintWriter(callbacks.getStderr(), true);
 		callbacks.setExtensionName("Hackvertor");
@@ -298,6 +292,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	class HackvertorAction extends AbstractAction {
 
         IContextMenuInvocation invocation;
+        private static final long serialVersionUID = 1L;
         
         public HackvertorAction(String text, IContextMenuInvocation invocation) {
             super(text);
@@ -610,7 +605,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			}
 			return output;
 		}
-		public String sha1(String str) {			
+		public String sha1(String str) {
 			return DigestUtils.sha1Hex(str);
 		}
 		public String sha256(String str) {
