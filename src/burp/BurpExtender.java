@@ -72,6 +72,15 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
         c.gridwidth = gridWidth;            
 		return c;
 	}
+	protected ImageIcon createImageIcon(String path, String description) {
+		java.net.URL imgURL = getClass().getResource(path);
+		if (imgURL != null) {
+			return new ImageIcon(imgURL, description);
+		} else {
+			stderr.println("Couldn't find file: " + path);
+			return null;
+		}
+	}
 	public void registerExtenderCallbacks(final IBurpExtenderCallbacks callbacks) {
 		helpers = callbacks.getHelpers();
 		stderr = new PrintWriter(callbacks.getStderr(), true);
@@ -87,13 +96,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	            	hv = new Hackvertor();
 	            	hv.init();
 	            	hv.buildTabs(tabs);
-	            	
-	            	BufferedImage img = null;
-	            	try {
-	            	    img = ImageIO.read(new File("./images/logo.gif"));
-	            	} catch (IOException e) {
-	            	}
-	            	JLabel logoLabel = new JLabel(new ImageIcon(img));
+	            		     	
+	            	JLabel logoLabel = new JLabel(createImageIcon("/burp/images/logo.gif","logo"));
 	            	
 	            	JPanel buttonsPanel = new JPanel(new GridBagLayout());	            
 	            	panel = new JPanel(new GridBagLayout());  
