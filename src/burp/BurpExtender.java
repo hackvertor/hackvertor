@@ -3,6 +3,7 @@ package burp;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -18,6 +19,7 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
 import java.util.ArrayList;
 import java.util.List;
@@ -151,7 +153,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
             	           }
             	       });
             	                	  
-            	    inputArea.getInputMap().put(KeyStroke.getKeyStroke("control Y"), "Redo");
+            	    inputArea.getInputMap().put(KeyStroke.getKeyStroke("control Y"), "Redo");            	  
 	            	final JScrollPane inputScroll = new JScrollPane(inputArea);
 	            	inputScroll.setMinimumSize(new Dimension(300,500));
 	            	final JLabel inputLabel = new JLabel("Input:");	      
@@ -308,7 +310,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                c = createConstraints(0,5,1);
 	                c.weighty = 1;
 	                panel.add(new JPanel(),c);
-	                callbacks.customizeUiComponent(panel);
+	                callbacks.customizeUiComponent(inputArea);
+	                callbacks.customizeUiComponent(outputArea);
+	                callbacks.customizeUiComponent(panel);	              
 	                callbacks.addSuiteTab(BurpExtender.this);
 	            }
 	        });
@@ -396,13 +400,12 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	class Hackvertor {	
 		private int tagCounter = 0;
 		private ArrayList<Tag> tags = new ArrayList<Tag>();
-		public void buildTabs(JTabbedPane tabs) {			
+		public void buildTabs(JTabbedPane tabs) {
 			tabs.addTab("Encode", createButtons("Encode"));
         	tabs.addTab("Decode", createButtons("Decode"));
         	tabs.addTab("Convert", createButtons("Convert"));
         	tabs.addTab("String", createButtons("String"));
         	tabs.addTab("Hash", createButtons("Hash"));
-        	tabs.addTab("Charsets", createButtons("Charsets"));
 		}
 		public void init() {
 			tags.add(new Tag("Encode","base64"));
@@ -447,7 +450,6 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			tags.add(new Tag("Hash","sha512"));
 			tags.add(new Tag("Hash","md2"));
 			tags.add(new Tag("Hash","md5"));
-			tags.add(new Tag("Charsets","cp1026"));
 		}
 		public String html_entities(String str) {
 			return StringEscapeUtils.escapeHtml4(str);
@@ -682,17 +684,6 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 		public String reverse(String str) {
 			return new StringBuilder(str).reverse().toString();
 		}
-		public String convertCharset(String input, String charsetName) {
-			Charset charset = Charset.forName(charsetName);	
-		    CharsetEncoder encoder = charset.newEncoder();
-		    ByteBuffer bbuf = null;
-			try {
-				bbuf = encoder.encode(CharBuffer.wrap(input));
-			} catch (CharacterCodingException e) {
-				stderr.println(e.getMessage());
-			}		
-		    return new String(bbuf.array());
-		}
 		private String callTag(String tag, String output) {
 			if(tag.equals("html_entities")) {
 				output = this.html_entities(output);
@@ -778,8 +769,6 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 				output = this.md2(output);
 			} else if(tag.equals("md5")) {
 				output = this.md5(output);
-			} else if(tag.equals("cp1026")) {
-				output = this.convertCharset(output,"CP1026");
 			}
 			return output;
 		}
@@ -826,6 +815,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                	  String selectedText = inputArea.getSelectedText();
 	                	  if(selectedText == null) {
 	                		  selectedText = inputArea.getText();
+	                		  inputArea.setText("");
 	                	  }
 	                	  String tagStart = "<@"+btn.getText()+"_"+tagCounter+">";
 	                	  String tagEnd = "<@/"+btn.getText()+"_"+tagCounter+">";	                	 
