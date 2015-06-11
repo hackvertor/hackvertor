@@ -24,6 +24,7 @@ import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JEditorPane;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -32,7 +33,10 @@ import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.KeyStroke;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.event.CaretEvent;
+import javax.swing.event.CaretListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.UndoableEditEvent;
@@ -102,7 +106,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	            	hv.buildTabs(tabs);
 	            		     	
 	            	JLabel logoLabel = new JLabel(createImageIcon("/burp/images/logo.gif","logo"));
-	            	
+	            	final JLabel hexView = new JLabel("",SwingConstants.CENTER);	                
+	                hexView.setOpaque(true);
 	            	JPanel buttonsPanel = new JPanel(new GridBagLayout());	            
 	            	panel = new JPanel(new GridBagLayout());  
 	            	inputArea = new JTextArea(20,10);    
@@ -182,10 +187,44 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                            e.consume();
 	                        }
 	                    }
-	                });	              	                	              
+	                });	    
+	            	inputArea.addCaretListener(new CaretListener()
+	                {	               
+						@Override
+						public void caretUpdate(CaretEvent e) {
+							String selectedText = inputArea.getSelectedText();
+							if(selectedText != null) {			
+								hexView.setBackground(Color.decode("#FFF5BF"));
+								hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
+								String output = hv.ascii2hex(selectedText, " ");
+								hexView.setText(output);
+							} else {
+								hexView.setText("");
+								hexView.setBackground(new Color(0,0,0,0));
+								hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 0));
+							}
+						}
+	                });
 	                outputArea = new JTextArea(20,10);
 	                outputArea.setMinimumSize(new Dimension(300,500));
-	                outputArea.setLineWrap(true);	            
+	                outputArea.setLineWrap(true);
+	                outputArea.addCaretListener(new CaretListener()
+	                {	               
+						@Override
+						public void caretUpdate(CaretEvent e) {
+							String selectedText = outputArea.getSelectedText();
+							if(selectedText != null) {			
+								hexView.setBackground(Color.decode("#FFF5BF"));
+								hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
+								String output = hv.ascii2hex(selectedText, " ");
+								hexView.setText(output);
+							} else {
+								hexView.setText("");
+								hexView.setBackground(new Color(0,0,0,0));
+								hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 0));
+							}
+						}
+	                });
 	                final JScrollPane outputScroll = new JScrollPane(outputArea);
 	                outputScroll.setMinimumSize(new Dimension(300,500));
 	                final JLabel outputLabel = new JLabel("Output:");
@@ -278,7 +317,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                  }
 	                });
 	                clearButton.setForeground(Color.white);
-	                clearButton.setBackground(Color.black);
+	                clearButton.setBackground(Color.black);        	               
 	                buttonsPanel.add(clearButton,createConstraints(0,0,1));	               
 	                buttonsPanel.add(clearTagsButton,createConstraints(1,0,1));	              	               
 	                buttonsPanel.add(swapButton,createConstraints(2,0,1));	              
@@ -301,7 +340,10 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                panel.add(outputLabel,c);	             
 	                panel.add(outputScroll,createConstraints(1,3,1));	 	                
 	                panel.add(buttonsPanel,createConstraints(0,4,1));
-	                c = createConstraints(0,5,1);
+	                c = createConstraints(0,5,4);
+	                c.insets = new Insets(5,5,5,5);
+	                panel.add(hexView,c);
+	                c = createConstraints(0,6,1);
 	                c.weighty = 1;
 	                panel.add(new JPanel(),c);
 	                callbacks.customizeUiComponent(inputArea);
@@ -371,6 +413,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
         		int tabIndex = tabs.indexOfTabComponent(tabComponent);
         		tabs.setSelectedIndex(tabIndex);
         		*/ 
+        		
         		hv.setInput((new String(message).substring(bounds[0], bounds[1])).trim()); 
         	}
         }
@@ -471,7 +514,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 				stderr.println(e.getMessage());
 			}
 			return str;
-		}
+		}	
 		public String urlencode(String str) {
 			try {
 	            str = URLEncoder.encode(str, "UTF-8");		          
@@ -640,11 +683,19 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			   }
 			return output;
 		}
-		public String ascii2hex(String str) {
+		public String ascii2hex(String str, String separator) {
 			String output = "";
+			String hex = "";
 			for(int i=0;i<str.length();i++) {
 			   try {
-				   output += Integer.toHexString(Character.codePointAt(str, i));				 
+				   hex = Integer.toHexString(Character.codePointAt(str, i));
+				   if(hex.length() % 2 != 0) {
+					   hex = "0" + hex;
+				   }
+				   output += hex;
+				   if(separator.length() > 0 && i < str.length()-1) {
+					   output += separator;
+				   }
 			   } catch(NumberFormatException e){ 
 					stderr.println(e.getMessage()); 
 			   }
@@ -724,7 +775,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			} else if(tag.equals("base64")) {
 				output = this.base64Encode(output);				
 			} else if(tag.equals("decode_base64")) {
-				output = this.decode_base64(output);
+				output = this.decode_base64(output);	
 			} else if(tag.equals("urlencode")) {
 				output = this.urlencode(output);
 			} else if(tag.equals("decode_url")) {
@@ -764,7 +815,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			} else if(tag.equals("hex2ascii")) {
 				output = this.hex2ascii(output);
 			} else if(tag.equals("ascii2hex")) {
-				output = this.ascii2hex(output);	
+				output = this.ascii2hex(output,"");	
 			} else if(tag.equals("sha1")) {
 				output = this.sha1(output);
 			} else if(tag.equals("sha256")) {
