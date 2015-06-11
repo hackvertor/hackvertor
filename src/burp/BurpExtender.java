@@ -42,6 +42,7 @@ import javax.swing.undo.CannotRedoException;
 import javax.swing.undo.CannotUndoException;
 import javax.swing.undo.UndoManager;
 
+import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -401,6 +402,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
         	tabs.addTab("Hash", createButtons("Hash"));
 		}
 		public void init() {
+			tags.add(new Tag("Encode","base32"));
 			tags.add(new Tag("Encode","base64"));
 			tags.add(new Tag("Encode","html_entities"));
 			tags.add(new Tag("Encode","html5_entities"));
@@ -412,6 +414,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			tags.add(new Tag("Encode","css_escapes"));
 			tags.add(new Tag("Encode","css_escapes6"));
 			tags.add(new Tag("Encode","urlencode"));
+			tags.add(new Tag("Decode","decode_base32"));
 			tags.add(new Tag("Decode","decode_base64"));
 			tags.add(new Tag("Decode","decode_html_entities"));
 			tags.add(new Tag("Decode","decode_html5_entities"));
@@ -450,6 +453,14 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 		public String decode_html_entities(String str) {
 			return StringEscapeUtils.unescapeHtml4(str);
 		}
+		public String base32_encode(String str) {
+			Base32 base32 = new Base32();
+	        return new String(base32.encode(str.getBytes()));
+		}
+		public String decode_base32(String str) {
+			Base32 base32 = new Base32();
+			return new String(base32.decode(str.getBytes()));
+		}
 		public String base64Encode(String str) {
 			return helpers.base64Encode(str);
 		}
@@ -483,7 +494,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 		public String lowercase(String str) {
 			return StringUtils.lowerCase(str);
 		}
-		public String capitalise(String str) {
+		public String capitalise(String str) {	
 			return StringUtils.capitalize(str);
 		}
 		public String uncapitalise(String str) {
@@ -705,9 +716,13 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			} else if(tag.equals("decode_js_string")) {
 				output = this.decode_js_string(output);	
 			} else if(tag.equals("decode_html5_entities")) {
-				output = this.decode_html5_entities(output);	
+				output = this.decode_html5_entities(output);
+			} else if(tag.equals("base32")) {
+				output = this.base32_encode(output);
+			} else if(tag.equals("decode_base32")) {
+				output = this.decode_base32(output);	
 			} else if(tag.equals("base64")) {
-				output = this.base64Encode(output);
+				output = this.base64Encode(output);				
 			} else if(tag.equals("decode_base64")) {
 				output = this.decode_base64(output);
 			} else if(tag.equals("urlencode")) {
