@@ -3,6 +3,7 @@ package burp;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -155,10 +156,11 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
             	    inputArea.getInputMap().put(KeyStroke.getKeyStroke("control Y"), "Redo");            	  
 	            	final JScrollPane inputScroll = new JScrollPane(inputArea);
 	            	inputScroll.setMinimumSize(new Dimension(300,500));
-	            	final JLabel inputLabel = new JLabel("Input:");	      
-	            	inputLabel.setOpaque(true);
-	            	inputLabel.setBackground(Color.decode("#FFF5BF"));	
-	            	inputLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
+	            	final JLabel inputLabel = new JLabel("Input:");
+	            	final JLabel inputLenLabel = new JLabel("0");
+	            	inputLenLabel.setOpaque(true);
+	            	inputLenLabel.setBackground(Color.decode("#FFF5BF"));	
+	            	inputLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
                 	DocumentListener documentListener = new DocumentListener() {
             	      public void changedUpdate(DocumentEvent documentEvent) {
             	    	  updateLen(documentEvent);
@@ -171,7 +173,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
             	      }
             	      private void updateLen(DocumentEvent documentEvent) {
             	    	int len = inputArea.getText().length();
-                      	inputLabel.setText("Input:"+len); 
+            	    	inputLenLabel.setText(""+len); 
             	      }
             	    };
             	    inputArea.getDocument().addDocumentListener(documentListener);              	  
@@ -228,9 +230,10 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                final JScrollPane outputScroll = new JScrollPane(outputArea);
 	                outputScroll.setMinimumSize(new Dimension(300,500));
 	                final JLabel outputLabel = new JLabel("Output:");
-	                outputLabel.setOpaque(true);
-	                outputLabel.setBackground(Color.decode("#FFF5BF"));
-	                outputLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
+	                final JLabel outputLenLabel = new JLabel("0");
+	                outputLenLabel.setOpaque(true);
+	                outputLenLabel.setBackground(Color.decode("#FFF5BF"));
+	                outputLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
 	                DocumentListener documentListener2 = new DocumentListener() {
             	      public void changedUpdate(DocumentEvent documentEvent) {
             	    	  updateLen(documentEvent);
@@ -243,7 +246,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
             	      }
             	      private void updateLen(DocumentEvent documentEvent) {
             	    	int len = outputArea.getText().length();
-                      	outputLabel.setText("Output:"+len); 
+            	    	outputLenLabel.setText(""+len); 
             	      }
             	    };
             	    outputArea.getDocument().addDocumentListener(documentListener2);
@@ -331,13 +334,29 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                c.ipady = 20;
 	                panel.add(logoLabel,c);
 	                panel.add(tabs,createConstraints(0,1,4));
-	                c = createConstraints(0,2,1);
+	                JPanel inputLabelsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+	                c = createConstraints(0,0,1);
+	                c.insets = new Insets(5,5,5,5);	               
+	                c.weightx = 0;	        
+	                c.anchor = GridBagConstraints.WEST;
+	                inputLabelsPanel.add(inputLabel,c);
+	                c = createConstraints(1,0,1);
 	                c.insets = new Insets(5,5,5,5);
-	                panel.add(inputLabel,c);	                
+	                c.weightx = 0;
+	                c.anchor = GridBagConstraints.WEST;
+	                inputLabelsPanel.add(inputLenLabel,c);
+	                panel.add(inputLabelsPanel,createConstraints(0,2,1));
 	                panel.add(inputScroll,createConstraints(0,3,1));
-	                c = createConstraints(1,2,1);
+	                JPanel outputLabelsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+	                c = createConstraints(0,0,1);
 	                c.insets = new Insets(5,5,5,5);
-	                panel.add(outputLabel,c);	             
+	                c.weightx = 0;
+	                outputLabelsPanel.add(outputLabel,c);
+	                c = createConstraints(1,0,1);
+	                c.insets = new Insets(5,5,5,5);
+	                c.weightx = 0;
+	                outputLabelsPanel.add(outputLenLabel,c);
+	                panel.add(outputLabelsPanel,createConstraints(1,2,1));
 	                panel.add(outputScroll,createConstraints(1,3,1));	 	                
 	                panel.add(buttonsPanel,createConstraints(0,4,1));
 	                c = createConstraints(0,5,4);
