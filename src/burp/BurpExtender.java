@@ -457,15 +457,16 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			tags.add(new Tag("Encode","css_escapes"));
 			tags.add(new Tag("Encode","css_escapes6"));
 			tags.add(new Tag("Encode","urlencode"));
-			tags.add(new Tag("Decode","decode_base32"));
-			tags.add(new Tag("Decode","decode_base64"));
-			tags.add(new Tag("Decode","decode_html_entities"));
-			tags.add(new Tag("Decode","decode_html5_entities"));
-			tags.add(new Tag("Decode","decode_js_string"));
-			tags.add(new Tag("Decode","decode_url"));
-			tags.add(new Tag("Decode","decode_css_escapes"));
-			tags.add(new Tag("Decode","decode_octal_escapes"));
-			tags.add(new Tag("Decode","decode_unicode_escapes"));
+			tags.add(new Tag("Decode","auto_decode"));
+			tags.add(new Tag("Decode","d_base32"));
+			tags.add(new Tag("Decode","d_base64"));
+			tags.add(new Tag("Decode","d_html_entities"));
+			tags.add(new Tag("Decode","d_html5_entities"));
+			tags.add(new Tag("Decode","d_js_string"));
+			tags.add(new Tag("Decode","d_url"));
+			tags.add(new Tag("Decode","d_css_escapes"));
+			tags.add(new Tag("Decode","d_octal_escapes"));
+			tags.add(new Tag("Decode","d_unicode_escapes"));
 			tags.add(new Tag("Convert","dec2hex"));
 			tags.add(new Tag("Convert","dec2oct"));
 			tags.add(new Tag("Convert","dec2bin"));
@@ -632,7 +633,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			return str;
 		}
 		public String from_charcode(String str) {
-		   String[] chars = str.split(",");
+		   String[] chars = str.split("[\\s,]");
 		   String output = "";
 		   if(str.length() == 1) {
 			   try {
@@ -739,10 +740,51 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 		public String reverse(String str) {
 			return new StringBuilder(str).reverse().toString();
 		}
+		public String auto_decode(String str) {
+			int repeats = 20;
+			int repeat = 0;
+			boolean matched;
+			do {
+				matched = false;
+				if(Pattern.compile("[01]{4,}\\s+[01]{4,}").matcher(str).find()) {
+					str = this.bin2ascii(str);
+					matched = true;
+				}
+				if(!Pattern.compile("[^\\d,\\s]").matcher(str).find() && Pattern.compile("\\d+[,\\s]+").matcher(str).find()) {
+					str = this.from_charcode(str);
+					matched = true;
+				}
+				if(Pattern.compile("style[\\s]*=",Pattern.CASE_INSENSITIVE).matcher(str).find()) {
+					str = this.decode_css_escapes(str);
+					matched = true;
+				}
+				if(Pattern.compile("\\\\x[0-9a-f]{2}",Pattern.CASE_INSENSITIVE).matcher(str).find() || Pattern.compile("\\\\[0-9]{1,3}").matcher(str).find() || Pattern.compile("\\\\u[0-9a-f]{4}",Pattern.CASE_INSENSITIVE).matcher(str).find()) {
+					str = this.decode_js_string(str);
+					matched = true;
+				}
+				if(Pattern.compile("&[a-zA-Z]+;",Pattern.CASE_INSENSITIVE).matcher(str).find() || Pattern.compile("&#x?[0-9a-f]+;?",Pattern.CASE_INSENSITIVE).matcher(str).find()) {
+					str = this.decode_html5_entities(str);
+					matched = true;
+				}
+				if(Pattern.compile("%[0-9a-f]{2}",Pattern.CASE_INSENSITIVE).matcher(str).find()) {
+					str = this.decode_url(str);
+					matched = true;
+				}
+				if(Pattern.compile("[a-zA-Z0-9+/]{3,}=+$",Pattern.CASE_INSENSITIVE).matcher(str).find()) {
+					str = this.decode_base64(str);
+					matched = true;
+				}
+				if(!matched) {
+					break;
+				}
+				repeat++;
+			} while(repeat < repeats);
+			return str;
+		}
 		private String callTag(String tag, String output) {
 			if(tag.equals("html_entities")) {
 				output = this.html_entities(output);
-			} else if(tag.equals("decode_html_entities")) {
+			} else if(tag.equals("d_html_entities")) {
 				output = this.decode_html_entities(output);
 			} else if(tag.equals("html5_entities")) {
 				output = this.html5_entities(output);
@@ -752,7 +794,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 				output = this.hex_escapes(output);
 			} else if(tag.equals("octal_escapes")) {
 				output = this.octal_escapes(output);
-			} else if(tag.equals("decode_octal_escapes")) {
+			} else if(tag.equals("auto_decode")) {
+				output = this.auto_decode(output);
+			} else if(tag.equals("d_octal_escapes")) {
 				output = this.decode_octal_escapes(output);	
 			} else if(tag.equals("css_escapes")) {
 				output = this.css_escapes(output);
@@ -762,25 +806,25 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 				output = this.dec_entities(output);
 			} else if(tag.equals("unicode_escapes")) {
 				output = this.unicode_escapes(output);
-			} else if(tag.equals("decode_unicode_escapes")) {
+			} else if(tag.equals("d_unicode_escapes")) {
 				output = this.decode_js_string(output);
-			} else if(tag.equals("decode_js_string")) {
+			} else if(tag.equals("d_js_string")) {
 				output = this.decode_js_string(output);	
-			} else if(tag.equals("decode_html5_entities")) {
+			} else if(tag.equals("d_html5_entities")) {
 				output = this.decode_html5_entities(output);
 			} else if(tag.equals("base32")) {
 				output = this.base32_encode(output);
-			} else if(tag.equals("decode_base32")) {
+			} else if(tag.equals("d_base32")) {
 				output = this.decode_base32(output);	
 			} else if(tag.equals("base64")) {
 				output = this.base64Encode(output);				
-			} else if(tag.equals("decode_base64")) {
+			} else if(tag.equals("d_base64")) {
 				output = this.decode_base64(output);	
 			} else if(tag.equals("urlencode")) {
 				output = this.urlencode(output);
-			} else if(tag.equals("decode_url")) {
+			} else if(tag.equals("d_url")) {
 				output = this.decode_url(output);
-			} else if(tag.equals("decode_css_escapes")) {
+			} else if(tag.equals("d_css_escapes")) {
 				output = this.decode_css_escapes(output);	
 			} else if(tag.equals("uppercase")) {
 				output = this.uppercase(output);
