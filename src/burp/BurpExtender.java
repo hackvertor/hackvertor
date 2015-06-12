@@ -16,6 +16,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -519,6 +520,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			tags.add(new Tag("Convert","bin2ascii"));
 			tags.add(new Tag("Convert","ascii2hex"));
 			tags.add(new Tag("Convert","hex2ascii"));
+			tags.add(new Tag("Convert","ascii2reverse_hex"));
 			tags.add(new Tag("String","uppercase"));
 			tags.add(new Tag("String","lowercase"));
 			tags.add(new Tag("String","capitalise"));
@@ -745,6 +747,23 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			}
 			return output;
 		}
+		public String ascii2reverse_hex(String str, String separator) {
+			String hex = "";
+			List<String> output = new ArrayList<String>();
+			for(int i=0;i<str.length();i++) {
+			   try {
+				   hex = Integer.toHexString(Character.codePointAt(str, i));
+				   if(hex.length() % 2 != 0) {
+					   hex = "0" + hex;
+				   }
+				   output.add(hex);				
+			   } catch(NumberFormatException e){ 
+					stderr.println(e.getMessage()); 
+			   }
+			}
+			Collections.reverse(output);
+			return StringUtils.join(output,"");
+		}		
 		public String hex2ascii(String str) {
 			String output = "";
 			if(str.length() % 2 != 0) {
@@ -905,7 +924,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			} else if(tag.equals("hex2ascii")) {
 				output = this.hex2ascii(output);
 			} else if(tag.equals("ascii2hex")) {
-				output = this.ascii2hex(output,"");	
+				output = this.ascii2hex(output,"");
+			} else if(tag.equals("ascii2reverse_hex")) {
+				output = this.ascii2reverse_hex(output,"");	
 			} else if(tag.equals("sha1")) {
 				output = this.sha1(output);
 			} else if(tag.equals("sha256")) {
