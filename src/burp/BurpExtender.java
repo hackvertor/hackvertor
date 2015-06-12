@@ -341,7 +341,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                panel.add(outputScroll,createConstraints(1,3,1));	 	                
 	                panel.add(buttonsPanel,createConstraints(0,4,1));
 	                c = createConstraints(0,5,4);
-	                c.insets = new Insets(5,5,5,5);
+	                c.insets = new Insets(5,5,5,5);	          
 	                panel.add(hexView,c);
 	                c = createConstraints(0,6,1);
 	                c.weighty = 1;
@@ -744,6 +744,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			int repeats = 20;
 			int repeat = 0;
 			boolean matched;
+			String test;
 			do {
 				matched = false;
 				if(Pattern.compile("[01]{4,}\\s+[01]{4,}").matcher(str).find()) {
@@ -770,9 +771,12 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 					str = this.decode_url(str);
 					matched = true;
 				}
-				if(Pattern.compile("[a-zA-Z0-9+/]{3,}=+$",Pattern.CASE_INSENSITIVE).matcher(str).find()) {
-					str = this.decode_base64(str);
-					matched = true;
+				if(Pattern.compile("[a-zA-Z0-9+/]{4,}=*$",Pattern.CASE_INSENSITIVE).matcher(str).find() && str.length() % 4 == 0) {
+					test = this.decode_base64(str);
+					if(Pattern.compile("^[\\x00-\\x7f]+$",Pattern.CASE_INSENSITIVE).matcher(test).find()) {
+						str = test;
+						matched = true;	
+					}
 				}
 				if(!matched) {
 					break;
