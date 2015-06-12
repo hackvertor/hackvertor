@@ -158,6 +158,11 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	            	inputScroll.setMinimumSize(new Dimension(300,500));
 	            	final JLabel inputLabel = new JLabel("Input:");
 	            	final JLabel inputLenLabel = new JLabel("0");
+	            	final JLabel inputRealLenLabel = new JLabel("0");
+	            	inputRealLenLabel.setOpaque(true);
+	            	inputRealLenLabel.setForeground(Color.decode("#ffffff"));
+	            	inputRealLenLabel.setBackground(Color.decode("#ff0027"));
+	            	inputRealLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#CCCCCC"), 1));	         
 	            	inputLenLabel.setOpaque(true);
 	            	inputLenLabel.setBackground(Color.decode("#FFF5BF"));	
 	            	inputLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
@@ -173,7 +178,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
             	      }
             	      private void updateLen(DocumentEvent documentEvent) {
             	    	int len = inputArea.getText().length();
+            	    	int realLen = hv.calculateRealLen(inputArea.getText());
             	    	inputLenLabel.setText(""+len); 
+            	    	inputRealLenLabel.setText(""+realLen);
             	      }
             	    };
             	    inputArea.getDocument().addDocumentListener(documentListener);              	  
@@ -231,6 +238,11 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                outputScroll.setMinimumSize(new Dimension(300,500));
 	                final JLabel outputLabel = new JLabel("Output:");
 	                final JLabel outputLenLabel = new JLabel("0");
+	                final JLabel outputRealLenLabel = new JLabel("0");
+	                outputRealLenLabel.setOpaque(true);
+	                outputRealLenLabel.setForeground(Color.decode("#ffffff"));
+	            	outputRealLenLabel.setBackground(Color.decode("#ff0027"));
+	            	outputRealLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#CCCCCC"), 1));
 	                outputLenLabel.setOpaque(true);
 	                outputLenLabel.setBackground(Color.decode("#FFF5BF"));
 	                outputLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
@@ -246,7 +258,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
             	      }
             	      private void updateLen(DocumentEvent documentEvent) {
             	    	int len = outputArea.getText().length();
+            	    	int realLen = hv.calculateRealLen(outputArea.getText());            	    	
             	    	outputLenLabel.setText(""+len); 
+            	    	outputRealLenLabel.setText(""+realLen); 
             	      }
             	    };
             	    outputArea.getDocument().addDocumentListener(documentListener2);
@@ -345,6 +359,11 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                c.weightx = 0;
 	                c.anchor = GridBagConstraints.WEST;
 	                inputLabelsPanel.add(inputLenLabel,c);
+	                c = createConstraints(2,0,1);
+	                c.insets = new Insets(5,5,5,5);
+	                c.weightx = 0;
+	                c.anchor = GridBagConstraints.WEST;
+	                inputLabelsPanel.add(inputRealLenLabel,c);
 	                panel.add(inputLabelsPanel,createConstraints(0,2,1));
 	                panel.add(inputScroll,createConstraints(0,3,1));
 	                JPanel outputLabelsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -356,6 +375,10 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                c.insets = new Insets(5,5,5,5);
 	                c.weightx = 0;
 	                outputLabelsPanel.add(outputLenLabel,c);
+	                c = createConstraints(2,0,1);
+	                c.insets = new Insets(5,5,5,5);
+	                c.weightx = 0;
+	                outputLabelsPanel.add(outputRealLenLabel,c);
 	                panel.add(outputLabelsPanel,createConstraints(1,2,1));
 	                panel.add(outputScroll,createConstraints(1,3,1));	 	                
 	                panel.add(buttonsPanel,createConstraints(0,4,1));
@@ -920,6 +943,22 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 		public void setInput(String input) {
 			inputArea.setText(input);
 			inputArea.selectAll();
+		}
+		public int calculateRealLen(String str) {
+			int len = 0;
+			for(int i=0;i<str.length();i++) {
+				int cp = Character.codePointAt(str, i);
+				if(cp <= 0x007F) {
+					len++;
+				} else if(cp <= 0x07FF) {
+					len+=2;
+				} else if(cp <= 0xFFFF) {
+					len+=3;
+				} else if(cp <= 0x10FFFF) {
+					len+=4;
+				}		
+			}
+			return len;
 		}
 		private JPanel createButtons(String category) {
 			panel = new JPanel(new GridBagLayout());
