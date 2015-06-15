@@ -318,8 +318,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                final JButton clearTagsButton = new JButton("Clear tags");
 	                clearTagsButton.addActionListener(new ActionListener() {
 	                  public void actionPerformed(ActionEvent e) {	                	 	                	 
-	                	  String input = inputArea.getText();	                	 
-	                	  input = input.replaceAll("<@/?\\w+_\\d+>","");
+	                	  String input = inputArea.getText();
+	                	  String argumentsRegex = "(?:[(](?:,?(?:\\d+|'(?:\\\\'|[^']*)'|\"(?:\\\\\"|[^\"]*)\"))+[)])?";
+	                	  input = input.replaceAll("<@/?\\w+_\\d+"+argumentsRegex+">","");
 	                	  inputArea.setText(input);	                	  	                	  
 	                	  inputArea.requestFocus();
 	                  }
@@ -472,9 +473,20 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	class Tag {
 		public String category;
 		public String name;
+		public TagArgument argument1 = null;
+		public TagArgument argument2 = null;
+		public TagArgument argument3 = null;
 		Tag(String tagCategory, String tagName) {
 			this.category = tagCategory;
 			this.name = tagName;		
+		}
+	}
+	class TagArgument {
+		public String type;
+		public String value;
+		TagArgument(String type, String value) {
+			this.type = type;
+			this.value = value;
 		}
 	}
 	class Hackvertor {	
@@ -488,6 +500,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
         	tabs.addTab("Hash", createButtons("Hash"));
 		}
 		public void init() {
+			Tag tag;
 			tags.add(new Tag("Encode","base32"));
 			tags.add(new Tag("Encode","base64"));
 			tags.add(new Tag("Encode","html_entities"));
@@ -528,6 +541,13 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			tags.add(new Tag("String","from_charcode"));
 			tags.add(new Tag("String","to_charcode"));
 			tags.add(new Tag("String","reverse"));
+			tag = new Tag("String","replace");
+			tag.argument1 = new TagArgument("string","find");
+			tag.argument2 = new TagArgument("string","replace");
+			tags.add(tag);
+			tag = new Tag("String","repeat");
+			tag.argument1 = new TagArgument("int","100");
+			tags.add(tag);
 			tags.add(new Tag("Hash","sha1"));
 			tags.add(new Tag("Hash","sha256"));
 			tags.add(new Tag("Hash","sha384"));
@@ -801,6 +821,16 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 		public String reverse(String str) {
 			return new StringBuilder(str).reverse().toString();
 		}
+		public String replace(String str, String find, String replace) {
+			return str.replace(find, replace);
+		}
+		public String repeat(String str, int amount) {
+			String output = "";
+			for(int i=0;i<amount;i++) {
+				output += str;
+			}
+			return output;
+		}
 		public String auto_decode(String str) {
 			int repeats = 20;
 			int repeat = 0;
@@ -846,7 +876,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			} while(repeat < repeats);
 			return str;
 		}
-		private String callTag(String tag, String output) {
+		private String callTag(String tag, String output, ArrayList<String> arguments) {
 			if(tag.equals("html_entities")) {
 				output = this.html_entities(output);
 			} else if(tag.equals("d_html_entities")) {
@@ -905,6 +935,10 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 				output = this.to_charcode(output);
 			} else if(tag.equals("reverse")) {
 				output = this.reverse(output);
+			} else if(tag.equals("replace")) {
+				output = this.replace(output,arguments.isEmpty() ? "" : arguments.get(0),arguments.size()>=2 ? arguments.get(1) : "");	
+			} else if(tag.equals("repeat")) {
+				output = this.repeat(output, arguments.isEmpty() ? 0 : Integer.parseInt(arguments.get(0)));
 			} else if(tag.equals("dec2hex")) {
 				output = this.dec2hex(output);
 			} else if(tag.equals("dec2oct")) {
@@ -951,13 +985,16 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			 }
 			 for(String tagNameWithID:allMatches) {
 				 String code = "";
+				 String arguments = "";
 				 String tagName = tagNameWithID.replaceAll("_\\d+$","");
-				 m = Pattern.compile("<@"+tagNameWithID+">([\\d\\D]*?)<@/"+tagNameWithID+">").matcher(output);
+				 String argumentsRegex = "(?:[(](?:,?(?:\\d+|'(?:\\\\'|[^']*)'|\"(?:\\\\\"|[^\"]*)\"))+[)])?";
+				 m = Pattern.compile("<@"+tagNameWithID+"("+argumentsRegex+")>([\\d\\D]*?)<@/"+tagNameWithID+">").matcher(output);
 				 if(m.find()) {
-					code = m.group(1); 
+					arguments = m.group(1);
+					code = m.group(2); 
 				 } 	
-				 String result = this.callTag(tagName,code);
-				 output = output.replaceAll("<@"+tagNameWithID+">[\\d\\D]*?<@/"+tagNameWithID+">", result.replace("\\","\\\\").replace("$","\\$"));
+				 String result = this.callTag(tagName,code,this.parseArguments(arguments));
+				 output = output.replaceAll("<@"+tagNameWithID+argumentsRegex+">[\\d\\D]*?<@/"+tagNameWithID+">", result.replace("\\","\\\\").replace("$","\\$"));
 			 }
 			return output;			
 		}
@@ -981,11 +1018,62 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			}
 			return len;
 		}
+		private ArrayList<String> parseArguments(String arguments) {
+			if(arguments.length() == 0) {
+				return new ArrayList<String>();
+			}
+			arguments = arguments.substring(1, arguments.length()-1);
+			String argument1 = null;
+			String argument2 = null;
+			String argument3 = null;
+			ArrayList<String> convertedArgs = new ArrayList<String>();
+			String argumentRegex = "((?:,?(?:\\d+|'(?:\\\\'|[^']*)'|\"(?:\\\\\"|[^\"]*)\")))(,(?:,?(?:\\d+|'(?:\\\\'|[^']*)'|\"(?:\\\\\"|[^\"]*)\")))?(,(?:,?(?:\\d+|'(?:\\\\'|[^']*)'|\"(?:\\\\\"|[^\"]*)\")))?";			
+			Matcher m = Pattern.compile(argumentRegex).matcher(arguments);
+			 if(m.find()) {
+				argument1 = m.group(1);
+				argument2 = m.group(2);
+				argument3 = m.group(3);
+				if(argument1 != null) {
+					String chr = ""+argument1.charAt(0); 
+					if(chr.equals("'") || chr.equals("\"")) {
+						argument1 = argument1.substring(1, argument1.length()-1);
+						argument1 = argument1.replace("\\'", "'").replace("\\\"", "\"");						
+						convertedArgs.add(this.decode_js_string(argument1));
+					} else {
+						convertedArgs.add(argument1);
+					}
+				}
+				if(argument2 != null) {
+					argument2 = argument2.substring(1);
+					String chr = ""+argument2.charAt(0); 
+					if(chr.equals("'") || chr.equals("\"")) {
+						argument2 = argument2.substring(1, argument2.length()-1);
+						argument2 = argument2.replace("\\'", "'").replace("\\\"", "\"");
+						convertedArgs.add(this.decode_js_string(argument2));
+					} else {
+						convertedArgs.add(argument2);
+					}
+				}
+				if(argument3 != null) {
+					argument3 = argument3.substring(1);
+					String chr = ""+argument3.charAt(0); 
+					if(chr.equals("'") || chr.equals("\"")) {
+						argument3 = argument3.substring(1, argument3.length()-1);
+						argument3 = argument3.replace("\\'", "'").replace("\\\"", "\"");
+						convertedArgs.add(this.decode_js_string(argument3));
+					} else {
+						convertedArgs.add(argument3);
+					}
+				}
+			 } 
+			return convertedArgs;
+		}
 		private JPanel createButtons(String category) {
 			panel = new JPanel(new GridBagLayout());
 			GridBagConstraints c = new GridBagConstraints();
 			int i = 0;
 			for(Tag tagObj:tags) {
+				final Tag tag = tagObj;
 				if(category == tagObj.category) {
 					c.fill = GridBagConstraints.HORIZONTAL;
 	                c.weightx = 0.5;
@@ -996,6 +1084,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                final JButton btn = new JButton(tagObj.name);
 	                btn.setBackground(Color.decode("#005a70"));	            
 	            	btn.setForeground(Color.white);
+	            	btn.putClientProperty("tag", tagObj);
 	            	btn.addActionListener(new ActionListener() {
 	                  public void actionPerformed(ActionEvent e) {
 	                	  String selectedText = inputArea.getSelectedText();
@@ -1003,7 +1092,37 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                		  selectedText = inputArea.getText();
 	                		  inputArea.setText("");
 	                	  }
-	                	  String tagStart = "<@"+btn.getText()+"_"+tagCounter+">";
+	                	  String tagStart = "<@"+btn.getText()+"_"+tagCounter;
+	                	  if(tag.argument1 != null) {
+	                		  tagStart += "(";
+	                	  }
+	                	  if(tag.argument1 != null) {	                		 
+	                		  if(tag.argument1.type == "int") {
+	                			  tagStart += tag.argument1.value;
+	                		  } else if(tag.argument1.type == "string") {
+	                			  tagStart += "\"" + tag.argument1.value + "\"";
+	                		  }
+	                	  }
+	                	  if(tag.argument2 != null) {	                		 
+	                		  tagStart += ",";
+	                		  if(tag.argument2.type == "int") {
+	                			  tagStart += tag.argument2.value;
+	                		  } else if(tag.argument2.type == "string") {
+	                			  tagStart += "\"" + tag.argument2.value + "\"";
+	                		  }
+	                	  }
+	                	  if(tag.argument3 != null) {
+	                		  tagStart += ",";
+	                		  if(tag.argument3.type == "int") {
+	                			  tagStart += tag.argument3.value;
+	                		  } else if(tag.argument3.type == "string") {
+	                			  tagStart += "\"" + tag.argument3.value + "\"";
+	                		  }
+	                	  }
+	                	  if(tag.argument1 != null) {
+	                		  tagStart += ")";
+	                	  }
+	                	  tagStart += ">";
 	                	  String tagEnd = "<@/"+btn.getText()+"_"+tagCounter+">";	                	 
 	                	  inputArea.replaceSelection(tagStart+selectedText+tagEnd);
 	                	  tagCounter++;	 
