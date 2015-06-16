@@ -515,6 +515,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			tags.add(new Tag("Encode","css_escapes"));
 			tags.add(new Tag("Encode","css_escapes6"));
 			tags.add(new Tag("Encode","urlencode"));
+			tags.add(new Tag("Encode","php_chr"));
 			tags.add(new Tag("Decode","auto_decode"));
 			tags.add(new Tag("Decode","d_base32"));
 			tags.add(new Tag("Decode","d_base64"));
@@ -660,6 +661,13 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 		}
 		public String unicode_escapes(String str) {
 			return JavaScriptEscape.escapeJavaScript(str,JavaScriptEscapeType.UHEXA, JavaScriptEscapeLevel.LEVEL_4_ALL_CHARACTERS);
+		}
+		public String php_chr(String str) {
+			ArrayList<String> output = new ArrayList<String>();
+			for(int i=0;i<str.length();i++) {
+				output.add("chr("+Character.codePointAt(str, i)+")");
+			}
+			return StringUtils.join(output,".");
 		}
 		public String decode_js_string(String str) {
 			return JavaScriptEscape.unescapeJavaScript(str);
@@ -949,6 +957,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 				output = this.hex_escapes(output);
 			} else if(tag.equals("octal_escapes")) {
 				output = this.octal_escapes(output);
+			} else if(tag.equals("php_chr")) {
+				output = this.php_chr(output);	
 			} else if(tag.equals("auto_decode")) {
 				output = this.auto_decode(output);
 			} else if(tag.equals("d_octal_escapes")) {
@@ -1168,13 +1178,18 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			panel = new JPanel(new GridBagLayout());
 			GridBagConstraints c = new GridBagConstraints();
 			int i = 0;
+			int y = 0;
 			for(Tag tagObj:tags) {
 				final Tag tag = tagObj;
 				if(category == tagObj.category) {
+					if(i == 10) {
+						y++;
+						i = 0;
+					}
 					c.fill = GridBagConstraints.HORIZONTAL;
 	                c.weightx = 0.5;
-	                c.gridx = i;
-	                c.gridy = 0;
+	                c.gridx = i;	             
+	                c.gridy = y;
 	                c.ipady = 0;	
 	                c.gridwidth = 1;
 	                final JButton btn = new JButton(tagObj.name);
