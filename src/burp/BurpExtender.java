@@ -559,6 +559,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			tag = new Tag("Math","range");
 			tag.argument1 = new TagArgument("int","0");
 			tag.argument2 = new TagArgument("int","100");
+			tag.argument3 = new TagArgument("int","1");
 			tags.add(tag);
 			tags.add(new Tag("Math","total"));
 			tags.add(new Tag("XSS","behavior"));
@@ -913,11 +914,11 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			} while(repeat < repeats);
 			return str;
 		}
-		public String range(String str, int from, int to) {
+		public String range(String str, int from, int to, int step) {
 			ArrayList<Integer> output = new ArrayList<Integer>();
 			to++;
-			if(from >= 0 && to-from<=10000) {
-				for(int i=from;i<to;i++) {
+			if(from >= 0 && to-from<=10000 && step > 0) {
+				for(int i=from;i<to;i+=step) {
 					output.add(i);
 				}
 			}
@@ -1068,7 +1069,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			} else if(tag.equals("md5")) {
 				output = this.md5(output);
 			} else if(tag.equals("range")) {
-				output = this.range(output, this.getInt(arguments,0),this.getInt(arguments,1));
+				output = this.range(output, this.getInt(arguments,0),this.getInt(arguments,1),this.getInt(arguments,2));
 			} else if(tag.equals("total")) {
 				output = this.total(output);
 			} else if(tag.equals("behavior")) {
