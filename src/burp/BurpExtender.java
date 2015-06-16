@@ -499,6 +499,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
         	tabs.addTab("String", createButtons("String"));
         	tabs.addTab("Hash", createButtons("Hash"));
         	tabs.addTab("Math", createButtons("Math"));
+        	tabs.addTab("XSS", createButtons("XSS"));
 		}
 		public void init() {
 			Tag tag;
@@ -559,6 +560,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			tag.argument1 = new TagArgument("int","0");
 			tag.argument2 = new TagArgument("int","100");
 			tags.add(tag);
+			tags.add(new Tag("XSS","eval_fromcharcode"));
 		}
 		public String html_entities(String str) {
 			return StringEscapeUtils.escapeHtml4(str);
@@ -587,7 +589,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 		}	
 		public String urlencode(String str) {
 			try {
-	            str = URLEncoder.encode(str, "UTF-8");		          
+	            str = URLEncoder.encode(str, "UTF-8");		    
 	        } catch (UnsupportedEncodingException e) {
 	        	stderr.println(e.getMessage());
 	        }
@@ -703,24 +705,15 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 		}
 		public String from_charcode(String str) {
 		   String[] chars = str.split("[\\s,]");
-		   String output = "";
-		   if(str.length() == 1) {
+		   String output = "";	   
+		   for(int i=0;i<chars.length;i++) {
 			   try {
-				   output = Character.toString((char) Integer.parseInt(str));
+				   output += Character.toString((char) Integer.parseInt(chars[i]));
 			   } catch(NumberFormatException e){ 
 					stderr.println(e.getMessage()); 
 			   }
-			   return output;
-		   } else {
-			   for(int i=0;i<chars.length;i++) {
-				   try {
-					   output += Character.toString((char) Integer.parseInt(chars[i]));
-				   } catch(NumberFormatException e){ 
-						stderr.println(e.getMessage()); 
-				   }
-			   }
-			   return output;
 		   }
+		   return output;
 		}
 		public String to_charcode(String str) {
 			ArrayList<Integer> output = new ArrayList<Integer>();
@@ -893,6 +886,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			}
 			return StringUtils.join(output,",");
 		}
+		public String eval_fromcharcode(String str) {
+			return "eval(String.fromCharCode("+this.to_charcode(str)+"))";
+		}
 		private String callTag(String tag, String output, ArrayList<String> arguments) {
 			if(tag.equals("html_entities")) {
 				output = this.html_entities(output);
@@ -992,6 +988,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 				output = this.md5(output);
 			} else if(tag.equals("range")) {
 				output = this.range(output, this.getInt(arguments,0),this.getInt(arguments,1));
+			} else if(tag.equals("eval_fromcharcode")) {
+				output = this.eval_fromcharcode(output);
 			}
 			return output;
 		}
