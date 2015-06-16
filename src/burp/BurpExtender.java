@@ -1185,8 +1185,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                  public void actionPerformed(ActionEvent e) {
 	                	  String selectedText = inputArea.getSelectedText();
 	                	  if(selectedText == null) {
-	                		  selectedText = inputArea.getText();
-	                		  inputArea.setText("");
+	                		  selectedText = "";	        
 	                	  }
 	                	  String tagStart = "<@"+btn.getText()+"_"+tagCounter;
 	                	  if(tag.argument1 != null) {
