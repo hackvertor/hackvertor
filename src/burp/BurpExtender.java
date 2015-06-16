@@ -516,6 +516,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			tags.add(new Tag("Encode","css_escapes6"));
 			tags.add(new Tag("Encode","urlencode"));
 			tags.add(new Tag("Encode","php_chr"));
+			tags.add(new Tag("Encode","sql_hex"));
 			tags.add(new Tag("Decode","auto_decode"));
 			tags.add(new Tag("Decode","d_base32"));
 			tags.add(new Tag("Decode","d_base64"));
@@ -668,6 +669,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 				output.add("chr("+Character.codePointAt(str, i)+")");
 			}
 			return StringUtils.join(output,".");
+		}
+		public String sql_hex(String str) {
+			return "0x"+this.ascii2hex(str, "");
 		}
 		public String decode_js_string(String str) {
 			return JavaScriptEscape.unescapeJavaScript(str);
@@ -958,7 +962,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			} else if(tag.equals("octal_escapes")) {
 				output = this.octal_escapes(output);
 			} else if(tag.equals("php_chr")) {
-				output = this.php_chr(output);	
+				output = this.php_chr(output);
+			} else if(tag.equals("sql_hex")) {
+				output = this.sql_hex(output);	
 			} else if(tag.equals("auto_decode")) {
 				output = this.auto_decode(output);
 			} else if(tag.equals("d_octal_escapes")) {
