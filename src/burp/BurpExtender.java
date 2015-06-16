@@ -117,15 +117,12 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	            	inputArea.setMinimumSize(new Dimension(300,500));	
 	            	final UndoManager undo = new UndoManager();
             	    Document doc = inputArea.getDocument();
-            	    
-            	   // Listen for undo and redo events            	
+            	                	
             	   doc.addUndoableEditListener(new UndoableEditListener() {
             	       public void undoableEditHappened(UndoableEditEvent evt) {
             	           undo.addEdit(evt.getEdit());
             	       }
-            	   });
-            	    
-            	   // Create an undo action and add it to the text component
+            	   });            	               	
             	   inputArea.getActionMap().put("Undo",
             	       new AbstractAction("Undo") {
             	           public void actionPerformed(ActionEvent evt) {
@@ -136,12 +133,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
             	               } catch (CannotUndoException e) {
             	               }
             	           }
-            	      });
-            	    
-            	   // Bind the undo action to ctl-Z
-            	   inputArea.getInputMap().put(KeyStroke.getKeyStroke("control Z"), "Undo");
-            	    
-            	   // Create a redo action and add it to the text component
+            	      });            	              	   
+            	   inputArea.getInputMap().put(KeyStroke.getKeyStroke("control Z"), "Undo");            	               	   
             	   inputArea.getActionMap().put("Redo",
             	       new AbstractAction("Redo") {
             	           public void actionPerformed(ActionEvent evt) {
@@ -905,7 +898,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 						matched = true;	
 					}
 				}
-				if(Pattern.compile("^[a-f0-9/]+$",Pattern.CASE_INSENSITIVE).matcher(str).find() && str.length() % 2 == 0) {
+				if(Pattern.compile("^[a-f0-9/]{4,}$",Pattern.CASE_INSENSITIVE).matcher(str).find() && str.length() % 2 == 0) {
 					test = this.hex2ascii(str);
 					if(Pattern.compile("^[\\x00-\\x7f]+$",Pattern.CASE_INSENSITIVE).matcher(test).find()) {
 						str = test;
