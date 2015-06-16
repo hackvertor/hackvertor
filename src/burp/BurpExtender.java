@@ -543,6 +543,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			tags.add(new Tag("String","from_charcode"));
 			tags.add(new Tag("String","to_charcode"));
 			tags.add(new Tag("String","reverse"));
+			tag = new Tag("String","find");
+			tag.argument1 = new TagArgument("string","find");
+			tags.add(tag);
 			tag = new Tag("String","replace");
 			tag.argument1 = new TagArgument("string","find");
 			tag.argument2 = new TagArgument("string","replace");
@@ -827,6 +830,14 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 		public String reverse(String str) {
 			return new StringBuilder(str).reverse().toString();
 		}
+		public String find(String str, String find) {
+			List<String> allMatches = new ArrayList<String>();
+			 Matcher m = Pattern.compile(find).matcher(str);
+			 while (m.find()) {
+			   allMatches.add(m.group());
+			 }
+			 return StringUtils.join(allMatches,",");
+		}
 		public String replace(String str, String find, String replace) {
 			return str.replace(find, replace);
 		}
@@ -980,6 +991,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 				output = this.to_charcode(output);
 			} else if(tag.equals("reverse")) {
 				output = this.reverse(output);
+			} else if(tag.equals("find")) {
+				output = this.find(output,this.getString(arguments,0));	
 			} else if(tag.equals("replace")) {
 				output = this.replace(output,this.getString(arguments,0),this.getString(arguments,1));
 			} else if(tag.equals("regex_replace")) {
