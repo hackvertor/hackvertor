@@ -547,6 +547,10 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			tag.argument1 = new TagArgument("string","find");
 			tag.argument2 = new TagArgument("string","replace");
 			tags.add(tag);
+			tag = new Tag("String","regex_replace");
+			tag.argument1 = new TagArgument("string","find");
+			tag.argument2 = new TagArgument("string","replace");
+			tags.add(tag);
 			tag = new Tag("String","repeat");
 			tag.argument1 = new TagArgument("int","100");
 			tags.add(tag);
@@ -826,6 +830,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 		public String replace(String str, String find, String replace) {
 			return str.replace(find, replace);
 		}
+		public String regex_replace(String str, String find, String replace) {
+			return str.replaceAll(find, replace.replace("\\","\\\\").replace("$","\\$"));
+		}
 		public String repeat(String str, int amount) {
 			String output = "";
 			if(amount > 0 && amount < 10000) {
@@ -974,7 +981,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			} else if(tag.equals("reverse")) {
 				output = this.reverse(output);
 			} else if(tag.equals("replace")) {
-				output = this.replace(output,this.getString(arguments,0),this.getString(arguments,1));	
+				output = this.replace(output,this.getString(arguments,0),this.getString(arguments,1));
+			} else if(tag.equals("regex_replace")) {
+				output = this.regex_replace(output,this.getString(arguments,0),this.getString(arguments,1));	
 			} else if(tag.equals("repeat")) {
 				output = this.repeat(output, this.getInt(arguments, 0));
 			} else if(tag.equals("dec2hex")) {
