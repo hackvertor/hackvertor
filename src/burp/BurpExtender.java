@@ -905,6 +905,13 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 						matched = true;	
 					}
 				}
+				if(Pattern.compile("^[a-f0-9/]+$",Pattern.CASE_INSENSITIVE).matcher(str).find() && str.length() % 2 == 0) {
+					test = this.hex2ascii(str);
+					if(Pattern.compile("^[\\x00-\\x7f]+$",Pattern.CASE_INSENSITIVE).matcher(test).find()) {
+						str = test;
+						matched = true;	
+					}
+				}
 				if(!matched) {
 					break;
 				}
