@@ -17,6 +17,7 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -1211,6 +1212,14 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			GridBagConstraints c = new GridBagConstraints();
 			int i = 0;
 			int y = 0;
+			
+			Collections.sort(tags, new Comparator<Tag>() {
+		        @Override public int compare(Tag t1, Tag t2) {
+		            return t1.name.compareToIgnoreCase(t2.name);
+		        }
+
+		    });
+			
 			for(Tag tagObj:tags) {
 				final Tag tag = tagObj;
 				if(category == tagObj.category) {
