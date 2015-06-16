@@ -317,12 +317,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                selectOutputButton.setBackground(Color.black);
 	                final JButton clearTagsButton = new JButton("Clear tags");
 	                clearTagsButton.addActionListener(new ActionListener() {
-	                  public void actionPerformed(ActionEvent e) {	                	 	                	 
-	                	  String input = inputArea.getText();
-	                	  String argumentsRegex = "(?:[(](?:,?(?:\\d+|'(?:\\\\'|[^']*)'|\"(?:\\\\\"|[^\"]*)\"))+[)])?";
-	                	  input = input.replaceAll("<@/?\\w+_\\d+"+argumentsRegex+">","");
-	                	  inputArea.setText(input);	                	  	                	  
-	                	  inputArea.requestFocus();
+	                  public void actionPerformed(ActionEvent e) {	                	 	                	 	                	  	                	
+	                	  hv.clearTags();	                	
 	                  }
 	                });
 	                clearTagsButton.setForeground(Color.white);
@@ -491,6 +487,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	}
 	class Hackvertor {	
 		private int tagCounter = 0;
+		private String argumentsRegex = "(?:\\d+|'(?:\\\\'|[^']*)'|\"(?:\\\\\"|[^\"]*)\")";
 		private ArrayList<Tag> tags = new ArrayList<Tag>();
 		public void buildTabs(JTabbedPane tabs) {
 			tabs.addTab("Encode", createButtons("Encode"));
@@ -1088,6 +1085,12 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			}
 			return output;
 		}
+		public void clearTags() {
+			String input = inputArea.getText();	                	
+			input = input.replaceAll("<@/?\\w+_\\d+(?:[(](?:,?"+argumentsRegex+")*[)])?>","");
+      	  	inputArea.setText(input);	                	  	                	  
+      	  	inputArea.requestFocus();
+		}
 		public String convert(String input) {
 			String output = input;
 			List<String> allMatches = new ArrayList<String>();
@@ -1098,15 +1101,14 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			 for(String tagNameWithID:allMatches) {
 				 String code = "";
 				 String arguments = "";
-				 String tagName = tagNameWithID.replaceAll("_\\d+$","");
-				 String argumentsRegex = "(?:[(](?:,?(?:\\d+|'(?:\\\\'|[^']*)'|\"(?:\\\\\"|[^\"]*)\"))+[)])?";
-				 m = Pattern.compile("<@"+tagNameWithID+"("+argumentsRegex+")>([\\d\\D]*?)<@/"+tagNameWithID+">").matcher(output);
+				 String tagName = tagNameWithID.replaceAll("_\\d+$","");				 
+				 m = Pattern.compile("<@"+tagNameWithID+"((?:[(](?:,?"+argumentsRegex+")*[)])?)>([\\d\\D]*?)<@/"+tagNameWithID+">").matcher(output);
 				 if(m.find()) {
 					arguments = m.group(1);
 					code = m.group(2); 
 				 } 	
 				 String result = this.callTag(tagName,code,this.parseArguments(arguments));
-				 output = output.replaceAll("<@"+tagNameWithID+argumentsRegex+">[\\d\\D]*?<@/"+tagNameWithID+">", result.replace("\\","\\\\").replace("$","\\$"));
+				 output = output.replaceAll("<@"+tagNameWithID+"(?:[(](?:,?"+argumentsRegex+")*[)])?>[\\d\\D]*?<@/"+tagNameWithID+">", result.replace("\\","\\\\").replace("$","\\$"));
 			 }
 			return output;			
 		}
@@ -1157,8 +1159,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			String argument2 = null;
 			String argument3 = null;
 			ArrayList<String> convertedArgs = new ArrayList<String>();
-			String argumentRegex = "((?:,?(?:\\d+|'(?:\\\\'|[^']*)'|\"(?:\\\\\"|[^\"]*)\")))(,(?:,?(?:\\d+|'(?:\\\\'|[^']*)'|\"(?:\\\\\"|[^\"]*)\")))?(,(?:,?(?:\\d+|'(?:\\\\'|[^']*)'|\"(?:\\\\\"|[^\"]*)\")))?";			
-			Matcher m = Pattern.compile(argumentRegex).matcher(arguments);
+			String regex = "("+argumentsRegex+")(,"+argumentsRegex+")?(,"+argumentsRegex+")?";			
+			Matcher m = Pattern.compile(regex).matcher(arguments);
 			 if(m.find()) {
 				argument1 = m.group(1);
 				argument2 = m.group(2);
