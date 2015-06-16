@@ -869,7 +869,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 					str = this.from_charcode(str);
 					matched = true;
 				}
-				if(Pattern.compile("style[\\s]*=",Pattern.CASE_INSENSITIVE).matcher(str).find()) {
+				if(Pattern.compile("(?:<style[^>]*>|style[\\s]*=)",Pattern.CASE_INSENSITIVE).matcher(str).find()) {
 					str = this.decode_css_escapes(str);
 					matched = true;
 				}
