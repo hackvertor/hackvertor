@@ -498,6 +498,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
         	tabs.addTab("Convert", createButtons("Convert"));
         	tabs.addTab("String", createButtons("String"));
         	tabs.addTab("Hash", createButtons("Hash"));
+        	tabs.addTab("Math", createButtons("Math"));
 		}
 		public void init() {
 			Tag tag;
@@ -554,6 +555,10 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			tags.add(new Tag("Hash","sha512"));
 			tags.add(new Tag("Hash","md2"));
 			tags.add(new Tag("Hash","md5"));
+			tag = new Tag("Math","range");
+			tag.argument1 = new TagArgument("int","0");
+			tag.argument2 = new TagArgument("int","100");
+			tags.add(tag);
 		}
 		public String html_entities(String str) {
 			return StringEscapeUtils.escapeHtml4(str);
@@ -826,8 +831,10 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 		}
 		public String repeat(String str, int amount) {
 			String output = "";
-			for(int i=0;i<amount;i++) {
-				output += str;
+			if(amount > 0 && amount < 10000) {
+				for(int i=0;i<amount;i++) {
+					output += str;
+				}
 			}
 			return output;
 		}
@@ -875,6 +882,16 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 				repeat++;
 			} while(repeat < repeats);
 			return str;
+		}
+		public String range(String str, int from, int to) {
+			ArrayList<Integer> output = new ArrayList<Integer>();
+			to++;
+			if(from >= 0 && to-from<=10000) {
+				for(int i=from;i<to;i++) {
+					output.add(i);
+				}
+			}
+			return StringUtils.join(output,",");
 		}
 		private String callTag(String tag, String output, ArrayList<String> arguments) {
 			if(tag.equals("html_entities")) {
@@ -936,9 +953,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			} else if(tag.equals("reverse")) {
 				output = this.reverse(output);
 			} else if(tag.equals("replace")) {
-				output = this.replace(output,arguments.isEmpty() ? "" : arguments.get(0),arguments.size()>=2 ? arguments.get(1) : "");	
+				output = this.replace(output,this.getString(arguments,0),this.getString(arguments,1));	
 			} else if(tag.equals("repeat")) {
-				output = this.repeat(output, arguments.isEmpty() ? 0 : Integer.parseInt(arguments.get(0)));
+				output = this.repeat(output, this.getInt(arguments, 0));
 			} else if(tag.equals("dec2hex")) {
 				output = this.dec2hex(output);
 			} else if(tag.equals("dec2oct")) {
@@ -973,6 +990,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 				output = this.md2(output);
 			} else if(tag.equals("md5")) {
 				output = this.md5(output);
+			} else if(tag.equals("range")) {
+				output = this.range(output, this.getInt(arguments,0),this.getInt(arguments,1));
 			}
 			return output;
 		}
@@ -1017,6 +1036,24 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 				}		
 			}
 			return len;
+		}
+		private String getString(ArrayList<String> args,Integer pos) {
+			if(args.size() < pos+1) {
+				return "";
+			}
+			return args.get(pos);
+		}
+		private Integer getInt(ArrayList<String> args,Integer pos) {
+			Integer output = 0;
+			if(args.size() < pos+1) {
+				return 0;
+			}
+			try {
+				output = Integer.parseInt(args.get(pos));
+			} catch(NumberFormatException e){
+				stderr.println(e.getMessage());
+			}
+			return output;
 		}
 		private ArrayList<String> parseArguments(String arguments) {
 			if(arguments.length() == 0) {
