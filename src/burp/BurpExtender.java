@@ -575,8 +575,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			tags.add(new Tag("XSS","datasrc"));
 			tags.add(new Tag("XSS","eval_fromcharcode"));
 			tags.add(new Tag("XSS","iframe_data_url"));
+			tags.add(new Tag("XSS","iframe_src_doc"));
 			tags.add(new Tag("XSS","script_data"));
-			tags.add(new Tag("XSS","uppercase_script"));
+			tags.add(new Tag("XSS","uppercase_script"));			
 		}
 		public String html_entities(String str) {
 			return StringEscapeUtils.escapeHtml4(str);
@@ -956,6 +957,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 		public String script_data(String str) {
 			return "<script src=data:;base64,"+this.base64Encode(str)+"></script>";
 		}
+		public String iframe_src_doc(String str) {
+			return "<iframe srcdoc="+this.html5_entities(str)+"></iframe>";
+		}
 		private String callTag(String tag, String output, ArrayList<String> arguments) {
 			if(tag.equals("html_entities")) {
 				output = this.html_entities(output);
@@ -1079,6 +1083,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 				output = this.script_data(output);
 			} else if(tag.equals("uppercase_script")) {
 				output = this.uppercase_script(output);
+			} else if(tag.equals("iframe_src_doc")) {
+				output = this.iframe_src_doc(output);
 			}
 			return output;
 		}
