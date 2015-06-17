@@ -567,7 +567,12 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			tag.argument1 = new TagArgument("int","10");
 			tag.argument2 = new TagArgument("string","+");
 			tag.argument3 = new TagArgument("string",",");
-			tags.add(tag);			
+			tags.add(tag);
+			tag = new Tag("Math","convert_base");
+			tag.argument1 = new TagArgument("string",",");
+			tag.argument2 = new TagArgument("int","from");
+			tag.argument3 = new TagArgument("int","to");
+			tags.add(tag);
 			tags.add(new Tag("XSS","behavior"));
 			tags.add(new Tag("XSS","css_expression"));
 			tags.add(new Tag("XSS","datasrc"));
@@ -992,6 +997,18 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 		   }
 		   return StringUtils.join(output, ",");
 		}
+		public String convert_base(String str, String splitChar, int from, int to) {
+			String[] chars = str.split(splitChar);
+			int total = 0;
+			for(int i=0;i<chars.length;i++) {
+				try {
+					chars[i] = ""+Integer.toString(Integer.parseInt(chars[i], from), to);
+				} catch(NumberFormatException e){
+					stderr.println(e.getMessage());
+				}				
+			}
+			return StringUtils.join(chars, ",");
+		}
 		public String eval_fromcharcode(String str) {
 			return "eval(String.fromCharCode("+this.to_charcode(str)+"))";
 		}
@@ -1129,7 +1146,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			} else if(tag.equals("total")) {
 				output = this.total(output);
 			} else if(tag.equals("arithmetic")) {
-				output = this.arithmetic(output, this.getInt(arguments, 0), this.getString(arguments, 1), this.getString(arguments, 2));				
+				output = this.arithmetic(output, this.getInt(arguments, 0), this.getString(arguments, 1), this.getString(arguments, 2));
+			} else if(tag.equals("convert_base")) {
+				output = this.convert_base(output, this.getString(arguments, 0), this.getInt(arguments, 1), this.getInt(arguments, 2));	
 			} else if(tag.equals("behavior")) {
 				output = this.behavior(output);
 			} else if(tag.equals("css_expression")) {
