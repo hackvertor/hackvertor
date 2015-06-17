@@ -580,6 +580,10 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			tag.argument2 = new TagArgument("int","from");
 			tag.argument3 = new TagArgument("int","to");
 			tags.add(tag);
+			tag = new Tag("Math","zeropad");
+			tag.argument1 = new TagArgument("string",",");
+			tag.argument2 = new TagArgument("int","2");
+			tags.add(tag);
 			tags.add(new Tag("XSS","behavior"));
 			tags.add(new Tag("XSS","css_expression"));
 			tags.add(new Tag("XSS","datasrc"));
@@ -702,7 +706,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			}
 			for(int i=0;i<chars.length;i++) {
 				try {
-					chars[i] = Integer.toHexString(Integer.parseInt(chars[i]));	
+					chars[i] = this.zeropad(Integer.toHexString(Integer.parseInt(chars[i])),",",2);	
 				} catch(NumberFormatException e){
 					stderr.println(e.getMessage());
 				}				
@@ -1074,6 +1078,20 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			}
 			return StringUtils.join(chars, ",");
 		}
+		public String zeropad(String str, String splitChar, int amount) {
+			String[] chars = {};
+			try {
+				chars = str.split(splitChar);
+			} catch(PatternSyntaxException e) {
+				stderr.println(e.getMessage());				
+			}
+			if(amount > 0 && amount < 10000) {
+				for(int i=0;i<chars.length;i++) {
+					chars[i] = StringUtils.leftPad(chars[i], amount, '0');
+				}
+			}
+			return StringUtils.join(chars, ",");
+		}
 		public String eval_fromcharcode(String str) {
 			return "eval(String.fromCharCode("+this.to_charcode(str)+"))";
 		}
@@ -1213,7 +1231,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			} else if(tag.equals("arithmetic")) {
 				output = this.arithmetic(output, this.getInt(arguments, 0), this.getString(arguments, 1), this.getString(arguments, 2));
 			} else if(tag.equals("convert_base")) {
-				output = this.convert_base(output, this.getString(arguments, 0), this.getInt(arguments, 1), this.getInt(arguments, 2));	
+				output = this.convert_base(output, this.getString(arguments, 0), this.getInt(arguments, 1), this.getInt(arguments, 2));
+			} else if(tag.equals("zeropad")) {
+				output = this.zeropad(output, this.getString(arguments, 0), this.getInt(arguments, 1));	
 			} else if(tag.equals("behavior")) {
 				output = this.behavior(output);
 			} else if(tag.equals("css_expression")) {
