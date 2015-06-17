@@ -519,12 +519,24 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			tags.add(new Tag("Decode","d_css_escapes"));
 			tags.add(new Tag("Decode","d_octal_escapes"));
 			tags.add(new Tag("Decode","d_unicode_escapes"));
-			tags.add(new Tag("Convert","dec2hex"));
-			tags.add(new Tag("Convert","dec2oct"));
-			tags.add(new Tag("Convert","dec2bin"));
-			tags.add(new Tag("Convert","hex2dec"));
-			tags.add(new Tag("Convert","oct2dec"));
-			tags.add(new Tag("Convert","bin2dec"));
+			tag = new Tag("Convert","dec2hex");
+			tag.argument1 = new TagArgument("string",",");
+			tags.add(tag);
+			tag = new Tag("Convert","dec2oct");
+			tag.argument1 = new TagArgument("string",",");
+			tags.add(tag);
+			tag = new Tag("Convert","dec2bin");
+			tag.argument1 = new TagArgument("string",",");
+			tags.add(tag);
+			tag = new Tag("Convert","hex2dec");
+			tag.argument1 = new TagArgument("string",",");
+			tags.add(tag);
+			tag = new Tag("Convert","oct2dec");
+			tag.argument1 = new TagArgument("string",",");
+			tags.add(tag);
+			tag = new Tag("Convert","bin2dec");
+			tag.argument1 = new TagArgument("string",",");
+			tags.add(tag);
 			tags.add(new Tag("Convert","ascii2bin"));
 			tags.add(new Tag("Convert","bin2ascii"));
 			tags.add(new Tag("Convert","ascii2hex"));
@@ -686,53 +698,101 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 		public String decode_css_escapes(String str) {
 			return CssEscape.unescapeCss(str);
 		}
-		public String dec2hex(String str) {
-			try{
-				str = Integer.toHexString(Integer.parseInt(str));
-			} catch(NumberFormatException e){ 
-				stderr.println(e.getMessage()); 
+		public String dec2hex(String str, String splitChar) {
+			String[] chars = {};
+			try {
+				chars = str.split(splitChar);
+			} catch(PatternSyntaxException e) {
+				stderr.println(e.getMessage());				
 			}
-			return str;
+			for(int i=0;i<chars.length;i++) {
+				try {
+					chars[i] = Integer.toHexString(Integer.parseInt(chars[i]));	
+				} catch(NumberFormatException e){
+					stderr.println(e.getMessage());
+				}				
+			}
+			return StringUtils.join(chars, ",");
 		}
-		public String dec2oct(String str) {
-			try{
-				str = Integer.toOctalString(Integer.parseInt(str));
-			} catch(NumberFormatException e){ 
-				stderr.println(e.getMessage()); 
+		public String dec2oct(String str, String splitChar) {
+			String[] chars = {};
+			try {
+				chars = str.split(splitChar);
+			} catch(PatternSyntaxException e) {
+				stderr.println(e.getMessage());				
+			}		
+			for(int i=0;i<chars.length;i++) {
+				try {
+					chars[i] = Integer.toOctalString(Integer.parseInt(chars[i]));	
+				} catch(NumberFormatException e){
+					stderr.println(e.getMessage());
+				}				
 			}
-			return str;
+			return StringUtils.join(chars, ",");
 		}
-		public String dec2bin(String str) {
-			try{
-				str = Integer.toBinaryString(Integer.parseInt(str));
-			} catch(NumberFormatException e){ 
-				stderr.println(e.getMessage()); 
+		public String dec2bin(String str, String splitChar) {
+			String[] chars = {};
+			try {
+				chars = str.split(splitChar);
+			} catch(PatternSyntaxException e) {
+				stderr.println(e.getMessage());				
+			}		
+			for(int i=0;i<chars.length;i++) {
+				try {
+					chars[i] = Integer.toBinaryString(Integer.parseInt(chars[i]));	
+				} catch(NumberFormatException e){
+					stderr.println(e.getMessage());
+				}				
 			}
-			return str;
+			return StringUtils.join(chars, ",");
 		}
-		public String hex2dec(String str) {
-			try{
-				str = Integer.toString(Integer.parseInt(str,16));
-			} catch(NumberFormatException e){ 
-				stderr.println(e.getMessage()); 
+		public String hex2dec(String str, String splitChar) {
+			String[] chars = {};
+			try {
+				chars = str.split(splitChar);
+			} catch(PatternSyntaxException e) {
+				stderr.println(e.getMessage());				
+			}		
+			for(int i=0;i<chars.length;i++) {
+				try {
+					chars[i] = Integer.toString(Integer.parseInt(chars[i],16));	
+				} catch(NumberFormatException e){
+					stderr.println(e.getMessage());
+				}				
 			}
-			return str;
+			return StringUtils.join(chars, ",");
 		}
-		public String oct2dec(String str) {
-			try{
-				str = Integer.toString(Integer.parseInt(str,8));
-			} catch(NumberFormatException e){ 
-				stderr.println(e.getMessage()); 
+		public String oct2dec(String str, String splitChar) {			
+			String[] chars = {};
+			try {
+				chars = str.split(splitChar);
+			} catch(PatternSyntaxException e) {
+				stderr.println(e.getMessage());				
+			}		
+			for(int i=0;i<chars.length;i++) {
+				try {
+					chars[i] = Integer.toString(Integer.parseInt(chars[i],8));	
+				} catch(NumberFormatException e){
+					stderr.println(e.getMessage());
+				}				
 			}
-			return str;
+			return StringUtils.join(chars, ",");
 		}
-		public String bin2dec(String str) {
-			try{
-				str = Integer.toString(Integer.parseInt(str,2));
-			} catch(NumberFormatException e){ 
-				stderr.println(e.getMessage()); 
+		public String bin2dec(String str, String splitChar) {
+			String[] chars = {};
+			try {
+				chars = str.split(splitChar);
+			} catch(PatternSyntaxException e) {
+				stderr.println(e.getMessage());				
+			}		
+			for(int i=0;i<chars.length;i++) {
+				try {
+					chars[i] = Integer.toString(Integer.parseInt(chars[i],2));	
+				} catch(NumberFormatException e){
+					stderr.println(e.getMessage());
+				}				
 			}
-			return str;
+			return StringUtils.join(chars, ",");
 		}
 		public String from_charcode(String str) {
 		   String[] chars = str.split("[\\s,]");
@@ -958,7 +1018,12 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			return Integer.toString(total);
 		}
 		public String arithmetic(String str, int amount, String operation, String splitChar) {
-			String[] chars = str.split(splitChar);
+			String[] chars = {};
+			try {
+				chars = str.split(splitChar);
+			} catch(PatternSyntaxException e) {
+				stderr.println(e.getMessage());				
+			}
 			ArrayList<String> output = new ArrayList<String>();
 			int num = 0;
 			for(int i=0;i<chars.length;i++) {
@@ -998,7 +1063,12 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 		   return StringUtils.join(output, ",");
 		}
 		public String convert_base(String str, String splitChar, int from, int to) {
-			String[] chars = str.split(splitChar);
+			String[] chars = {};
+			try {
+				chars = str.split(splitChar);
+			} catch(PatternSyntaxException e) {
+				stderr.println(e.getMessage());				
+			}
 			int total = 0;
 			for(int i=0;i<chars.length;i++) {
 				try {
@@ -1108,17 +1178,17 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			} else if(tag.equals("repeat")) {
 				output = this.repeat(output, this.getInt(arguments, 0));
 			} else if(tag.equals("dec2hex")) {
-				output = this.dec2hex(output);
+				output = this.dec2hex(output,this.getString(arguments,0));
 			} else if(tag.equals("dec2oct")) {
-				output = this.dec2oct(output);
+				output = this.dec2oct(output,this.getString(arguments,0));
 			} else if(tag.equals("dec2bin")) {
-				output = this.dec2bin(output);
+				output = this.dec2bin(output,this.getString(arguments,0));
 			} else if(tag.equals("hex2dec")) {
-				output = this.hex2dec(output);
+				output = this.hex2dec(output,this.getString(arguments,0));
 			} else if(tag.equals("oct2dec")) {
-				output = this.oct2dec(output);
+				output = this.oct2dec(output,this.getString(arguments,0));
 			} else if(tag.equals("bin2dec")) {
-				output = this.bin2dec(output);
+				output = this.bin2dec(output,this.getString(arguments,0));
 			} else if(tag.equals("ascii2bin")) {
 				output = this.ascii2bin(output);
 			} else if(tag.equals("bin2ascii")) {
