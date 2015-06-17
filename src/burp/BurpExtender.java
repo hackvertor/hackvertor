@@ -106,7 +106,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	            @Override
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v0.6");
+	            	stdout.println("Hackvertor v0.6.1");
 	            	JTabbedPane tabs = new JTabbedPane();
 	            	hv = new Hackvertor();
 	            	hv.init();
