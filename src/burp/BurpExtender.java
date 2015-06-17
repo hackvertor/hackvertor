@@ -562,6 +562,11 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			tag.argument3 = new TagArgument("int","1");
 			tags.add(tag);
 			tags.add(new Tag("Math","total"));
+			tag = new Tag("Math","arithmetic");
+			tag.argument1 = new TagArgument("int","10");
+			tag.argument2 = new TagArgument("string","+");
+			tag.argument3 = new TagArgument("string",",");
+			tags.add(tag);			
 			tags.add(new Tag("XSS","behavior"));
 			tags.add(new Tag("XSS","css_expression"));
 			tags.add(new Tag("XSS","datasrc"));
@@ -936,6 +941,46 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			}
 			return Integer.toString(total);
 		}
+		public String arithmetic(String str, int amount, String operation, String splitChar) {
+			String[] chars = str.split(splitChar);
+			ArrayList<String> output = new ArrayList<String>();
+			int num = 0;
+			for(int i=0;i<chars.length;i++) {
+			   try {
+				   num = Integer.parseInt(chars[i]);
+				   switch(operation) {
+				   		case "+":
+				   			num = num + amount;
+				   		break;
+				   		case "-":
+				   			num = num - amount;
+				   		break;
+				   		case "/":
+				   			num = num / amount;
+				   		break;				   		
+				   		case "*":
+				   			num = num * amount;
+				   		break;
+				   		case "%":
+				   			num = num % amount;
+				   		break;
+				   		case ">>":
+				   			num = num >> amount;
+				   		break;
+				   		case ">>>":
+				   			num = num >>> amount;
+				   		break;
+				   		case "<<":
+				   			num = num << amount;
+				   		break;				 
+				   }
+				   output.add(""+num);
+			   } catch(NumberFormatException e){ 
+					stderr.println(e.getMessage()); 
+			   }
+		   }
+		   return StringUtils.join(output, ",");
+		}
 		public String eval_fromcharcode(String str) {
 			return "eval(String.fromCharCode("+this.to_charcode(str)+"))";
 		}
@@ -1072,6 +1117,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 				output = this.range(output, this.getInt(arguments,0),this.getInt(arguments,1),this.getInt(arguments,2));
 			} else if(tag.equals("total")) {
 				output = this.total(output);
+			} else if(tag.equals("arithmetic")) {
+				output = this.arithmetic(output, this.getInt(arguments, 0), this.getString(arguments, 1), this.getString(arguments, 2));				
 			} else if(tag.equals("behavior")) {
 				output = this.behavior(output);
 			} else if(tag.equals("css_expression")) {
