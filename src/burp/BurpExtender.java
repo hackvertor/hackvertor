@@ -110,12 +110,14 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	            	hv.buildTabs(tabs);
 	            	JPanel topBar = new JPanel(new GridBagLayout());	     	
 	            	JLabel logoLabel = new JLabel(createImageIcon("/burp/images/logo.gif","logo"));
-	            	final JTextArea hexView = new JTextArea(20,10);	                
+	            	final JTextArea hexView = new JTextArea(20,10);	          
 	                hexView.setOpaque(true);	            
 	                hexView.setBackground(new Color(0,0,0,0));
 					hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 0));
 					hexView.setEditable(false);
-					hexView.setLineWrap(true);			
+					hexView.setLineWrap(true);	
+					final JScrollPane hexScroll = new JScrollPane(hexView);
+					hexScroll.setMinimumSize(new Dimension(500,100));
 	            	JPanel buttonsPanel = new JPanel(new GridBagLayout());	            
 	            	panel = new JPanel(new GridBagLayout());  
 	            	inputArea = new JTextArea(20,10);    
@@ -205,7 +207,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 						@Override
 						public void caretUpdate(CaretEvent e) {
 							String selectedText = inputArea.getSelectedText();
-							if(selectedText != null && selectedText.length() <= 1000) {			
+							if(selectedText != null) {			
 								hexView.setBackground(Color.decode("#FFF5BF"));
 								hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
 								String output = hv.ascii2hex(selectedText, " ");
@@ -225,7 +227,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 						@Override
 						public void caretUpdate(CaretEvent e) {
 							String selectedText = outputArea.getSelectedText();
-							if(selectedText != null && selectedText.length() <= 1000) {			
+							if(selectedText != null) {			
 								hexView.setBackground(Color.decode("#FFF5BF"));
 								hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
 								String output = hv.ascii2hex(selectedText, " ");
@@ -377,7 +379,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                panel.add(buttonsPanel,createConstraints(0,4,1));
 	                c = createConstraints(0,5,5);
 	                c.insets = new Insets(5,5,5,5);	          
-	                panel.add(hexView,c);
+	                panel.add(hexScroll,c);
 	                c = createConstraints(0,6,1);
 	                c.weighty = 1;
 	                panel.add(new JPanel(),c);
