@@ -332,6 +332,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                c.fill = GridBagConstraints.NONE;
 	                c.ipadx = 20;
 	                c.ipady = 20;
+	                c.weightx = 0;
 	                topBar.add(logoLabel,c);
 	                topBar.add(tabs,createConstraints(0,0,3));
 	                c = createConstraints(0,0,5);
