@@ -118,6 +118,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 					hexView.setLineWrap(true);	
 					final JScrollPane hexScroll = new JScrollPane(hexView);
 					hexScroll.setMinimumSize(new Dimension(500,100));
+					hexScroll.setVisible(false);
 	            	JPanel buttonsPanel = new JPanel(new GridBagLayout());	            
 	            	panel = new JPanel(new GridBagLayout());  
 	            	inputArea = new JTextArea(20,10);    
@@ -212,10 +213,12 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 								hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
 								String output = hv.ascii2hex(selectedText, " ");
 								hexView.setText(output);
+								hexScroll.setVisible(true);
 							} else {
 								hexView.setText("");
 								hexView.setBackground(new Color(0,0,0,0));
 								hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 0));
+								hexScroll.setVisible(false);
 							}
 						}
 	                });
@@ -232,10 +235,12 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 								hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
 								String output = hv.ascii2hex(selectedText, " ");
 								hexView.setText(output);
+								hexScroll.setVisible(true);
 							} else {
 								hexView.setText("");
 								hexView.setBackground(new Color(0,0,0,0));
 								hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 0));
+								hexScroll.setVisible(false);
 							}
 						}
 	                });
