@@ -108,7 +108,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	            	hv = new Hackvertor();
 	            	hv.init();
 	            	hv.buildTabs(tabs);
-	            		     	
+	            	JPanel topBar = new JPanel(new GridBagLayout());	     	
 	            	JLabel logoLabel = new JLabel(createImageIcon("/burp/images/logo.gif","logo"));
 	            	final JLabel hexView = new JLabel("",SwingConstants.CENTER);	                
 	                hexView.setOpaque(true);
@@ -327,13 +327,15 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                buttonsPanel.add(swapButton,createConstraints(2,0,1));	              
 	                buttonsPanel.add(selectInputButton,createConstraints(3,0,1));	              
 	                buttonsPanel.add(selectOutputButton,createConstraints(4,0,1));	              	                	               	                
-	                GridBagConstraints c = createConstraints(0,0,4);
+	                GridBagConstraints c = createConstraints(4,0,1);
 	                c.anchor = GridBagConstraints.EAST;	
 	                c.fill = GridBagConstraints.NONE;
 	                c.ipadx = 20;
 	                c.ipady = 20;
-	                panel.add(logoLabel,c);
-	                panel.add(tabs,createConstraints(0,1,4));
+	                topBar.add(logoLabel,c);
+	                topBar.add(tabs,createConstraints(0,0,3));
+	                c = createConstraints(0,0,5);
+	                panel.add(topBar,c);
 	                JPanel inputLabelsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 	                c = createConstraints(0,0,1);
 	                c.insets = new Insets(5,5,5,5);	               
@@ -368,7 +370,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                panel.add(outputLabelsPanel,createConstraints(1,2,1));
 	                panel.add(outputScroll,createConstraints(1,3,1));	 	                
 	                panel.add(buttonsPanel,createConstraints(0,4,1));
-	                c = createConstraints(0,5,4);
+	                c = createConstraints(0,5,5);
 	                c.insets = new Insets(5,5,5,5);	          
 	                panel.add(hexView,c);
 	                c = createConstraints(0,6,1);
