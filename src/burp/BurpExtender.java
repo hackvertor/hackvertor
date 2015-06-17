@@ -71,6 +71,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	private JTextArea inputArea;
 	private JTextArea outputArea;
 	private PrintWriter stderr;
+	PrintWriter stdout;
 	private Hackvertor hv;
 	public GridBagConstraints createConstraints(int x, int y, int gridWidth) {
 		GridBagConstraints c = new GridBagConstraints();
@@ -96,6 +97,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	public void registerExtenderCallbacks(final IBurpExtenderCallbacks callbacks) {
 		helpers = callbacks.getHelpers();
 		stderr = new PrintWriter(callbacks.getStderr(), true);
+		stdout = new PrintWriter(callbacks.getStdout(), true);
 		callbacks.setExtensionName("Hackvertor");
 		callbacks.registerContextMenuFactory(this);
 		
@@ -104,6 +106,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	            @Override
 	            public void run()
 	            {	   
+	            	stdout.println("Hackvertor v0.6");
 	            	JTabbedPane tabs = new JTabbedPane();
 	            	hv = new Hackvertor();
 	            	hv.init();
@@ -117,8 +120,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 					hexView.setEditable(false);
 					hexView.setLineWrap(true);	
 					final JScrollPane hexScroll = new JScrollPane(hexView);
-					hexScroll.setMinimumSize(new Dimension(500,100));
-					hexScroll.setVisible(false);
+					hexScroll.setMinimumSize(new Dimension(500,100));				
 	            	JPanel buttonsPanel = new JPanel(new GridBagLayout());	            
 	            	panel = new JPanel(new GridBagLayout());  
 	            	inputArea = new JTextArea(20,10);    
@@ -212,13 +214,11 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 								hexView.setBackground(Color.decode("#FFF5BF"));
 								hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
 								String output = hv.ascii2hex(selectedText, " ");
-								hexView.setText(output);
-								hexScroll.setVisible(true);
+								hexView.setText(output);							
 							} else {
 								hexView.setText("");
 								hexView.setBackground(new Color(0,0,0,0));
-								hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 0));
-								hexScroll.setVisible(false);
+								hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 0));				
 							}
 						}
 	                });
@@ -234,13 +234,11 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 								hexView.setBackground(Color.decode("#FFF5BF"));
 								hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
 								String output = hv.ascii2hex(selectedText, " ");
-								hexView.setText(output);
-								hexScroll.setVisible(true);
+								hexView.setText(output);						
 							} else {
 								hexView.setText("");
 								hexView.setBackground(new Color(0,0,0,0));
-								hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 0));
-								hexScroll.setVisible(false);
+								hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 0));								
 							}
 						}
 	                });
