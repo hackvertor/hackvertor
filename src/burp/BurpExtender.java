@@ -165,12 +165,15 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
                 	DocumentListener documentListener = new DocumentListener() {
             	      public void changedUpdate(DocumentEvent documentEvent) {
             	    	  updateLen(documentEvent);
+            	    	  outputArea.setText(hv.convert(inputArea.getText()));
             	      }
             	      public void insertUpdate(DocumentEvent documentEvent) {
             	    	  updateLen(documentEvent);
+            	    	  outputArea.setText(hv.convert(inputArea.getText()));
             	      }
             	      public void removeUpdate(DocumentEvent documentEvent) {
             	    	  updateLen(documentEvent);
+            	    	  outputArea.setText(hv.convert(inputArea.getText()));
             	      }
             	      private void updateLen(DocumentEvent documentEvent) {
             	    	int len = inputArea.getText().length();
@@ -282,16 +285,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                	  outputArea.setText("");
 	                	  inputArea.requestFocus();
 	                  }
-	                });
-	            	final JButton convertButton = new JButton("Convert");
-	                convertButton.setBackground(Color.decode("#005a70"));
-	                convertButton.setForeground(Color.white);
-	                convertButton.addActionListener(new ActionListener() {
-	                  public void actionPerformed(ActionEvent e) {	                	
-	                	  outputArea.setText(hv.convert(inputArea.getText()));
-	                	  outputArea.selectAll();
-	                  }
-	                });
+	                });	          
 	                final JButton selectInputButton = new JButton("Select input");
 	                selectInputButton.addActionListener(new ActionListener() {
 	                  public void actionPerformed(ActionEvent e) {	                	 
@@ -332,8 +326,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	                buttonsPanel.add(clearTagsButton,createConstraints(1,0,1));	              	               
 	                buttonsPanel.add(swapButton,createConstraints(2,0,1));	              
 	                buttonsPanel.add(selectInputButton,createConstraints(3,0,1));	              
-	                buttonsPanel.add(selectOutputButton,createConstraints(4,0,1));	              
-	                buttonsPanel.add(convertButton,createConstraints(5,0,1));	               	                
+	                buttonsPanel.add(selectOutputButton,createConstraints(4,0,1));	              	                	               	                
 	                GridBagConstraints c = createConstraints(0,0,4);
 	                c.anchor = GridBagConstraints.EAST;	
 	                c.fill = GridBagConstraints.NONE;
