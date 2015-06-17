@@ -21,6 +21,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -846,9 +847,13 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 		}
 		public String find(String str, String find) {
 			List<String> allMatches = new ArrayList<String>();
-			 Matcher m = Pattern.compile(find).matcher(str);
-			 while (m.find()) {
-			   allMatches.add(m.group());
+			 try {
+				 Matcher m = Pattern.compile(find).matcher(str);
+				 while (m.find()) {
+				   allMatches.add(m.group());
+				 }
+			 } catch(PatternSyntaxException e) {
+				 stderr.println(e.getMessage());
 			 }
 			 return StringUtils.join(allMatches,",");
 		}
@@ -856,7 +861,13 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			return str.replace(find, replace);
 		}
 		public String regex_replace(String str, String find, String replace) {
-			return str.replaceAll(find, replace.replace("\\","\\\\").replace("$","\\$"));
+			String output = "";
+			try {
+				output = str.replaceAll(find, replace.replace("\\","\\\\").replace("$","\\$"));
+			} catch(PatternSyntaxException e) {
+				 stderr.println(e.getMessage());
+			}
+			return output;
 		}
 		public String repeat(String str, int amount) {
 			String output = "";
