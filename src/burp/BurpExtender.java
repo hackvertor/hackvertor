@@ -114,11 +114,12 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	            	JPanel topBar = new JPanel(new GridBagLayout());	     	
 	            	JLabel logoLabel = new JLabel(createImageIcon("/burp/images/logo.gif","logo"));
 	            	final JTextArea hexView = new JTextArea(20,10);	          
-	                hexView.setOpaque(true);	            
-	                hexView.setBackground(new Color(0,0,0,0));
-					hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 0));
+	                hexView.setOpaque(true);	            	             
 					hexView.setEditable(false);
 					hexView.setLineWrap(true);	
+					hexView.setBackground(Color.decode("#FFF5BF"));
+					hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
+					hexView.setVisible(false);
 					final JScrollPane hexScroll = new JScrollPane(hexView);
 					hexScroll.setMinimumSize(new Dimension(500,100));				
 	            	JPanel buttonsPanel = new JPanel(new GridBagLayout());	            
@@ -210,15 +211,13 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 						@Override
 						public void caretUpdate(CaretEvent e) {
 							String selectedText = inputArea.getSelectedText();
-							if(selectedText != null) {			
-								hexView.setBackground(Color.decode("#FFF5BF"));
-								hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
+							if(selectedText != null) {	
+								hexView.setVisible(true);
 								String output = hv.ascii2hex(selectedText, " ");
 								hexView.setText(output);							
 							} else {
-								hexView.setText("");
-								hexView.setBackground(new Color(0,0,0,0));
-								hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 0));				
+								hexView.setVisible(false);
+								hexView.setText("");											
 							}
 						}
 	                });
@@ -230,15 +229,13 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 						@Override
 						public void caretUpdate(CaretEvent e) {
 							String selectedText = outputArea.getSelectedText();
-							if(selectedText != null) {			
-								hexView.setBackground(Color.decode("#FFF5BF"));
-								hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
+							if(selectedText != null) {
+								hexView.setVisible(true);
 								String output = hv.ascii2hex(selectedText, " ");
 								hexView.setText(output);						
 							} else {
-								hexView.setText("");
-								hexView.setBackground(new Color(0,0,0,0));
-								hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 0));								
+								hexView.setVisible(false);
+								hexView.setText("");													
 							}
 						}
 	                });
