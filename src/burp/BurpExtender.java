@@ -110,8 +110,12 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	            	hv.buildTabs(tabs);
 	            	JPanel topBar = new JPanel(new GridBagLayout());	     	
 	            	JLabel logoLabel = new JLabel(createImageIcon("/burp/images/logo.gif","logo"));
-	            	final JLabel hexView = new JLabel("",SwingConstants.CENTER);	                
-	                hexView.setOpaque(true);
+	            	final JTextArea hexView = new JTextArea(20,10);	                
+	                hexView.setOpaque(true);	            
+	                hexView.setBackground(new Color(0,0,0,0));
+					hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 0));
+					hexView.setEditable(false);
+					hexView.setLineWrap(true);			
 	            	JPanel buttonsPanel = new JPanel(new GridBagLayout());	            
 	            	panel = new JPanel(new GridBagLayout());  
 	            	inputArea = new JTextArea(20,10);    
@@ -201,7 +205,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 						@Override
 						public void caretUpdate(CaretEvent e) {
 							String selectedText = inputArea.getSelectedText();
-							if(selectedText != null) {			
+							if(selectedText != null && selectedText.length() <= 1000) {			
 								hexView.setBackground(Color.decode("#FFF5BF"));
 								hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
 								String output = hv.ascii2hex(selectedText, " ");
@@ -221,7 +225,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 						@Override
 						public void caretUpdate(CaretEvent e) {
 							String selectedText = outputArea.getSelectedText();
-							if(selectedText != null) {			
+							if(selectedText != null && selectedText.length() <= 1000) {			
 								hexView.setBackground(Color.decode("#FFF5BF"));
 								hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
 								String output = hv.ascii2hex(selectedText, " ");
