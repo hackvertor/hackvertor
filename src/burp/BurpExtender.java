@@ -28,7 +28,6 @@ import javax.swing.Action;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import javax.swing.JEditorPane;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -37,7 +36,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.KeyStroke;
-import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.event.CaretEvent;
 import javax.swing.event.CaretListener;
@@ -64,8 +62,10 @@ import org.unbescape.javascript.JavaScriptEscape;
 import org.unbescape.javascript.JavaScriptEscapeLevel;
 import org.unbescape.javascript.JavaScriptEscapeType;
 
-public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
+import java.lang.reflect.Method;
 
+public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
+	private IBurpExtenderCallbacks callbacks;
 	private IExtensionHelpers helpers;
 	private JPanel panel;
 	private JTextArea inputArea;
@@ -94,19 +94,31 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			return null;
 		}
 	}
+	public boolean hasMethodAnd1Arg(Object obj, String methodStr) {
+		boolean hasMethod = false;
+		Method[] methods = obj.getClass().getMethods();
+		for (Method m : methods) {
+		  if (m.getName().equals(methodStr) && m.getParameterTypes().length == 1) {
+		    hasMethod = true;
+		    break;
+		  }
+		}
+		
+		return hasMethod;
+	}
 	public void registerExtenderCallbacks(final IBurpExtenderCallbacks callbacks) {
 		helpers = callbacks.getHelpers();
 		stderr = new PrintWriter(callbacks.getStderr(), true);
 		stdout = new PrintWriter(callbacks.getStdout(), true);
+		this.callbacks = callbacks;
 		callbacks.setExtensionName("Hackvertor");
-		callbacks.registerContextMenuFactory(this);
-		
+		callbacks.registerContextMenuFactory(this);		
 		 SwingUtilities.invokeLater(new Runnable() 
 	        {
 	            @Override
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v0.6.2");
+	            	stdout.println("Hackvertor v0.6.3");	            	
 	            	JTabbedPane tabs = new JTabbedPane();
 	            	hv = new Hackvertor();
 	            	hv.init();
@@ -413,7 +425,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 		if(bounds[0] == bounds[1]) {
 			return null;
 		}
-        List<JMenuItem> menu = new ArrayList<>();
+        List<JMenuItem> menu = new ArrayList<JMenuItem>();
         Action hackvertorAction = new HackvertorAction("Send to Hackvertor", invocation);
         JMenuItem sendToHackvertor = new JMenuItem(hackvertorAction); 
         menu.add(sendToHackvertor);
@@ -443,14 +455,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
         		break;	    
         	}  	
         	int[] bounds = invocation.getSelectionBounds(); 	        
-        	if(bounds[0] != bounds[1] && message != null) {	   
-        		//JTabbedPane tabs = panel.getParent().getParent();
-        		/*
-        		Container tabComponent = panel.getParent();
-        		int tabIndex = tabs.indexOfTabComponent(tabComponent);
-        		tabs.setSelectedIndex(tabIndex);
-        		*/ 
-        		
+        	if(bounds[0] != bounds[1] && message != null) {	      		
         		hv.setInput((new String(message).substring(bounds[0], bounds[1])).trim()); 
         	}
         }
@@ -463,6 +468,22 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	public Component getUiComponent() {
         return panel;
     }
+	class HackvertorPayloadProcessor implements IIntruderPayloadProcessor {
+		public String name;
+		public String tag;
+		public byte[] processPayload(byte[] currentPayload, byte[] originalPayload, byte[] baseValue) {
+			String input = helpers.bytesToString(helpers.urlDecode(currentPayload));
+			byte[] output = helpers.stringToBytes(helpers.urlEncode(hv.callTag(this.tag,input,new ArrayList<String>())));
+			return output;
+		}
+		public String getProcessorName() {
+			return this.name;
+		}
+		HackvertorPayloadProcessor(String name, String tag) {
+			this.name = name;
+			this.tag = tag;
+		}
+	}
 	class Tag {
 		public String category;
 		public String name;
@@ -471,7 +492,10 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 		public TagArgument argument3 = null;
 		Tag(String tagCategory, String tagName) {
 			this.category = tagCategory;
-			this.name = tagName;		
+			this.name = tagName;
+			if(hasMethodAnd1Arg(hv,tagName)) {
+				callbacks.registerIntruderPayloadProcessor(new HackvertorPayloadProcessor("Hackvertor_"+hv.capitalise(tagName),tagName));
+			}
 		}
 	}
 	class TagArgument {
@@ -1048,32 +1072,23 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			for(int i=0;i<chars.length;i++) {
 			   try {
 				   num = Integer.parseInt(chars[i]);
-				   switch(operation) {
-				   		case "+":
-				   			num = num + amount;
-				   		break;
-				   		case "-":
-				   			num = num - amount;
-				   		break;
-				   		case "/":
-				   			num = num / amount;
-				   		break;				   		
-				   		case "*":
-				   			num = num * amount;
-				   		break;
-				   		case "%":
-				   			num = num % amount;
-				   		break;
-				   		case ">>":
-				   			num = num >> amount;
-				   		break;
-				   		case ">>>":
-				   			num = num >>> amount;
-				   		break;
-				   		case "<<":
-				   			num = num << amount;
-				   		break;				 
-				   }
+				   if(operation.equals("+")) {
+					   num = num + amount;
+				   } else if(operation.equals("-")) {
+					   num = num - amount;
+				   } else if(operation.equals("/")) {
+					   num = num / amount;
+				   } else if(operation.equals("*")) {
+					   num = num * amount;
+				   } else if(operation.equals("%")) {
+					   num = num % amount;
+				   } else if(operation.equals(">>")) {
+					   num = num >> amount;
+				   } else if(operation.equals(">>>")) {
+					   num = num >>> amount;
+				   } else if(operation.equals("<<")) {
+					   num = num << amount;
+				   }				
 				   output.add(""+num);
 			   } catch(NumberFormatException e){ 
 					stderr.println(e.getMessage()); 
@@ -1088,7 +1103,6 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			} catch(PatternSyntaxException e) {
 				stderr.println(e.getMessage());				
 			}
-			int total = 0;
 			for(int i=0;i<chars.length;i++) {
 				try {
 					chars[i] = ""+Integer.toString(Integer.parseInt(chars[i], from), to);
