@@ -106,7 +106,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	            @Override
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v0.6.1");
+	            	stdout.println("Hackvertor v0.6.2");
 	            	JTabbedPane tabs = new JTabbedPane();
 	            	hv = new Hackvertor();
 	            	hv.init();
@@ -565,6 +565,10 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			tag = new Tag("String","repeat");
 			tag.argument1 = new TagArgument("int","100");
 			tags.add(tag);
+			tag = new Tag("String","split_join");
+			tag.argument1 = new TagArgument("string","split char");
+			tag.argument2 = new TagArgument("string","join char");
+			tags.add(tag);
 			tags.add(new Tag("Hash","sha1"));
 			tags.add(new Tag("Hash","sha256"));
 			tags.add(new Tag("Hash","sha384"));
@@ -949,6 +953,15 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			}
 			return output;
 		}
+		public String split_join(String str, String splitChar, String joinChar) {
+			String[] chars = {};
+			try {
+				chars = str.split(splitChar);
+			} catch(PatternSyntaxException e) {
+				stderr.println(e.getMessage());				
+			}
+			return StringUtils.join(chars, joinChar);
+		}
 		public String auto_decode(String str) {
 			int repeats = 20;
 			int repeat = 0;
@@ -1197,6 +1210,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 				output = this.regex_replace(output,this.getString(arguments,0),this.getString(arguments,1));	
 			} else if(tag.equals("repeat")) {
 				output = this.repeat(output, this.getInt(arguments, 0));
+			} else if(tag.equals("split_join")) {
+				output = this.split_join(output, this.getString(arguments, 0), this.getString(arguments, 1));	
 			} else if(tag.equals("dec2hex")) {
 				output = this.dec2hex(output,this.getString(arguments,0));
 			} else if(tag.equals("dec2oct")) {
