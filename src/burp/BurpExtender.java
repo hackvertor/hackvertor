@@ -118,7 +118,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	            @Override
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v0.6.3");	            	
+	            	stdout.println("Hackvertor v0.6.4");	            	
 	            	JTabbedPane tabs = new JTabbedPane();
 	            	hv = new Hackvertor();
 	            	hv.init();
@@ -408,6 +408,16 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 		return "Hackvertor";
 	}
 	
+	public int getTabIndex(ITab your_itab) {
+		JTabbedPane parent = (JTabbedPane) your_itab.getUiComponent().getParent();
+		for(int i = 0; i < parent.getTabCount(); ++i) {
+			if(your_itab.getTabCaption().equals(parent.getTitleAt(i))) {
+				return i;
+			}
+		}
+		return -1;
+	}
+	
 	@Override
     public List<JMenuItem> createMenuItems(IContextMenuInvocation invocation) {
 		int[] bounds = invocation.getSelectionBounds();
@@ -456,7 +466,12 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
         	}  	
         	int[] bounds = invocation.getSelectionBounds(); 	        
         	if(bounds[0] != bounds[1] && message != null) {	      		
-        		hv.setInput((new String(message).substring(bounds[0], bounds[1])).trim()); 
+        		hv.setInput((new String(message).substring(bounds[0], bounds[1])).trim());
+        		JTabbedPane tp = (JTabbedPane) BurpExtender.this.getUiComponent().getParent();
+				int tIndex = getTabIndex(BurpExtender.this);
+				if(tIndex > -1) {
+					tp.setSelectedIndex(tIndex);
+				}
         	}
         }
         
