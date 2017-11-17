@@ -634,7 +634,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			tags.add(new Tag("Encode","css_escapes"));
 			tags.add(new Tag("Encode","css_escapes6"));
 			tags.add(new Tag("Encode","urlencode"));
-            tags.add(new Tag("Encode","phpfuck"));
+            tags.add(new Tag("Encode","php_non_alpha"));
 			tags.add(new Tag("Encode","php_chr"));
 			tags.add(new Tag("Encode","sql_hex"));
 			tags.add(new Tag("Decode","auto_decode"));
@@ -839,11 +839,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			return HtmlEscape.unescapeHtml(str);
 		}
         public String hex(String str, String separator) {
-            ArrayList<String> output = new ArrayList<String>();
-            for(int i=0;i<str.length();i++) {
-                output.add(Integer.toHexString(Character.codePointAt(str, i)));
-            }
-            return StringUtils.join(output,separator);
+            return ascii2hex(str," ");
         }
 		public String hex_entities(String str) {
 			return HtmlEscape.escapeHtml(str, HtmlEscapeType.HEXADECIMAL_REFERENCES,HtmlEscapeLevel.LEVEL_4_ALL_CHARACTERS);
@@ -873,7 +869,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 		public String unicode_escapes(String str) {
 			return JavaScriptEscape.escapeJavaScript(str,JavaScriptEscapeType.UHEXA, JavaScriptEscapeLevel.LEVEL_4_ALL_CHARACTERS);
 		}
-		public String phpfuck(String input) {
+		public String php_non_alpha(String input) {
                 String converted = "";
                 converted += "$_[]++;$_[]=$_._;";
                 converted += "$_____=$_[(++$__[])][(++$__[])+(++$__[])+(++$__[])];";
@@ -887,17 +883,17 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
                 converted += "$_++;$_++;$_++;$_++;$_++;$_++;$_++;$_++;$_++;$_++;";
                 converted += "$___=+_;";
                 converted += "$___.=$__;";
-                converted += "$___=++$_^$___[+_];$À=+_;$Á=$Â=$Ã=$Ä=$Æ=$È=$É=$Ê=$Ë=++$Á[];";
-                converted += "$Â++;";
-                converted += "$Ã++;$Ã++;";
-                converted += "$Ä++;$Ä++;$Ä++;";
-                converted += "$Æ++;$Æ++;$Æ++;$Æ++;";
-                converted += "$È++;$È++;$È++;$È++;$È++;";
-                converted += "$É++;$É++;$É++;$É++;$É++;$É++;";
-                converted += "$Ê++;$Ê++;$Ê++;$Ê++;$Ê++;$Ê++;$Ê++;";
-                converted += "$Ë++;$Ë++;$Ë++;$Ë++;$Ë++;$Ë++;$Ë++;";
+                converted += "$___=++$_^$___[+_];$\u00c0=+_;$\u00c1=$\u00c2=$\u00c3=$\u00c4=$\u00c6=$\u00c8=$\u00c9=$\u00ca=$\u00cb=++$\u00c1[];";
+                converted += "$\u00c2++;";
+                converted += "$\u00c3++;$\u00c3++;";
+                converted += "$\u00c4++;$\u00c4++;$\u00c4++;";
+                converted += "$\u00c6++;$\u00c6++;$\u00c6++;$\u00c6++;";
+                converted += "$\u00c8++;$\u00c8++;$\u00c8++;$\u00c8++;$\u00c8++;";
+                converted += "$\u00c9++;$\u00c9++;$\u00c9++;$\u00c9++;$\u00c9++;$\u00c9++;";
+                converted += "$\u00ca++;$\u00ca++;$\u00ca++;$\u00ca++;$\u00ca++;$\u00ca++;$\u00ca++;";
+                converted += "$\u00cb++;$\u00cb++;$\u00cb++;$\u00cb++;$\u00cb++;$\u00cb++;$\u00cb++;";
                 converted += "$__('$_=\"'";
-                String[] lookup = {"À","Á","Â","Ã","Ä","Æ","È","É","Ê","Ë"};
+                String[] lookup = {"\u00c0","\u00c1","\u00c2","\u00c3","\u00c4","\u00c6","\u00c8","\u00c9","\u00ca","\u00cb"};
                 for(int i=0;i<input.length();i++) {
                     ArrayList<String> vars = new ArrayList<String>();
                     String chrs = Integer.toOctalString(Character.codePointAt(input, i)).toString();
@@ -1384,8 +1380,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 				output = this.hex_escapes(output);
 			} else if(tag.equals("octal_escapes")) {
 				output = this.octal_escapes(output);
-            } else if(tag.equals("phpfuck")) {
-                output = this.phpfuck(output);
+            } else if(tag.equals("php_non_alpha")) {
+                output = this.php_non_alpha(output);
 			} else if(tag.equals("php_chr")) {
 				output = this.php_chr(output);
 			} else if(tag.equals("sql_hex")) {
