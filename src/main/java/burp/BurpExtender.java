@@ -3,32 +3,19 @@ package burp;
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.event.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
+import java.util.*;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.BorderFactory;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTabbedPane;
-import javax.swing.JTextArea;
-import javax.swing.KeyStroke;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 import javax.swing.event.*;
 import javax.swing.text.Document;
 import javax.swing.undo.CannotRedoException;
@@ -50,7 +37,7 @@ import org.unbescape.javascript.JavaScriptEscapeType;
 
 import java.lang.reflect.Method;
 
-public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
+public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, IHttpListener {
 	private IBurpExtenderCallbacks callbacks;
 	private IExtensionHelpers helpers;
 	private JTabbedPaneClosable inputTabs;
@@ -58,6 +45,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	private PrintWriter stderr;
 	PrintWriter stdout;
 	private Hackvertor hv;
+	private Hackvertor hvInRequest;
 	public GridBagConstraints createConstraints(int x, int y, int gridWidth) {
 		GridBagConstraints c = new GridBagConstraints();
 		c.fill = GridBagConstraints.HORIZONTAL;
@@ -335,12 +323,21 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
         });
         pasteInsideButton.setForeground(Color.white);
         pasteInsideButton.setBackground(Color.black);
+        final JButton convertButton = new JButton("Convert");
+        convertButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                outputArea.setText(hv.convert(inputArea.getText()));
+            }
+        });
+        convertButton.setBackground(Color.decode("#005a70"));
+        convertButton.setForeground(Color.white);
         buttonsPanel.add(clearButton,createConstraints(0,0,1));
         buttonsPanel.add(clearTagsButton,createConstraints(1,0,1));
         buttonsPanel.add(swapButton,createConstraints(2,0,1));
         buttonsPanel.add(selectInputButton,createConstraints(3,0,1));
         buttonsPanel.add(selectOutputButton,createConstraints(4,0,1));
         buttonsPanel.add(pasteInsideButton,createConstraints(5,0,1));
+        buttonsPanel.add(convertButton,createConstraints(6,0,1));
         GridBagConstraints c = createConstraints(4,1,1);
         c.anchor = GridBagConstraints.EAST;
         c.fill = GridBagConstraints.BOTH;
@@ -404,12 +401,13 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 		stdout = new PrintWriter(callbacks.getStdout(), true);
 		this.callbacks = callbacks;
 		callbacks.setExtensionName("Hackvertor");
-		callbacks.registerContextMenuFactory(this);		
+		callbacks.registerContextMenuFactory(this);
+		callbacks.registerHttpListener(this);
 		 SwingUtilities.invokeLater(new Runnable() 
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v0.6.5");
+	            	stdout.println("Hackvertor v0.6.6");
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor();
 	            	hv = mainHV;
@@ -460,6 +458,18 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	        });
 		
 	}
+
+    public void processHttpMessage(int toolFlag, boolean messageIsRequest, IHttpRequestResponse messageInfo) {
+        if(!messageIsRequest) {
+            return;
+        }
+        byte[] request = messageInfo.getRequest();
+	    if(helpers.indexOf(request,helpers.stringToBytes("<@/"), true, 0, request.length) != -1) {
+            Hackvertor hv = new Hackvertor();
+            messageInfo.setRequest(helpers.stringToBytes(hv.convert(helpers.bytesToString(request))));
+        }
+    }
+
 	public String getTabCaption() {
 		return "Hackvertor";
 	}
@@ -481,7 +491,6 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			case IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST:
 			case IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST:
 			case IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE:
-			case IContextMenuInvocation.CONTEXT_INTRUDER_PAYLOAD_POSITIONS:
 			break;
 			default:
 				return null;
@@ -491,9 +500,22 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			return null;
 		}
         List<JMenuItem> menu = new ArrayList<JMenuItem>();
+        JMenu submenu = new JMenu("Hackvertor");
         Action hackvertorAction = new HackvertorAction("Send to Hackvertor", invocation);
         JMenuItem sendToHackvertor = new JMenuItem(hackvertorAction); 
-        menu.add(sendToHackvertor);
+        submenu.add(sendToHackvertor);
+        if(hvInRequest == null) {
+            hvInRequest = new Hackvertor();
+            hvInRequest.init();
+        }
+        String[] categories = hv.getCategories();
+        for(int i=0;i<categories.length;i++) {
+            JMenu categoryMenu = new JMenu(categories[i]);
+            String category = categories[i];
+            hvInRequest.createButtonsOrMenu(category, "menu", categoryMenu, invocation);
+            submenu.add(categoryMenu);
+        }
+        menu.add(submenu);
         return menu;
     }
 	class HackvertorAction extends AbstractAction {
@@ -581,6 +603,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 		private JTextArea inputArea;
         private JTextArea outputArea;
         private JPanel panel;
+        private String[] categories = {
+                "Charsets","Encode","Decode","Convert","String","Hash","Math","XSS"
+        };
         public void setInputArea(JTextArea inputArea) {
             this.inputArea = inputArea;
         }
@@ -594,15 +619,16 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
             return this.panel;
         }
 		public void buildTabs(JTabbedPane tabs) {
-            tabs.addTab("Charsets", createButtons("Charsets"));
-            tabs.addTab("Encode", createButtons("Encode"));
-        	tabs.addTab("Decode", createButtons("Decode"));
-        	tabs.addTab("Convert", createButtons("Convert"));
-        	tabs.addTab("String", createButtons("String"));
-        	tabs.addTab("Hash", createButtons("Hash"));
-        	tabs.addTab("Math", createButtons("Math"));
-        	tabs.addTab("XSS", createButtons("XSS"));
+            for(int i=0;i<categories.length;i++) {
+                tabs.addTab(categories[i], createButtonsOrMenu(categories[i],"button", null, null));
+            }
 		}
+		public String[] getCategories() {
+            return categories;
+        }
+        public ArrayList<Tag> getTags(){
+            return tags;
+        }
 		public void init() {
 			Tag tag;
             tags.add(new Tag("Charsets","utf16"));
@@ -717,6 +743,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			tag.argument2 = new TagArgument("int","from");
 			tag.argument3 = new TagArgument("int","to");
 			tags.add(tag);
+            tag = new Tag("Math","random");
+            tag.argument1 = new TagArgument("int","10");
+            tags.add(tag);
 			tag = new Tag("Math","zeropad");
 			tag.argument1 = new TagArgument("string",",");
 			tag.argument2 = new TagArgument("int","2");
@@ -820,6 +849,17 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 	        }
 			return str;
 		}
+        public String random(String chars, int len) {
+            if(len > 0 && chars.length() > 0) {
+                StringBuilder sb = new StringBuilder();
+                Random random = new Random();
+                for (int i = 0; i < len; i++) {
+                    sb.append(chars.charAt(random.nextInt(chars.length())));
+                }
+                return sb.toString();
+            }
+            return "";
+        }
 		public String uppercase(String str) {
 			return StringUtils.upperCase(str);
 		}
@@ -1476,7 +1516,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 				output = this.md2(output);
 			} else if(tag.equals("md5")) {
 				output = this.md5(output);
-			} else if(tag.equals("range")) {
+            } else if(tag.equals("random")) {
+                output = this.random(output, this.getInt(arguments,0));
+            } else if(tag.equals("range")) {
 				output = this.range(output, this.getInt(arguments,0),this.getInt(arguments,1),this.getInt(arguments,2));
 			} else if(tag.equals("total")) {
 				output = this.total(output);
@@ -1621,7 +1663,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 			 } 
 			return convertedArgs;
 		}
-		private JPanel createButtons(String category) {
+		private JPanel createButtonsOrMenu(String category, final String type, JMenu parentMenu, final IContextMenuInvocation invocation) {
 			JPanel panel = new JPanel(new GridBagLayout());
 			GridBagConstraints c = new GridBagConstraints();
 			int i = 0;
@@ -1634,68 +1676,106 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory {
 
 		    });
 			
-			for(Tag tagObj:tags) {
+			for(final Tag tagObj:tags) {
 				final Tag tag = tagObj;
+                final JButton btn = new JButton(tagObj.name);
+                final JMenuItem menu = new JMenuItem(tagObj.name);
+				ActionListener actionListener;
 				if(category == tagObj.category) {
 					if(i == 10) {
 						y++;
 						i = 0;
 					}
-					c.fill = GridBagConstraints.HORIZONTAL;
-	                c.weightx = 0.5;
-	                c.gridx = i;	             
-	                c.gridy = y;
-	                c.ipady = 0;	
-	                c.gridwidth = 1;
-	                final JButton btn = new JButton(tagObj.name);
-	                btn.setBackground(Color.decode("#005a70"));	            
-	            	btn.setForeground(Color.white);
-	            	btn.putClientProperty("tag", tagObj);
-	            	btn.addActionListener(new ActionListener() {
-	                  public void actionPerformed(ActionEvent e) {
-	                	  String selectedText = inputArea.getSelectedText();
-	                	  if(selectedText == null) {
-	                		  selectedText = "";	        
-	                	  }
-	                	  String tagStart = "<@"+btn.getText()+"_"+tagCounter;
-	                	  if(tag.argument1 != null) {
-	                		  tagStart += "(";
-	                	  }
-	                	  if(tag.argument1 != null) {	                		 
-	                		  if(tag.argument1.type == "int") {
-	                			  tagStart += tag.argument1.value;
-	                		  } else if(tag.argument1.type == "string") {
-	                			  tagStart += "\"" + tag.argument1.value + "\"";
-	                		  }
-	                	  }
-	                	  if(tag.argument2 != null) {	                		 
-	                		  tagStart += ",";
-	                		  if(tag.argument2.type == "int") {
-	                			  tagStart += tag.argument2.value;
-	                		  } else if(tag.argument2.type == "string") {
-	                			  tagStart += "\"" + tag.argument2.value + "\"";
-	                		  }
-	                	  }
-	                	  if(tag.argument3 != null) {
-	                		  tagStart += ",";
-	                		  if(tag.argument3.type == "int") {
-	                			  tagStart += tag.argument3.value;
-	                		  } else if(tag.argument3.type == "string") {
-	                			  tagStart += "\"" + tag.argument3.value + "\"";
-	                		  }
-	                	  }
-	                	  if(tag.argument1 != null) {
-	                		  tagStart += ")";
-	                	  }
-	                	  tagStart += ">";
-	                	  String tagEnd = "<@/"+btn.getText()+"_"+tagCounter+">";	                	 
-	                	  inputArea.replaceSelection(tagStart+selectedText+tagEnd);
-	                	  tagCounter++;	 
-	                	  outputArea.setText(hv.convert(inputArea.getText()));
-	                	  outputArea.selectAll();
-	                  }
-	                });
-					panel.add(btn,c);
+
+					if(type.equals("button")) {
+                        c.fill = GridBagConstraints.HORIZONTAL;
+                        c.weightx = 0.5;
+                        c.gridx = i;
+                        c.gridy = y;
+                        c.ipady = 0;
+                        c.gridwidth = 1;
+                        btn.setBackground(Color.decode("#005a70"));
+                        btn.setForeground(Color.white);
+                        btn.putClientProperty("tag", tagObj);
+                    }
+
+                    actionListener = new ActionListener() {
+                        public void actionPerformed(ActionEvent e) {
+                            String selectedText = null;
+                            if(type.equals("button")) {
+                                selectedText = inputArea.getSelectedText();
+                                if (selectedText == null) {
+                                    selectedText = "";
+                                }
+                            }
+                            String tagStart = "<@"+tagObj.name+"_"+tagCounter;
+                            if(tag.argument1 != null) {
+                                tagStart += "(";
+                            }
+                            if(tag.argument1 != null) {
+                                if(tag.argument1.type.equals("int")) {
+                                    tagStart += tag.argument1.value;
+                                } else if(tag.argument1.type.equals("string")) {
+                                    tagStart += "\"" + tag.argument1.value + "\"";
+                                }
+                            }
+                            if(tag.argument2 != null) {
+                                tagStart += ",";
+                                if(tag.argument2.type.equals("int")) {
+                                    tagStart += tag.argument2.value;
+                                } else if(tag.argument2.type.equals("string")) {
+                                    tagStart += "\"" + tag.argument2.value + "\"";
+                                }
+                            }
+                            if(tag.argument3 != null) {
+                                tagStart += ",";
+                                if(tag.argument3.type.equals("int")) {
+                                    tagStart += tag.argument3.value;
+                                } else if(tag.argument3.type.equals("string")) {
+                                    tagStart += "\"" + tag.argument3.value + "\"";
+                                }
+                            }
+                            if(tag.argument1 != null) {
+                                tagStart += ")";
+                            }
+                            tagStart += ">";
+                            String tagEnd = "<@/"+tagObj.name+"_"+tagCounter+">";
+                            if(type.equals("button")) {
+                                inputArea.replaceSelection(tagStart + selectedText + tagEnd);
+                            } else {
+                                if(invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST || invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
+                                    int[] bounds = invocation.getSelectionBounds();
+                                    byte[] message = invocation.getSelectedMessages()[0].getRequest();
+                                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                                    try {
+                                        outputStream.write(Arrays.copyOfRange(message, 0, bounds[0]));
+                                        outputStream.write(helpers.stringToBytes(tagStart));
+                                        outputStream.write(Arrays.copyOfRange(message,bounds[0], bounds[1]));
+                                        outputStream.write(helpers.stringToBytes(tagEnd));
+                                        outputStream.write(Arrays.copyOfRange(message, bounds[1],message.length));
+                                        outputStream.flush();
+                                        invocation.getSelectedMessages()[0].setRequest(outputStream.toByteArray());
+                                    } catch (IOException e1) {
+                                        System.err.println(e1.toString());
+                                    }
+                                }
+                            }
+                            tagCounter++;
+                            if(type.equals("button")) {
+                                outputArea.setText(hv.convert(inputArea.getText()));
+                                outputArea.selectAll();
+                            }
+                        }
+                    };
+
+                    if(type.equals("button")) {
+                        btn.addActionListener(actionListener);
+                        panel.add(btn,c);
+                    } else {
+                        menu.addActionListener(actionListener);
+                        parentMenu.add(menu);
+                    }
+
 					i++;
 				}
 			}
