@@ -23,7 +23,12 @@
             <artifactId>unbescape</artifactId>
             <version>1.1.5.RELEASE</version>
         </dependency>
-        </dependencies>
+        <dependency>
+            <groupId>net.portswigger.burp.extender</groupId>
+            <artifactId>burp-extender-api</artifactId>
+            <version>1.7.22</version>
+        </dependency>
+    </dependencies>
     <build>
         <plugins>
             <plugin>
