@@ -38,7 +38,7 @@ import org.unbescape.javascript.JavaScriptEscapeType;
 import java.lang.reflect.Method;
 
 public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, IHttpListener {
-	private IBurpExtenderCallbacks callbacks;
+    private IBurpExtenderCallbacks callbacks;
 	private IExtensionHelpers helpers;
 	private JTabbedPaneClosable inputTabs;
 	private int tabCounter = 1;
@@ -46,6 +46,15 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
 	PrintWriter stdout;
 	private Hackvertor hv;
 	private Hackvertor hvInRequest;
+
+	private List<String> NATIVE_LOOK_AND_FEELS = Arrays.asList("GTK","Windows");
+    /**
+     * Native theme will not have the same color scheme as the default Nimbus L&F.
+     * The native theme on Windows does not allow the override of button background color.
+     */
+    private boolean isNativeTheme;
+
+
 	public GridBagConstraints createConstraints(int x, int y, int gridWidth) {
 		GridBagConstraints c = new GridBagConstraints();
 		c.fill = GridBagConstraints.HORIZONTAL;
@@ -263,8 +272,10 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
             }
         });
         final JButton swapButton = new JButton("Swap");
-        swapButton.setBackground(Color.black);
-        swapButton.setForeground(Color.white);
+        if(!isNativeTheme) {
+            swapButton.setBackground(Color.black);
+            swapButton.setForeground(Color.white);
+        }
         swapButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 inputArea.setText(outputArea.getText());
@@ -272,6 +283,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 inputArea.requestFocus();
             }
         });
+
         final JButton selectInputButton = new JButton("Select input");
         selectInputButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -279,8 +291,11 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 inputArea.selectAll();
             }
         });
-        selectInputButton.setForeground(Color.white);
-        selectInputButton.setBackground(Color.black);
+        if(!isNativeTheme) {
+            selectInputButton.setForeground(Color.white);
+            selectInputButton.setBackground(Color.black);
+        }
+
         final JButton selectOutputButton = new JButton("Select output");
         selectOutputButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -288,16 +303,22 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 outputArea.selectAll();
             }
         });
-        selectOutputButton.setForeground(Color.white);
-        selectOutputButton.setBackground(Color.black);
+        if(!isNativeTheme) {
+            selectOutputButton.setForeground(Color.white);
+            selectOutputButton.setBackground(Color.black);
+        }
+
         final JButton clearTagsButton = new JButton("Clear tags");
         clearTagsButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 hv.clearTags();
             }
         });
-        clearTagsButton.setForeground(Color.white);
-        clearTagsButton.setBackground(Color.black);
+        if(!isNativeTheme) {
+            clearTagsButton.setForeground(Color.white);
+            clearTagsButton.setBackground(Color.black);
+        }
+
         final JButton clearButton = new JButton("Clear");
         clearButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -306,8 +327,11 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 inputArea.requestFocus();
             }
         });
-        clearButton.setForeground(Color.white);
-        clearButton.setBackground(Color.black);
+        if(!isNativeTheme) {
+            clearButton.setForeground(Color.white);
+            clearButton.setBackground(Color.black);
+        }
+
         final JButton pasteInsideButton = new JButton("Paste inside tags");
         pasteInsideButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -321,16 +345,22 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
             }
         });
-        pasteInsideButton.setForeground(Color.white);
-        pasteInsideButton.setBackground(Color.black);
+        if(!isNativeTheme) {
+            pasteInsideButton.setForeground(Color.white);
+            pasteInsideButton.setBackground(Color.black);
+        }
+
         final JButton convertButton = new JButton("Convert");
         convertButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 outputArea.setText(hv.convert(inputArea.getText()));
             }
         });
-        convertButton.setBackground(Color.decode("#005a70"));
-        convertButton.setForeground(Color.white);
+        if(!isNativeTheme) {
+            convertButton.setBackground(Color.decode("#005a70"));
+            convertButton.setForeground(Color.white);
+        }
+
         buttonsPanel.add(clearButton,createConstraints(0,0,1));
         buttonsPanel.add(clearTagsButton,createConstraints(1,0,1));
         buttonsPanel.add(swapButton,createConstraints(2,0,1));
@@ -338,6 +368,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         buttonsPanel.add(selectOutputButton,createConstraints(4,0,1));
         buttonsPanel.add(pasteInsideButton,createConstraints(5,0,1));
         buttonsPanel.add(convertButton,createConstraints(6,0,1));
+
         GridBagConstraints c = createConstraints(4,1,1);
         c.anchor = GridBagConstraints.EAST;
         c.fill = GridBagConstraints.BOTH;
@@ -456,6 +487,10 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
 	                callbacks.addSuiteTab(BurpExtender.this);
 	            }
 	        });
+
+
+        //callbacks.printOutput("Look And Feel: "+UIManager.getLookAndFeel().getID()); //For debug purpose
+        isNativeTheme = NATIVE_LOOK_AND_FEELS.contains(UIManager.getLookAndFeel().getID());
 		
 	}
 
@@ -1694,8 +1729,10 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                         c.gridy = y;
                         c.ipady = 0;
                         c.gridwidth = 1;
-                        btn.setBackground(Color.decode("#005a70"));
-                        btn.setForeground(Color.white);
+                        if(!isNativeTheme) {
+                            btn.setBackground(Color.decode("#005a70"));
+                            btn.setForeground(Color.white);
+                        }
                         btn.putClientProperty("tag", tagObj);
                     }
 
