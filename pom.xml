@@ -6,7 +6,7 @@
 
     <groupId>uk.co.hackvertor.hackvertor-burp</groupId>
     <artifactId>hackvertor</artifactId>
-    <version>0.6.5</version>
+    <version>0.6.7</version>
     <dependencies>
         <dependency>
             <groupId>commons-codec</groupId>
@@ -27,6 +27,31 @@
             <groupId>net.portswigger.burp.extender</groupId>
             <artifactId>burp-extender-api</artifactId>
             <version>1.7.22</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk15on</artifactId>
+            <version>1.60</version>
+        </dependency>
+        <dependency>
+            <groupId>com.auth0</groupId>
+            <artifactId>java-jwt</artifactId>
+            <version>3.4.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.8.5</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.6</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+            <version>1.18</version>
         </dependency>
     </dependencies>
     <build>
@@ -57,8 +82,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>6</source>
-                    <target>6</target>
+                    <source>8</source>
+                    <target>8</target>
                 </configuration>
             </plugin>
         </plugins>

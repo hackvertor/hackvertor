@@ -1,5 +1,5 @@
 <component name="ArtifactManager">
-  <artifact type="jar" name="hackvertor">
+  <artifact type="jar" build-on-make="true" name="hackvertor">
     <output-path>$PROJECT_DIR$/out/artifacts/hackvertor</output-path>
     <root id="archive" name="hackvertor.jar">
       <element id="module-output" name="hackvertor" />
