@@ -1565,7 +1565,10 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 double[][] frequencies = new double[256][max+1];
                 for(int pos=0;pos<ciphertext.length();pos++) {
                     int column = pos % candidateLength;
-                    frequencies[ciphertext.codePointAt(pos)][column] += 1;
+                    int cp = ciphertext.codePointAt(pos);
+                    if(cp <= 255 && cp > -1) {
+                        frequencies[ciphertext.codePointAt(pos)][column] += 1;
+                    }
                 }
 
                 double[] lengthN = new double[max+1];
