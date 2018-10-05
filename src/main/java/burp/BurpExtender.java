@@ -2467,7 +2467,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                         }
                     }
                     double average = (total / 25);
-                    if((((average - bestScore) / average) * 100) > 40) {
+                    if((((average - bestScore) / average) * 100) > 20) {
                         str = rotN(str, n);
                         matched = true;
                         tag = "rotN";
@@ -2524,7 +2524,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                         }
                     }
                     double average = (total / max-1);
-                    if((((average - bestScore) / average) * 100) > 40) {
+                    if((((average - bestScore) / average) * 100) > 20) {
                         str = rail_fence_decrypt(str, n);
                         matched = true;
                         tag = "rail_fence";
@@ -2537,7 +2537,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                     int alphaCount = test.replaceAll("[^a-zA-Z0-9]+","").length();
                     int strLen = str.length();
                     float percent = (((float) alphaCount/strLen)*100);
-                    if(is_like_english(test) < is_like_english(str) && percent > 60) {
+                    if(is_like_english(test) < is_like_english(str) && percent > 20) {
                         str = test;
                         matched = true;
                         tag = "xor";
