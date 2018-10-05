@@ -1638,9 +1638,6 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
             return score;
         }
         String xor_decrypt(String ciphertext, int keyLength, boolean returnKey) {
-            if(Pattern.compile("^[0-9a-fA-F]+$").matcher(ciphertext).find()) {
-                ciphertext = this.hex2ascii(ciphertext);
-            }
             String[] guessedKey = new String[keyLength];
             for(int column = 0; column < keyLength; column++) {
                 double maxScore = 0;
@@ -2393,6 +2390,11 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                         repeat++;
                         continue;
                     }
+                }
+                if(Pattern.compile("^[0-9a-fA-F]+$").matcher(str).find() && str.length() % 2 == 0) {
+                    str = this.hex2ascii(str);
+                    matched = true;
+                    tag = "hex";
                 }
 				if(!Pattern.compile("[^\\d,\\s]").matcher(str).find() && Pattern.compile("\\d+[,\\s]+").matcher(str).find()) {
 					str = this.from_charcode(str);

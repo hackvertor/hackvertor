@@ -24,33 +24,53 @@
       <file leaf-file-name="BurpExtender.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/java/burp/BurpExtender.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="450">
-              <caret line="2783" column="38" lean-forward="true" selection-start-line="2783" selection-start-column="38" selection-end-line="2783" selection-end-column="38" />
+            <state relative-caret-position="415">
+              <caret line="2398" column="30" lean-forward="true" selection-start-line="2398" selection-start-column="30" selection-end-line="2398" selection-end-column="30" />
               <folding>
                 <element signature="imports" expanded="true" />
                 <element signature="e#28106#28117#0" expanded="true" />
                 <element signature="e#67241#67257#0" expanded="true" />
                 <element signature="e#67323#67339#0" expanded="true" />
-                <element signature="e#85962#85963#0" expanded="true" />
-                <element signature="e#86004#86005#0" expanded="true" />
-                <element signature="e#109920#109921#0" expanded="true" />
-                <element signature="e#109990#109991#0" expanded="true" />
-                <element signature="e#110022#110023#0" expanded="true" />
-                <element signature="e#110097#110098#0" expanded="true" />
-                <element signature="e#110135#110136#0" expanded="true" />
-                <element signature="e#110182#110183#0" expanded="true" />
-                <element signature="e#110389#110390#0" expanded="true" />
-                <element signature="e#110468#110469#0" expanded="true" />
-                <element signature="e#110508#110509#0" expanded="true" />
-                <element signature="e#110580#110581#0" expanded="true" />
-                <element signature="e#110615#110616#0" expanded="true" />
-                <element signature="e#110694#110695#0" expanded="true" />
-                <element signature="e#111186#111187#0" expanded="true" />
-                <element signature="e#111257#111258#0" expanded="true" />
-                <element signature="e#111294#111295#0" expanded="true" />
-                <element signature="e#111357#111358#0" expanded="true" />
-                <element signature="e#131767#131768#0" expanded="true" />
-                <element signature="e#131800#131801#0" expanded="true" />
+                <element signature="e#83181#83182#0" expanded="true" />
+                <element signature="e#83237#83238#0" expanded="true" />
+                <element signature="e#83279#83280#0" expanded="true" />
+                <element signature="e#83321#83322#0" expanded="true" />
+                <element signature="e#88716#88717#0" expanded="true" />
+                <element signature="e#88756#88757#0" expanded="true" />
+                <element signature="e#89138#89139#0" expanded="true" />
+                <element signature="e#89180#89181#0" expanded="true" />
+                <element signature="e#89210#89211#0" expanded="true" />
+                <element signature="e#89252#89253#0" expanded="true" />
+                <element signature="e#89282#89283#0" expanded="true" />
+                <element signature="e#89324#89325#0" expanded="true" />
+                <element signature="e#95531#95532#0" expanded="true" />
+                <element signature="e#95570#95571#0" expanded="true" />
+                <element signature="e#95597#95598#0" expanded="true" />
+                <element signature="e#95651#95652#0" expanded="true" />
+                <element signature="e#98322#98323#0" expanded="true" />
+                <element signature="e#98381#98382#0" expanded="true" />
+                <element signature="e#98414#98415#0" expanded="true" />
+                <element signature="e#98475#98476#0" expanded="true" />
+                <element signature="e#98890#98891#0" expanded="true" />
+                <element signature="e#98932#98933#0" expanded="true" />
+                <element signature="e#113328#113329#0" expanded="true" />
+                <element signature="e#113398#113399#0" expanded="true" />
+                <element signature="e#113430#113431#0" expanded="true" />
+                <element signature="e#113505#113506#0" expanded="true" />
+                <element signature="e#113543#113544#0" expanded="true" />
+                <element signature="e#113590#113591#0" expanded="true" />
+                <element signature="e#113797#113798#0" expanded="true" />
+                <element signature="e#113876#113877#0" expanded="true" />
+                <element signature="e#113916#113917#0" expanded="true" />
+                <element signature="e#113988#113989#0" expanded="true" />
+                <element signature="e#114023#114024#0" expanded="true" />
+                <element signature="e#114102#114103#0" expanded="true" />
+                <element signature="e#114594#114595#0" expanded="true" />
+                <element signature="e#114665#114666#0" expanded="true" />
+                <element signature="e#114702#114703#0" expanded="true" />
+                <element signature="e#114765#114766#0" expanded="true" />
+                <element signature="e#135298#135299#0" expanded="true" />
+                <element signature="e#135331#135332#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -89,7 +109,6 @@
       <find>xor</find>
       <find>guess_key_length</find>
       <find>httplis</find>
-      <find>auto_decode</find>
       <find>rotN</find>
       <find>average</find>
       <find>process</find>
@@ -97,6 +116,7 @@
       <find>analy</find>
       <find>the</find>
       <find>xor_decrypt</find>
+      <find>auto_decode</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -139,8 +159,8 @@
     </treeState>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="95" />
-    <option name="y" value="155" />
+    <option name="x" value="143" />
+    <option name="y" value="44" />
     <option name="width" value="2247" />
     <option name="height" value="1256" />
   </component>
@@ -382,11 +402,25 @@
       <option name="project" value="LOCAL" />
       <updated>1538645603307</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="Added get xor key tag">
+      <created>1538726490304</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1538726490304</updated>
+    </task>
+    <task id="LOCAL-00011" summary="Added ngams class&#10;and ngrams .txt files">
+      <created>1538726570989</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1538726570989</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="95" y="155" width="2247" height="1256" extended-state="0" />
+    <frame x="143" y="44" width="2247" height="1256" extended-state="0" />
     <editor active="true" />
     <layout>
       <window_info anchor="right" id="Palette" order="3" />
@@ -441,7 +475,10 @@
     <MESSAGE value="Updated gitignore" />
     <MESSAGE value="Updated group id in pom.xml" />
     <MESSAGE value="Added auto decoding of xor encryption&#10;Added auto decoding of rotN etc&#10;Detection of English like text using ngrams.&#10;Fixed content-length bug reported by Paul.&#10;Fixed layout issues with the help of Mike.&#10;Added jwt tokens decoding/encoding.&#10;Added single self closing tag support for tags without input.&#10;Added tool tips for tags.&#10;Added support for hex in arguments&#10;Added a bunch of hash algorithms" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added auto decoding of xor encryption&#10;Added auto decoding of rotN etc&#10;Detection of English like text using ngrams.&#10;Fixed content-length bug reported by Paul.&#10;Fixed layout issues with the help of Mike.&#10;Added jwt tokens decoding/encoding.&#10;Added single self closing tag support for tags without input.&#10;Added tool tips for tags.&#10;Added support for hex in arguments&#10;Added a bunch of hash algorithms" />
+    <MESSAGE value="Added get xor key tag" />
+    <MESSAGE value="Added ngams class&#10;and .txt files" />
+    <MESSAGE value="Added ngams class&#10;and ngrams .txt files" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added ngams class&#10;and ngrams .txt files" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -840,33 +877,53 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/burp/BurpExtender.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="450">
-          <caret line="2783" column="38" lean-forward="true" selection-start-line="2783" selection-start-column="38" selection-end-line="2783" selection-end-column="38" />
+        <state relative-caret-position="415">
+          <caret line="2398" column="30" lean-forward="true" selection-start-line="2398" selection-start-column="30" selection-end-line="2398" selection-end-column="30" />
           <folding>
             <element signature="imports" expanded="true" />
             <element signature="e#28106#28117#0" expanded="true" />
             <element signature="e#67241#67257#0" expanded="true" />
             <element signature="e#67323#67339#0" expanded="true" />
-            <element signature="e#85962#85963#0" expanded="true" />
-            <element signature="e#86004#86005#0" expanded="true" />
-            <element signature="e#109920#109921#0" expanded="true" />
-            <element signature="e#109990#109991#0" expanded="true" />
-            <element signature="e#110022#110023#0" expanded="true" />
-            <element signature="e#110097#110098#0" expanded="true" />
-            <element signature="e#110135#110136#0" expanded="true" />
-            <element signature="e#110182#110183#0" expanded="true" />
-            <element signature="e#110389#110390#0" expanded="true" />
-            <element signature="e#110468#110469#0" expanded="true" />
-            <element signature="e#110508#110509#0" expanded="true" />
-            <element signature="e#110580#110581#0" expanded="true" />
-            <element signature="e#110615#110616#0" expanded="true" />
-            <element signature="e#110694#110695#0" expanded="true" />
-            <element signature="e#111186#111187#0" expanded="true" />
-            <element signature="e#111257#111258#0" expanded="true" />
-            <element signature="e#111294#111295#0" expanded="true" />
-            <element signature="e#111357#111358#0" expanded="true" />
-            <element signature="e#131767#131768#0" expanded="true" />
-            <element signature="e#131800#131801#0" expanded="true" />
+            <element signature="e#83181#83182#0" expanded="true" />
+            <element signature="e#83237#83238#0" expanded="true" />
+            <element signature="e#83279#83280#0" expanded="true" />
+            <element signature="e#83321#83322#0" expanded="true" />
+            <element signature="e#88716#88717#0" expanded="true" />
+            <element signature="e#88756#88757#0" expanded="true" />
+            <element signature="e#89138#89139#0" expanded="true" />
+            <element signature="e#89180#89181#0" expanded="true" />
+            <element signature="e#89210#89211#0" expanded="true" />
+            <element signature="e#89252#89253#0" expanded="true" />
+            <element signature="e#89282#89283#0" expanded="true" />
+            <element signature="e#89324#89325#0" expanded="true" />
+            <element signature="e#95531#95532#0" expanded="true" />
+            <element signature="e#95570#95571#0" expanded="true" />
+            <element signature="e#95597#95598#0" expanded="true" />
+            <element signature="e#95651#95652#0" expanded="true" />
+            <element signature="e#98322#98323#0" expanded="true" />
+            <element signature="e#98381#98382#0" expanded="true" />
+            <element signature="e#98414#98415#0" expanded="true" />
+            <element signature="e#98475#98476#0" expanded="true" />
+            <element signature="e#98890#98891#0" expanded="true" />
+            <element signature="e#98932#98933#0" expanded="true" />
+            <element signature="e#113328#113329#0" expanded="true" />
+            <element signature="e#113398#113399#0" expanded="true" />
+            <element signature="e#113430#113431#0" expanded="true" />
+            <element signature="e#113505#113506#0" expanded="true" />
+            <element signature="e#113543#113544#0" expanded="true" />
+            <element signature="e#113590#113591#0" expanded="true" />
+            <element signature="e#113797#113798#0" expanded="true" />
+            <element signature="e#113876#113877#0" expanded="true" />
+            <element signature="e#113916#113917#0" expanded="true" />
+            <element signature="e#113988#113989#0" expanded="true" />
+            <element signature="e#114023#114024#0" expanded="true" />
+            <element signature="e#114102#114103#0" expanded="true" />
+            <element signature="e#114594#114595#0" expanded="true" />
+            <element signature="e#114665#114666#0" expanded="true" />
+            <element signature="e#114702#114703#0" expanded="true" />
+            <element signature="e#114765#114766#0" expanded="true" />
+            <element signature="e#135298#135299#0" expanded="true" />
+            <element signature="e#135331#135332#0" expanded="true" />
           </folding>
         </state>
       </provider>
