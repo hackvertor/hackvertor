@@ -6,14 +6,9 @@
     </artifacts-to-build>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7757c1c9-85a7-4326-a693-b026dce334d8" name="Default" comment="Added support for conversions within requests. Added convert button. Added random tag. Restructured code to build jmenu as well as buttons.">
-      <change beforePath="$PROJECT_DIR$/.idea/artifacts/hackvertor.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/artifacts/hackvertor.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
+    <list default="true" id="7757c1c9-85a7-4326-a693-b026dce334d8" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hackvertor.iml" beforeDir="false" afterPath="$PROJECT_DIR$/hackvertor.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/burp/BurpExtender.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/burp/BurpExtender.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/burp/JTabbedPaneClosable.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/burp/JTabbedPaneClosable.java" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
     <ignored path="$PROJECT_DIR$/target/" />
@@ -29,8 +24,8 @@
       <file leaf-file-name="BurpExtender.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/java/burp/BurpExtender.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="392">
-              <caret line="1581" column="67" lean-forward="true" selection-start-line="1581" selection-start-column="67" selection-end-line="1581" selection-end-column="67" />
+            <state relative-caret-position="450">
+              <caret line="2783" column="38" lean-forward="true" selection-start-line="2783" selection-start-column="38" selection-end-line="2783" selection-end-column="38" />
               <folding>
                 <element signature="imports" expanded="true" />
                 <element signature="e#28106#28117#0" expanded="true" />
@@ -72,7 +67,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>index_of_coincidence</find>
       <find>255</find>
       <find>int</find>
       <find>is_li</find>
@@ -93,7 +87,6 @@
       <find>sortByValuesDesc</find>
       <find>sortByValuesDes</find>
       <find>xor</find>
-      <find>xor_decrypt</find>
       <find>guess_key_length</find>
       <find>httplis</find>
       <find>auto_decode</find>
@@ -102,6 +95,8 @@
       <find>process</find>
       <find>xor_de</find>
       <find>analy</find>
+      <find>the</find>
+      <find>xor_decrypt</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -144,8 +139,8 @@
     </treeState>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="313" />
-    <option name="y" value="129" />
+    <option name="x" value="95" />
+    <option name="y" value="155" />
     <option name="width" value="2247" />
     <option name="height" value="1256" />
   </component>
@@ -204,6 +199,13 @@
               <item name="main" type="462c0819:PsiDirectoryNode" />
               <item name="java" type="462c0819:PsiDirectoryNode" />
               <item name="burp" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="hackvertor" type="b2602c69:ProjectViewProjectNode" />
+              <item name="hackvertor" type="462c0819:PsiDirectoryNode" />
+              <item name="src" type="462c0819:PsiDirectoryNode" />
+              <item name="main" type="462c0819:PsiDirectoryNode" />
+              <item name="resources" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -373,11 +375,18 @@
       <option name="project" value="LOCAL" />
       <updated>1535970403862</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="Added auto decoding of xor encryption&#10;Added auto decoding of rotN etc&#10;Detection of English like text using ngrams.&#10;Fixed content-length bug reported by Paul.&#10;Fixed layout issues with the help of Mike.&#10;Added jwt tokens decoding/encoding.&#10;Added single self closing tag support for tags without input.&#10;Added tool tips for tags.&#10;Added support for hex in arguments&#10;Added a bunch of hash algorithms">
+      <created>1538645603307</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1538645603307</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="313" y="129" width="2247" height="1256" extended-state="0" />
+    <frame x="95" y="155" width="2247" height="1256" extended-state="0" />
     <editor active="true" />
     <layout>
       <window_info anchor="right" id="Palette" order="3" />
@@ -431,7 +440,8 @@
     <MESSAGE value="Added support for conversions within requests. Added convert button. Added random tag. Restructured code to build jmenu as well as buttons." />
     <MESSAGE value="Updated gitignore" />
     <MESSAGE value="Updated group id in pom.xml" />
-    <option name="LAST_COMMIT_MESSAGE" value="Updated group id in pom.xml" />
+    <MESSAGE value="Added auto decoding of xor encryption&#10;Added auto decoding of rotN etc&#10;Detection of English like text using ngrams.&#10;Fixed content-length bug reported by Paul.&#10;Fixed layout issues with the help of Mike.&#10;Added jwt tokens decoding/encoding.&#10;Added single self closing tag support for tags without input.&#10;Added tool tips for tags.&#10;Added support for hex in arguments&#10;Added a bunch of hash algorithms" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added auto decoding of xor encryption&#10;Added auto decoding of rotN etc&#10;Detection of English like text using ngrams.&#10;Fixed content-length bug reported by Paul.&#10;Fixed layout issues with the help of Mike.&#10;Added jwt tokens decoding/encoding.&#10;Added single self closing tag support for tags without input.&#10;Added tool tips for tags.&#10;Added support for hex in arguments&#10;Added a bunch of hash algorithms" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -758,23 +768,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/resources/quadgrams.txt">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-5717960">
-          <caret column="13" selection-start-column="5" selection-end-column="13" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/burp/Ngrams.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="561">
-          <caret line="39" column="18" selection-start-line="39" selection-start-column="18" selection-end-line="39" selection-end-column="18" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="jar:///Library/Java/JavaVirtualMachines/jdk1.8.0_45.jdk/Contents/Home/src.zip!/java/util/regex/Matcher.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="789">
@@ -828,10 +821,27 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/resources/quadgrams.txt">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="358">
+          <caret line="47" column="3" selection-start-line="47" selection-end-line="47" selection-end-column="3" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/burp/Ngrams.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="561">
+          <caret line="39" column="18" selection-start-line="39" selection-start-column="18" selection-end-line="39" selection-end-column="18" />
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/burp/BurpExtender.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="392">
-          <caret line="1581" column="67" lean-forward="true" selection-start-line="1581" selection-start-column="67" selection-end-line="1581" selection-end-column="67" />
+        <state relative-caret-position="450">
+          <caret line="2783" column="38" lean-forward="true" selection-start-line="2783" selection-start-column="38" selection-end-line="2783" selection-end-column="38" />
           <folding>
             <element signature="imports" expanded="true" />
             <element signature="e#28106#28117#0" expanded="true" />

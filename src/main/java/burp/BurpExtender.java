@@ -921,6 +921,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
             tag = new Tag("Encrypt","xor_decrypt",true,"xor_decrypt(String ciphertext, int keyLength)");
             tag.argument1 = new TagArgument("int","10");
             tags.add(tag);
+            tags.add(new Tag("Encrypt","xor_getkey",true,"xor_getkey(String ciphertext)"));
             tag = new Tag("Encrypt","affine_encrypt",true,"affine_encrypt(String message, int key1, int key2)");
             tag.argument1 = new TagArgument("int","5");
             tag.argument2 = new TagArgument("int","9");
@@ -1636,7 +1637,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
             }
             return score;
         }
-        String xor_decrypt(String ciphertext, int keyLength) {
+        String xor_decrypt(String ciphertext, int keyLength, boolean returnKey) {
             if(Pattern.compile("^[0-9a-fA-F]+$").matcher(ciphertext).find()) {
                 ciphertext = this.hex2ascii(ciphertext);
             }
@@ -1657,7 +1658,15 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                     }
                 }
             }
-            return xor(ciphertext, StringUtils.join(guessedKey,""));
+            if(returnKey) {
+                return StringUtils.join(guessedKey, "");
+            } else {
+                return xor(ciphertext, StringUtils.join(guessedKey, ""));
+            }
+        }
+        String xor_getkey(String ciphertext) {
+            int len = guess_key_length(ciphertext);
+            return xor_decrypt(ciphertext, len, true);
         }
         String affine_encrypt(String message, int key1, int key2) {
             int[] keyArray1 = {1,3,5,7,9,11,15,17,19,21,23,25};
@@ -2519,7 +2528,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
 
                 if(Pattern.compile("^[\\x00-\\xff]+$",Pattern.CASE_INSENSITIVE).matcher(str).find()) {
 				    int lenGuess = guess_key_length(str);
-                    test = xor_decrypt(str, lenGuess);
+                    test = xor_decrypt(str, lenGuess, false);
                     int alphaCount = test.replaceAll("[^a-zA-Z0-9]+","").length();
                     int strLen = str.length();
                     float percent = (((float) alphaCount/strLen)*100);
@@ -2767,7 +2776,10 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                     output = this.xor(output, this.getString(arguments, 0));
                     break;
                 case "xor_decrypt":
-                    output = this.xor_decrypt(output, this.getInt(arguments, 0));
+                    output = this.xor_decrypt(output, this.getInt(arguments, 0), false);
+                    break;
+                case "xor_getkey":
+                    output = this.xor_getkey(output);
                     break;
                 case "affine_encrypt":
                     output = this.affine_encrypt(output, this.getInt(arguments, 0), this.getInt(arguments, 1));
