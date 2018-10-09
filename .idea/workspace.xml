@@ -6,9 +6,9 @@
     </artifacts-to-build>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7757c1c9-85a7-4326-a693-b026dce334d8" name="Default" comment="Auto generated encoding tags when auto decoded.">
+    <list default="true" id="7757c1c9-85a7-4326-a693-b026dce334d8" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/burp/BurpExtender.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/burp/BurpExtender.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
     <ignored path="$PROJECT_DIR$/target/" />
@@ -21,10 +21,10 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="BurpExtender.java" pinned="false" current-in-tab="true">
+      <file leaf-file-name="BurpExtender.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/java/burp/BurpExtender.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="443">
+            <state relative-caret-position="-217">
               <caret line="1728" column="56" selection-start-line="1728" selection-start-column="56" selection-end-line="1728" selection-end-column="56" />
               <folding>
                 <element signature="imports" expanded="true" />
@@ -164,6 +164,15 @@
           </provider>
         </entry>
       </file>
+      <file leaf-file-name="pom.xml" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/pom.xml">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="914">
+              <caret line="83" column="30" selection-start-line="83" selection-start-column="30" selection-end-line="83" selection-end-column="30" />
+            </state>
+          </provider>
+        </entry>
+      </file>
     </leaf>
   </component>
   <component name="FileTemplateManagerImpl">
@@ -223,8 +232,8 @@
         <option value="$PROJECT_DIR$/src/main/java/burp/JWTHeader.java" />
         <option value="$PROJECT_DIR$/src/main/resources/quadgrams.txt" />
         <option value="$PROJECT_DIR$/src/main/java/burp/Ngrams.java" />
-        <option value="$PROJECT_DIR$/pom.xml" />
         <option value="$PROJECT_DIR$/src/main/java/burp/BurpExtender.java" />
+        <option value="$PROJECT_DIR$/pom.xml" />
       </list>
     </option>
   </component>
@@ -525,7 +534,14 @@
       <option name="project" value="LOCAL" />
       <updated>1538743075885</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="Auto generated encoding tags when auto decoded.&#10;Added convert tags menu option and auto decode and convert&#10;Default decrypt xor to key length of 3&#10;Detected when keylength is not sent in xor decrypt&#10;Added some guessing when there is a small amount of ciphertext in xor decryption">
+      <created>1539088504984</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1539088504984</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -545,7 +561,7 @@
       <window_info anchor="bottom" id="Terminal" order="7" weight="0.32959446" />
       <window_info id="Capture Tool" order="6" />
       <window_info id="Designer" order="3" />
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.26122448" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.26122448" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info id="UI Designer" order="4" />
@@ -590,7 +606,8 @@
     <MESSAGE value="Auto decoded hex in auto_decode instead of in xor_decrypt" />
     <MESSAGE value="Fixed index out of bounds issue when getting the code point for non-ascii text." />
     <MESSAGE value="Changed percent difference for auto decoding" />
-    <option name="LAST_COMMIT_MESSAGE" value="Changed percent difference for auto decoding" />
+    <MESSAGE value="Auto generated encoding tags when auto decoded.&#10;Added convert tags menu option and auto decode and convert&#10;Default decrypt xor to key length of 3&#10;Detected when keylength is not sent in xor decrypt&#10;Added some guessing when there is a small amount of ciphertext in xor decryption" />
+    <option name="LAST_COMMIT_MESSAGE" value="Auto generated encoding tags when auto decoded.&#10;Added convert tags menu option and auto decode and convert&#10;Default decrypt xor to key length of 3&#10;Detected when keylength is not sent in xor decrypt&#10;Added some guessing when there is a small amount of ciphertext in xor decryption" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -917,13 +934,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/pom.xml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="899">
-          <caret line="82" column="62" selection-start-line="82" selection-start-column="62" selection-end-line="82" selection-end-column="62" />
-        </state>
-      </provider>
-    </entry>
     <entry file="jar:///Library/Java/JavaVirtualMachines/jdk1.8.0_45.jdk/Contents/Home/src.zip!/java/util/TreeMap.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="377">
@@ -989,7 +999,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/burp/BurpExtender.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="443">
+        <state relative-caret-position="-217">
           <caret line="1728" column="56" selection-start-line="1728" selection-start-column="56" selection-end-line="1728" selection-end-column="56" />
           <folding>
             <element signature="imports" expanded="true" />
@@ -1125,6 +1135,13 @@
             <element signature="e#139223#139224#0" expanded="true" />
             <element signature="e#139256#139257#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/pom.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="914">
+          <caret line="83" column="30" selection-start-line="83" selection-start-column="30" selection-end-line="83" selection-end-column="30" />
         </state>
       </provider>
     </entry>
