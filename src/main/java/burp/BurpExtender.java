@@ -2608,9 +2608,16 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                     }
                     double average = (total / 25);
                     if((((average - bestScore) / average) * 100) > 20) {
+                        String originalString = str;
                         str = rotN(str, n);
                         matched = true;
                         tag = "rotN";
+                        for(int i = 1; i <= 25;i++) {
+                            if(rotN(str, i).equals(originalString)) {
+                                n = i;
+                                break;
+                            }
+                        }
                         encodingOpeningTags = encodingOpeningTags + "<@rotN_"+(++tagCounter)+"("+n+")>";
                         encodingClosingTags = "<@/rotN_"+(tagCounter)+">" + encodingClosingTags;
                     }

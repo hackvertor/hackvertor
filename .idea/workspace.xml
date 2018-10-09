@@ -8,7 +8,7 @@
   <component name="ChangeListManager">
     <list default="true" id="7757c1c9-85a7-4326-a693-b026dce334d8" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/burp/BurpExtender.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/burp/BurpExtender.java" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
     <ignored path="$PROJECT_DIR$/target/" />
@@ -21,11 +21,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="BurpExtender.java" pinned="false" current-in-tab="false">
+      <file leaf-file-name="BurpExtender.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/java/burp/BurpExtender.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-217">
-              <caret line="1728" column="56" selection-start-line="1728" selection-start-column="56" selection-end-line="1728" selection-end-column="56" />
+            <state relative-caret-position="461">
+              <caret line="2619" column="25" lean-forward="true" selection-start-line="2619" selection-start-column="25" selection-end-line="2619" selection-end-column="25" />
               <folding>
                 <element signature="imports" expanded="true" />
                 <element signature="e#5792#5793#0" expanded="true" />
@@ -164,15 +164,6 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="pom.xml" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/pom.xml">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="914">
-              <caret line="83" column="30" selection-start-line="83" selection-start-column="30" selection-end-line="83" selection-end-column="30" />
-            </state>
-          </provider>
-        </entry>
-      </file>
     </leaf>
   </component>
   <component name="FileTemplateManagerImpl">
@@ -191,7 +182,6 @@
       <find>sortByValuesDes</find>
       <find>xor</find>
       <find>httplis</find>
-      <find>rotN</find>
       <find>average</find>
       <find>process</find>
       <find>analy</find>
@@ -206,7 +196,6 @@
       <find>base64</find>
       <find>invocation</find>
       <find>class Hac</find>
-      <find>auto_decode</find>
       <find>sout</find>
       <find>convert</find>
       <find>class Hackvertor</find>
@@ -214,6 +203,8 @@
       <find>actionlistener</find>
       <find>affine</find>
       <find>xor_decrypt</find>
+      <find>auto_decode</find>
+      <find>rotN</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -232,8 +223,8 @@
         <option value="$PROJECT_DIR$/src/main/java/burp/JWTHeader.java" />
         <option value="$PROJECT_DIR$/src/main/resources/quadgrams.txt" />
         <option value="$PROJECT_DIR$/src/main/java/burp/Ngrams.java" />
-        <option value="$PROJECT_DIR$/src/main/java/burp/BurpExtender.java" />
         <option value="$PROJECT_DIR$/pom.xml" />
+        <option value="$PROJECT_DIR$/src/main/java/burp/BurpExtender.java" />
       </list>
     </option>
   </component>
@@ -541,7 +532,14 @@
       <option name="project" value="LOCAL" />
       <updated>1539088504984</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="Added version number for maven plugin">
+      <created>1539088696134</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1539088696134</updated>
+    </task>
+    <option name="localTasksCounter" value="17" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -607,7 +605,8 @@
     <MESSAGE value="Fixed index out of bounds issue when getting the code point for non-ascii text." />
     <MESSAGE value="Changed percent difference for auto decoding" />
     <MESSAGE value="Auto generated encoding tags when auto decoded.&#10;Added convert tags menu option and auto decode and convert&#10;Default decrypt xor to key length of 3&#10;Detected when keylength is not sent in xor decrypt&#10;Added some guessing when there is a small amount of ciphertext in xor decryption" />
-    <option name="LAST_COMMIT_MESSAGE" value="Auto generated encoding tags when auto decoded.&#10;Added convert tags menu option and auto decode and convert&#10;Default decrypt xor to key length of 3&#10;Detected when keylength is not sent in xor decrypt&#10;Added some guessing when there is a small amount of ciphertext in xor decryption" />
+    <MESSAGE value="Added version number for maven plugin" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added version number for maven plugin" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -997,10 +996,17 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/pom.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="494">
+          <caret line="55" column="19" lean-forward="true" selection-start-line="55" selection-start-column="19" selection-end-line="55" selection-end-column="19" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/burp/BurpExtender.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-217">
-          <caret line="1728" column="56" selection-start-line="1728" selection-start-column="56" selection-end-line="1728" selection-end-column="56" />
+        <state relative-caret-position="461">
+          <caret line="2619" column="25" lean-forward="true" selection-start-line="2619" selection-start-column="25" selection-end-line="2619" selection-end-column="25" />
           <folding>
             <element signature="imports" expanded="true" />
             <element signature="e#5792#5793#0" expanded="true" />
@@ -1135,13 +1141,6 @@
             <element signature="e#139223#139224#0" expanded="true" />
             <element signature="e#139256#139257#0" expanded="true" />
           </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/pom.xml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="914">
-          <caret line="83" column="30" selection-start-line="83" selection-start-column="30" selection-end-line="83" selection-end-column="30" />
         </state>
       </provider>
     </entry>
