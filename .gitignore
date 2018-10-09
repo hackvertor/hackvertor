@@ -1,0 +1,9 @@
+
+#Build directories
+bin/
+build/
+target/
+#intellij
+.idea/
+.classpath/
+.project/
