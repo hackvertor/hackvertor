@@ -765,6 +765,38 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         });
         submenu.add(copyUrl);
 
+        JMenuItem convert = new JMenuItem("Convert tags");
+        convert.addActionListener(e -> {
+            Hackvertor hv = new Hackvertor();
+            if(invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST || invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
+                byte[] message = invocation.getSelectedMessages()[0].getRequest();
+                invocation.getSelectedMessages()[0].setRequest(helpers.stringToBytes(hv.convert(helpers.bytesToString(message))));
+            }
+        });
+        submenu.add(convert);
+        JMenuItem autodecodeConvert = new JMenuItem("Auto decode & Convert");
+        autodecodeConvert.addActionListener(e -> {
+            Hackvertor hv = new Hackvertor();
+            if(invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST || invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
+                byte[] message = invocation.getSelectedMessages()[0].getRequest();
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                try {
+                    outputStream.write(Arrays.copyOfRange(message, 0, bounds[0]));
+                    outputStream.write(helpers.stringToBytes("<@auto_decode_1>"));
+                    outputStream.write(Arrays.copyOfRange(message,bounds[0], bounds[1]));
+                    outputStream.write(helpers.stringToBytes("<@/auto_decode_1>"));
+                    outputStream.write(Arrays.copyOfRange(message, bounds[1],message.length));
+                    outputStream.flush();
+                    invocation.getSelectedMessages()[0].setRequest(outputStream.toByteArray());
+                } catch (IOException e1) {
+                    System.err.println(e1.toString());
+                }
+                message = invocation.getSelectedMessages()[0].getRequest();
+                invocation.getSelectedMessages()[0].setRequest(helpers.stringToBytes(hv.convert(helpers.bytesToString(message))));
+            }
+        });
+        submenu.add(autodecodeConvert);
+        submenu.addSeparator();
         String[] categories = hv.getCategories();
         for(int i=0;i<categories.length;i++) {
             JMenu categoryMenu = new JMenu(categories[i]);
@@ -919,7 +951,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
             tag.argument1 = new TagArgument("string","key");
             tags.add(tag);
             tag = new Tag("Encrypt","xor_decrypt",true,"xor_decrypt(String ciphertext, int keyLength)");
-            tag.argument1 = new TagArgument("int","10");
+            tag.argument1 = new TagArgument("int","3");
             tags.add(tag);
             tags.add(new Tag("Encrypt","xor_getkey",true,"xor_getkey(String ciphertext)"));
             tag = new Tag("Encrypt","affine_encrypt",true,"affine_encrypt(String message, int key1, int key2)");
@@ -1641,7 +1673,18 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
             return score;
         }
         String xor_decrypt(String ciphertext, int keyLength, boolean returnKey) {
+            if(keyLength < 1) {
+                return "Unable to decrypt";
+            }
             String[] guessedKey = new String[keyLength];
+            ArrayList<ArrayList<Character>> potentialKeys = new ArrayList<>();
+            ArrayList<ArrayList<Character>> blacklistChars = new ArrayList<>();
+            ArrayList<ArrayList<Character>> filteredKeys = new ArrayList<>();
+            for(int i=0;i<keyLength;i++) {
+                potentialKeys.add(new ArrayList<>());
+                blacklistChars.add(new ArrayList<>());
+                filteredKeys.add(new ArrayList<>());
+            }
             for(int column = 0; column < keyLength; column++) {
                 double maxScore = 0;
                 for(int keyByte=0;keyByte<=255;keyByte++) {
@@ -1650,6 +1693,11 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                         if((pos - column) % keyLength == 0) {
                             char clearTextByte = (char) (ciphertext.charAt(pos) ^ (char) keyByte);
                             score += getScore(clearTextByte);
+                            if ((clearTextByte >= 'A' && clearTextByte <= 'Z') || (clearTextByte >= 'a' && clearTextByte <= 'z') || clearTextByte == ' '){
+                                if(!potentialKeys.get(column).contains((char) keyByte)) {
+                                    potentialKeys.get(column).add((char) keyByte);
+                                }
+                            }
                         }
                     }
                     if(score > maxScore) {
@@ -1658,10 +1706,60 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                     }
                 }
             }
+            if(keyLength <= 10 && ciphertext.length() < 200 && (((float) keyLength/ciphertext.length())*100) <= 20) {
+                for (int pos = 0; pos < ciphertext.length(); pos++) {
+                    int keypos = pos % keyLength;
+                    char chr = ciphertext.charAt(pos);
+                    ArrayList<Character> potentialKeyChars = potentialKeys.get(keypos);
+                    for (int j = 0; j < potentialKeyChars.size(); j++) {
+                        char potentialChr = potentialKeyChars.get(j);
+                        char clearTextByte = (char) (chr ^ potentialChr);
+                        if ((clearTextByte >= 'A' && clearTextByte <= 'Z') || (clearTextByte >= 'a' && clearTextByte <= 'z') || clearTextByte == ' ') {
+
+                        } else {
+                            blacklistChars.get(keypos).add(potentialChr);
+                        }
+                    }
+                }
+                for (int i = 0; i < keyLength; i++) {
+                    ArrayList<Character> pKeys = potentialKeys.get(i);
+                    ArrayList<Character> blacklist = blacklistChars.get(i);
+                    for (int j = 0; j < pKeys.size(); j++) {
+                        if (!blacklist.contains(pKeys.get(j)) && filteredKeys.get(i).size() < 10) {
+                            filteredKeys.get(i).add(pKeys.get(j));
+                        }
+                    }
+                }
+                ArrayList<String> keyPermutations = new ArrayList<>();
+                doOneChar("", 0, filteredKeys, keyPermutations, guessedKey);
+                double maxScore = -999999999;
+                String bestKey = "";
+                for (String key : keyPermutations) {
+                    double score = is_like_english(xor(ciphertext, key));
+                    if (score >= maxScore) {
+                        bestKey = key;
+                        maxScore = score;
+                    }
+                }
+                guessedKey = bestKey.split("");
+            }
             if(returnKey) {
                 return StringUtils.join(guessedKey, "");
             } else {
                 return xor(ciphertext, StringUtils.join(guessedKey, ""));
+            }
+        }
+        void doOneChar(String key, int l, ArrayList<ArrayList<Character>> charCandidates, ArrayList<String> keyPermutations, String[] guessedKey) {
+            if(l == charCandidates.size()) {
+                keyPermutations.add(key);
+                return;
+            }
+            if(charCandidates.get(l).size() == 0) {
+                doOneChar(key + guessedKey[l], l + 1, charCandidates, keyPermutations, guessedKey);
+            } else {
+                for (char c : charCandidates.get(l)) {
+                    doOneChar(key + c, l + 1, charCandidates, keyPermutations, guessedKey);
+                }
             }
         }
         String xor_getkey(String ciphertext) {
@@ -2371,25 +2469,30 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
 			int repeat = 0;
 			boolean matched;
 			String test;
-			String tag = "";
+			String encodingOpeningTags = "";
+            String encodingClosingTags = "";
+            String tag = "";
 			do {
 			    String startStr = str;
 				matched = false;
 				if(Pattern.compile("^\\x1f\\x8b\\x08").matcher(str).find()) {
                     str = this.gzip_decompress(str);
                     matched = true;
-                    tag = "gzip";
+                    encodingOpeningTags = encodingOpeningTags + "<@gzip_compress_"+(++tagCounter)+">";
+                    encodingClosingTags = "<@/gzip_compress_"+(tagCounter)+">" + encodingClosingTags;
                 }
 				if(Pattern.compile("[01]{4,}\\s+[01]{4,}").matcher(str).find()) {
 					str = this.bin2ascii(str);
 					matched = true;
-					tag = "binary";
+                    encodingOpeningTags = encodingOpeningTags + "<@ascii2bin_"+(++tagCounter)+">";
+                    encodingClosingTags = "<@/ascii2bin_"+(tagCounter)+">" + encodingClosingTags;
 				}
                 if(Pattern.compile("(?:[0-9a-fA-F]{2}[\\s,\\-]?){3,}").matcher(str).find()) {
                     test = this.hex2ascii(str);
                     if(Pattern.compile("^[\\x09-\\x7f]+$",Pattern.CASE_INSENSITIVE).matcher(test).find()) {
                         str = test;
-                        tag = "hex";
+                        encodingOpeningTags = encodingOpeningTags + "<@ascii2hex_"+(++tagCounter)+"(\" \")>";
+                        encodingClosingTags = "<@/ascii2hex_"+(tagCounter)+">" + encodingClosingTags;
                         repeat++;
                         continue;
                     }
@@ -2397,38 +2500,71 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 if(Pattern.compile("^[0-9a-fA-F]+$").matcher(str).find() && str.length() % 2 == 0) {
                     str = this.hex2ascii(str);
                     matched = true;
-                    tag = "hex";
+                    encodingOpeningTags = encodingOpeningTags + "<@ascii2hex_"+(++tagCounter)+"(\"\")>";
+                    encodingClosingTags = "<@/ascii2hex_"+(tagCounter)+">" + encodingClosingTags;
                 }
 				if(!Pattern.compile("[^\\d,\\s]").matcher(str).find() && Pattern.compile("\\d+[,\\s]+").matcher(str).find()) {
 					str = this.from_charcode(str);
 					matched = true;
-                    tag = "charcode";
+                    encodingOpeningTags = encodingOpeningTags + "<@to_charcode_"+(++tagCounter)+">";
+                    encodingClosingTags = "<@/to_charcode_"+(tagCounter)+">" + encodingClosingTags;
 				}
                 if(Pattern.compile("(?:\\\\[0]{0,4}[0-9a-fA-F]{2}[\\s,\\-]?){3,}").matcher(str).find()) {
                     test = this.decode_css_escapes(str);
                     if(Pattern.compile("^[\\x09-\\x7f]+$",Pattern.CASE_INSENSITIVE).matcher(test).find()) {
                         str = test;
                         matched = true;
-                        tag = "css_escapes";
+                        encodingOpeningTags = encodingOpeningTags + "<@css_escapes_"+(++tagCounter)+">";
+                        encodingClosingTags = "<@/css_escapes_"+(tagCounter)+">" + encodingClosingTags;
                     }
                 }
-				if(Pattern.compile("\\\\x[0-9a-f]{2}",Pattern.CASE_INSENSITIVE).matcher(str).find() || Pattern.compile("\\\\[0-9]{1,3}").matcher(str).find() || Pattern.compile("\\\\u[0-9a-f]{4}",Pattern.CASE_INSENSITIVE).matcher(str).find()) {
+				if(Pattern.compile("\\\\x[0-9a-f]{2}",Pattern.CASE_INSENSITIVE).matcher(str).find()) {
 				    test = this.decode_js_string(str);
                     if(Pattern.compile("^[\\x09-\\x7f]+$",Pattern.CASE_INSENSITIVE).matcher(test).find()) {
                         str = test;
                         matched = true;
-                        tag = "jsstring";
+                        encodingOpeningTags = encodingOpeningTags + "<@hex_escapes_"+(++tagCounter)+">";
+                        encodingClosingTags = "<@/hex_escapes_"+(tagCounter)+">" + encodingClosingTags;
                     }
 				}
-				if(Pattern.compile("&[a-zA-Z]+;",Pattern.CASE_INSENSITIVE).matcher(str).find() || Pattern.compile("&#x?[0-9a-f]+;?",Pattern.CASE_INSENSITIVE).matcher(str).find()) {
+                if(Pattern.compile("\\\\[0-9]{1,3}").matcher(str).find()) {
+                    test = this.decode_js_string(str);
+                    if(Pattern.compile("^[\\x09-\\x7f]+$",Pattern.CASE_INSENSITIVE).matcher(test).find()) {
+                        str = test;
+                        matched = true;
+                        encodingOpeningTags = encodingOpeningTags + "<@octal_escapes_"+(++tagCounter)+">";
+                        encodingClosingTags = "<@/octal_escapes_"+(tagCounter)+">" + encodingClosingTags;
+                    }
+                }
+                if(Pattern.compile("\\\\u[0-9a-f]{4}",Pattern.CASE_INSENSITIVE).matcher(str).find()) {
+                    test = this.decode_js_string(str);
+                    if(Pattern.compile("^[\\x09-\\x7f]+$",Pattern.CASE_INSENSITIVE).matcher(test).find()) {
+                        str = test;
+                        matched = true;
+                        encodingOpeningTags = encodingOpeningTags + "<@unicode_escapes_"+(++tagCounter)+">";
+                        encodingClosingTags = "<@/unicode_escapes_"+(tagCounter)+">" + encodingClosingTags;
+                    }
+                }
+				if(Pattern.compile("&[a-zA-Z]+;",Pattern.CASE_INSENSITIVE).matcher(str).find()) {
 					str = this.decode_html5_entities(str);
 					matched = true;
                     tag = "htmlentities";
+                    encodingOpeningTags = encodingOpeningTags + "<@html_entities_"+(++tagCounter)+">";
+                    encodingClosingTags = "<@/html_entities_"+(tagCounter)+">" + encodingClosingTags;
 				}
+                if(Pattern.compile("&#x?[0-9a-f]+;?",Pattern.CASE_INSENSITIVE).matcher(str).find()) {
+                    str = this.decode_html5_entities(str);
+                    matched = true;
+                    tag = "htmlentities";
+                    encodingOpeningTags = encodingOpeningTags + "<@hex_entities_"+(++tagCounter)+">";
+                    encodingClosingTags = "<@/hex_entities_"+(tagCounter)+">" + encodingClosingTags;
+                }
 				if(Pattern.compile("%[0-9a-f]{2}",Pattern.CASE_INSENSITIVE).matcher(str).find()) {
 					str = this.decode_url(str);
 					matched = true;
                     tag = "urldecode";
+                    encodingOpeningTags = encodingOpeningTags + "<@urlencode_"+(++tagCounter)+">";
+                    encodingClosingTags = "<@/urlencode_"+(tagCounter)+">" + encodingClosingTags;
 				}
                 if(Pattern.compile("^[a-zA-Z0-9\\-_.]+$",Pattern.CASE_INSENSITIVE).matcher(str).find()) {
                     String[] parts = str.split("\\.");
@@ -2442,6 +2578,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
 						str = test;
 						matched = true;
                         tag = "base64";
+                        encodingOpeningTags = encodingOpeningTags + "<@base64_"+(++tagCounter)+">";
+                        encodingClosingTags = "<@/base64_"+(tagCounter)+">" + encodingClosingTags;
 					}
 				}
 
@@ -2451,6 +2589,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                         str = test;
                         matched = true;
                         tag = "base32";
+                        encodingOpeningTags = encodingOpeningTags + "<@base32_"+(++tagCounter)+">";
+                        encodingClosingTags = "<@/base32_"+(tagCounter)+">" + encodingClosingTags;
                     }
                 }
                 if(Pattern.compile("(?:[a-zA-Z]+[\\s,-]){2,}").matcher(str).find()) {
@@ -2471,6 +2611,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                         str = rotN(str, n);
                         matched = true;
                         tag = "rotN";
+                        encodingOpeningTags = encodingOpeningTags + "<@rotN_"+(++tagCounter)+"("+n+")>";
+                        encodingClosingTags = "<@/rotN_"+(tagCounter)+">" + encodingClosingTags;
                     }
                 }
 
@@ -2494,10 +2636,12 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                         }
                     }
                     double average = (total / 25);
-                    if((((average - bestScore) / average) * 100) > 40) {
+                    if((((average - bestScore) / average) * 100) > 60 && (key1 != 1 && key2 != 0)) {
                         str = affine_decrypt(str, key1, key2);
                         matched = true;
                         tag = "affine";
+                        encodingOpeningTags = encodingOpeningTags + "<@affine_encrypt_"+(++tagCounter)+"("+key1+","+key2+")>";
+                        encodingClosingTags = "<@/affine_encrypt_"+(tagCounter)+">" + encodingClosingTags;
                     }
                 }
 
@@ -2507,6 +2651,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
 				        str = plaintext;
 				        matched = true;
 				        tag = "atbash";
+                        encodingOpeningTags = encodingOpeningTags + "<@atbash_encrypt_"+(++tagCounter)+">";
+                        encodingClosingTags = "<@/atbash_encrypt_"+(tagCounter)+">" + encodingClosingTags;
                     }
                 }
                 if(Pattern.compile("^[a-z]{10,}$").matcher(str).find()) {
@@ -2528,6 +2674,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                         str = rail_fence_decrypt(str, n);
                         matched = true;
                         tag = "rail_fence";
+                        encodingOpeningTags = encodingOpeningTags + "<@rail_fence_encrypt_"+(++tagCounter)+"("+n+")>";
+                        encodingClosingTags = "<@/rail_fence_encrypt_"+(tagCounter)+">" + encodingClosingTags;
                     }
                 }
 
@@ -2538,18 +2686,20 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                     int strLen = str.length();
                     float percent = (((float) alphaCount/strLen)*100);
                     if(is_like_english(test) < is_like_english(str) && percent > 20) {
+                        String key = xor_decrypt(str, lenGuess, true).replaceAll("\"","\\\"");
                         str = test;
                         matched = true;
                         tag = "xor";
+                        encodingOpeningTags = encodingOpeningTags + "<@xor_"+(++tagCounter)+"(\""+key+"\")>";
+                        encodingClosingTags = "<@/xor_"+(tagCounter)+">" + encodingClosingTags;
                     }
                 }
 				if(!matched || startStr.equals(str)) {
 					break;
 				}
-                //System.out.println("Pass:"+repeat+"; value="+str+"; tag="+tag);
 				repeat++;
 			} while(repeat < repeats);
-			return str;
+			return encodingOpeningTags+str+encodingClosingTags;
 		}
 		String range(String str, int from, int to, int step) {
 			ArrayList<Integer> output = new ArrayList<Integer>();
