@@ -3460,7 +3460,7 @@ private Ngrams ngrams;
 
 				ActionListener actionListener;
 				if(category.equals(tagObj.category)) {
-					         if(type.equals("button")) {
+				    if(type.equals("button")) {
                         if(!isNativeTheme) {
                             btn.setBackground(Color.decode("#005a70"));
                             btn.setForeground(Color.white);
