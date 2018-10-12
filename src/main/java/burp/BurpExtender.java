@@ -60,26 +60,30 @@ import java.lang.reflect.Method;
 import java.util.stream.IntStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
-
 import static java.awt.GridBagConstraints.*;
-
 public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, IHttpListener, IExtensionStateListener {
-	private IBurpExtenderCallbacks callbacks;
-	private IExtensionHelpers helpers;
-	private JTabbedPaneClosable inputTabs;
-	private int tabCounter = 1;
-	private PrintWriter stderr;
-	private PrintWriter stdout;
-	private Hackvertor hv;
-	private Hackvertor hvInRequest;
-	private boolean tagsInProxy = false;
-    private boolean tagsInIntruder = true;
-    private boolean tagsInRepeater = true;
-    private boolean tagsInScanner = true;
-    private JMenuBar burpMenuBar;
-    private JMenu hvMenuBar;
-    private Ngrams ngrams;
-
+private IBurpExtenderCallbacks callbacks;
+private IExtensionHelpers helpers;
+private JTabbedPaneClosable inputTabs;
+private int tabCounter = 1;
+private PrintWriter stderr;
+private PrintWriter stdout;
+private Hackvertor hv;
+private Hackvertor hvInRequest;
+private List<String> NATIVE_LOOK_AND_FEELS = Arrays.asList("GTK","Windows");
+  /**
+   * Native theme will not have the same color scheme as the default Nimbus L&F.
+   * The native theme on Windows does not allow the override of button background color.
+   */
+private boolean isNativeTheme;
+private boolean tagsInProxy = false;
+private boolean tagsInIntruder = true;
+private boolean tagsInRepeater = true;
+private boolean tagsInScanner = true;
+private JMenuBar burpMenuBar;
+private JMenu hvMenuBar;
+private Ngrams ngrams;
+  
 	private GridBagConstraints createConstraints(int x, int y, int gridWidth) {
 		GridBagConstraints c = new GridBagConstraints();
 		c.fill = GridBagConstraints.HORIZONTAL;
@@ -300,8 +304,10 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
             }
         });
         final JButton swapButton = new JButton("Swap");
-        swapButton.setBackground(Color.black);
-        swapButton.setForeground(Color.white);
+        if(!isNativeTheme) {
+            swapButton.setBackground(Color.black);
+            swapButton.setForeground(Color.white);
+        }
         swapButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 inputArea.setText(outputArea.getText());
@@ -309,6 +315,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 inputArea.requestFocus();
             }
         });
+
         final JButton selectInputButton = new JButton("Select input");
         selectInputButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -316,8 +323,11 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 inputArea.selectAll();
             }
         });
-        selectInputButton.setForeground(Color.white);
-        selectInputButton.setBackground(Color.black);
+        if(!isNativeTheme) {
+            selectInputButton.setForeground(Color.white);
+            selectInputButton.setBackground(Color.black);
+        }
+
         final JButton selectOutputButton = new JButton("Select output");
         selectOutputButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -325,16 +335,22 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 outputArea.selectAll();
             }
         });
-        selectOutputButton.setForeground(Color.white);
-        selectOutputButton.setBackground(Color.black);
+        if(!isNativeTheme) {
+            selectOutputButton.setForeground(Color.white);
+            selectOutputButton.setBackground(Color.black);
+        }
+
         final JButton clearTagsButton = new JButton("Clear tags");
         clearTagsButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 hv.clearTags();
             }
         });
-        clearTagsButton.setForeground(Color.white);
-        clearTagsButton.setBackground(Color.black);
+        if(!isNativeTheme) {
+            clearTagsButton.setForeground(Color.white);
+            clearTagsButton.setBackground(Color.black);
+        }
+
         final JButton clearButton = new JButton("Clear");
         clearButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -343,8 +359,11 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 inputArea.requestFocus();
             }
         });
-        clearButton.setForeground(Color.white);
-        clearButton.setBackground(Color.black);
+        if(!isNativeTheme) {
+            clearButton.setForeground(Color.white);
+            clearButton.setBackground(Color.black);
+        }
+
         final JButton pasteInsideButton = new JButton("Paste inside tags");
         pasteInsideButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -358,16 +377,21 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
             }
         });
-        pasteInsideButton.setForeground(Color.white);
-        pasteInsideButton.setBackground(Color.black);
+        if(!isNativeTheme) {
+            pasteInsideButton.setForeground(Color.white);
+            pasteInsideButton.setBackground(Color.black);
+        }
+
         final JButton convertButton = new JButton("Convert");
         convertButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 outputArea.setText(hv.convert(inputArea.getText()));
             }
         });
-        convertButton.setBackground(Color.decode("#005a70"));
-        convertButton.setForeground(Color.white);
+        if(!isNativeTheme) {
+            convertButton.setBackground(Color.decode("#005a70"));
+            convertButton.setForeground(Color.white);
+        }
         buttonsPanel.add(clearButton);
         buttonsPanel.add(clearTagsButton);
         buttonsPanel.add(swapButton);
@@ -465,7 +489,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v0.6.7");
+	            	stdout.println("Hackvertor v0.6.7.2");
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor();
 	            	hv = mainHV;
@@ -565,6 +589,10 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                     burpMenuBar.add(hvMenuBar);
 	            }
 	        });
+
+
+        //callbacks.printOutput("Look And Feel: "+UIManager.getLookAndFeel().getID()); //For debug purpose
+        isNativeTheme = NATIVE_LOOK_AND_FEELS.contains(UIManager.getLookAndFeel().getID());
 		
 	}
 
@@ -3432,9 +3460,11 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
 
 				ActionListener actionListener;
 				if(category.equals(tagObj.category)) {
-					if(type.equals("button")) {
-                        btn.setBackground(Color.decode("#005a70"));
-                        btn.setForeground(Color.white);
+				    if(type.equals("button")) {
+                        if(!isNativeTheme) {
+                            btn.setBackground(Color.decode("#005a70"));
+                            btn.setForeground(Color.white);
+                        }
                         btn.putClientProperty("tag", tagObj);
                     }
 
