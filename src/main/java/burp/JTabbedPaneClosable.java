@@ -80,7 +80,7 @@ public class JTabbedPaneClosable extends JTabbedPane {
             add(textField, c);
             JButton button = new JButton(MetalIconFactory.getInternalFrameCloseIcon(1));
             button.setFont(new Font("Courier", Font.PLAIN, 5));
-            button.setPreferredSize(new Dimension(7, 7));
+            button.setPreferredSize(new Dimension(5, 5));
             button.setBorderPainted(false);
             button.setFocusPainted(false);
             button.setContentAreaFilled(false);
