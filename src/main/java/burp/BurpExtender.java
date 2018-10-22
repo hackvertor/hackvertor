@@ -70,12 +70,14 @@ private PrintWriter stderr;
 private PrintWriter stdout;
 private Hackvertor hv;
 private Hackvertor hvInRequest;
-private List<String> NATIVE_LOOK_AND_FEELS = Arrays.asList("GTK","Windows");
+private List<String> NATIVE_LOOK_AND_FEELS = Arrays.asList("GTK","Windows","Aqua");
+private List<String> DARK_THEMES = Arrays.asList("Darcula");
   /**
    * Native theme will not have the same color scheme as the default Nimbus L&F.
    * The native theme on Windows does not allow the override of button background color.
    */
 private boolean isNativeTheme;
+private boolean isDarkTheme;
 private boolean tagsInProxy = false;
 private boolean tagsInIntruder = true;
 private boolean tagsInRepeater = true;
@@ -132,14 +134,21 @@ private Ngrams ngrams;
         JPanel topBar = new JPanel(new GridBagLayout());
         topBar.setPreferredSize(new Dimension(-1, 100));
         topBar.setMinimumSize(new Dimension(-1, 100));
-        JLabel logoLabel = new JLabel(createImageIcon("/images/logo.gif","logo"));
+        JLabel logoLabel;
+        if(isDarkTheme) {
+            logoLabel = new JLabel(createImageIcon("/images/logo-dark.png", "logo"));
+        } else {
+            logoLabel = new JLabel(createImageIcon("/images/logo-light.png", "logo"));
+        }
         final JTextArea hexView = new JTextArea();
         hexView.setRows(0);
         hexView.setOpaque(true);
         hexView.setEditable(false);
         hexView.setLineWrap(true);
-        hexView.setBackground(Color.decode("#FFF5BF"));
-        hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
+        if(!isDarkTheme) {
+            hexView.setBackground(Color.decode("#FFF5BF"));
+            hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
+        }
         hexView.setVisible(false);
         final JScrollPane hexScroll = new JScrollPane(hexView);
         hexScroll.setPreferredSize(new Dimension(-1,100));
@@ -189,12 +198,20 @@ private Ngrams ngrams;
         final JLabel inputLenLabel = new JLabel("0");
         final JLabel inputRealLenLabel = new JLabel("0");
         inputRealLenLabel.setOpaque(true);
-        inputRealLenLabel.setForeground(Color.decode("#ffffff"));
-        inputRealLenLabel.setBackground(Color.decode("#ff0027"));
-        inputRealLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#CCCCCC"), 1));
+        if(!isDarkTheme) {
+            inputRealLenLabel.setForeground(Color.decode("#ffffff"));
+            inputRealLenLabel.setBackground(Color.decode("#ff0027"));
+            inputRealLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#CCCCCC"), 1));
+        } else {
+            inputRealLenLabel.setForeground(Color.decode("#000000"));
+            inputRealLenLabel.setBackground(Color.decode("#b6b6b6"));
+            inputRealLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#CCCCCC"), 1));
+        }
         inputLenLabel.setOpaque(true);
-        inputLenLabel.setBackground(Color.decode("#FFF5BF"));
-        inputLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
+        if(!isDarkTheme) {
+            inputLenLabel.setBackground(Color.decode("#FFF5BF"));
+            inputLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
+        }
         final JTextArea outputArea = new JTextArea();
         hv.setOutputArea(outputArea);
         DocumentListener documentListener = new DocumentListener() {
@@ -266,12 +283,20 @@ private Ngrams ngrams;
         final JLabel outputLenLabel = new JLabel("0");
         final JLabel outputRealLenLabel = new JLabel("0");
         outputRealLenLabel.setOpaque(true);
-        outputRealLenLabel.setForeground(Color.decode("#ffffff"));
-        outputRealLenLabel.setBackground(Color.decode("#ff0027"));
-        outputRealLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#CCCCCC"), 1));
+        if(!isDarkTheme) {
+            outputRealLenLabel.setForeground(Color.decode("#ffffff"));
+            outputRealLenLabel.setBackground(Color.decode("#ff0027"));
+            outputRealLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#CCCCCC"), 1));
+        } else {
+            outputRealLenLabel.setForeground(Color.decode("#000000"));
+            outputRealLenLabel.setBackground(Color.decode("#b6b6b6"));
+            outputRealLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#CCCCCC"), 1));
+        }
         outputLenLabel.setOpaque(true);
-        outputLenLabel.setBackground(Color.decode("#FFF5BF"));
-        outputLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
+        if(!isDarkTheme) {
+            outputLenLabel.setBackground(Color.decode("#FFF5BF"));
+            outputLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
+        }
         DocumentListener documentListener2 = new DocumentListener() {
             public void changedUpdate(DocumentEvent documentEvent) {
                 updateLen(documentEvent);
@@ -304,7 +329,7 @@ private Ngrams ngrams;
             }
         });
         final JButton swapButton = new JButton("Swap");
-        if(!isNativeTheme) {
+        if(!isNativeTheme && !isDarkTheme) {
             swapButton.setBackground(Color.black);
             swapButton.setForeground(Color.white);
         }
@@ -323,7 +348,7 @@ private Ngrams ngrams;
                 inputArea.selectAll();
             }
         });
-        if(!isNativeTheme) {
+        if(!isNativeTheme && !isDarkTheme) {
             selectInputButton.setForeground(Color.white);
             selectInputButton.setBackground(Color.black);
         }
@@ -335,7 +360,7 @@ private Ngrams ngrams;
                 outputArea.selectAll();
             }
         });
-        if(!isNativeTheme) {
+        if(!isNativeTheme && !isDarkTheme) {
             selectOutputButton.setForeground(Color.white);
             selectOutputButton.setBackground(Color.black);
         }
@@ -346,7 +371,7 @@ private Ngrams ngrams;
                 hv.clearTags();
             }
         });
-        if(!isNativeTheme) {
+        if(!isNativeTheme && !isDarkTheme) {
             clearTagsButton.setForeground(Color.white);
             clearTagsButton.setBackground(Color.black);
         }
@@ -359,7 +384,7 @@ private Ngrams ngrams;
                 inputArea.requestFocus();
             }
         });
-        if(!isNativeTheme) {
+        if(!isNativeTheme && !isDarkTheme) {
             clearButton.setForeground(Color.white);
             clearButton.setBackground(Color.black);
         }
@@ -377,7 +402,7 @@ private Ngrams ngrams;
                 }
             }
         });
-        if(!isNativeTheme) {
+        if(!isNativeTheme && !isDarkTheme) {
             pasteInsideButton.setForeground(Color.white);
             pasteInsideButton.setBackground(Color.black);
         }
@@ -388,7 +413,7 @@ private Ngrams ngrams;
                 outputArea.setText(hv.convert(inputArea.getText()));
             }
         });
-        if(!isNativeTheme) {
+        if(!isNativeTheme && !isDarkTheme) {
             convertButton.setBackground(Color.decode("#005a70"));
             convertButton.setForeground(Color.white);
         }
@@ -489,7 +514,7 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v0.6.7.2");
+	            	stdout.println("Hackvertor v0.6.7.3");
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor();
 	            	hv = mainHV;
@@ -593,7 +618,7 @@ private Ngrams ngrams;
 
         //callbacks.printOutput("Look And Feel: "+UIManager.getLookAndFeel().getID()); //For debug purpose
         isNativeTheme = NATIVE_LOOK_AND_FEELS.contains(UIManager.getLookAndFeel().getID());
-		
+        isDarkTheme = DARK_THEMES.contains(UIManager.getLookAndFeel().getID());
 	}
 
 	public void extensionUnloaded() {
@@ -3461,7 +3486,7 @@ private Ngrams ngrams;
 				ActionListener actionListener;
 				if(category.equals(tagObj.category)) {
 				    if(type.equals("button")) {
-                        if(!isNativeTheme) {
+                        if(!isNativeTheme && !isDarkTheme) {
                             btn.setBackground(Color.decode("#005a70"));
                             btn.setForeground(Color.white);
                         }
