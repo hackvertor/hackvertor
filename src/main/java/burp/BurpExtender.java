@@ -854,7 +854,7 @@ private Ngrams ngrams;
         for(int i=0;i<categories.length;i++) {
             JMenu categoryMenu = new JMenu(categories[i]);
             String category = categories[i];
-            hvInRequest.createButtonsOrMenu(category, "menu", categoryMenu, invocation);
+            hvInRequest.createButtonsOrMenu(category, "menu", categoryMenu, invocation, "");
             submenu.add(categoryMenu);
         }
         menu.add(submenu);
@@ -966,11 +966,49 @@ private Ngrams ngrams;
         }
 		void buildTabs(JTabbedPane tabs) {
             for(int i=0;i<categories.length;i++) {
-                tabs.addTab(categories[i], createButtonsOrMenu(categories[i],"button", null, null));
+                tabs.addTab(categories[i], createButtonsOrMenu(categories[i],"button", null, null, ""));
             }
+            tabs.addTab("Search", generateSearchPanel());
 		}
 		String[] getCategories() {
             return categories;
+        }
+        JPanel generateSearchPanel() {
+            JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+            searchPanel.setPreferredSize(new Dimension(700, 80));
+            String[] searchOptionsText = {"Search tags","Search Input"};
+            JComboBox searchOptions = new JComboBox(searchOptionsText);
+            JTextField searchBox = new JTextField();
+            searchBox.setPreferredSize(new Dimension(200, 30));
+            JPanel tagsPanel = new JPanel();
+            tagsPanel.setAutoscrolls(false);
+            tagsPanel.setPreferredSize(new Dimension(700, 50));
+            searchBox.addKeyListener(new KeyAdapter() {
+                public void keyReleased(KeyEvent e) {
+                    if(searchOptions.getSelectedIndex() == 0) {
+                        searchTags(searchBox.getText(), tagsPanel);
+                    } else {
+                        searchInput(searchBox.getText());
+                    }
+                }
+            });
+            searchPanel.add(searchOptions);
+            searchPanel.add(searchBox);
+            searchPanel.add(tagsPanel);
+            return searchPanel;
+        }
+        void searchTags(String input, JPanel tagsPanel) {
+            tagsPanel.removeAll();
+            JScrollPane tags = createButtonsOrMenu("", "button", null, null, input);
+            tags.setPreferredSize(new Dimension(700, 70));
+            tags.setBorder(null);
+            tags.setAutoscrolls(false);
+            tagsPanel.add(tags);
+            tagsPanel.repaint();
+            tagsPanel.validate();
+        }
+        void searchInput(String find) {
+
         }
         public ArrayList<Tag> getTags(){
             return tags;
@@ -3472,7 +3510,7 @@ private Ngrams ngrams;
 			 } 
 			return convertedArgs;
 		}
-		private JScrollPane createButtonsOrMenu(String category, final String type, JMenu parentMenu, final IContextMenuInvocation invocation) {
+		private JScrollPane createButtonsOrMenu(String category, final String type, JMenu parentMenu, final IContextMenuInvocation invocation, String searchTag) {
 			JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 			JScrollPane scrollFrame = new JScrollPane(panel,JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 			tags.sort((t1, t2) -> t1.name.compareToIgnoreCase(t2.name));
@@ -3484,7 +3522,7 @@ private Ngrams ngrams;
                 menu.setToolTipText(tagObj.tooltip);
 
 				ActionListener actionListener;
-				if(category.equals(tagObj.category)) {
+				if((category.length() > 0 && category.equals(tagObj.category)) || (searchTag.length() > 0 && tagObj.name.contains(searchTag))) {
 				    if(type.equals("button")) {
                         if(!isNativeTheme && !isDarkTheme) {
                             btn.setBackground(Color.decode("#005a70"));
