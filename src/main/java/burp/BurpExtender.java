@@ -517,7 +517,7 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v0.6.8");
+	            	stdout.println("Hackvertor v0.6.8.2");
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor();
 	            	hv = mainHV;
@@ -3446,7 +3446,7 @@ private Ngrams ngrams;
                     code = m.group(1);
                 }
                 setVariable(tagName, convert(code));
-                String result = code.replaceAll("<@/?\\w+_\\d+(?:[(](?:,?"+argumentsRegex+")*[)])?(?:\\s@/)?>","");
+                String result = code.replaceAll("<@/?\\w+(?:_\\d+)?(?:[(](?:,?"+argumentsRegex+")*[)])?(?:\\s@/)?>","");
                 output = output.replaceAll("<@"+tagNameWithID+"(?:[(](?:,?"+argumentsRegex+")*[)])?>[\\d\\D]*?<@/"+tagNameWithID+">", result.replace("\\","\\\\").replace("$","\\$"));
             }
             return output;
