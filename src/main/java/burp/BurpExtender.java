@@ -23,7 +23,10 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.swing.*;
 import javax.swing.event.*;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DefaultHighlighter;
 import javax.swing.text.Document;
+import javax.swing.text.Highlighter;
 import javax.swing.undo.CannotRedoException;
 import javax.swing.undo.CannotUndoException;
 import javax.swing.undo.UndoManager;
@@ -514,7 +517,7 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v0.6.7.3");
+	            	stdout.println("Hackvertor v0.6.8");
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor();
 	            	hv = mainHV;
@@ -1008,8 +1011,29 @@ private Ngrams ngrams;
             tagsPanel.repaint();
             tagsPanel.validate();
         }
-        void searchInput(String find) {
+        void searchInput(String findText) {
+            try
+            {
+                Highlighter.HighlightPainter painter = new DefaultHighlighter.DefaultHighlightPainter(isDarkTheme ? Color.gray : Color.yellow);
+                inputArea.getHighlighter().removeAllHighlights();
+                if(findText.length() == 0) {
+                    return;
+                }
+                int findLength = findText.length();
+                Document doc = inputArea.getDocument();
+                String text = doc.getText(0, doc.getLength());
+                int count = 0;
+                int offset = 0;
 
+                while ((offset = text.indexOf(findText, offset)) != -1)
+                {
+                    inputArea.select(offset, offset + findLength);
+                    inputArea.getHighlighter().addHighlight(offset, offset + findLength, painter);
+                    offset+=findLength;
+                    count++;
+                }
+            }
+            catch(BadLocationException e) {}
         }
         public ArrayList<Tag> getTags(){
             return tags;
