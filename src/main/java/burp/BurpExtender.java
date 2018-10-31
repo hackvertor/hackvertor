@@ -944,13 +944,14 @@ private Ngrams ngrams;
 	}
 	class Hackvertor {	
 		private int tagCounter = 0;
+		private Map<String,String> tagVariables=new HashMap<String,String>();
 		String argumentsRegex = "(?:0x[a-fA-F0-9]+|\\d+|'(?:\\\\'|[^']*)'|\"(?:\\\\\"|[^\"]*)\")";
 		private ArrayList<Tag> tags = new ArrayList<Tag>();
 		private JTextArea inputArea;
         private JTextArea outputArea;
         private JPanel panel;
         private String[] categories = {
-                "Charsets","Compression","Encrypt","Encode","Decode","Convert","String","Hash","Math","XSS"
+                "Charsets","Compression","Encrypt","Encode","Decode","Convert","String","Hash","Math","XSS","Variables"
         };
         void setInputArea(JTextArea inputArea) {
             this.inputArea = inputArea;
@@ -1235,6 +1236,8 @@ private Ngrams ngrams;
 			tags.add(new Tag("XSS","uppercase_script",true,"uppercase_script(String str)"));
 			tags.add(new Tag("XSS","template_eval",true,"template_eval(String str)"));
             tags.add(new Tag("XSS","throw_eval",true,"throw_eval(String str)"));
+            tags.add(new Tag("Variables", "set_var",true, "Special tag that lets you store the results of a conversion. Change var to your own variable name."));
+            tags.add(new Tag("Variables", "get_var",false, "Special tag that lets you get a previously set variable. Change var to your own variable name."));
 		}
 		String convertCharset(String input, String to) {
             String output = "";
@@ -3375,7 +3378,7 @@ private Ngrams ngrams;
 		}
 		String convertNoInputTags(String input) {
             List<String> allMatches = new ArrayList<>();
-            Matcher m = Pattern.compile("<@([\\w\\d]+_\\d+)((?:[(](?:,?"+argumentsRegex+")*[)])?) @/>").matcher(input);
+            Matcher m = Pattern.compile("<@([\\w\\d]+(_\\d*)?)((?:[(](?:,?"+argumentsRegex+")*[)])?) @/>").matcher(input);
             while (m.find()) {
                 allMatches.add(m.group(1));
             }
@@ -3386,18 +3389,54 @@ private Ngrams ngrams;
                 if(m.find()) {
                     arguments = m.group(1);
                 }
-                String result = this.callTag(tagName,"", this.parseArguments(arguments));
+                String result;
+                if(tagName.startsWith("get_")) {
+                    result = getVariable(tagName) == null ? "" : getVariable(tagName) ;
+                } else {
+                    result = this.callTag(tagName, "", this.parseArguments(arguments));
+                }
                 input = input.replaceAll("<@"+tagNameWithID+"(?:[(](?:,?"+argumentsRegex+")*[)])? @/>", result.replace("\\","\\\\").replace("$","\\$"));
             }
             return input;
         }
+        void setVariable(String name, String value) {
+            name = name.replaceAll("^set_","");
+            tagVariables.put(name, convert(value));
+        }
+        String getVariable(String name) {
+            name = name.replaceAll("^get_","");
+            return tagVariables.get(name);
+        }
+        String convertSetVariables(String input) {
+            String output = input;
+            List<String> allMatches = new ArrayList<>();
+            Matcher m = Pattern.compile("<@(set_[\\w\\d]+(?:_\\d+)?)>").matcher(input);
+            while (m.find()) {
+                allMatches.add(m.group(1));
+            }
+            for(String tagNameWithID:allMatches) {
+                String code = "";
+                String tagName = tagNameWithID.replaceAll("_\\d+$","");
+                m = Pattern.compile("<@"+tagNameWithID+">([\\d\\D]*?)<@/"+tagNameWithID+">").matcher(output);
+                if(m.find()) {
+                    code = m.group(1);
+                }
+                setVariable(tagName, convert(code));
+                String result = code.replaceAll("<@/?\\w+_\\d+(?:[(](?:,?"+argumentsRegex+")*[)])?(?:\\s@/)?>","");
+                output = output.replaceAll("<@"+tagNameWithID+"(?:[(](?:,?"+argumentsRegex+")*[)])?>[\\d\\D]*?<@/"+tagNameWithID+">", result.replace("\\","\\\\").replace("$","\\$"));
+            }
+            return output;
+        }
 		String convert(String input) {
+            if(input.contains("<@set_")) {
+               input = convertSetVariables(input);
+            }
             if(input.contains(" @/>")) {
                 input = convertNoInputTags(input);
             }
 			String output = input;
 			List<String> allMatches = new ArrayList<>();
-			 Matcher m = Pattern.compile("<@/([\\w\\d]+_\\d+)>").matcher(input);			 
+			 Matcher m = Pattern.compile("<@/([\\w\\d]+(?:_\\d+)?)>").matcher(input);
 			 while (m.find()) {
 			   allMatches.add(m.group(1));
 			 }
@@ -3539,7 +3578,12 @@ private Ngrams ngrams;
                                 selectedText = "";
                             }
                         }
-                        String tagStart = "<@"+tagObj.name+"_"+tagCounter;
+                        String tagStart;
+                        if(tagObj.name.startsWith("set_") || tagObj.name.startsWith("get_")) {
+                            tagStart = "<@"+tagObj.name;
+                        } else {
+                            tagStart = "<@"+tagObj.name+"_"+tagCounter;
+                        }
                         if(tagObj.argument1 != null) {
                             tagStart += "(";
                         }
@@ -3572,7 +3616,11 @@ private Ngrams ngrams;
                         String tagEnd;
                         if(tagObj.hasInput) {
                             tagStart += ">";
-                            tagEnd = "<@/" + tagObj.name + "_" + tagCounter + ">";
+                            if(tagObj.name.startsWith("set_") || tagObj.name.startsWith("get_")) {
+                                tagEnd = "<@/" + tagObj.name + ">";
+                            } else {
+                                tagEnd = "<@/" + tagObj.name + "_" + tagCounter + ">";
+                            }
                         } else {
                             tagStart += " @/>";
                             tagEnd = "";
@@ -3597,7 +3645,9 @@ private Ngrams ngrams;
                                 }
                             }
                         }
-                        tagCounter++;
+                        if(!tagObj.name.startsWith("set_") && !tagObj.name.startsWith("get_")) {
+                            tagCounter++;
+                        }
                         if(type.equals("button")) {
                             outputArea.setText(hv.convert(inputArea.getText()));
                             outputArea.selectAll();
