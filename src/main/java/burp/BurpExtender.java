@@ -23,7 +23,10 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.swing.*;
 import javax.swing.event.*;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DefaultHighlighter;
 import javax.swing.text.Document;
+import javax.swing.text.Highlighter;
 import javax.swing.undo.CannotRedoException;
 import javax.swing.undo.CannotUndoException;
 import javax.swing.undo.UndoManager;
@@ -514,7 +517,7 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v0.6.7.3");
+	            	stdout.println("Hackvertor v0.6.8.2");
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor();
 	            	hv = mainHV;
@@ -854,7 +857,7 @@ private Ngrams ngrams;
         for(int i=0;i<categories.length;i++) {
             JMenu categoryMenu = new JMenu(categories[i]);
             String category = categories[i];
-            hvInRequest.createButtonsOrMenu(category, "menu", categoryMenu, invocation);
+            hvInRequest.createButtonsOrMenu(category, "menu", categoryMenu, invocation, "");
             submenu.add(categoryMenu);
         }
         menu.add(submenu);
@@ -944,13 +947,14 @@ private Ngrams ngrams;
 	}
 	class Hackvertor {	
 		private int tagCounter = 0;
+		private Map<String,String> tagVariables=new HashMap<String,String>();
 		String argumentsRegex = "(?:0x[a-fA-F0-9]+|\\d+|'(?:\\\\'|[^']*)'|\"(?:\\\\\"|[^\"]*)\")";
 		private ArrayList<Tag> tags = new ArrayList<Tag>();
 		private JTextArea inputArea;
         private JTextArea outputArea;
         private JPanel panel;
         private String[] categories = {
-                "Charsets","Compression","Encrypt","Encode","Decode","Convert","String","Hash","Math","XSS"
+                "Charsets","Compression","Encrypt","Encode","Decode","Convert","String","Hash","Math","XSS","Variables"
         };
         void setInputArea(JTextArea inputArea) {
             this.inputArea = inputArea;
@@ -966,11 +970,70 @@ private Ngrams ngrams;
         }
 		void buildTabs(JTabbedPane tabs) {
             for(int i=0;i<categories.length;i++) {
-                tabs.addTab(categories[i], createButtonsOrMenu(categories[i],"button", null, null));
+                tabs.addTab(categories[i], createButtonsOrMenu(categories[i],"button", null, null, ""));
             }
+            tabs.addTab("Search", generateSearchPanel());
 		}
 		String[] getCategories() {
             return categories;
+        }
+        JPanel generateSearchPanel() {
+            JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+            searchPanel.setPreferredSize(new Dimension(700, 80));
+            String[] searchOptionsText = {"Search tags","Search Input"};
+            JComboBox searchOptions = new JComboBox(searchOptionsText);
+            JTextField searchBox = new JTextField();
+            searchBox.setPreferredSize(new Dimension(200, 30));
+            JPanel tagsPanel = new JPanel();
+            tagsPanel.setAutoscrolls(false);
+            tagsPanel.setPreferredSize(new Dimension(700, 50));
+            searchBox.addKeyListener(new KeyAdapter() {
+                public void keyReleased(KeyEvent e) {
+                    if(searchOptions.getSelectedIndex() == 0) {
+                        searchTags(searchBox.getText(), tagsPanel);
+                    } else {
+                        searchInput(searchBox.getText());
+                    }
+                }
+            });
+            searchPanel.add(searchOptions);
+            searchPanel.add(searchBox);
+            searchPanel.add(tagsPanel);
+            return searchPanel;
+        }
+        void searchTags(String input, JPanel tagsPanel) {
+            tagsPanel.removeAll();
+            JScrollPane tags = createButtonsOrMenu("", "button", null, null, input);
+            tags.setPreferredSize(new Dimension(700, 70));
+            tags.setBorder(null);
+            tags.setAutoscrolls(false);
+            tagsPanel.add(tags);
+            tagsPanel.repaint();
+            tagsPanel.validate();
+        }
+        void searchInput(String findText) {
+            try
+            {
+                Highlighter.HighlightPainter painter = new DefaultHighlighter.DefaultHighlightPainter(isDarkTheme ? Color.gray : Color.yellow);
+                inputArea.getHighlighter().removeAllHighlights();
+                if(findText.length() == 0) {
+                    return;
+                }
+                int findLength = findText.length();
+                Document doc = inputArea.getDocument();
+                String text = doc.getText(0, doc.getLength());
+                int count = 0;
+                int offset = 0;
+
+                while ((offset = text.indexOf(findText, offset)) != -1)
+                {
+                    inputArea.select(offset, offset + findLength);
+                    inputArea.getHighlighter().addHighlight(offset, offset + findLength, painter);
+                    offset+=findLength;
+                    count++;
+                }
+            }
+            catch(BadLocationException e) {}
         }
         public ArrayList<Tag> getTags(){
             return tags;
@@ -1197,6 +1260,8 @@ private Ngrams ngrams;
 			tags.add(new Tag("XSS","uppercase_script",true,"uppercase_script(String str)"));
 			tags.add(new Tag("XSS","template_eval",true,"template_eval(String str)"));
             tags.add(new Tag("XSS","throw_eval",true,"throw_eval(String str)"));
+            tags.add(new Tag("Variables", "set_var",true, "Special tag that lets you store the results of a conversion. Change var to your own variable name."));
+            tags.add(new Tag("Variables", "get_var",false, "Special tag that lets you get a previously set variable. Change var to your own variable name."));
 		}
 		String convertCharset(String input, String to) {
             String output = "";
@@ -3337,7 +3402,7 @@ private Ngrams ngrams;
 		}
 		String convertNoInputTags(String input) {
             List<String> allMatches = new ArrayList<>();
-            Matcher m = Pattern.compile("<@([\\w\\d]+_\\d+)((?:[(](?:,?"+argumentsRegex+")*[)])?) @/>").matcher(input);
+            Matcher m = Pattern.compile("<@([\\w\\d]+(_\\d*)?)((?:[(](?:,?"+argumentsRegex+")*[)])?) @/>").matcher(input);
             while (m.find()) {
                 allMatches.add(m.group(1));
             }
@@ -3348,18 +3413,54 @@ private Ngrams ngrams;
                 if(m.find()) {
                     arguments = m.group(1);
                 }
-                String result = this.callTag(tagName,"", this.parseArguments(arguments));
+                String result;
+                if(tagName.startsWith("get_")) {
+                    result = getVariable(tagName) == null ? "" : getVariable(tagName) ;
+                } else {
+                    result = this.callTag(tagName, "", this.parseArguments(arguments));
+                }
                 input = input.replaceAll("<@"+tagNameWithID+"(?:[(](?:,?"+argumentsRegex+")*[)])? @/>", result.replace("\\","\\\\").replace("$","\\$"));
             }
             return input;
         }
+        void setVariable(String name, String value) {
+            name = name.replaceAll("^set_","");
+            tagVariables.put(name, convert(value));
+        }
+        String getVariable(String name) {
+            name = name.replaceAll("^get_","");
+            return tagVariables.get(name);
+        }
+        String convertSetVariables(String input) {
+            String output = input;
+            List<String> allMatches = new ArrayList<>();
+            Matcher m = Pattern.compile("<@(set_[\\w\\d]+(?:_\\d+)?)>").matcher(input);
+            while (m.find()) {
+                allMatches.add(m.group(1));
+            }
+            for(String tagNameWithID:allMatches) {
+                String code = "";
+                String tagName = tagNameWithID.replaceAll("_\\d+$","");
+                m = Pattern.compile("<@"+tagNameWithID+">([\\d\\D]*?)<@/"+tagNameWithID+">").matcher(output);
+                if(m.find()) {
+                    code = m.group(1);
+                }
+                setVariable(tagName, convert(code));
+                String result = code.replaceAll("<@/?\\w+(?:_\\d+)?(?:[(](?:,?"+argumentsRegex+")*[)])?(?:\\s@/)?>","");
+                output = output.replaceAll("<@"+tagNameWithID+"(?:[(](?:,?"+argumentsRegex+")*[)])?>[\\d\\D]*?<@/"+tagNameWithID+">", result.replace("\\","\\\\").replace("$","\\$"));
+            }
+            return output;
+        }
 		String convert(String input) {
+            if(input.contains("<@set_")) {
+               input = convertSetVariables(input);
+            }
             if(input.contains(" @/>")) {
                 input = convertNoInputTags(input);
             }
 			String output = input;
 			List<String> allMatches = new ArrayList<>();
-			 Matcher m = Pattern.compile("<@/([\\w\\d]+_\\d+)>").matcher(input);			 
+			 Matcher m = Pattern.compile("<@/([\\w\\d]+(?:_\\d+)?)>").matcher(input);
 			 while (m.find()) {
 			   allMatches.add(m.group(1));
 			 }
@@ -3472,7 +3573,7 @@ private Ngrams ngrams;
 			 } 
 			return convertedArgs;
 		}
-		private JScrollPane createButtonsOrMenu(String category, final String type, JMenu parentMenu, final IContextMenuInvocation invocation) {
+		private JScrollPane createButtonsOrMenu(String category, final String type, JMenu parentMenu, final IContextMenuInvocation invocation, String searchTag) {
 			JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 			JScrollPane scrollFrame = new JScrollPane(panel,JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 			tags.sort((t1, t2) -> t1.name.compareToIgnoreCase(t2.name));
@@ -3484,7 +3585,7 @@ private Ngrams ngrams;
                 menu.setToolTipText(tagObj.tooltip);
 
 				ActionListener actionListener;
-				if(category.equals(tagObj.category)) {
+				if((category.length() > 0 && category.equals(tagObj.category)) || (searchTag.length() > 0 && tagObj.name.contains(searchTag))) {
 				    if(type.equals("button")) {
                         if(!isNativeTheme && !isDarkTheme) {
                             btn.setBackground(Color.decode("#005a70"));
@@ -3501,7 +3602,12 @@ private Ngrams ngrams;
                                 selectedText = "";
                             }
                         }
-                        String tagStart = "<@"+tagObj.name+"_"+tagCounter;
+                        String tagStart;
+                        if(tagObj.name.startsWith("set_") || tagObj.name.startsWith("get_")) {
+                            tagStart = "<@"+tagObj.name;
+                        } else {
+                            tagStart = "<@"+tagObj.name+"_"+tagCounter;
+                        }
                         if(tagObj.argument1 != null) {
                             tagStart += "(";
                         }
@@ -3534,7 +3640,11 @@ private Ngrams ngrams;
                         String tagEnd;
                         if(tagObj.hasInput) {
                             tagStart += ">";
-                            tagEnd = "<@/" + tagObj.name + "_" + tagCounter + ">";
+                            if(tagObj.name.startsWith("set_") || tagObj.name.startsWith("get_")) {
+                                tagEnd = "<@/" + tagObj.name + ">";
+                            } else {
+                                tagEnd = "<@/" + tagObj.name + "_" + tagCounter + ">";
+                            }
                         } else {
                             tagStart += " @/>";
                             tagEnd = "";
@@ -3559,7 +3669,9 @@ private Ngrams ngrams;
                                 }
                             }
                         }
-                        tagCounter++;
+                        if(!tagObj.name.startsWith("set_") && !tagObj.name.startsWith("get_")) {
+                            tagCounter++;
+                        }
                         if(type.equals("button")) {
                             outputArea.setText(hv.convert(inputArea.getText()));
                             outputArea.selectAll();

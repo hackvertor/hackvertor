@@ -6,7 +6,7 @@
 
     <groupId>uk.co.hackvertor.hackvertor-burp</groupId>
     <artifactId>hackvertor</artifactId>
-    <version>0.6.7.3</version>
+    <version>0.6.8.2</version>
     <dependencies>
         <dependency>
             <groupId>commons-codec</groupId>
