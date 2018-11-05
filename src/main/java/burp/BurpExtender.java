@@ -9,10 +9,7 @@ import java.io.*;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.Security;
+import java.security.*;
 import java.util.*;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -517,7 +514,7 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v0.6.8.2");
+	            	stdout.println("Hackvertor v0.6.8.3");
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor();
 	            	hv = mainHV;
@@ -954,7 +951,7 @@ private Ngrams ngrams;
         private JTextArea outputArea;
         private JPanel panel;
         private String[] categories = {
-                "Charsets","Compression","Encrypt","Encode","Decode","Convert","String","Hash","Math","XSS","Variables"
+                "Charsets","Compression","Encrypt","Encode","Decode","Convert","String","Hash","HMAC","Math","XSS","Variables"
         };
         void setInputArea(JTextArea inputArea) {
             this.inputArea = inputArea;
@@ -1188,6 +1185,24 @@ private Ngrams ngrams;
 			tag.argument1 = new TagArgument("string","split char");
 			tag.argument2 = new TagArgument("string","join char");
 			tags.add(tag);
+            tag = new Tag("HMAC","hmac_md5",true,"hmacmd5(String str, String key)");
+            tag.argument1 = new TagArgument("string","SECRET");
+            tags.add(tag);
+            tag = new Tag("HMAC","hmac_sha1",true,"hmacsha1(String str, String key)");
+            tag.argument1 = new TagArgument("string","SECRET");
+            tags.add(tag);
+            tag = new Tag("HMAC","hmac_sha224",true,"hmacsha224(String str, String key)");
+            tag.argument1 = new TagArgument("string","SECRET");
+            tags.add(tag);
+            tag = new Tag("HMAC","hmac_sha256",true,"hmacsha256(String str, String key)");
+            tag.argument1 = new TagArgument("string","SECRET");
+            tags.add(tag);
+            tag = new Tag("HMAC","hmac_sha384",true,"hmacsha384(String str, String key)");
+            tag.argument1 = new TagArgument("string","SECRET");
+            tags.add(tag);
+            tag = new Tag("HMAC","hmac_sha512",true,"hmacsha512(String str, String key)");
+            tag.argument1 = new TagArgument("string","SECRET");
+            tags.add(tag);
 			tags.add(new Tag("Hash","sha1",true,"sha1(String str)"));
             tags.add(new Tag("Hash","sha224",true,"sha224(String message)"));
 			tags.add(new Tag("Hash","sha256",true,"sha256(String str)"));
@@ -2275,7 +2290,39 @@ private Ngrams ngrams;
             }
             return sb.toString();
 		}
-		String sha1(String str) {
+        String hmac(String str, String key, String algoName) {
+            Mac hashMac = null;
+            try {
+                hashMac = Mac.getInstance(algoName);
+                SecretKeySpec secret_key = new SecretKeySpec(key.getBytes(), algoName);
+                hashMac.init(secret_key);
+
+                return org.bouncycastle.util.encoders.Hex.toHexString(hashMac.doFinal(str.getBytes()));
+            } catch (Exception e) {
+                e.printStackTrace();
+
+                return e.getMessage();
+            }
+        }
+        String hmacmd5(String str, String key) {
+            return hmac(str, key, "HmacMD5");
+        }
+        String hmacsha1(String str, String key) {
+            return hmac(str, key, "HmacSHA1");
+        }
+        String hmacsha224(String str, String key) {
+            return hmac(str, key, "HmacSHA224");
+        }
+        String hmacsha256(String str, String key) {
+            return hmac(str, key, "HmacSHA256");
+        }
+        String hmacsha384(String str, String key) {
+            return hmac(str, key, "HmacSHA384");
+        }
+        String hmacsha512(String str, String key) {
+            return hmac(str, key, "HmacSHA512");
+        }
+        String sha1(String str) {
 			return DigestUtils.sha1Hex(str);
 		}
         String sha224(String message) {
@@ -3237,6 +3284,24 @@ private Ngrams ngrams;
                     break;
                 case "ascii2reverse_hex":
                     output = this.ascii2reverse_hex(output, this.getString(arguments, 0));
+                    break;
+                case "hmac_md5":
+                    output = this.hmacmd5(output, this.getString(arguments, 0));
+                    break;
+                case "hmac_sha1":
+                    output = this.hmacsha1(output, this.getString(arguments, 0));
+                    break;
+                case "hmac_sha224":
+                    output = this.hmacsha224(output, this.getString(arguments, 0));
+                    break;
+                case "hmac_sha256":
+                    output = this.hmacsha256(output, this.getString(arguments, 0));
+                    break;
+                case "hmac_sha384":
+                    output = this.hmacsha384(output, this.getString(arguments, 0));
+                    break;
+                case "hmac_sha512":
+                    output = this.hmacsha512(output, this.getString(arguments, 0));
                     break;
                 case "sha1":
                     output = this.sha1(output);
