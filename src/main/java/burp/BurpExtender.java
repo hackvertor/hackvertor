@@ -514,7 +514,7 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v0.6.8.3");
+	            	stdout.println("Hackvertor v0.6.8.4");
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor();
 	            	hv = mainHV;
@@ -854,7 +854,7 @@ private Ngrams ngrams;
         for(int i=0;i<categories.length;i++) {
             JMenu categoryMenu = new JMenu(categories[i]);
             String category = categories[i];
-            hvInRequest.createButtonsOrMenu(category, "menu", categoryMenu, invocation, "");
+            hvInRequest.createButtonsOrMenu(category, "menu", categoryMenu, invocation, "" , false);
             submenu.add(categoryMenu);
         }
         menu.add(submenu);
@@ -967,7 +967,7 @@ private Ngrams ngrams;
         }
 		void buildTabs(JTabbedPane tabs) {
             for(int i=0;i<categories.length;i++) {
-                tabs.addTab(categories[i], createButtonsOrMenu(categories[i],"button", null, null, ""));
+                tabs.addTab(categories[i], createButtonsOrMenu(categories[i],"button", null, null, "", false));
             }
             tabs.addTab("Search", generateSearchPanel());
 		}
@@ -977,30 +977,42 @@ private Ngrams ngrams;
         JPanel generateSearchPanel() {
             JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
             searchPanel.setPreferredSize(new Dimension(700, 80));
-            String[] searchOptionsText = {"Search tags","Search Input"};
+            String[] searchOptionsText = {"Search tags","Search Input","Search output"};
             JComboBox searchOptions = new JComboBox(searchOptionsText);
             JTextField searchBox = new JTextField();
+            JCheckBox regexCheckbox = new JCheckBox("Regex?");
             searchBox.setPreferredSize(new Dimension(200, 30));
             JPanel tagsPanel = new JPanel();
             tagsPanel.setAutoscrolls(false);
             tagsPanel.setPreferredSize(new Dimension(700, 50));
             searchBox.addKeyListener(new KeyAdapter() {
                 public void keyReleased(KeyEvent e) {
+
+                    try {
+                        Pattern pattern = Pattern.compile(searchBox.getText());
+                    } catch(PatternSyntaxException ex){
+                        stderr.println(ex);
+                        return;
+                    }
+
                     if(searchOptions.getSelectedIndex() == 0) {
-                        searchTags(searchBox.getText(), tagsPanel);
-                    } else {
-                        searchInput(searchBox.getText());
+                        searchTags(searchBox.getText(), tagsPanel, regexCheckbox.isSelected());
+                    } else if(searchOptions.getSelectedIndex() == 1) {
+                        search(searchBox.getText(),inputArea, regexCheckbox.isSelected());
+                    } else if(searchOptions.getSelectedIndex() == 2) {
+                        search(searchBox.getText(),outputArea, regexCheckbox.isSelected());
                     }
                 }
             });
             searchPanel.add(searchOptions);
             searchPanel.add(searchBox);
+            searchPanel.add(regexCheckbox);
             searchPanel.add(tagsPanel);
             return searchPanel;
         }
-        void searchTags(String input, JPanel tagsPanel) {
+        void searchTags(String input, JPanel tagsPanel, Boolean regex) {
             tagsPanel.removeAll();
-            JScrollPane tags = createButtonsOrMenu("", "button", null, null, input);
+            JScrollPane tags = createButtonsOrMenu("", "button", null, null, input, regex);
             tags.setPreferredSize(new Dimension(700, 70));
             tags.setBorder(null);
             tags.setAutoscrolls(false);
@@ -1008,26 +1020,39 @@ private Ngrams ngrams;
             tagsPanel.repaint();
             tagsPanel.validate();
         }
-        void searchInput(String findText) {
+        void search(String findText, JTextArea element, Boolean regex) {
             try
             {
                 Highlighter.HighlightPainter painter = new DefaultHighlighter.DefaultHighlightPainter(isDarkTheme ? Color.gray : Color.yellow);
-                inputArea.getHighlighter().removeAllHighlights();
+                element.getHighlighter().removeAllHighlights();
                 if(findText.length() == 0) {
                     return;
                 }
                 int findLength = findText.length();
-                Document doc = inputArea.getDocument();
+                Document doc = element.getDocument();
                 String text = doc.getText(0, doc.getLength());
                 int count = 0;
                 int offset = 0;
-
-                while ((offset = text.indexOf(findText, offset)) != -1)
+                Pattern pattern = null;
+                Matcher matcher = null;
+                Boolean matched = false;
+                if(regex) {
+                    pattern = Pattern.compile(findText);
+                    matcher = pattern.matcher(text);
+                }
+                while ((offset = regex ? (matcher.find() ? matcher.start() : -1) : text.indexOf(findText, offset)) != -1)
                 {
-                    inputArea.select(offset, offset + findLength);
-                    inputArea.getHighlighter().addHighlight(offset, offset + findLength, painter);
+                    if(regex) {
+                        findLength = matcher.group().length();
+                    }
+                    element.select(offset, offset + findLength);
+                    element.getHighlighter().addHighlight(offset, offset + findLength, painter);
                     offset+=findLength;
+                    matched = true;
                     count++;
+                }
+                if(!matched) {
+                    element.select(0,0);
                 }
             }
             catch(BadLocationException e) {}
@@ -3638,7 +3663,49 @@ private Ngrams ngrams;
 			 } 
 			return convertedArgs;
 		}
-		private JScrollPane createButtonsOrMenu(String category, final String type, JMenu parentMenu, final IContextMenuInvocation invocation, String searchTag) {
+		private String[] generateTagStartEnd(Tag tagObj) {
+            String tagStart;
+            String tagEnd;
+            tagStart = "<@"+tagObj.name+"_"+tagCounter;
+            if(tagObj.argument1 != null) {
+                tagStart += "(";
+            }
+            if(tagObj.argument1 != null) {
+                if(tagObj.argument1.type.equals("int")) {
+                    tagStart += tagObj.argument1.value;
+                } else if(tagObj.argument1.type.equals("string")) {
+                    tagStart += "\"" + tagObj.argument1.value + "\"";
+                }
+            }
+            if(tagObj.argument2 != null) {
+                tagStart += ",";
+                if(tagObj.argument2.type.equals("int")) {
+                    tagStart += tagObj.argument2.value;
+                } else if(tagObj.argument2.type.equals("string")) {
+                    tagStart += "\"" + tagObj.argument2.value + "\"";
+                }
+            }
+            if(tagObj.argument3 != null) {
+                tagStart += ",";
+                if(tagObj.argument3.type.equals("int")) {
+                    tagStart += tagObj.argument3.value;
+                } else if(tagObj.argument3.type.equals("string")) {
+                    tagStart += "\"" + tagObj.argument3.value + "\"";
+                }
+            }
+            if(tagObj.argument1 != null) {
+                tagStart += ")";
+            }
+            if(tagObj.hasInput) {
+                tagStart += ">";
+                tagEnd = "<@/" + tagObj.name + "_" + tagCounter + ">";
+            } else {
+                tagStart += " @/>";
+                tagEnd = "";
+            }
+            return new String[]{tagStart, tagEnd};
+        }
+		private JScrollPane createButtonsOrMenu(String category, final String type, JMenu parentMenu, final IContextMenuInvocation invocation, String searchTag, Boolean regex) {
 			JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 			JScrollPane scrollFrame = new JScrollPane(panel,JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 			tags.sort((t1, t2) -> t1.name.compareToIgnoreCase(t2.name));
@@ -3650,7 +3717,7 @@ private Ngrams ngrams;
                 menu.setToolTipText(tagObj.tooltip);
 
 				ActionListener actionListener;
-				if((category.length() > 0 && category.equals(tagObj.category)) || (searchTag.length() > 0 && tagObj.name.contains(searchTag))) {
+				if((category.length() > 0 && category.equals(tagObj.category)) || (searchTag.length() > 0 && (regex ? tagObj.name.matches(searchTag): tagObj.name.contains(searchTag)))) {
 				    if(type.equals("button")) {
                         if(!isNativeTheme && !isDarkTheme) {
                             btn.setBackground(Color.decode("#005a70"));
@@ -3667,55 +3734,25 @@ private Ngrams ngrams;
                                 selectedText = "";
                             }
                         }
-                        String tagStart;
-                        if(tagObj.name.startsWith("set_") || tagObj.name.startsWith("get_")) {
-                            tagStart = "<@"+tagObj.name;
-                        } else {
-                            tagStart = "<@"+tagObj.name+"_"+tagCounter;
-                        }
-                        if(tagObj.argument1 != null) {
-                            tagStart += "(";
-                        }
-                        if(tagObj.argument1 != null) {
-                            if(tagObj.argument1.type.equals("int")) {
-                                tagStart += tagObj.argument1.value;
-                            } else if(tagObj.argument1.type.equals("string")) {
-                                tagStart += "\"" + tagObj.argument1.value + "\"";
-                            }
-                        }
-                        if(tagObj.argument2 != null) {
-                            tagStart += ",";
-                            if(tagObj.argument2.type.equals("int")) {
-                                tagStart += tagObj.argument2.value;
-                            } else if(tagObj.argument2.type.equals("string")) {
-                                tagStart += "\"" + tagObj.argument2.value + "\"";
-                            }
-                        }
-                        if(tagObj.argument3 != null) {
-                            tagStart += ",";
-                            if(tagObj.argument3.type.equals("int")) {
-                                tagStart += tagObj.argument3.value;
-                            } else if(tagObj.argument3.type.equals("string")) {
-                                tagStart += "\"" + tagObj.argument3.value + "\"";
-                            }
-                        }
-                        if(tagObj.argument1 != null) {
-                            tagStart += ")";
-                        }
-                        String tagEnd;
-                        if(tagObj.hasInput) {
-                            tagStart += ">";
-                            if(tagObj.name.startsWith("set_") || tagObj.name.startsWith("get_")) {
-                                tagEnd = "<@/" + tagObj.name + ">";
-                            } else {
-                                tagEnd = "<@/" + tagObj.name + "_" + tagCounter + ">";
-                            }
-                        } else {
-                            tagStart += " @/>";
-                            tagEnd = "";
-                        }
+                        String[] tagStartEnd = generateTagStartEnd(tagObj);
+                        String tagStart = tagStartEnd[0];
+                        String tagEnd = tagStartEnd[1];
                         if(type.equals("button")) {
                             inputArea.replaceSelection(tagStart + selectedText + tagEnd);
+                            Highlighter.Highlight[] highlights = inputArea.getHighlighter().getHighlights();
+                            if(highlights.length > 0) {
+                                for (Highlighter.Highlight highlight : highlights) {
+                                    inputArea.select(highlight.getStartOffset(), highlight.getEndOffset());
+                                    selectedText = inputArea.getSelectedText();
+                                    if (selectedText != null) {
+                                        tagCounter++;
+                                        tagStartEnd = generateTagStartEnd(tagObj);
+                                        tagStart = tagStartEnd[0];
+                                        tagEnd = tagStartEnd[1];
+                                        inputArea.replaceSelection(tagStart + selectedText + tagEnd);
+                                    }
+                                }
+                            }
                         } else {
                             if(invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST || invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
                                 int[] bounds = invocation.getSelectionBounds();
@@ -3734,9 +3771,7 @@ private Ngrams ngrams;
                                 }
                             }
                         }
-                        if(!tagObj.name.startsWith("set_") && !tagObj.name.startsWith("get_")) {
-                            tagCounter++;
-                        }
+                        tagCounter++;
                         if(type.equals("button")) {
                             outputArea.setText(hv.convert(inputArea.getText()));
                             outputArea.selectAll();
