@@ -10,6 +10,7 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.security.*;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -514,7 +515,7 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v0.6.8.4");
+	            	stdout.println("Hackvertor v0.6.8.5");
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor();
 	            	hv = mainHV;
@@ -951,7 +952,7 @@ private Ngrams ngrams;
         private JTextArea outputArea;
         private JPanel panel;
         private String[] categories = {
-                "Charsets","Compression","Encrypt","Encode","Decode","Convert","String","Hash","HMAC","Math","XSS","Variables"
+                "Charsets","Compression","Encrypt","Encode","Date","Decode","Convert","String","Hash","HMAC","Math","XSS","Variables"
         };
         void setInputArea(JTextArea inputArea) {
             this.inputArea = inputArea;
@@ -1082,6 +1083,10 @@ private Ngrams ngrams;
             tags.add(new Tag("Compression","bzip2_decompress",true,"bzip2_decompress(String str)"));
             tags.add(new Tag("Compression","deflate_compress",true,"deflate_compress(String str)"));
             tags.add(new Tag("Compression","deflate_decompress",true,"deflate_decompress(String str)"));
+            tags.add(new Tag("Date","timestamp",false,"timestamp()"));
+            tag = new Tag("Date","date",false,"date(String format)");
+            tag.argument1 = new TagArgument("string","yyyy-MM-dd HH:mm:ss");
+            tags.add(tag);
             tag = new Tag("Encrypt","rotN",true,"rotN(String str, int n)");
             tag.argument1 = new TagArgument("int","13");
             tags.add(tag);
@@ -1281,6 +1286,9 @@ private Ngrams ngrams;
             tag = new Tag("Math","random",true,"random(String chars, int len)");
             tag.argument1 = new TagArgument("int","10");
             tags.add(tag);
+            tag = new Tag("Math","random_num",false,"random_num(int len)");
+            tag.argument1 = new TagArgument("int","10");
+            tags.add(tag);
             tag = new Tag("Math","random_unicode",false,"random_unicode(int from, int to, int amount)");
             tag.argument1 = new TagArgument("int","0");
             tag.argument2 = new TagArgument("int","0xffff");
@@ -1447,6 +1455,19 @@ private Ngrams ngrams;
                 return "Error:"+e.toString();
             }
         }
+        String timestamp() {
+            long unixTime = System.currentTimeMillis() / 1000L;
+            return unixTime+"";
+        }
+        String date(String format) {
+            try {
+                SimpleDateFormat dateF = new SimpleDateFormat(format);
+                Date now = new Date();
+                return dateF.format(now);
+            } catch (IllegalArgumentException e) {
+                return "Invalid date format";
+            }
+        }
 		String html_entities(String str) {
             return HtmlEscape.escapeHtml(str, HtmlEscapeType.HTML4_NAMED_REFERENCES_DEFAULT_TO_DECIMAL, HtmlEscapeLevel.LEVEL_3_ALL_NON_ALPHANUMERIC);
 		}
@@ -1525,6 +1546,9 @@ private Ngrams ngrams;
 	        }
 			return str;
 		}
+		String random_num(int len) {
+            return random("0123456789", len);
+        }
         String random(String chars, int len) {
             if(len > 0 && chars.length() > 0) {
                 StringBuilder sb = new StringBuilder();
@@ -3088,6 +3112,12 @@ private Ngrams ngrams;
                 case "deflate_decompress":
                     output = this.deflate_decompress(output);
                     break;
+                case "timestamp":
+                    output = this.timestamp();
+                    break;
+                case "date":
+                    output = this.date(this.getString(arguments, 0));
+                    break;
                 case "html_entities":
                     output = this.html_entities(output);
                     break;
@@ -3432,6 +3462,9 @@ private Ngrams ngrams;
                     break;
                 case "random":
                     output = this.random(output, this.getInt(arguments, 0));
+                    break;
+                case "random_num":
+                    output = this.random_num(this.getInt(arguments, 0));
                     break;
                 case "random_unicode":
                     output = this.random_unicode(this.getInt(arguments, 0), this.getInt(arguments, 1), this.getInt(arguments, 2));
