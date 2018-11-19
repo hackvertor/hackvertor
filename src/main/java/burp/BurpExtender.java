@@ -9,10 +9,8 @@ import java.io.*;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.Security;
+import java.security.*;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -517,7 +515,7 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v0.6.8.2");
+	            	stdout.println("Hackvertor v0.6.8.5");
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor();
 	            	hv = mainHV;
@@ -857,7 +855,7 @@ private Ngrams ngrams;
         for(int i=0;i<categories.length;i++) {
             JMenu categoryMenu = new JMenu(categories[i]);
             String category = categories[i];
-            hvInRequest.createButtonsOrMenu(category, "menu", categoryMenu, invocation, "");
+            hvInRequest.createButtonsOrMenu(category, "menu", categoryMenu, invocation, "" , false);
             submenu.add(categoryMenu);
         }
         menu.add(submenu);
@@ -954,7 +952,7 @@ private Ngrams ngrams;
         private JTextArea outputArea;
         private JPanel panel;
         private String[] categories = {
-                "Charsets","Compression","Encrypt","Encode","Decode","Convert","String","Hash","Math","XSS","Variables"
+                "Charsets","Compression","Encrypt","Encode","Date","Decode","Convert","String","Hash","HMAC","Math","XSS","Variables"
         };
         void setInputArea(JTextArea inputArea) {
             this.inputArea = inputArea;
@@ -970,7 +968,7 @@ private Ngrams ngrams;
         }
 		void buildTabs(JTabbedPane tabs) {
             for(int i=0;i<categories.length;i++) {
-                tabs.addTab(categories[i], createButtonsOrMenu(categories[i],"button", null, null, ""));
+                tabs.addTab(categories[i], createButtonsOrMenu(categories[i],"button", null, null, "", false));
             }
             tabs.addTab("Search", generateSearchPanel());
 		}
@@ -980,30 +978,42 @@ private Ngrams ngrams;
         JPanel generateSearchPanel() {
             JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
             searchPanel.setPreferredSize(new Dimension(700, 80));
-            String[] searchOptionsText = {"Search tags","Search Input"};
+            String[] searchOptionsText = {"Search tags","Search Input","Search output"};
             JComboBox searchOptions = new JComboBox(searchOptionsText);
             JTextField searchBox = new JTextField();
+            JCheckBox regexCheckbox = new JCheckBox("Regex?");
             searchBox.setPreferredSize(new Dimension(200, 30));
             JPanel tagsPanel = new JPanel();
             tagsPanel.setAutoscrolls(false);
             tagsPanel.setPreferredSize(new Dimension(700, 50));
             searchBox.addKeyListener(new KeyAdapter() {
                 public void keyReleased(KeyEvent e) {
+
+                    try {
+                        Pattern pattern = Pattern.compile(searchBox.getText());
+                    } catch(PatternSyntaxException ex){
+                        stderr.println(ex);
+                        return;
+                    }
+
                     if(searchOptions.getSelectedIndex() == 0) {
-                        searchTags(searchBox.getText(), tagsPanel);
-                    } else {
-                        searchInput(searchBox.getText());
+                        searchTags(searchBox.getText(), tagsPanel, regexCheckbox.isSelected());
+                    } else if(searchOptions.getSelectedIndex() == 1) {
+                        search(searchBox.getText(),inputArea, regexCheckbox.isSelected());
+                    } else if(searchOptions.getSelectedIndex() == 2) {
+                        search(searchBox.getText(),outputArea, regexCheckbox.isSelected());
                     }
                 }
             });
             searchPanel.add(searchOptions);
             searchPanel.add(searchBox);
+            searchPanel.add(regexCheckbox);
             searchPanel.add(tagsPanel);
             return searchPanel;
         }
-        void searchTags(String input, JPanel tagsPanel) {
+        void searchTags(String input, JPanel tagsPanel, Boolean regex) {
             tagsPanel.removeAll();
-            JScrollPane tags = createButtonsOrMenu("", "button", null, null, input);
+            JScrollPane tags = createButtonsOrMenu("", "button", null, null, input, regex);
             tags.setPreferredSize(new Dimension(700, 70));
             tags.setBorder(null);
             tags.setAutoscrolls(false);
@@ -1011,26 +1021,39 @@ private Ngrams ngrams;
             tagsPanel.repaint();
             tagsPanel.validate();
         }
-        void searchInput(String findText) {
+        void search(String findText, JTextArea element, Boolean regex) {
             try
             {
                 Highlighter.HighlightPainter painter = new DefaultHighlighter.DefaultHighlightPainter(isDarkTheme ? Color.gray : Color.yellow);
-                inputArea.getHighlighter().removeAllHighlights();
+                element.getHighlighter().removeAllHighlights();
                 if(findText.length() == 0) {
                     return;
                 }
                 int findLength = findText.length();
-                Document doc = inputArea.getDocument();
+                Document doc = element.getDocument();
                 String text = doc.getText(0, doc.getLength());
                 int count = 0;
                 int offset = 0;
-
-                while ((offset = text.indexOf(findText, offset)) != -1)
+                Pattern pattern = null;
+                Matcher matcher = null;
+                Boolean matched = false;
+                if(regex) {
+                    pattern = Pattern.compile(findText);
+                    matcher = pattern.matcher(text);
+                }
+                while ((offset = regex ? (matcher.find() ? matcher.start() : -1) : text.indexOf(findText, offset)) != -1)
                 {
-                    inputArea.select(offset, offset + findLength);
-                    inputArea.getHighlighter().addHighlight(offset, offset + findLength, painter);
+                    if(regex) {
+                        findLength = matcher.group().length();
+                    }
+                    element.select(offset, offset + findLength);
+                    element.getHighlighter().addHighlight(offset, offset + findLength, painter);
                     offset+=findLength;
+                    matched = true;
                     count++;
+                }
+                if(!matched) {
+                    element.select(0,0);
                 }
             }
             catch(BadLocationException e) {}
@@ -1060,6 +1083,10 @@ private Ngrams ngrams;
             tags.add(new Tag("Compression","bzip2_decompress",true,"bzip2_decompress(String str)"));
             tags.add(new Tag("Compression","deflate_compress",true,"deflate_compress(String str)"));
             tags.add(new Tag("Compression","deflate_decompress",true,"deflate_decompress(String str)"));
+            tags.add(new Tag("Date","timestamp",false,"timestamp()"));
+            tag = new Tag("Date","date",false,"date(String format)");
+            tag.argument1 = new TagArgument("string","yyyy-MM-dd HH:mm:ss");
+            tags.add(tag);
             tag = new Tag("Encrypt","rotN",true,"rotN(String str, int n)");
             tag.argument1 = new TagArgument("int","13");
             tags.add(tag);
@@ -1188,6 +1215,24 @@ private Ngrams ngrams;
 			tag.argument1 = new TagArgument("string","split char");
 			tag.argument2 = new TagArgument("string","join char");
 			tags.add(tag);
+            tag = new Tag("HMAC","hmac_md5",true,"hmacmd5(String str, String key)");
+            tag.argument1 = new TagArgument("string","SECRET");
+            tags.add(tag);
+            tag = new Tag("HMAC","hmac_sha1",true,"hmacsha1(String str, String key)");
+            tag.argument1 = new TagArgument("string","SECRET");
+            tags.add(tag);
+            tag = new Tag("HMAC","hmac_sha224",true,"hmacsha224(String str, String key)");
+            tag.argument1 = new TagArgument("string","SECRET");
+            tags.add(tag);
+            tag = new Tag("HMAC","hmac_sha256",true,"hmacsha256(String str, String key)");
+            tag.argument1 = new TagArgument("string","SECRET");
+            tags.add(tag);
+            tag = new Tag("HMAC","hmac_sha384",true,"hmacsha384(String str, String key)");
+            tag.argument1 = new TagArgument("string","SECRET");
+            tags.add(tag);
+            tag = new Tag("HMAC","hmac_sha512",true,"hmacsha512(String str, String key)");
+            tag.argument1 = new TagArgument("string","SECRET");
+            tags.add(tag);
 			tags.add(new Tag("Hash","sha1",true,"sha1(String str)"));
             tags.add(new Tag("Hash","sha224",true,"sha224(String message)"));
 			tags.add(new Tag("Hash","sha256",true,"sha256(String str)"));
@@ -1239,6 +1284,9 @@ private Ngrams ngrams;
 			tag.argument3 = new TagArgument("int","to");
 			tags.add(tag);
             tag = new Tag("Math","random",true,"random(String chars, int len)");
+            tag.argument1 = new TagArgument("int","10");
+            tags.add(tag);
+            tag = new Tag("Math","random_num",false,"random_num(int len)");
             tag.argument1 = new TagArgument("int","10");
             tags.add(tag);
             tag = new Tag("Math","random_unicode",false,"random_unicode(int from, int to, int amount)");
@@ -1407,6 +1455,19 @@ private Ngrams ngrams;
                 return "Error:"+e.toString();
             }
         }
+        String timestamp() {
+            long unixTime = System.currentTimeMillis() / 1000L;
+            return unixTime+"";
+        }
+        String date(String format) {
+            try {
+                SimpleDateFormat dateF = new SimpleDateFormat(format);
+                Date now = new Date();
+                return dateF.format(now);
+            } catch (IllegalArgumentException e) {
+                return "Invalid date format";
+            }
+        }
 		String html_entities(String str) {
             return HtmlEscape.escapeHtml(str, HtmlEscapeType.HTML4_NAMED_REFERENCES_DEFAULT_TO_DECIMAL, HtmlEscapeLevel.LEVEL_3_ALL_NON_ALPHANUMERIC);
 		}
@@ -1485,6 +1546,9 @@ private Ngrams ngrams;
 	        }
 			return str;
 		}
+		String random_num(int len) {
+            return random("0123456789", len);
+        }
         String random(String chars, int len) {
             if(len > 0 && chars.length() > 0) {
                 StringBuilder sb = new StringBuilder();
@@ -2275,7 +2339,39 @@ private Ngrams ngrams;
             }
             return sb.toString();
 		}
-		String sha1(String str) {
+        String hmac(String str, String key, String algoName) {
+            Mac hashMac = null;
+            try {
+                hashMac = Mac.getInstance(algoName);
+                SecretKeySpec secret_key = new SecretKeySpec(key.getBytes(), algoName);
+                hashMac.init(secret_key);
+
+                return org.bouncycastle.util.encoders.Hex.toHexString(hashMac.doFinal(str.getBytes()));
+            } catch (Exception e) {
+                e.printStackTrace();
+
+                return e.getMessage();
+            }
+        }
+        String hmacmd5(String str, String key) {
+            return hmac(str, key, "HmacMD5");
+        }
+        String hmacsha1(String str, String key) {
+            return hmac(str, key, "HmacSHA1");
+        }
+        String hmacsha224(String str, String key) {
+            return hmac(str, key, "HmacSHA224");
+        }
+        String hmacsha256(String str, String key) {
+            return hmac(str, key, "HmacSHA256");
+        }
+        String hmacsha384(String str, String key) {
+            return hmac(str, key, "HmacSHA384");
+        }
+        String hmacsha512(String str, String key) {
+            return hmac(str, key, "HmacSHA512");
+        }
+        String sha1(String str) {
 			return DigestUtils.sha1Hex(str);
 		}
         String sha224(String message) {
@@ -3016,6 +3112,12 @@ private Ngrams ngrams;
                 case "deflate_decompress":
                     output = this.deflate_decompress(output);
                     break;
+                case "timestamp":
+                    output = this.timestamp();
+                    break;
+                case "date":
+                    output = this.date(this.getString(arguments, 0));
+                    break;
                 case "html_entities":
                     output = this.html_entities(output);
                     break;
@@ -3238,6 +3340,24 @@ private Ngrams ngrams;
                 case "ascii2reverse_hex":
                     output = this.ascii2reverse_hex(output, this.getString(arguments, 0));
                     break;
+                case "hmac_md5":
+                    output = this.hmacmd5(output, this.getString(arguments, 0));
+                    break;
+                case "hmac_sha1":
+                    output = this.hmacsha1(output, this.getString(arguments, 0));
+                    break;
+                case "hmac_sha224":
+                    output = this.hmacsha224(output, this.getString(arguments, 0));
+                    break;
+                case "hmac_sha256":
+                    output = this.hmacsha256(output, this.getString(arguments, 0));
+                    break;
+                case "hmac_sha384":
+                    output = this.hmacsha384(output, this.getString(arguments, 0));
+                    break;
+                case "hmac_sha512":
+                    output = this.hmacsha512(output, this.getString(arguments, 0));
+                    break;
                 case "sha1":
                     output = this.sha1(output);
                     break;
@@ -3342,6 +3462,9 @@ private Ngrams ngrams;
                     break;
                 case "random":
                     output = this.random(output, this.getInt(arguments, 0));
+                    break;
+                case "random_num":
+                    output = this.random_num(this.getInt(arguments, 0));
                     break;
                 case "random_unicode":
                     output = this.random_unicode(this.getInt(arguments, 0), this.getInt(arguments, 1), this.getInt(arguments, 2));
@@ -3573,7 +3696,49 @@ private Ngrams ngrams;
 			 } 
 			return convertedArgs;
 		}
-		private JScrollPane createButtonsOrMenu(String category, final String type, JMenu parentMenu, final IContextMenuInvocation invocation, String searchTag) {
+		private String[] generateTagStartEnd(Tag tagObj) {
+            String tagStart;
+            String tagEnd;
+            tagStart = "<@"+tagObj.name+"_"+tagCounter;
+            if(tagObj.argument1 != null) {
+                tagStart += "(";
+            }
+            if(tagObj.argument1 != null) {
+                if(tagObj.argument1.type.equals("int")) {
+                    tagStart += tagObj.argument1.value;
+                } else if(tagObj.argument1.type.equals("string")) {
+                    tagStart += "\"" + tagObj.argument1.value + "\"";
+                }
+            }
+            if(tagObj.argument2 != null) {
+                tagStart += ",";
+                if(tagObj.argument2.type.equals("int")) {
+                    tagStart += tagObj.argument2.value;
+                } else if(tagObj.argument2.type.equals("string")) {
+                    tagStart += "\"" + tagObj.argument2.value + "\"";
+                }
+            }
+            if(tagObj.argument3 != null) {
+                tagStart += ",";
+                if(tagObj.argument3.type.equals("int")) {
+                    tagStart += tagObj.argument3.value;
+                } else if(tagObj.argument3.type.equals("string")) {
+                    tagStart += "\"" + tagObj.argument3.value + "\"";
+                }
+            }
+            if(tagObj.argument1 != null) {
+                tagStart += ")";
+            }
+            if(tagObj.hasInput) {
+                tagStart += ">";
+                tagEnd = "<@/" + tagObj.name + "_" + tagCounter + ">";
+            } else {
+                tagStart += " @/>";
+                tagEnd = "";
+            }
+            return new String[]{tagStart, tagEnd};
+        }
+		private JScrollPane createButtonsOrMenu(String category, final String type, JMenu parentMenu, final IContextMenuInvocation invocation, String searchTag, Boolean regex) {
 			JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 			JScrollPane scrollFrame = new JScrollPane(panel,JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 			tags.sort((t1, t2) -> t1.name.compareToIgnoreCase(t2.name));
@@ -3585,7 +3750,7 @@ private Ngrams ngrams;
                 menu.setToolTipText(tagObj.tooltip);
 
 				ActionListener actionListener;
-				if((category.length() > 0 && category.equals(tagObj.category)) || (searchTag.length() > 0 && tagObj.name.contains(searchTag))) {
+				if((category.length() > 0 && category.equals(tagObj.category)) || (searchTag.length() > 0 && (regex ? tagObj.name.matches(searchTag): tagObj.name.contains(searchTag)))) {
 				    if(type.equals("button")) {
                         if(!isNativeTheme && !isDarkTheme) {
                             btn.setBackground(Color.decode("#005a70"));
@@ -3602,55 +3767,25 @@ private Ngrams ngrams;
                                 selectedText = "";
                             }
                         }
-                        String tagStart;
-                        if(tagObj.name.startsWith("set_") || tagObj.name.startsWith("get_")) {
-                            tagStart = "<@"+tagObj.name;
-                        } else {
-                            tagStart = "<@"+tagObj.name+"_"+tagCounter;
-                        }
-                        if(tagObj.argument1 != null) {
-                            tagStart += "(";
-                        }
-                        if(tagObj.argument1 != null) {
-                            if(tagObj.argument1.type.equals("int")) {
-                                tagStart += tagObj.argument1.value;
-                            } else if(tagObj.argument1.type.equals("string")) {
-                                tagStart += "\"" + tagObj.argument1.value + "\"";
-                            }
-                        }
-                        if(tagObj.argument2 != null) {
-                            tagStart += ",";
-                            if(tagObj.argument2.type.equals("int")) {
-                                tagStart += tagObj.argument2.value;
-                            } else if(tagObj.argument2.type.equals("string")) {
-                                tagStart += "\"" + tagObj.argument2.value + "\"";
-                            }
-                        }
-                        if(tagObj.argument3 != null) {
-                            tagStart += ",";
-                            if(tagObj.argument3.type.equals("int")) {
-                                tagStart += tagObj.argument3.value;
-                            } else if(tagObj.argument3.type.equals("string")) {
-                                tagStart += "\"" + tagObj.argument3.value + "\"";
-                            }
-                        }
-                        if(tagObj.argument1 != null) {
-                            tagStart += ")";
-                        }
-                        String tagEnd;
-                        if(tagObj.hasInput) {
-                            tagStart += ">";
-                            if(tagObj.name.startsWith("set_") || tagObj.name.startsWith("get_")) {
-                                tagEnd = "<@/" + tagObj.name + ">";
-                            } else {
-                                tagEnd = "<@/" + tagObj.name + "_" + tagCounter + ">";
-                            }
-                        } else {
-                            tagStart += " @/>";
-                            tagEnd = "";
-                        }
+                        String[] tagStartEnd = generateTagStartEnd(tagObj);
+                        String tagStart = tagStartEnd[0];
+                        String tagEnd = tagStartEnd[1];
                         if(type.equals("button")) {
                             inputArea.replaceSelection(tagStart + selectedText + tagEnd);
+                            Highlighter.Highlight[] highlights = inputArea.getHighlighter().getHighlights();
+                            if(highlights.length > 0) {
+                                for (Highlighter.Highlight highlight : highlights) {
+                                    inputArea.select(highlight.getStartOffset(), highlight.getEndOffset());
+                                    selectedText = inputArea.getSelectedText();
+                                    if (selectedText != null) {
+                                        tagCounter++;
+                                        tagStartEnd = generateTagStartEnd(tagObj);
+                                        tagStart = tagStartEnd[0];
+                                        tagEnd = tagStartEnd[1];
+                                        inputArea.replaceSelection(tagStart + selectedText + tagEnd);
+                                    }
+                                }
+                            }
                         } else {
                             if(invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST || invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
                                 int[] bounds = invocation.getSelectionBounds();
@@ -3669,9 +3804,7 @@ private Ngrams ngrams;
                                 }
                             }
                         }
-                        if(!tagObj.name.startsWith("set_") && !tagObj.name.startsWith("get_")) {
-                            tagCounter++;
-                        }
+                        tagCounter++;
                         if(type.equals("button")) {
                             outputArea.setText(hv.convert(inputArea.getText()));
                             outputArea.selectAll();
