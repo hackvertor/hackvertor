@@ -3,10 +3,10 @@ ExtensionType: 1
 Name: Hackvertor
 RepoName: hackvertor
 ScreenVersion: 0.6.8.5
-SerialVersion: 9
+SerialVersion: 10
 MinPlatformVersion: 0
 ProOnly: False
 Author: Portswigger Web Security - Gareth Heyes
 ShortDescription: Converts data using a tag-based configuration to apply various encoding and escaping operations.
-EntryPoint: target/hackvertor-0.6.8.2-jar-with-dependencies.jar
+EntryPoint: target/hackvertor-0.6.8.5-jar-with-dependencies.jar
 BuildCommand: mvn package
