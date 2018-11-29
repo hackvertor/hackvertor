@@ -83,6 +83,7 @@ private boolean tagsInProxy = false;
 private boolean tagsInIntruder = true;
 private boolean tagsInRepeater = true;
 private boolean tagsInScanner = true;
+private boolean autoUpdateContentLength = true;
 private JMenuBar burpMenuBar;
 private JMenu hvMenuBar;
 private Ngrams ngrams;
@@ -515,7 +516,7 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v0.6.8.5");
+	            	stdout.println("Hackvertor v0.6.8.6");
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor();
 	            	hv = mainHV;
@@ -612,6 +613,18 @@ private Ngrams ngrams;
                         }
                     });
                     hvMenuBar.add(tagsInScannerMenu);
+                    final JCheckBoxMenuItem fixContentLengthMenu = new JCheckBoxMenuItem(
+                            "Auto update content length", autoUpdateContentLength);
+                    fixContentLengthMenu.addItemListener(new ItemListener() {
+                        public void itemStateChanged(ItemEvent e) {
+                            if(fixContentLengthMenu.getState()){
+                                autoUpdateContentLength = true;
+                            } else {
+                                autoUpdateContentLength = false;
+                            }
+                        }
+                    });
+                    hvMenuBar.add(fixContentLengthMenu);
                     burpMenuBar.add(hvMenuBar);
 	            }
 	        });
@@ -731,10 +744,12 @@ private Ngrams ngrams;
                 return;
         }
         byte[] request = messageInfo.getRequest();
-	    if(helpers.indexOf(request,helpers.stringToBytes("<@/"), true, 0, request.length) > -1 || helpers.indexOf(request,helpers.stringToBytes(" @/>"), true, 0, request.length) > -1) {
+	    if(helpers.indexOf(request,helpers.stringToBytes("<@"), true, 0, request.length) > -1) {
 	        Hackvertor hv = new Hackvertor();
 	        request = helpers.stringToBytes(hv.convert(helpers.bytesToString(request)));
-            request = fixContentLength(request);
+            if(autoUpdateContentLength) {
+                request = fixContentLength(request);
+            }
             messageInfo.setRequest(request);
         }
     }
@@ -3519,20 +3534,20 @@ private Ngrams ngrams;
 		}
 		void clearTags() {
 			String input = inputArea.getText();	                	
-			input = input.replaceAll("<@/?\\w+_\\d+(?:[(](?:,?"+argumentsRegex+")*[)])?(?:\\s@/)?>","");
+			input = input.replaceAll("<@/?\\w+_\\d+(?:[(](?:,?"+argumentsRegex+")*[)])?(?:\\s/)?>","");
       	  	inputArea.setText(input);	                	  	                	  
       	  	inputArea.requestFocus();
 		}
 		String convertNoInputTags(String input) {
             List<String> allMatches = new ArrayList<>();
-            Matcher m = Pattern.compile("<@([\\w\\d]+(_\\d*)?)((?:[(](?:,?"+argumentsRegex+")*[)])?) @/>").matcher(input);
+            Matcher m = Pattern.compile("<@([\\w\\d]+(_\\d*)?)((?:[(](?:,?"+argumentsRegex+")*[)])?) />").matcher(input);
             while (m.find()) {
                 allMatches.add(m.group(1));
             }
             for(String tagNameWithID:allMatches) {
                 String arguments = "";
                 String tagName = tagNameWithID.replaceAll("_\\d+$","");
-                m = Pattern.compile("<@"+tagNameWithID+"((?:[(](?:,?"+argumentsRegex+")*[)])?) @/>").matcher(input);
+                m = Pattern.compile("<@"+tagNameWithID+"((?:[(](?:,?"+argumentsRegex+")*[)])?) />").matcher(input);
                 if(m.find()) {
                     arguments = m.group(1);
                 }
@@ -3542,7 +3557,7 @@ private Ngrams ngrams;
                 } else {
                     result = this.callTag(tagName, "", this.parseArguments(arguments));
                 }
-                input = input.replaceAll("<@"+tagNameWithID+"(?:[(](?:,?"+argumentsRegex+")*[)])? @/>", result.replace("\\","\\\\").replace("$","\\$"));
+                input = input.replaceAll("<@"+tagNameWithID+"(?:[(](?:,?"+argumentsRegex+")*[)])? />", result.replace("\\","\\\\").replace("$","\\$"));
             }
             return input;
         }
@@ -3569,7 +3584,7 @@ private Ngrams ngrams;
                     code = m.group(1);
                 }
                 setVariable(tagName, convert(code));
-                String result = code.replaceAll("<@/?\\w+(?:_\\d+)?(?:[(](?:,?"+argumentsRegex+")*[)])?(?:\\s@/)?>","");
+                String result = code.replaceAll("<@/?\\w+(?:_\\d+)?(?:[(](?:,?"+argumentsRegex+")*[)])?(?:\\s/)?>","");
                 output = output.replaceAll("<@"+tagNameWithID+"(?:[(](?:,?"+argumentsRegex+")*[)])?>[\\d\\D]*?<@/"+tagNameWithID+">", result.replace("\\","\\\\").replace("$","\\$"));
             }
             return output;
@@ -3578,7 +3593,7 @@ private Ngrams ngrams;
             if(input.contains("<@set_")) {
                input = convertSetVariables(input);
             }
-            if(input.contains(" @/>")) {
+            if(input.contains(" />")) {
                 input = convertNoInputTags(input);
             }
 			String output = input;
@@ -3733,7 +3748,7 @@ private Ngrams ngrams;
                 tagStart += ">";
                 tagEnd = "<@/" + tagObj.name + "_" + tagCounter + ">";
             } else {
-                tagStart += " @/>";
+                tagStart += " />";
                 tagEnd = "";
             }
             return new String[]{tagStart, tagEnd};
