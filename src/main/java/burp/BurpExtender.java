@@ -111,7 +111,7 @@ private Ngrams ngrams;
 	}
 	private boolean hasMethodAnd1Arg(Object obj, String methodStr) {
 		boolean hasMethod = false;
-		Method[] methods = obj.getClass().getMethods();
+		Method[] methods = obj.getClass().getDeclaredMethods();
 		for (Method m : methods) {
 		  if (m.getName().equals(methodStr) && m.getParameterTypes().length == 1) {
 		    hasMethod = true;
