@@ -516,7 +516,7 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v0.6.8.7");
+	            	stdout.println("Hackvertor v0.6.8.8");
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor();
 	            	hv = mainHV;
@@ -1542,7 +1542,7 @@ private Ngrams ngrams;
             for(int i=0;i<str.length();i++) {
                 int codePoint = Character.codePointAt(str, i);
                 if(codePoint<=0xff) {
-                    converted.append("%" + Integer.toHexString(codePoint));
+                    converted.append("%" + String.format("%02X", codePoint));
                 } else {
                     try {
                         converted.append(URLEncoder.encode(Character.toString(str.charAt(i)), "UTF-8"));
