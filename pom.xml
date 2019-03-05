@@ -6,7 +6,7 @@
 
     <groupId>uk.co.hackvertor.hackvertor-burp</groupId>
     <artifactId>hackvertor</artifactId>
-    <version>0.6.8.8</version>
+    <version>0.6.9</version>
     <dependencies>
         <dependency>
             <groupId>commons-codec</groupId>
@@ -53,9 +53,13 @@
             <artifactId>commons-compress</artifactId>
             <version>1.18</version>
         </dependency>
+        <dependency>
+            <groupId>hackvertor</groupId>
+            <artifactId>brotlihaxe</artifactId>
+            <version>1.1</version>
+        </dependency>
     </dependencies>
     <build>
-        <sourceDirectory>src</sourceDirectory>
         <plugins>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>

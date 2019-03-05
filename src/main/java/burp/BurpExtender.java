@@ -34,6 +34,8 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import haxe.lang.EmptyObject;
+import haxe.root.Brotli;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.compress.compressors.CompressorException;
@@ -516,7 +518,7 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v0.6.8.8");
+	            	stdout.println("Hackvertor v0.6.9");
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor();
 	            	hv = mainHV;
@@ -1092,6 +1094,10 @@ private Ngrams ngrams;
             tag.argument1 = new TagArgument("string","from");
             tag.argument2 = new TagArgument("string","to");
             tags.add(tag);
+            tag = new Tag("Compression","brotli_compress",true,"brotli_compress(String str, int compressionAmount)");
+            tag.argument1 = new TagArgument("int","10");
+            tags.add(tag);
+            tags.add(new Tag("Compression","brotli_decompress",true,"brotli_decompress(String str)"));
             tags.add(new Tag("Compression","gzip_compress",true,"gzip_compress(String str)"));
             tags.add(new Tag("Compression","gzip_decompress",true,"gzip_decompress(String str)"));
             tags.add(new Tag("Compression","bzip2_compress",true,"bzip2_compress(String str)"));
@@ -1373,6 +1379,17 @@ private Ngrams ngrams;
         }
         String big5(String input) {
             return convertCharset(input, "BIG5");
+        }
+        String brotli_compress(String str, int compressionAmount) {
+            if(compressionAmount < 0 || compressionAmount > 11) {
+                return "Invalid compression amount. 0-11 only";
+            }
+            Brotli brotli = new Brotli(EmptyObject.EMPTY);
+            return (String) brotli.compress(str, compressionAmount);
+        }
+        String brotli_decompress(String str) {
+            Brotli brotli = new Brotli(EmptyObject.EMPTY);
+            return brotli.decompress(str).toString();
         }
         String gzip_compress(String input) {
             ByteArrayOutputStream bos = new ByteArrayOutputStream(input.length());
@@ -3108,6 +3125,12 @@ private Ngrams ngrams;
                     break;
                 case "charset_convert":
                     output = this.charset_convert(output, this.getString(arguments, 0), this.getString(arguments, 1));
+                    break;
+                case "brotli_compress":
+                    output = this.brotli_compress(output, this.getInt(arguments, 0));
+                    break;
+                case "brotli_decompress":
+                    output = this.brotli_decompress(output);
                     break;
                 case "gzip_compress":
                     output = this.gzip_compress(output);
