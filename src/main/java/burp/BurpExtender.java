@@ -86,6 +86,7 @@ private boolean tagsInProxy = false;
 private boolean tagsInIntruder = true;
 private boolean tagsInRepeater = true;
 private boolean tagsInScanner = true;
+private boolean tagsInExtensions = true;
 private boolean autoUpdateContentLength = true;
 private JMenuBar burpMenuBar;
 private JMenu hvMenuBar;
@@ -519,7 +520,7 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v0.6.9");
+	            	stdout.println("Hackvertor v0.6.10");
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor();
 	            	hv = mainHV;
@@ -616,6 +617,18 @@ private Ngrams ngrams;
                         }
                     });
                     hvMenuBar.add(tagsInScannerMenu);
+                    final JCheckBoxMenuItem tagsInExtensionsMenu = new JCheckBoxMenuItem(
+                            "Allow tags in Extensions", tagsInExtensions);
+                    tagsInExtensionsMenu.addItemListener(new ItemListener() {
+                        public void itemStateChanged(ItemEvent e) {
+                            if(tagsInExtensionsMenu.getState()){
+                                tagsInExtensions = true;
+                            } else {
+                                tagsInExtensions = false;
+                            }
+                        }
+                    });
+                    hvMenuBar.add(tagsInExtensionsMenu);
                     final JCheckBoxMenuItem fixContentLengthMenu = new JCheckBoxMenuItem(
                             "Auto update content length", autoUpdateContentLength);
                     fixContentLengthMenu.addItemListener(new ItemListener() {
@@ -743,6 +756,10 @@ private Ngrams ngrams;
                     return;
                 }
                 break;
+            case IBurpExtenderCallbacks.TOOL_EXTENDER:
+                if(!tagsInExtensions) {
+                    return;
+                }
             default:
                 return;
         }
