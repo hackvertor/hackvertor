@@ -48,6 +48,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.crypto.digests.*;
 import org.bouncycastle.jcajce.provider.digest.Skein;
 import org.bouncycastle.util.encoders.Hex;
+import org.brotli.dec.BrotliInputStream;
 import org.unbescape.css.CssEscape;
 import org.unbescape.css.CssStringEscapeLevel;
 import org.unbescape.css.CssStringEscapeType;
@@ -812,15 +813,27 @@ private Ngrams ngrams;
 		
 		switch (invocation.getInvocationContext()) {
 			case IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST:
+            case IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE:
 			break;
 			default:
 				return null;
 		}
-        List<JMenuItem> menu = new ArrayList<JMenuItem>();
+		List<JMenuItem> menu = new ArrayList<JMenuItem>();
         JMenu submenu = new JMenu("Hackvertor");
-        Action hackvertorAction = new HackvertorAction("Send to Hackvertor", invocation);
+        Action hackvertorAction;
+        if(bounds[0] == bounds[1] && invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE) {
+            hackvertorAction = new HackvertorAction("Send response body to Hackvertor", invocation);
+        } else {
+            hackvertorAction = new HackvertorAction("Send to Hackvertor", invocation);
+        }
         JMenuItem sendToHackvertor = new JMenuItem(hackvertorAction); 
         submenu.add(sendToHackvertor);
+
+        if(invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE) {
+            menu.add(submenu);
+            return menu;
+        }
+
         if(hvInRequest == null) {
             hvInRequest = new Hackvertor();
             hvInRequest.init();
@@ -901,9 +914,19 @@ private Ngrams ngrams;
         		break;	    
         	}  	
         	int[] bounds = invocation.getSelectionBounds(); 	        
-        	if(bounds[0] != bounds[1] && message != null) {
-        		hv.setInput((new String(message).substring(bounds[0], bounds[1])).trim());
-        		JTabbedPane tp = (JTabbedPane) BurpExtender.this.getUiComponent().getParent();
+        	if(message != null) {
+                try {
+                    if(bounds[0] == bounds[1]) {
+                        IResponseInfo analyzedResponse = helpers.analyzeResponse(message);
+                        message = Arrays.copyOfRange(message, analyzedResponse.getBodyOffset(), message.length);
+                        hv.setInput(new String(message,"ISO-8859-1"));
+                    } else {
+                        hv.setInput((new String(message).substring(bounds[0], bounds[1])).trim());
+                    }
+                } catch (UnsupportedEncodingException err) {
+                    System.err.println("Error while converting to charset:"+err.toString());
+                }
+                JTabbedPane tp = (JTabbedPane) BurpExtender.this.getUiComponent().getParent();
 				int tIndex = getTabIndex(BurpExtender.this);
 				if(tIndex > -1) {
 					tp.setSelectedIndex(tIndex);
@@ -1387,9 +1410,41 @@ private Ngrams ngrams;
             Brotli brotli = new Brotli(EmptyObject.EMPTY);
             return (String) brotli.compress(str, compressionAmount);
         }
+        byte[] readUniBytes(String uniBytes) {
+            byte[] result = new byte[uniBytes.length()];
+            for (int i = 0; i < result.length; ++i) {
+                result[i] = (byte) uniBytes.charAt(i);
+            }
+            return result;
+        }
         String brotli_decompress(String str) {
-            Brotli brotli = new Brotli(EmptyObject.EMPTY);
-            return brotli.decompress(str).toString();
+            byte[] buffer = new byte[65536];
+            ByteArrayInputStream input = new ByteArrayInputStream(readUniBytes(str));
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            BrotliInputStream brotliInput = null;
+            try {
+                brotliInput = new BrotliInputStream(input);
+            } catch (IOException e) {
+                return e.toString();
+            }
+            while (true) {
+                int len = 0;
+                try {
+                    len = brotliInput.read(buffer, 0, buffer.length);
+                } catch (IOException e) {
+                    return e.toString();
+                }
+                if (len <= 0) {
+                    break;
+                }
+                output.write(buffer, 0, len);
+            }
+            try {
+                brotliInput.close();
+            } catch (IOException e) {
+                return e.toString();
+            }
+            return output.toString();
         }
         String gzip_compress(String input) {
             ByteArrayOutputStream bos = new ByteArrayOutputStream(input.length());
