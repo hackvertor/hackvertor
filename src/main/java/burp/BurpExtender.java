@@ -34,6 +34,8 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import haxe.lang.EmptyObject;
+import haxe.root.Brotli;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.compress.compressors.CompressorException;
@@ -46,6 +48,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.crypto.digests.*;
 import org.bouncycastle.jcajce.provider.digest.Skein;
 import org.bouncycastle.util.encoders.Hex;
+import org.brotli.dec.BrotliInputStream;
 import org.unbescape.css.CssEscape;
 import org.unbescape.css.CssStringEscapeLevel;
 import org.unbescape.css.CssStringEscapeType;
@@ -83,6 +86,7 @@ private boolean tagsInProxy = false;
 private boolean tagsInIntruder = true;
 private boolean tagsInRepeater = true;
 private boolean tagsInScanner = true;
+private boolean tagsInExtensions = true;
 private boolean autoUpdateContentLength = true;
 private JMenuBar burpMenuBar;
 private JMenu hvMenuBar;
@@ -516,7 +520,7 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v0.6.8.7");
+	            	stdout.println("Hackvertor v0.6.10");
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor();
 	            	hv = mainHV;
@@ -613,6 +617,18 @@ private Ngrams ngrams;
                         }
                     });
                     hvMenuBar.add(tagsInScannerMenu);
+                    final JCheckBoxMenuItem tagsInExtensionsMenu = new JCheckBoxMenuItem(
+                            "Allow tags in Extensions", tagsInExtensions);
+                    tagsInExtensionsMenu.addItemListener(new ItemListener() {
+                        public void itemStateChanged(ItemEvent e) {
+                            if(tagsInExtensionsMenu.getState()){
+                                tagsInExtensions = true;
+                            } else {
+                                tagsInExtensions = false;
+                            }
+                        }
+                    });
+                    hvMenuBar.add(tagsInExtensionsMenu);
                     final JCheckBoxMenuItem fixContentLengthMenu = new JCheckBoxMenuItem(
                             "Auto update content length", autoUpdateContentLength);
                     fixContentLengthMenu.addItemListener(new ItemListener() {
@@ -740,6 +756,10 @@ private Ngrams ngrams;
                     return;
                 }
                 break;
+            case IBurpExtenderCallbacks.TOOL_EXTENDER:
+                if(!tagsInExtensions) {
+                    return;
+                }
             default:
                 return;
         }
@@ -810,15 +830,27 @@ private Ngrams ngrams;
 		
 		switch (invocation.getInvocationContext()) {
 			case IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST:
+            case IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE:
 			break;
 			default:
 				return null;
 		}
-        List<JMenuItem> menu = new ArrayList<JMenuItem>();
+		List<JMenuItem> menu = new ArrayList<JMenuItem>();
         JMenu submenu = new JMenu("Hackvertor");
-        Action hackvertorAction = new HackvertorAction("Send to Hackvertor", invocation);
+        Action hackvertorAction;
+        if(bounds[0] == bounds[1] && invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE) {
+            hackvertorAction = new HackvertorAction("Send response body to Hackvertor", invocation);
+        } else {
+            hackvertorAction = new HackvertorAction("Send to Hackvertor", invocation);
+        }
         JMenuItem sendToHackvertor = new JMenuItem(hackvertorAction); 
         submenu.add(sendToHackvertor);
+
+        if(invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE) {
+            menu.add(submenu);
+            return menu;
+        }
+
         if(hvInRequest == null) {
             hvInRequest = new Hackvertor();
             hvInRequest.init();
@@ -899,9 +931,19 @@ private Ngrams ngrams;
         		break;	    
         	}  	
         	int[] bounds = invocation.getSelectionBounds(); 	        
-        	if(bounds[0] != bounds[1] && message != null) {
-        		hv.setInput((new String(message).substring(bounds[0], bounds[1])).trim());
-        		JTabbedPane tp = (JTabbedPane) BurpExtender.this.getUiComponent().getParent();
+        	if(message != null) {
+                try {
+                    if(bounds[0] == bounds[1]) {
+                        IResponseInfo analyzedResponse = helpers.analyzeResponse(message);
+                        message = Arrays.copyOfRange(message, analyzedResponse.getBodyOffset(), message.length);
+                        hv.setInput(new String(message,"ISO-8859-1"));
+                    } else {
+                        hv.setInput(new String(Arrays.copyOfRange(message, bounds[0], bounds[1]), "ISO-8859-1").trim());
+                    }
+                } catch (UnsupportedEncodingException err) {
+                    System.err.println("Error while converting to charset:"+err.toString());
+                }
+                JTabbedPane tp = (JTabbedPane) BurpExtender.this.getUiComponent().getParent();
 				int tIndex = getTabIndex(BurpExtender.this);
 				if(tIndex > -1) {
 					tp.setSelectedIndex(tIndex);
@@ -1092,6 +1134,10 @@ private Ngrams ngrams;
             tag.argument1 = new TagArgument("string","from");
             tag.argument2 = new TagArgument("string","to");
             tags.add(tag);
+            tag = new Tag("Compression","brotli_compress",true,"brotli_compress(String str, int compressionAmount)");
+            tag.argument1 = new TagArgument("int","10");
+            tags.add(tag);
+            tags.add(new Tag("Compression","brotli_decompress",true,"brotli_decompress(String str)"));
             tags.add(new Tag("Compression","gzip_compress",true,"gzip_compress(String str)"));
             tags.add(new Tag("Compression","gzip_decompress",true,"gzip_decompress(String str)"));
             tags.add(new Tag("Compression","bzip2_compress",true,"bzip2_compress(String str)"));
@@ -1374,6 +1420,49 @@ private Ngrams ngrams;
         String big5(String input) {
             return convertCharset(input, "BIG5");
         }
+        String brotli_compress(String str, int compressionAmount) {
+            if(compressionAmount < 0 || compressionAmount > 11) {
+                return "Invalid compression amount. 0-11 only";
+            }
+            Brotli brotli = new Brotli(EmptyObject.EMPTY);
+            return (String) brotli.compress(str, compressionAmount);
+        }
+        byte[] readUniBytes(String uniBytes) {
+            byte[] result = new byte[uniBytes.length()];
+            for (int i = 0; i < result.length; ++i) {
+                result[i] = (byte) uniBytes.charAt(i);
+            }
+            return result;
+        }
+        String brotli_decompress(String str) {
+            byte[] buffer = new byte[65536];
+            ByteArrayInputStream input = new ByteArrayInputStream(readUniBytes(str));
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            BrotliInputStream brotliInput = null;
+            try {
+                brotliInput = new BrotliInputStream(input);
+            } catch (IOException e) {
+                return e.toString();
+            }
+            while (true) {
+                int len = 0;
+                try {
+                    len = brotliInput.read(buffer, 0, buffer.length);
+                } catch (IOException e) {
+                    return e.toString();
+                }
+                if (len <= 0) {
+                    break;
+                }
+                output.write(buffer, 0, len);
+            }
+            try {
+                brotliInput.close();
+            } catch (IOException e) {
+                return e.toString();
+            }
+            return output.toString();
+        }
         String gzip_compress(String input) {
             ByteArrayOutputStream bos = new ByteArrayOutputStream(input.length());
             GZIPOutputStream gzip = null;
@@ -1542,7 +1631,7 @@ private Ngrams ngrams;
             for(int i=0;i<str.length();i++) {
                 int codePoint = Character.codePointAt(str, i);
                 if(codePoint<=0xff) {
-                    converted.append("%" + Integer.toHexString(codePoint));
+                    converted.append("%" + String.format("%02X", codePoint));
                 } else {
                     try {
                         converted.append(URLEncoder.encode(Character.toString(str.charAt(i)), "UTF-8"));
@@ -3108,6 +3197,12 @@ private Ngrams ngrams;
                     break;
                 case "charset_convert":
                     output = this.charset_convert(output, this.getString(arguments, 0), this.getString(arguments, 1));
+                    break;
+                case "brotli_compress":
+                    output = this.brotli_compress(output, this.getInt(arguments, 0));
+                    break;
+                case "brotli_decompress":
+                    output = this.brotli_decompress(output);
                     break;
                 case "gzip_compress":
                     output = this.gzip_compress(output);
