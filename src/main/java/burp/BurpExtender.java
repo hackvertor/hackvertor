@@ -921,7 +921,7 @@ private Ngrams ngrams;
                         message = Arrays.copyOfRange(message, analyzedResponse.getBodyOffset(), message.length);
                         hv.setInput(new String(message,"ISO-8859-1"));
                     } else {
-                        hv.setInput((new String(message).substring(bounds[0], bounds[1])).trim());
+                        hv.setInput(new String(Arrays.copyOfRange(message, bounds[0], bounds[1]), "ISO-8859-1").trim());
                     }
                 } catch (UnsupportedEncodingException err) {
                     System.err.println("Error while converting to charset:"+err.toString());
