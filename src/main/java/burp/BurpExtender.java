@@ -760,6 +760,7 @@ private Ngrams ngrams;
                 if(!tagsInExtensions) {
                     return;
                 }
+		break;
             default:
                 return;
         }
