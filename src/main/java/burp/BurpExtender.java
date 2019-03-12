@@ -520,7 +520,7 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v0.6.10");
+	            	stdout.println("Hackvertor v0.6.11");
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor();
 	            	hv = mainHV;
@@ -760,7 +760,7 @@ private Ngrams ngrams;
                 if(!tagsInExtensions) {
                     return;
                 }
-		break;
+		        break;
             default:
                 return;
         }
