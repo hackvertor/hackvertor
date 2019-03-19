@@ -520,7 +520,7 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v0.6.11");
+	            	stdout.println("Hackvertor v0.6.12");
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor();
 	            	hv = mainHV;
@@ -963,8 +963,8 @@ private Ngrams ngrams;
 		String name;
 		String tag;
 		public byte[] processPayload(byte[] currentPayload, byte[] originalPayload, byte[] baseValue) {
-			String input = helpers.bytesToString(helpers.urlDecode(currentPayload));
-			byte[] output = helpers.stringToBytes(helpers.urlEncode(hv.callTag(this.tag,input,new ArrayList<String>())));
+			String input = helpers.bytesToString(currentPayload);
+			byte[] output = helpers.stringToBytes(hv.callTag(this.tag,input,new ArrayList<String>()));
 			return output;
 		}
 		public String getProcessorName() {
