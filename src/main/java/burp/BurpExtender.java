@@ -4,11 +4,13 @@ import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.*;
 import java.io.*;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.security.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -34,8 +36,6 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import haxe.lang.EmptyObject;
-import haxe.root.Brotli;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.compress.compressors.CompressorException;
@@ -401,7 +401,7 @@ private Ngrams ngrams;
                 outputArea.setText("");
                 String input = inputArea.getText();
                 try {
-                    input = input.replaceAll("((?:<@?\\w+_\\d+(?:[(](?:,?"+hv.argumentsRegex+")*[)])?>)+)[\\s\\S]*?(?:<@/)","$1"+Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor).toString()+"<@/");
+                    input = input.replaceAll("((?:<@?[\\w\\-]+_\\d+(?:[(](?:,?"+hv.argumentsRegex+")*[)])?>)+)[\\s\\S]*?(?:<@/)","$1"+Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor).toString()+"<@/");
                     hv.setInput(input);
                 } catch (Exception ex) {
                     ex.printStackTrace();
@@ -500,7 +500,23 @@ private Ngrams ngrams;
         callbacks.customizeUiComponent(inputTabs);
         return hv;
     }
-
+    private void readClipboardAndDecode(Hackvertor hv) {
+        try {
+            String data = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
+            String inputValue = hv.getInput();
+            if(inputValue.length() == 0) {
+                String code = "<@auto_decode_no_decrypt_1>"+data+"<@/auto_decode_no_decrypt_1>";
+                String converted = hv.convert(code);
+                if(!data.equals(converted)) {
+                    hv.setInput(code);
+                }
+            }
+        } catch (UnsupportedFlavorException e1) {
+            e1.printStackTrace();
+        } catch (IOException e1) {
+            e1.printStackTrace();
+        }
+    }
 	public void registerExtenderCallbacks(final IBurpExtenderCallbacks callbacks) {
 		helpers = callbacks.getHelpers();
 		stderr = new PrintWriter(callbacks.getStderr(), true);
@@ -520,7 +536,7 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v0.6.12");
+	            	stdout.println("Hackvertor v0.7");
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor();
 	            	hv = mainHV;
@@ -528,6 +544,12 @@ private Ngrams ngrams;
                         @Override
                         public void componentShown(ComponentEvent e) {
                             hv = mainHV;
+                        }
+                    });
+                    inputTabs.addComponentListener(new ComponentAdapter() {
+                        @Override
+                        public void componentShown(ComponentEvent e) {
+                            readClipboardAndDecode(hv);
                         }
                     });
                     inputTabs.addTab("1", hv.getPanel());
@@ -556,6 +578,7 @@ private Ngrams ngrams;
                                         @Override
                                         public void componentShown(ComponentEvent e) {
                                             hv = hvTab;
+                                            readClipboardAndDecode(hv);
                                         }
                                     });
                                     pane.remove(pane.getSelectedIndex());
@@ -884,9 +907,9 @@ private Ngrams ngrams;
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
                 try {
                     outputStream.write(Arrays.copyOfRange(message, 0, bounds[0]));
-                    outputStream.write(helpers.stringToBytes("<@auto_decode_1>"));
+                    outputStream.write(helpers.stringToBytes("<@auto_decode_no_decrypt_1>"));
                     outputStream.write(Arrays.copyOfRange(message,bounds[0], bounds[1]));
-                    outputStream.write(helpers.stringToBytes("<@/auto_decode_1>"));
+                    outputStream.write(helpers.stringToBytes("<@/auto_decode_no_decrypt_1>"));
                     outputStream.write(Arrays.copyOfRange(message, bounds[1],message.length));
                     outputStream.flush();
                     invocation.getSelectedMessages()[0].setRequest(outputStream.toByteArray());
@@ -939,7 +962,7 @@ private Ngrams ngrams;
                         message = Arrays.copyOfRange(message, analyzedResponse.getBodyOffset(), message.length);
                         hv.setInput(new String(message,"ISO-8859-1"));
                     } else {
-                        hv.setInput(new String(Arrays.copyOfRange(message, bounds[0], bounds[1]), "ISO-8859-1").trim());
+                        hv.setInput("<@auto_decode_no_decrypt_1>"+new String(Arrays.copyOfRange(message, bounds[0], bounds[1]), "ISO-8859-1").trim()+"<@/auto_decode_no_decrypt_1>");
                     }
                 } catch (UnsupportedEncodingException err) {
                     System.err.println("Error while converting to charset:"+err.toString());
@@ -1121,22 +1144,29 @@ private Ngrams ngrams;
         }
 		void init() {
 			Tag tag;
-            tags.add(new Tag("Charsets","utf16",true, "utf16(String input)"));
-            tags.add(new Tag("Charsets","utf16be",true,"utf16be(String input)"));
-            tags.add(new Tag("Charsets","utf16le",true, "utf16le(String input)"));
-            tags.add(new Tag("Charsets","utf32",true,"utf32(String input)"));
-            tags.add(new Tag("Charsets","shift_jis",true,"shift_jis(String input)"));
-            tags.add(new Tag("Charsets","gb2312",true,"gb2312(String input)"));
-            tags.add(new Tag("Charsets","euc_kr",true,"euc_kr(String input)"));
-            tags.add(new Tag("Charsets","euc_jp",true, "euc_jp(String input)"));
-            tags.add(new Tag("Charsets","gbk",true,"gbk(String input)"));
-            tags.add(new Tag("Charsets","big5",true,"big5(String input)"));
+            SortedMap m = Charset.availableCharsets();
+            Set k = m.keySet();
+            Iterator i = k.iterator();
+            while (i.hasNext()) {
+                String n = (String) i.next();
+                Charset e = (Charset) m.get(n);
+                String d = e.displayName();
+                boolean c = e.canEncode();
+                if(!c) {
+                    continue;
+                }
+                Set s = e.aliases();
+                Iterator j = s.iterator();
+                while (j.hasNext()) {
+                    String a = (String) j.next();
+                    tags.add(new Tag("Charsets",a,true,a+"(String input)"));
+                }
+                System.out.println("");
+            }
+
             tag = new Tag("Charsets","charset_convert",true,"charset_convert(String input, String from, String to)");
             tag.argument1 = new TagArgument("string","from");
             tag.argument2 = new TagArgument("string","to");
-            tags.add(tag);
-            tag = new Tag("Compression","brotli_compress",true,"brotli_compress(String str, int compressionAmount)");
-            tag.argument1 = new TagArgument("int","10");
             tags.add(tag);
             tags.add(new Tag("Compression","brotli_decompress",true,"brotli_decompress(String str)"));
             tags.add(new Tag("Compression","gzip_compress",true,"gzip_compress(String str)"));
@@ -1211,6 +1241,7 @@ private Ngrams ngrams;
             tag.argument2 = new TagArgument("string","secret");
             tags.add(tag);
 			tags.add(new Tag("Decode","auto_decode",true,"auto_decode(String str)"));
+            tags.add(new Tag("Decode","auto_decode_no_decrypt",true,"auto_decode_no_decrypt(String str)"));
 			tags.add(new Tag("Decode","d_base32",true,"decode_base32(String str)"));
 			tags.add(new Tag("Decode","d_base64",true,"decode_base64(String str)"));
             tags.add(new Tag("Decode","d_base64url",true,"decode_base64url(String str)"));
@@ -1226,6 +1257,7 @@ private Ngrams ngrams;
             tag = new Tag("Decode","d_jwt_verify",true,"d_jwt_verify(String token, String secret)");
             tag.argument1 = new TagArgument("string","secret");
             tags.add(tag);
+            tags.add(new Tag("Convert","chunked_dec2hex",true,"chunked_dec2hex(String str)"));
 			tag = new Tag("Convert","dec2hex",true,"dec2hex(String str, String splitChar)");
 			tag.argument1 = new TagArgument("string",",");
 			tags.add(tag);
@@ -1390,43 +1422,6 @@ private Ngrams ngrams;
                 return e.toString();
             }
             return helpers.bytesToString(output);
-        }
-		String utf16(String input) {
-            return convertCharset(input, "UTF-16");
-        }
-        String utf16be(String input) {
-            return convertCharset(input, "UTF-16BE");
-        }
-        String utf16le(String input) {
-            return convertCharset(input, "UTF-16LE");
-        }
-        String utf32(String input) {
-            return convertCharset(input, "UTF-32");
-        }
-        String shift_jis(String input) {
-            return convertCharset(input, "SHIFT_JIS");
-        }
-        String gb2312(String input) {
-            return convertCharset(input, "GB2312");
-        }
-        String euc_kr(String input) {
-            return convertCharset(input, "EUC-KR");
-        }
-        String euc_jp(String input) {
-            return convertCharset(input, "EUC-JP");
-        }
-        String gbk(String input) {
-            return convertCharset(input, "GBK");
-        }
-        String big5(String input) {
-            return convertCharset(input, "BIG5");
-        }
-        String brotli_compress(String str, int compressionAmount) {
-            if(compressionAmount < 0 || compressionAmount > 11) {
-                return "Invalid compression amount. 0-11 only";
-            }
-            Brotli brotli = new Brotli(EmptyObject.EMPTY);
-            return (String) brotli.compress(str, compressionAmount);
         }
         byte[] readUniBytes(String uniBytes) {
             byte[] result = new byte[uniBytes.length()];
@@ -2275,6 +2270,13 @@ private Ngrams ngrams;
 			}
 			return StringUtils.join(chars, ",");
 		}
+        String chunked_dec2hex(String str) {
+            try {
+                return Integer.toHexString(Integer.parseInt(str));
+            } catch(NumberFormatException e){
+                return e.getMessage();
+            }
+        }
 		String dec2oct(String str, String splitChar) {
 			String[] chars = {};
 			try {
@@ -2783,7 +2785,13 @@ private Ngrams ngrams;
             sortedByValues.putAll(map);
             return sortedByValues;
         }
-		String auto_decode(String str) {
+        String auto_decode(String str) {
+            return auto_decode_decrypt(str, true);
+        }
+        String auto_decode_no_decrypt(String str) {
+            return auto_decode_decrypt(str, false);
+        }
+		String auto_decode_decrypt(String str, Boolean decrypt) {
 			int repeats = 20;
 			int repeat = 0;
 			boolean matched;
@@ -2941,83 +2949,84 @@ private Ngrams ngrams;
                         encodingClosingTags = "<@/rotN_"+(tagCounter)+">" + encodingClosingTags;
                     }
                 }
+                if(decrypt) {
+                    if (Pattern.compile("(?:[a-z]+[\\s,-]){2,}").matcher(str).find()) {
+                        double total = 0;
+                        double bestScore = -9999999;
+                        int key1 = 0;
+                        int key2 = 0;
+                        int[] keyArray1 = {1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25};
+                        int[] keyArray2 = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25};
+                        for (int i = 0; i < keyArray1.length; i++) {
+                            for (int j = 0; j < keyArray2.length; j++) {
+                                String decodedString = affine_decrypt(str, keyArray1[i], keyArray2[j]);
+                                double score = is_like_english(decodedString);
+                                total += score;
+                                if (score > bestScore) {
+                                    bestScore = score;
+                                    key1 = keyArray1[i];
+                                    key2 = keyArray2[j];
+                                }
+                            }
+                        }
+                        double average = (total / 25);
+                        if ((((average - bestScore) / average) * 100) > 60 && (key1 != 1 && key2 != 0)) {
+                            str = affine_decrypt(str, key1, key2);
+                            matched = true;
+                            tag = "affine";
+                            encodingOpeningTags = encodingOpeningTags + "<@affine_encrypt_" + (++tagCounter) + "(" + key1 + "," + key2 + ")>";
+                            encodingClosingTags = "<@/affine_encrypt_" + (tagCounter) + ">" + encodingClosingTags;
+                        }
+                    }
 
-                if(Pattern.compile("(?:[a-z]+[\\s,-]){2,}").matcher(str).find()) {
-                    double total = 0;
-                    double bestScore = -9999999;
-                    int key1 = 0;
-                    int key2 = 0;
-                    int[] keyArray1 = {1,3,5,7,9,11,15,17,19,21,23,25};
-                    int[] keyArray2 = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25};
-                    for(int i = 0; i < keyArray1.length;i++) {
-                        for(int j = 0; j < keyArray2.length;j++) {
-                            String decodedString = affine_decrypt(str, keyArray1[i], keyArray2[j]);
+                    if (Pattern.compile("(?:[a-z]+[\\s,-]){2,}").matcher(str).find()) {
+                        String plaintext = atbash_decrypt(str);
+                        if (is_like_english(plaintext) - is_like_english(str) >= 200) {
+                            str = plaintext;
+                            matched = true;
+                            tag = "atbash";
+                            encodingOpeningTags = encodingOpeningTags + "<@atbash_encrypt_" + (++tagCounter) + ">";
+                            encodingClosingTags = "<@/atbash_encrypt_" + (tagCounter) + ">" + encodingClosingTags;
+                        }
+                    }
+                    if (Pattern.compile("^[a-z]{10,}$").matcher(str).find()) {
+                        double total = 0;
+                        double bestScore = -9999999;
+                        int n = 0;
+                        double max = Math.floor(2 * str.length() - 1);
+                        for (int i = 2; i < max; i++) {
+                            String decodedString = rail_fence_decrypt(str, i);
                             double score = is_like_english(decodedString);
                             total += score;
                             if (score > bestScore) {
                                 bestScore = score;
-                                key1 = keyArray1[i];
-                                key2 = keyArray2[j];
+                                n = i;
                             }
                         }
-                    }
-                    double average = (total / 25);
-                    if((((average - bestScore) / average) * 100) > 60 && (key1 != 1 && key2 != 0)) {
-                        str = affine_decrypt(str, key1, key2);
-                        matched = true;
-                        tag = "affine";
-                        encodingOpeningTags = encodingOpeningTags + "<@affine_encrypt_"+(++tagCounter)+"("+key1+","+key2+")>";
-                        encodingClosingTags = "<@/affine_encrypt_"+(tagCounter)+">" + encodingClosingTags;
-                    }
-                }
-
-                if(Pattern.compile("(?:[a-z]+[\\s,-]){2,}").matcher(str).find()) {
-				    String plaintext = atbash_decrypt(str);
-				    if(is_like_english(plaintext) - is_like_english(str) >= 200) {
-				        str = plaintext;
-				        matched = true;
-				        tag = "atbash";
-                        encodingOpeningTags = encodingOpeningTags + "<@atbash_encrypt_"+(++tagCounter)+">";
-                        encodingClosingTags = "<@/atbash_encrypt_"+(tagCounter)+">" + encodingClosingTags;
-                    }
-                }
-                if(Pattern.compile("^[a-z]{10,}$").matcher(str).find()) {
-				    double total = 0;
-                    double bestScore = -9999999;
-                    int n = 0;
-                    double max = Math.floor(2 * str.length() - 1);
-				    for (int i = 2; i < max; i++) {
-                        String decodedString = rail_fence_decrypt(str, i);
-                        double score = is_like_english(decodedString);
-                        total += score;
-                        if(score > bestScore) {
-                            bestScore = score;
-                            n = i;
+                        double average = (total / max - 1);
+                        if ((((average - bestScore) / average) * 100) > 20) {
+                            str = rail_fence_decrypt(str, n);
+                            matched = true;
+                            tag = "rail_fence";
+                            encodingOpeningTags = encodingOpeningTags + "<@rail_fence_encrypt_" + (++tagCounter) + "(" + n + ")>";
+                            encodingClosingTags = "<@/rail_fence_encrypt_" + (tagCounter) + ">" + encodingClosingTags;
                         }
                     }
-                    double average = (total / max-1);
-                    if((((average - bestScore) / average) * 100) > 20) {
-                        str = rail_fence_decrypt(str, n);
-                        matched = true;
-                        tag = "rail_fence";
-                        encodingOpeningTags = encodingOpeningTags + "<@rail_fence_encrypt_"+(++tagCounter)+"("+n+")>";
-                        encodingClosingTags = "<@/rail_fence_encrypt_"+(tagCounter)+">" + encodingClosingTags;
-                    }
-                }
 
-                if(Pattern.compile("^[\\x00-\\xff]+$",Pattern.CASE_INSENSITIVE).matcher(str).find()) {
-				    int lenGuess = guess_key_length(str);
-                    test = xor_decrypt(str, lenGuess, false);
-                    int alphaCount = test.replaceAll("[^a-zA-Z0-9]+","").length();
-                    int strLen = str.length();
-                    float percent = (((float) alphaCount/strLen)*100);
-                    if(is_like_english(test) < is_like_english(str) && percent > 20) {
-                        String key = xor_decrypt(str, lenGuess, true).replaceAll("\"","\\\"");
-                        str = test;
-                        matched = true;
-                        tag = "xor";
-                        encodingOpeningTags = encodingOpeningTags + "<@xor_"+(++tagCounter)+"(\""+key+"\")>";
-                        encodingClosingTags = "<@/xor_"+(tagCounter)+">" + encodingClosingTags;
+                    if (Pattern.compile("^[\\x00-\\xff]+$", Pattern.CASE_INSENSITIVE).matcher(str).find()) {
+                        int lenGuess = guess_key_length(str);
+                        test = xor_decrypt(str, lenGuess, false);
+                        int alphaCount = test.replaceAll("[^a-zA-Z0-9]+", "").length();
+                        int strLen = str.length();
+                        float percent = (((float) alphaCount / strLen) * 100);
+                        if (is_like_english(test) < is_like_english(str) && percent > 20) {
+                            String key = xor_decrypt(str, lenGuess, true).replaceAll("\"", "\\\"");
+                            str = test;
+                            matched = true;
+                            tag = "xor";
+                            encodingOpeningTags = encodingOpeningTags + "<@xor_" + (++tagCounter) + "(\"" + key + "\")>";
+                            encodingClosingTags = "<@/xor_" + (tagCounter) + ">" + encodingClosingTags;
+                        }
                     }
                 }
 				if(!matched || startStr.equals(str)) {
@@ -3166,41 +3175,11 @@ private Ngrams ngrams;
 		}
 		private String callTag(String tag, String output, ArrayList<String> arguments) {
             switch (tag) {
-                case "utf16":
-                    output = this.utf16(output);
-                    break;
-                case "utf16be":
-                    output = this.utf16be(output);
-                    break;
-                case "utf16le":
-                    output = this.utf16le(output);
-                    break;
-                case "utf32":
-                    output = this.utf32(output);
-                    break;
-                case "shift_jis":
-                    output = this.shift_jis(output);
-                    break;
-                case "gb2312":
-                    output = this.gb2312(output);
-                    break;
-                case "euc_kr":
-                    output = this.euc_kr(output);
-                    break;
-                case "euc_jp":
-                    output = this.euc_jp(output);
-                    break;
-                case "gbk":
-                    output = this.gbk(output);
-                    break;
-                case "big5":
-                    output = this.big5(output);
+                default:
+                    output = this.charset_convert(output, "UTF-8", tag);
                     break;
                 case "charset_convert":
                     output = this.charset_convert(output, this.getString(arguments, 0), this.getString(arguments, 1));
-                    break;
-                case "brotli_compress":
-                    output = this.brotli_compress(output, this.getInt(arguments, 0));
                     break;
                 case "brotli_decompress":
                     output = this.brotli_decompress(output);
@@ -3303,6 +3282,9 @@ private Ngrams ngrams;
                     break;
                 case "auto_decode":
                     output = this.auto_decode(output);
+                    break;
+                case "auto_decode_no_decrypt":
+                    output = this.auto_decode_no_decrypt(output);
                     break;
                 case "d_octal_escapes":
                     output = this.decode_octal_escapes(output);
@@ -3417,6 +3399,9 @@ private Ngrams ngrams;
                     break;
                 case "guess_key_length":
                     output = Integer.toString(this.guess_key_length(output));
+                    break;
+                case "chunked_dec2hex":
+                    output = this.chunked_dec2hex(output);
                     break;
                 case "dec2hex":
                     output = this.dec2hex(output, this.getString(arguments, 0));
@@ -3630,13 +3615,13 @@ private Ngrams ngrams;
 		}
 		void clearTags() {
 			String input = inputArea.getText();	                	
-			input = input.replaceAll("<@/?\\w+_\\d+(?:[(](?:,?"+argumentsRegex+")*[)])?(?:\\s/)?>","");
+			input = input.replaceAll("<@/?[\\w\\-]+(?:[(](?:,?"+argumentsRegex+")*[)])?(?:\\s/)?>","");
       	  	inputArea.setText(input);	                	  	                	  
       	  	inputArea.requestFocus();
 		}
 		String convertNoInputTags(String input) {
             List<String> allMatches = new ArrayList<>();
-            Matcher m = Pattern.compile("<@([\\w\\d]+(_\\d*)?)((?:[(](?:,?"+argumentsRegex+")*[)])?) />").matcher(input);
+            Matcher m = Pattern.compile("<@([\\w\\d\\-]+(_\\d*)?)((?:[(](?:,?"+argumentsRegex+")*[)])?) />").matcher(input);
             while (m.find()) {
                 allMatches.add(m.group(1));
             }
@@ -3668,7 +3653,7 @@ private Ngrams ngrams;
         String convertSetVariables(String input) {
             String output = input;
             List<String> allMatches = new ArrayList<>();
-            Matcher m = Pattern.compile("<@(set_[\\w\\d]+(?:_\\d+)?)>").matcher(input);
+            Matcher m = Pattern.compile("<@(set_[\\w\\d\\-]+(?:_\\d+)?)>").matcher(input);
             while (m.find()) {
                 allMatches.add(m.group(1));
             }
@@ -3680,7 +3665,7 @@ private Ngrams ngrams;
                     code = m.group(1);
                 }
                 setVariable(tagName, convert(code));
-                String result = code.replaceAll("<@/?\\w+(?:_\\d+)?(?:[(](?:,?"+argumentsRegex+")*[)])?(?:\\s/)?>","");
+                String result = code.replaceAll("<@/?[\\w\\-]+(?:_\\d+)?(?:[(](?:,?"+argumentsRegex+")*[)])?(?:\\s/)?>","");
                 output = output.replaceAll("<@"+tagNameWithID+"(?:[(](?:,?"+argumentsRegex+")*[)])?>[\\d\\D]*?<@/"+tagNameWithID+">", result.replace("\\","\\\\").replace("$","\\$"));
             }
             return output;
@@ -3694,7 +3679,7 @@ private Ngrams ngrams;
             }
 			String output = input;
 			List<String> allMatches = new ArrayList<>();
-			 Matcher m = Pattern.compile("<@/([\\w\\d]+(?:_\\d+)?)>").matcher(input);
+			 Matcher m = Pattern.compile("<@/([\\w\\d\\-]+(?:_\\d+)?)>").matcher(input);
 			 while (m.find()) {
 			   allMatches.add(m.group(1));
 			 }
@@ -3715,6 +3700,9 @@ private Ngrams ngrams;
 		void setInput(String input) {
 			inputArea.setText(input);
 		}
+		String getInput() {
+            return inputArea.getText();
+        }
 		int calculateRealLen(String str) {
 			int len = 0;
 			for(int i=0;i<str.length();i++) {
