@@ -505,7 +505,12 @@ private Ngrams ngrams;
             String data = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
             String inputValue = hv.getInput();
             if(inputValue.length() == 0) {
-                String code = "<@auto_decode_no_decrypt_1>"+data+"<@/auto_decode_no_decrypt_1>";
+                String code;
+                if(data.contains("<@/")) {
+                   code = data;
+                } else {
+                   code = "<@auto_decode_no_decrypt_1>" + data + "<@/auto_decode_no_decrypt_1>";
+                }
                 String converted = hv.convert(code);
                 if(!data.equals(converted)) {
                     hv.setInput(code);
@@ -536,7 +541,7 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v0.7");
+	            	stdout.println("Hackvertor v0.8");
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor();
 	            	hv = mainHV;
@@ -1044,6 +1049,15 @@ private Ngrams ngrams;
         void setPanel(JPanel panel) {
             this.panel = panel;
         }
+        int getTagCount(String category) {
+            int count = 0;
+            for(final Tag tagObj:tags) {
+                if(tagObj.category.equals(category)) {
+                    count++;
+                }
+            }
+            return count;
+         }
         JPanel getPanel() {
             return this.panel;
         }
@@ -1710,19 +1724,25 @@ private Ngrams ngrams;
                     algoName = "HmacSHA384";
                 } else if(algo.equals("HS512")) {
                     algoName = "HmacSHA512";
+                } else if(algo.equals("NONE")) {
+                    algoName = "none";
                 } else {
                     return "Unsupported algorithm";
                 }
-                Mac hashMac = Mac.getInstance(algoName);
                 String message = "";
                 String header = "{\n" +
                         "  \"alg\": \""+algo+"\",\n" +
                         "  \"typ\": \"JWT\"\n" +
                         "}";
                 message = base64urlEncode(header) + "." + base64urlEncode(payload);
-                SecretKeySpec secret_key = new SecretKeySpec(secret.getBytes(), algoName);
-                hashMac.init(secret_key);
-                return message + "." + base64urlEncode(helpers.bytesToString(hashMac.doFinal(message.getBytes())));
+                if(!algoName.equals("none")) {
+                    Mac hashMac = Mac.getInstance(algoName);
+                    SecretKeySpec secret_key = new SecretKeySpec(secret.getBytes(), algoName);
+                    hashMac.init(secret_key);
+                    return message + "." + base64urlEncode(helpers.bytesToString(hashMac.doFinal(message.getBytes())));
+                } else {
+                    return message + ".";
+                }
             } catch (Exception e){
                 return "Unable to create token";
             }
@@ -3841,7 +3861,18 @@ private Ngrams ngrams;
 			JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 			JScrollPane scrollFrame = new JScrollPane(panel,JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 			tags.sort((t1, t2) -> t1.name.compareToIgnoreCase(t2.name));
-			
+            int tagCount = this.getTagCount(category);
+            if(tagCount > 40 && !type.equals("button")) {
+                JMenu numberMenu = new JMenu("0-9");
+                MenuScroller.setScrollerFor(numberMenu);
+                parentMenu.add(numberMenu);
+                for (char c = 'a'; c <= 'z'; c++) {
+                    JMenu letterMenu = new JMenu(String.valueOf(c));
+                    MenuScroller.setScrollerFor(letterMenu);
+                    parentMenu.add(letterMenu);
+                }
+            }
+
 			for(final Tag tagObj:tags) {
                 final JButton btn = new JButton(tagObj.name);
                 btn.setToolTipText(tagObj.tooltip);
@@ -3915,7 +3946,17 @@ private Ngrams ngrams;
                         panel.add(btn);
                     } else {
                         menu.addActionListener(actionListener);
-                        parentMenu.add(menu);
+                        if(tagCount > 40) {
+                            for(int i=0;i<parentMenu.getItemCount();i++) {
+                                if(parentMenu.getItem(i).getText().equals("0-9") && Character.isDigit(tagObj.name.charAt(0))) {
+                                    parentMenu.getItem(i).add(menu);
+                                } else if(tagObj.name.toLowerCase().startsWith(parentMenu.getItem(i).getText())) {
+                                    parentMenu.getItem(i).add(menu);
+                                }
+                            }
+                        } else {
+                            parentMenu.add(menu);
+                        }
                     }
 				}
 			}
