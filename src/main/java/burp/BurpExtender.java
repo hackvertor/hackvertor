@@ -65,7 +65,7 @@ import java.util.stream.IntStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import static java.awt.GridBagConstraints.*;
-public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, IHttpListener, IExtensionStateListener {
+public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, IHttpListener, IExtensionStateListener, IMessageEditorTabFactory {
 private IBurpExtenderCallbacks callbacks;
 private IExtensionHelpers helpers;
 private JTabbedPaneClosable inputTabs;
@@ -104,6 +104,11 @@ private Ngrams ngrams;
         c.gridwidth = gridWidth;            
 		return c;
 	}
+    @Override
+    public IMessageEditorTab createNewInstance(IMessageEditorController controller, boolean editable)
+    {
+        return new HackvertorInputTab(controller, editable);
+    }
 	private ImageIcon createImageIcon(String path, String description) {
 		java.net.URL imgURL = getClass().getResource(path);
         if (imgURL != null) {
@@ -134,12 +139,13 @@ private Ngrams ngrams;
     private Hackvertor generateHackvertor() {
         JTabbedPane tabs = new JTabbedPane();
         tabs.setAutoscrolls(true);
-        hv = new Hackvertor();
+        Hackvertor hv = new Hackvertor();
         hv.init();
         hv.buildTabs(tabs);
+        tabs.setSelectedIndex(3);
         JPanel topBar = new JPanel(new GridBagLayout());
-        topBar.setPreferredSize(new Dimension(-1, 100));
-        topBar.setMinimumSize(new Dimension(-1, 100));
+        topBar.setPreferredSize(new Dimension(-1, 110));
+        topBar.setMinimumSize(new Dimension(-1, 110));
         JLabel logoLabel;
         if(isDarkTheme) {
             logoLabel = new JLabel(createImageIcon("/images/logo-dark.png", "logo"));
@@ -497,7 +503,6 @@ private Ngrams ngrams;
         callbacks.customizeUiComponent(inputArea);
         callbacks.customizeUiComponent(outputArea);
         callbacks.customizeUiComponent(panel);
-        callbacks.customizeUiComponent(inputTabs);
         return hv;
     }
     private void readClipboardAndDecode(Hackvertor hv) {
@@ -513,13 +518,14 @@ private Ngrams ngrams;
                 }
                 String converted = hv.convert(code);
                 if(!data.equals(converted)) {
+                    System.out.println("SetInput:"+code);
                     hv.setInput(code);
                 }
             }
-        } catch (UnsupportedFlavorException e1) {
-            e1.printStackTrace();
-        } catch (IOException e1) {
-            e1.printStackTrace();
+        } catch (UnsupportedFlavorException e) {
+            stderr.println("Error reading data:"+e);
+        } catch (IOException e) {
+            stderr.println("IO exception, error reading data:"+e);
         }
     }
 	public void registerExtenderCallbacks(final IBurpExtenderCallbacks callbacks) {
@@ -544,6 +550,7 @@ private Ngrams ngrams;
 	            	stdout.println("Hackvertor v0.8");
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor();
+	            	mainHV.registerPayloadProcessor();
 	            	hv = mainHV;
 	            	hv.getPanel().addComponentListener(new ComponentAdapter() {
                         @Override
@@ -670,10 +677,9 @@ private Ngrams ngrams;
                     });
                     hvMenuBar.add(fixContentLengthMenu);
                     burpMenuBar.add(hvMenuBar);
+                    callbacks.registerMessageEditorTabFactory(BurpExtender.this);
 	            }
 	        });
-
-
         //callbacks.printOutput("Look And Feel: "+UIManager.getLookAndFeel().getID()); //For debug purpose
         isNativeTheme = NATIVE_LOOK_AND_FEELS.contains(UIManager.getLookAndFeel().getID());
         isDarkTheme = DARK_THEMES.contains(UIManager.getLookAndFeel().getID());
@@ -937,6 +943,85 @@ private Ngrams ngrams;
         menu.add(submenu);
         return menu;
     }
+    class HackvertorInputTab implements IMessageEditorTab {
+        private boolean editable;
+        private byte[] currentMessage;
+        private JPanel hackvertorContainer = new JPanel(new BorderLayout());
+        private Hackvertor messageEditorHV;
+        private Boolean changed = false;
+        public HackvertorInputTab(IMessageEditorController controller, boolean editable) {
+            this.editable = editable;
+            SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    messageEditorHV = generateHackvertor();
+                    hackvertorContainer.add(messageEditorHV.getPanel());
+                    messageEditorHV.getInputArea().getDocument().addDocumentListener(new DocumentListener() {
+                        @Override
+                        public void insertUpdate(DocumentEvent e) {
+                            changed = true;
+                        }
+
+                        @Override
+                        public void removeUpdate(DocumentEvent e) {
+                            changed = true;
+                        }
+
+                        @Override
+                        public void changedUpdate(DocumentEvent e) {
+                            changed = true;
+                        }
+                    });
+                }
+            });
+        }
+        @Override
+        public String getTabCaption()
+        {
+            return "Hackvertor";
+        }
+        @Override
+        public Component getUiComponent()
+        {
+            return hackvertorContainer;
+        }
+        @Override
+        public boolean isEnabled(byte[] content, boolean isRequest)
+        {
+            return isRequest;
+        }
+        @Override
+        public void setMessage(byte[] content, boolean isRequest)
+        {
+            if (content == null) {
+                changed = false;
+            } else {
+                messageEditorHV.setInput(helpers.bytesToString(content));
+                messageEditorHV.getInputArea().setText(helpers.bytesToString(content));
+            }
+            currentMessage = content;
+        }
+        @Override
+        public byte[] getMessage()
+        {
+            if(changed) {
+                return helpers.stringToBytes(messageEditorHV.getInput());
+            } else {
+                return currentMessage;
+            }
+
+        }
+        @Override
+        public boolean isModified()
+        {
+            return changed;
+        }
+
+        @Override
+        public byte[] getSelectedData()
+        {
+            return helpers.stringToBytes(messageEditorHV.getInputArea().getSelectedText());
+        }
+    }
 	class HackvertorAction extends AbstractAction {
 
         IContextMenuInvocation invocation;
@@ -1016,9 +1101,6 @@ private Ngrams ngrams;
 			this.name = tagName;
 			this.hasInput = hasInput;
 			this.tooltip = tooltip;
-			if(hasMethodAnd1Arg(hv,tagName)) {
-				callbacks.registerIntruderPayloadProcessor(new HackvertorPayloadProcessor("Hackvertor_"+hv.capitalise(tagName),tagName));
-			}
 		}
 	}
 	class TagArgument {
@@ -1029,7 +1111,7 @@ private Ngrams ngrams;
 			this.value = value;
 		}
 	}
-	class Hackvertor {	
+	class Hackvertor {
 		private int tagCounter = 0;
 		private Map<String,String> tagVariables=new HashMap<String,String>();
 		String argumentsRegex = "(?:0x[a-fA-F0-9]+|\\d+|'(?:\\\\'|[^']*)'|\"(?:\\\\\"|[^\"]*)\")";
@@ -1046,6 +1128,9 @@ private Ngrams ngrams;
         void setOutputArea(JTextArea outputArea) {
             this.outputArea = outputArea;
         }
+        JTextArea getInputArea() {
+            return this.inputArea;
+        }
         void setPanel(JPanel panel) {
             this.panel = panel;
         }
@@ -1057,6 +1142,13 @@ private Ngrams ngrams;
                 }
             }
             return count;
+         }
+         void registerPayloadProcessor() {
+             for(final Tag tagObj:tags) {
+                 if(hasMethodAnd1Arg(this, tagObj.name)) {
+                     callbacks.registerIntruderPayloadProcessor(new HackvertorPayloadProcessor("Hackvertor_"+this.capitalise(tagObj.name),tagObj.name));
+                 }
+             }
          }
         JPanel getPanel() {
             return this.panel;
@@ -2907,11 +2999,21 @@ private Ngrams ngrams;
                     encodingClosingTags = "<@/hex_entities_"+(tagCounter)+">" + encodingClosingTags;
                 }
 				if(Pattern.compile("%[0-9a-f]{2}",Pattern.CASE_INSENSITIVE).matcher(str).find()) {
-					str = this.decode_url(str);
+					boolean plus = false;
+				    if(str.contains("+")) {
+                        plus = true;
+                    }
+                    str = this.decode_url(str);
 					matched = true;
-                    tag = "urldecode";
-                    encodingOpeningTags = encodingOpeningTags + "<@urlencode_"+(++tagCounter)+">";
-                    encodingClosingTags = "<@/urlencode_"+(tagCounter)+">" + encodingClosingTags;
+                    if(plus) {
+                        tag = "urldecode";
+                        encodingOpeningTags = encodingOpeningTags + "<@urlencode_" + (++tagCounter) + ">";
+                        encodingClosingTags = "<@/urlencode_" + (tagCounter) + ">" + encodingClosingTags;
+                    } else {
+                        tag = "urlencode_not_plus";
+                        encodingOpeningTags = encodingOpeningTags + "<@urlencode_not_plus_" + (++tagCounter) + ">";
+                        encodingClosingTags = "<@/urlencode_not_plus_" + (tagCounter) + ">" + encodingClosingTags;
+                    }
 				}
                 if(Pattern.compile("^[a-zA-Z0-9\\-_.]+$",Pattern.CASE_INSENSITIVE).matcher(str).find()) {
                     String[] parts = str.split("\\.");
@@ -2940,36 +3042,36 @@ private Ngrams ngrams;
                         encodingClosingTags = "<@/base32_"+(tagCounter)+">" + encodingClosingTags;
                     }
                 }
-                if(Pattern.compile("(?:[a-zA-Z]+[\\s,-]){2,}").matcher(str).find()) {
-                    double total = 0;
-                    double bestScore = -9999999;
-                    int n = 0;
-				    for(int i = 1; i <= 25;i++) {
-				        String rotString = rotN(str, i);
-				        double score = is_like_english(rotString);
-                        total += score;
-                        if(score > bestScore) {
-                            bestScore = score;
-                            n = i;
-                        }
-                    }
-                    double average = (total / 25);
-                    if((((average - bestScore) / average) * 100) > 20) {
-                        String originalString = str;
-                        str = rotN(str, n);
-                        matched = true;
-                        tag = "rotN";
+                if(decrypt) {
+                    if(Pattern.compile("(?:[a-zA-Z]+[\\s,-]){2,}").matcher(str).find()) {
+                        double total = 0;
+                        double bestScore = -9999999;
+                        int n = 0;
                         for(int i = 1; i <= 25;i++) {
-                            if(rotN(str, i).equals(originalString)) {
+                            String rotString = rotN(str, i);
+                            double score = is_like_english(rotString);
+                            total += score;
+                            if(score > bestScore) {
+                                bestScore = score;
                                 n = i;
-                                break;
                             }
                         }
-                        encodingOpeningTags = encodingOpeningTags + "<@rotN_"+(++tagCounter)+"("+n+")>";
-                        encodingClosingTags = "<@/rotN_"+(tagCounter)+">" + encodingClosingTags;
+                        double average = (total / 25);
+                        if((((average - bestScore) / average) * 100) > 20) {
+                            String originalString = str;
+                            str = rotN(str, n);
+                            matched = true;
+                            tag = "rotN";
+                            for(int i = 1; i <= 25;i++) {
+                                if(rotN(str, i).equals(originalString)) {
+                                    n = i;
+                                    break;
+                                }
+                            }
+                            encodingOpeningTags = encodingOpeningTags + "<@rotN_"+(++tagCounter)+"("+n+")>";
+                            encodingClosingTags = "<@/rotN_"+(tagCounter)+">" + encodingClosingTags;
+                        }
                     }
-                }
-                if(decrypt) {
                     if (Pattern.compile("(?:[a-z]+[\\s,-]){2,}").matcher(str).find()) {
                         double total = 0;
                         double bestScore = -9999999;
