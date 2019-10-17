@@ -6,7 +6,7 @@
 
     <groupId>uk.co.hackvertor.hackvertor-burp</groupId>
     <artifactId>hackvertor</artifactId>
-    <version>0.7</version>
+    <version>0.8</version>
     <dependencies>
         <dependency>
             <groupId>commons-codec</groupId>
@@ -51,7 +51,7 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>
-            <version>1.18</version>
+            <version>1.19</version>
         </dependency>
         <dependency>
             <groupId>org.brotli</groupId>
