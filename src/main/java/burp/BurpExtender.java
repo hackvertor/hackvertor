@@ -526,7 +526,6 @@ private Ngrams ngrams;
                 }
                 String converted = hv.convert(code);
                 if(!data.equals(converted)) {
-                    System.out.println("SetInput:"+code);
                     hv.setInput(code);
                 }
             }
@@ -3358,9 +3357,15 @@ private Ngrams ngrams;
                     pythonInterpreter.exec(code);
                 }
                 PyObject output = pythonInterpreter.get("output");
-                return output.asString();
+                if(output != null) {
+                    return output.asString();
+                } else {
+                    return "No output variable defined";
+                }
             } catch(PyException e) {
                 return "Invalid Python code:"+e.toString();
+            } catch (Exception e) {
+                return "Unable to parse Python:"+e.toString();
             }
         }
         String javascript(String input, String code, String executionKey) {
@@ -3393,7 +3398,11 @@ private Ngrams ngrams;
             } catch(NullPointerException e) {
                 return "Unable to get output. Make sure you have defined an output variable:"+e.toString();
             } catch(IllegalArgumentException e) {
-                return "Invalid JavaScript:"+e.toString();
+                return "Invalid JavaScript:" + e.toString();
+            } catch (AssertionError e) {
+                return "Unable to parse JavaScript:"+e.toString();
+            } catch(Exception e) {
+                return "Unable to parse JavaScript:"+e.toString();
             }
         }
 		private String callTag(String tag, String output, ArrayList<String> arguments) {
