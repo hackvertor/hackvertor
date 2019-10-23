@@ -517,7 +517,7 @@ private Ngrams ngrams;
         try {
             String data = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
             String inputValue = hv.getInput();
-            if(inputValue.length() == 0) {
+            if(inputValue.length() == 0 && !data.contains(tagCodeExecutionKey)) {
                 String code;
                 if(data.contains("<@/")) {
                    code = data;
@@ -546,7 +546,7 @@ private Ngrams ngrams;
             return null;
         }
         secureRandom.nextBytes(randomBytes);
-        return DigestUtils.sha256Hex(helpers.bytesToString(randomBytes));
+        return DigestUtils.sha256Hex(helpers.bytesToString(randomBytes)).substring(0,32);
     }
 	public void registerExtenderCallbacks(final IBurpExtenderCallbacks callbacks) {
 		helpers = callbacks.getHelpers();
@@ -3343,7 +3343,7 @@ private Ngrams ngrams;
             if(executionKey == null) {
                 return "No execution key defined";
             }
-            if(executionKey.length() != 64) {
+            if(executionKey.length() != 32) {
                 return "Code execution key length incorrect";
             }
             if(!tagCodeExecutionKey.equals(executionKey)) {
@@ -3370,7 +3370,7 @@ private Ngrams ngrams;
             if(executionKey == null) {
                 return "No execution key defined";
             }
-            if(executionKey.length() != 64) {
+            if(executionKey.length() != 32) {
                 return "Code execution key length incorrect";
             }
             if(!tagCodeExecutionKey.equals(executionKey)) {
@@ -3385,12 +3385,16 @@ private Ngrams ngrams;
                 } else {
                     engine.eval(code);
                 }
+                return engine.get("output").toString();
             } catch (ScriptException e) {
                 return "Invalid JavaScript:"+e.toString();
             } catch (FileNotFoundException e) {
                 return "Unable to find JavaScript file:"+e.toString();
+            } catch(NullPointerException e) {
+                return "Unable to get output. Make sure you have defined an output variable:"+e.toString();
+            } catch(IllegalArgumentException e) {
+                return "Invalid JavaScript:"+e.toString();
             }
-            return engine.get("output").toString();
         }
 		private String callTag(String tag, String output, ArrayList<String> arguments) {
             switch (tag) {
