@@ -21,6 +21,9 @@ import java.util.regex.PatternSyntaxException;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 import javax.swing.*;
 import javax.swing.event.*;
 import javax.swing.text.BadLocationException;
@@ -49,6 +52,9 @@ import org.bouncycastle.crypto.digests.*;
 import org.bouncycastle.jcajce.provider.digest.Skein;
 import org.bouncycastle.util.encoders.Hex;
 import org.brotli.dec.BrotliInputStream;
+import org.python.core.PyException;
+import org.python.core.PyObject;
+import org.python.util.PythonInterpreter;
 import org.unbescape.css.CssEscape;
 import org.unbescape.css.CssStringEscapeLevel;
 import org.unbescape.css.CssStringEscapeType;
@@ -82,12 +88,14 @@ private List<String> DARK_THEMES = Arrays.asList("Darcula");
    */
 private boolean isNativeTheme;
 private boolean isDarkTheme;
+private boolean codeExecutionTagsEnabled = false;
 private boolean tagsInProxy = false;
 private boolean tagsInIntruder = true;
 private boolean tagsInRepeater = true;
 private boolean tagsInScanner = true;
 private boolean tagsInExtensions = true;
 private boolean autoUpdateContentLength = true;
+private String tagCodeExecutionKey = null;
 private JMenuBar burpMenuBar;
 private JMenu hvMenuBar;
 private Ngrams ngrams;
@@ -509,7 +517,7 @@ private Ngrams ngrams;
         try {
             String data = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
             String inputValue = hv.getInput();
-            if(inputValue.length() == 0) {
+            if(inputValue.length() == 0 && !data.contains(tagCodeExecutionKey)) {
                 String code;
                 if(data.contains("<@/")) {
                    code = data;
@@ -518,7 +526,6 @@ private Ngrams ngrams;
                 }
                 String converted = hv.convert(code);
                 if(!data.equals(converted)) {
-                    System.out.println("SetInput:"+code);
                     hv.setInput(code);
                 }
             }
@@ -528,10 +535,23 @@ private Ngrams ngrams;
             stderr.println("IO exception, error reading data:"+e);
         }
     }
+    private String generateRandomCodeExecutionKey() {
+        byte[] randomBytes = new byte[256];
+        SecureRandom secureRandom = null;
+        try {
+            secureRandom = SecureRandom.getInstanceStrong();
+        } catch (NoSuchAlgorithmException e) {
+            stderr.println("Error get algo:"+e.toString());
+            return null;
+        }
+        secureRandom.nextBytes(randomBytes);
+        return DigestUtils.sha256Hex(helpers.bytesToString(randomBytes)).substring(0,32);
+    }
 	public void registerExtenderCallbacks(final IBurpExtenderCallbacks callbacks) {
 		helpers = callbacks.getHelpers();
 		stderr = new PrintWriter(callbacks.getStderr(), true);
 		stdout = new PrintWriter(callbacks.getStdout(), true);
+        tagCodeExecutionKey = generateRandomCodeExecutionKey();
 		try {
             ngrams = new Ngrams("/quadgrams.txt");
         } catch (IOException e) {
@@ -547,7 +567,7 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v0.8");
+	            	stdout.println("Hackvertor v0.9");
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor();
 	            	mainHV.registerPayloadProcessor();
@@ -604,6 +624,18 @@ private Ngrams ngrams;
 	                callbacks.addSuiteTab(BurpExtender.this);
                     burpMenuBar = getBurpFrame().getJMenuBar();
                     hvMenuBar = new JMenu("Hackvertor");
+                    final JCheckBoxMenuItem codeExecutionMenu = new JCheckBoxMenuItem(
+                            "Allow code execution tags", tagsInProxy);
+                    codeExecutionMenu.addItemListener(new ItemListener() {
+                        public void itemStateChanged(ItemEvent e) {
+                            if(codeExecutionMenu.getState()){
+                                codeExecutionTagsEnabled = true;
+                            } else {
+                                codeExecutionTagsEnabled = false;
+                            }
+                        }
+                    });
+                    hvMenuBar.add(codeExecutionMenu);
                     final JCheckBoxMenuItem tagsInProxyMenu = new JCheckBoxMenuItem(
                             "Allow tags in Proxy", tagsInProxy);
                     tagsInProxyMenu.addItemListener(new ItemListener() {
@@ -1120,7 +1152,7 @@ private Ngrams ngrams;
         private JTextArea outputArea;
         private JPanel panel;
         private String[] categories = {
-                "Charsets","Compression","Encrypt","Encode","Date","Decode","Convert","String","Hash","HMAC","Math","XSS","Variables"
+                "Charsets","Compression","Encrypt","Encode","Date","Decode","Convert","String","Hash","HMAC","Math","XSS","Variables","Other languages"
         };
         void setInputArea(JTextArea inputArea) {
             this.inputArea = inputArea;
@@ -1510,6 +1542,14 @@ private Ngrams ngrams;
             tags.add(new Tag("XSS","throw_eval",true,"throw_eval(String str)"));
             tags.add(new Tag("Variables", "set_var",true, "Special tag that lets you store the results of a conversion. Change var to your own variable name."));
             tags.add(new Tag("Variables", "get_var",false, "Special tag that lets you get a previously set variable. Change var to your own variable name."));
+            tag = new Tag("Other languages","python",true,"python(String input, String code, String codeExecuteKey)");
+            tag.argument1 = new TagArgument("string", "output = input.upper()");
+            tag.argument2 = new TagArgument("string",tagCodeExecutionKey);
+            tags.add(tag);
+            tag = new Tag("Other languages","javascript",true,"javascript(String input, String code, String codeExecuteKey)");
+            tag.argument1 = new TagArgument("string", "output = input.toUpperCase()");
+            tag.argument2 = new TagArgument("string",tagCodeExecutionKey);
+            tags.add(tag);
 		}
 		String convertCharset(String input, String to) {
             String output = "";
@@ -3295,6 +3335,76 @@ private Ngrams ngrams;
 		String template_eval(String str) {
 			return "eval(`"+str.replaceAll("(.)","$1\\${[]}")+"`)";
 		}
+        String python(String input, String code, String executionKey) {
+            if(!codeExecutionTagsEnabled) {
+               return "Code execution tags are disabled by default. Use the menu bar to enable them.";
+            }
+            if(executionKey == null) {
+                return "No execution key defined";
+            }
+            if(executionKey.length() != 32) {
+                return "Code execution key length incorrect";
+            }
+            if(!tagCodeExecutionKey.equals(executionKey)) {
+                return "Incorrect tag code execution key";
+            }
+            try {
+                PythonInterpreter pythonInterpreter = new PythonInterpreter();
+                pythonInterpreter.set("input", input);
+                if(code.endsWith(".py")) {
+                    pythonInterpreter.execfile(code);
+                } else {
+                    pythonInterpreter.exec(code);
+                }
+                PyObject output = pythonInterpreter.get("output");
+                if(output != null) {
+                    return output.asString();
+                } else {
+                    return "No output variable defined";
+                }
+            } catch(PyException e) {
+                return "Invalid Python code:"+e.toString();
+            } catch (Exception e) {
+                return "Unable to parse Python:"+e.toString();
+            }
+        }
+        String javascript(String input, String code, String executionKey) {
+            if(!codeExecutionTagsEnabled) {
+                return "Code execution tags are disabled by default. Use the menu bar to enable them.";
+            }
+            if(executionKey == null) {
+                return "No execution key defined";
+            }
+            if(executionKey.length() != 32) {
+                return "Code execution key length incorrect";
+            }
+            if(!tagCodeExecutionKey.equals(executionKey)) {
+                return "Incorrect tag code execution key";
+            }
+            ScriptEngineManager manager = new ScriptEngineManager();
+            ScriptEngine engine = manager.getEngineByName("JavaScript");
+            engine.put("input", input);
+            try {
+                if(code.endsWith(".js")) {
+                    engine.eval(new FileReader(code));
+                } else {
+                    engine.eval(code);
+                }
+                return engine.get("output").toString();
+            } catch (ScriptException e) {
+                return "Invalid JavaScript:"+e.toString();
+            } catch (FileNotFoundException e) {
+                return "Unable to find JavaScript file:"+e.toString();
+            } catch(NullPointerException e) {
+                return "Unable to get output. Make sure you have defined an output variable:"+e.toString();
+            } catch(IllegalArgumentException e) {
+                return "Invalid JavaScript:" + e.toString();
+            } catch (AssertionError e) {
+                return "Unable to parse JavaScript:"+e.toString();
+            } catch(Exception e) {
+                return "Unable to parse JavaScript:"+e.toString();
+            }
+        }
 		private String callTag(String tag, String output, ArrayList<String> arguments) {
             switch (tag) {
                 default:
@@ -3731,6 +3841,12 @@ private Ngrams ngrams;
                     break;
                 case "throw_eval":
                     output = this.throw_eval(output);
+                    break;
+                case "python":
+                    output = this.python(output, this.getString(arguments,0), this.getString(arguments,1));
+                    break;
+                case "javascript":
+                    output = this.javascript(output, this.getString(arguments,0), this.getString(arguments,1));
                     break;
             }
 			return output;

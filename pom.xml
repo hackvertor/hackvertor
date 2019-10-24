@@ -6,7 +6,7 @@
 
     <groupId>uk.co.hackvertor.hackvertor-burp</groupId>
     <artifactId>hackvertor</artifactId>
-    <version>0.8</version>
+    <version>0.9</version>
     <dependencies>
         <dependency>
             <groupId>commons-codec</groupId>
@@ -57,6 +57,11 @@
             <groupId>org.brotli</groupId>
             <artifactId>dec</artifactId>
             <version>0.1.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.python</groupId>
+            <artifactId>jython-standalone</artifactId>
+            <version>2.7.0</version>
         </dependency>
     </dependencies>
     <build>
