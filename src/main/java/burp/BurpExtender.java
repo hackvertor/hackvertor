@@ -95,6 +95,7 @@ private boolean tagsInRepeater = true;
 private boolean tagsInScanner = true;
 private boolean tagsInExtensions = true;
 private boolean autoUpdateContentLength = true;
+private boolean hvShutdown = false;
 private String tagCodeExecutionKey = null;
 private JMenuBar burpMenuBar;
 private JMenu hvMenuBar;
@@ -551,6 +552,7 @@ private Ngrams ngrams;
 		helpers = callbacks.getHelpers();
 		stderr = new PrintWriter(callbacks.getStderr(), true);
 		stdout = new PrintWriter(callbacks.getStdout(), true);
+        hvShutdown = false;
         tagCodeExecutionKey = generateRandomCodeExecutionKey();
 		try {
             ngrams = new Ngrams("/quadgrams.txt");
@@ -567,7 +569,7 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v0.9");
+	            	stdout.println("Hackvertor v1.0");
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor();
 	            	mainHV.registerPayloadProcessor();
@@ -718,6 +720,7 @@ private Ngrams ngrams;
 	}
 
 	public void extensionUnloaded() {
+        hvShutdown = true;
 	    burpMenuBar.remove(hvMenuBar);
 	    burpMenuBar.repaint();
         stdout.println("Hackvertor unloaded");
@@ -983,26 +986,38 @@ private Ngrams ngrams;
         private Boolean changed = false;
         public HackvertorInputTab(IMessageEditorController controller, boolean editable) {
             this.editable = editable;
-            SwingUtilities.invokeLater(new Runnable() {
-                public void run() {
-                    messageEditorHV = generateHackvertor();
-                    hackvertorContainer.add(messageEditorHV.getPanel());
-                    messageEditorHV.getInputArea().getDocument().addDocumentListener(new DocumentListener() {
-                        @Override
-                        public void insertUpdate(DocumentEvent e) {
-                            changed = true;
-                        }
+            messageEditorHV = null;
+            hackvertorContainer.addComponentListener(new ComponentAdapter() {
+                @Override
+                public void componentShown(ComponentEvent e) {
+                    if(messageEditorHV == null && !hvShutdown) {
+                        SwingUtilities.invokeLater(new Runnable() {
+                            public void run() {
+                                messageEditorHV = generateHackvertor();
+                                hackvertorContainer.add(messageEditorHV.getPanel());
+                                messageEditorHV.getInputArea().getDocument().addDocumentListener(new DocumentListener() {
+                                    @Override
+                                    public void insertUpdate(DocumentEvent e) {
+                                        changed = true;
+                                    }
 
-                        @Override
-                        public void removeUpdate(DocumentEvent e) {
-                            changed = true;
-                        }
+                                    @Override
+                                    public void removeUpdate(DocumentEvent e) {
+                                        changed = true;
+                                    }
 
-                        @Override
-                        public void changedUpdate(DocumentEvent e) {
-                            changed = true;
-                        }
-                    });
+                                    @Override
+                                    public void changedUpdate(DocumentEvent e) {
+                                        changed = true;
+                                    }
+                                });
+                                if(currentMessage != null) {
+                                    messageEditorHV.setInput(helpers.bytesToString(currentMessage));
+                                    messageEditorHV.getInputArea().setText(helpers.bytesToString(currentMessage));
+                                }
+                            }
+                        });
+                    }
                 }
             });
         }
@@ -1027,8 +1042,10 @@ private Ngrams ngrams;
             if (content == null) {
                 changed = false;
             } else {
-                messageEditorHV.setInput(helpers.bytesToString(content));
-                messageEditorHV.getInputArea().setText(helpers.bytesToString(content));
+                if(messageEditorHV != null) {
+                    messageEditorHV.setInput(helpers.bytesToString(content));
+                    messageEditorHV.getInputArea().setText(helpers.bytesToString(content));
+                }
             }
             currentMessage = content;
         }
