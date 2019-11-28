@@ -569,7 +569,7 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v1.0");
+	            	stdout.println("Hackvertor v1.1");
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor();
 	            	mainHV.registerPayloadProcessor();
@@ -1145,6 +1145,7 @@ private Ngrams ngrams;
 		TagArgument argument1 = null;
 		TagArgument argument2 = null;
 		TagArgument argument3 = null;
+        TagArgument argument4 = null;
 		Tag(String tagCategory, String tagName, boolean hasInput, String tooltip) {
 			this.category = tagCategory;
 			this.name = tagName;
@@ -1169,7 +1170,7 @@ private Ngrams ngrams;
         private JTextArea outputArea;
         private JPanel panel;
         private String[] categories = {
-                "Charsets","Compression","Encrypt","Encode","Date","Decode","Convert","String","Hash","HMAC","Math","XSS","Variables","Other languages"
+                "Charsets","Compression","Encrypt","Encode","Date","Decode","Convert","String","Hash","HMAC","Math","XSS","Variables","Loops","Other languages"
         };
         void setInputArea(JTextArea inputArea) {
             this.inputArea = inputArea;
@@ -1316,7 +1317,6 @@ private Ngrams ngrams;
                     String a = (String) j.next();
                     tags.add(new Tag("Charsets",a,true,a+"(String input)"));
                 }
-                System.out.println("");
             }
 
             tag = new Tag("Charsets","charset_convert",true,"charset_convert(String input, String from, String to)");
@@ -1385,6 +1385,7 @@ private Ngrams ngrams;
 			tags.add(new Tag("Encode","unicode_escapes",true,"unicode_escapes(String str)"));
 			tags.add(new Tag("Encode","css_escapes",true,"css_escapes(String Bstr)"));
 			tags.add(new Tag("Encode","css_escapes6",true,"css_escapes6(String str)"));
+            tags.add(new Tag("Encode","burp_urlencode",true,"burp_urlencode(String str)"));
 			tags.add(new Tag("Encode","urlencode",true,"urlencode(String str)"));
             tags.add(new Tag("Encode","urlencode_not_plus",true,"urlencode_not_plus(String str)"));
             tags.add(new Tag("Encode","urlencode_all",true,"urlencode_all(String str)"));
@@ -1403,6 +1404,7 @@ private Ngrams ngrams;
 			tags.add(new Tag("Decode","d_html_entities",true,"decode_html_entities(String str)"));
 			tags.add(new Tag("Decode","d_html5_entities",true,"decode_html5_entities(String str)"));
 			tags.add(new Tag("Decode","d_js_string",true,"decode_js_string(String str)"));
+            tags.add(new Tag("Decode","d_burp_url",true,"burp_decode_url(String str)"));
 			tags.add(new Tag("Decode","d_url",true,"decode_url(String str)"));
 			tags.add(new Tag("Decode","d_css_escapes",true,"decode_css_escapes(String str)"));
 			tags.add(new Tag("Decode","d_octal_escapes",true,"decode_octal_escapes(String str)"));
@@ -1559,6 +1561,21 @@ private Ngrams ngrams;
             tags.add(new Tag("XSS","throw_eval",true,"throw_eval(String str)"));
             tags.add(new Tag("Variables", "set_var",true, "Special tag that lets you store the results of a conversion. Change var to your own variable name."));
             tags.add(new Tag("Variables", "get_var",false, "Special tag that lets you get a previously set variable. Change var to your own variable name."));
+            tag = new Tag("Loops","loop_for",true,"loop_for(String input, int start, int end, int increment, String i)//Does a for loop. Use a Hackvertor variable inside the tags to retrieve the position in the loop.");
+            tag.argument1 = new TagArgument("int", "0");
+            tag.argument2 = new TagArgument("int", "10");
+            tag.argument3 = new TagArgument("int", "1");
+            tag.argument4 = new TagArgument("string", "i");
+            tags.add(tag);
+            tag = new Tag("Loops","loop_letters_lower",true,"loop_letters_lower(String input, String variable)//Loops through all lowecase letters. Use a Hackvertor variable inside the tags to retrieve the letter");
+            tag.argument1 = new TagArgument("string", "letter");
+            tags.add(tag);
+            tag = new Tag("Loops","loop_letters_upper",true,"loop_letters_upper(String input, String variable)//Loops through all uppercase letters. Use a Hackvertor variable inside the tags to retrieve the letter");
+            tag.argument1 = new TagArgument("string", "letter");
+            tags.add(tag);
+            tag = new Tag("Loops","loop_numbers",true,"loop_numbers(String input, String variable)//Loops through all numbers. Use a Hackvertor variable inside the tags to retrieve the number");
+            tag.argument1 = new TagArgument("string", "number");
+            tags.add(tag);
             tag = new Tag("Other languages","python",true,"python(String input, String code, String codeExecuteKey)");
             tag.argument1 = new TagArgument("string", "output = input.upper()");
             tag.argument2 = new TagArgument("string",tagCodeExecutionKey);
@@ -1769,7 +1786,11 @@ private Ngrams ngrams;
             }
             return helpers.bytesToString(helpers.base64Decode(str));
         }
-		String urlencode(String str) {
+        String burp_urlencode(String str) {
+            str = helpers.urlEncode(str);
+            return str;
+        }
+        String urlencode(String str) {
 			try {
 	            str = URLEncoder.encode(str, "UTF-8");		    
 	        } catch (Exception e) {
@@ -1800,6 +1821,10 @@ private Ngrams ngrams;
                 }
             }
             return converted.toString();
+        }
+        String burp_decode_url(String str) {
+            str = helpers.urlDecode(str);
+            return str;
         }
 		String decode_url(String str) {
 			try {
@@ -3422,6 +3447,38 @@ private Ngrams ngrams;
                 return "Unable to parse JavaScript:"+e.toString();
             }
         }
+        String loop_for(String input, int start, int end, int increment, String variable) {
+            String output = "";
+            for(int i=start;i<end; i+= increment) {
+                tagVariables.put(variable, Integer.toString(i));
+                output += convert(input);
+            }
+            return output;
+        }
+        String loop_letters_lower(String input, String variable) {
+            String output = "";
+            for (char letter = 'a'; letter <= 'z'; letter++) {
+                tagVariables.put(variable, Character.toString(letter));
+                output += convert(input);
+            }
+            return output;
+        }
+        String loop_letters_upper(String input, String variable) {
+            String output = "";
+            for (char letter = 'A'; letter <= 'Z'; letter++) {
+                tagVariables.put(variable, Character.toString(letter));
+                output += convert(input);
+            }
+            return output;
+        }
+        String loop_letters_numbers(String input, String variable) {
+            String output = "";
+            for (char num = '0'; num <= '9'; num++) {
+                tagVariables.put(variable, Character.toString(num));
+                output += convert(input);
+            }
+            return output;
+        }
 		private String callTag(String tag, String output, ArrayList<String> arguments) {
             switch (tag) {
                 default:
@@ -3586,6 +3643,9 @@ private Ngrams ngrams;
                 case "d_base64url":
                     output = this.decode_base64url(output);
                     break;
+                case "burp_urlencode":
+                    output = this.burp_urlencode(output);
+                    break;
                 case "urlencode":
                     output = this.urlencode(output);
                     break;
@@ -3594,6 +3654,9 @@ private Ngrams ngrams;
                     break;
                 case "urlencode_all":
                     output = this.urlencode_all(output);
+                    break;
+                case "d_burp_url":
+                    output = this.burp_decode_url(output);
                     break;
                 case "d_url":
                     output = this.decode_url(output);
@@ -3865,6 +3928,18 @@ private Ngrams ngrams;
                 case "javascript":
                     output = this.javascript(output, this.getString(arguments,0), this.getString(arguments,1));
                     break;
+                case "loop_for":
+                    output = this.loop_for(output, this.getInt(arguments,0), this.getInt(arguments,1), this.getInt(arguments,2), this.getString(arguments,3));
+                    break;
+                case "loop_letters_lower":
+                    output = this.loop_letters_lower(output, this.getString(arguments,0));
+                    break;
+                case "loop_letters_upper":
+                    output = this.loop_letters_upper(output, this.getString(arguments,0));
+                    break;
+                case "loop_numbers":
+                    output = this.loop_letters_numbers(output, this.getString(arguments,0));
+                    break;
             }
 			return output;
 		}
@@ -3925,7 +4000,31 @@ private Ngrams ngrams;
             }
             return output;
         }
+        String convertLoops(String input) {
+            String output = input;
+            List<String> allMatches = new ArrayList<>();
+            Matcher m = Pattern.compile("<@(loop_[\\w\\d\\-]+(?:_\\d+)?)((?:[(](?:,?"+argumentsRegex+")*[)])?)>").matcher(input);
+            while (m.find()) {
+                allMatches.add(m.group(1));
+            }
+            for(String tagNameWithID:allMatches) {
+                String arguments = "";
+                String code = "";
+                String tagName = tagNameWithID.replaceAll("_\\d+$","");
+                m = Pattern.compile("<@"+tagNameWithID+"((?:[(](?:,?"+argumentsRegex+")*[)])?)>([\\d\\D]*?)<@/"+tagNameWithID+">").matcher(output);
+                if(m.find()) {
+                    arguments = m.group(1);
+                    code = m.group(2);
+                }
+                String result = this.callTag(tagName,code,this.parseArguments(arguments));
+                output = output.replaceAll("<@"+tagNameWithID+"(?:[(](?:,?"+argumentsRegex+")*[)])?>[\\d\\D]*?<@/"+tagNameWithID+">", result.replace("\\","\\\\").replace("$","\\$"));
+            }
+            return output;
+        }
 		String convert(String input) {
+            if(input.contains("<@loop_")) {
+                input = convertLoops(input);
+            }
             if(input.contains("<@set_")) {
                input = convertSetVariables(input);
             }
@@ -4008,13 +4107,15 @@ private Ngrams ngrams;
 			String argument1;
 			String argument2;
 			String argument3;
+            String argument4;
 			ArrayList<String> convertedArgs = new ArrayList<>();
-			String regex = "("+argumentsRegex+")(,"+argumentsRegex+")?(,"+argumentsRegex+")?";			
+			String regex = "("+argumentsRegex+")(,"+argumentsRegex+")?(,"+argumentsRegex+")?(,"+argumentsRegex+")?";
 			Matcher m = Pattern.compile(regex).matcher(arguments);
 			 if(m.find()) {
 				argument1 = m.group(1);
 				argument2 = m.group(2);
 				argument3 = m.group(3);
+				argument4 = m.group(4);
 				if(argument1 != null) {
 					String chr = ""+argument1.charAt(0); 
 					if(chr.equals("'") || chr.equals("\"")) {
@@ -4047,6 +4148,17 @@ private Ngrams ngrams;
 						convertedArgs.add(argument3);
 					}
 				}
+                 if(argument4 != null) {
+                     argument4 = argument4.substring(1);
+                     String chr = ""+argument4.charAt(0);
+                     if(chr.equals("'") || chr.equals("\"")) {
+                         argument4 = argument4.substring(1, argument4.length()-1);
+                         argument4 = argument4.replace("\\'", "'").replace("\\\"", "\"");
+                         convertedArgs.add(this.decode_js_string(argument4));
+                     } else {
+                         convertedArgs.add(argument4);
+                     }
+                 }
 			 } 
 			return convertedArgs;
 		}
@@ -4078,6 +4190,14 @@ private Ngrams ngrams;
                     tagStart += tagObj.argument3.value;
                 } else if(tagObj.argument3.type.equals("string")) {
                     tagStart += "\"" + tagObj.argument3.value + "\"";
+                }
+            }
+            if(tagObj.argument4 != null) {
+                tagStart += ",";
+                if(tagObj.argument4.type.equals("int")) {
+                    tagStart += tagObj.argument4.value;
+                } else if(tagObj.argument4.type.equals("string")) {
+                    tagStart += "\"" + tagObj.argument4.value + "\"";
                 }
             }
             if(tagObj.argument1 != null) {
