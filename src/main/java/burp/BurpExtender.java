@@ -1385,6 +1385,7 @@ private Ngrams ngrams;
 			tags.add(new Tag("Encode","unicode_escapes",true,"unicode_escapes(String str)"));
 			tags.add(new Tag("Encode","css_escapes",true,"css_escapes(String Bstr)"));
 			tags.add(new Tag("Encode","css_escapes6",true,"css_escapes6(String str)"));
+            tags.add(new Tag("Encode","burp_urlencode",true,"burp_urlencode(String str)"));
 			tags.add(new Tag("Encode","urlencode",true,"urlencode(String str)"));
             tags.add(new Tag("Encode","urlencode_not_plus",true,"urlencode_not_plus(String str)"));
             tags.add(new Tag("Encode","urlencode_all",true,"urlencode_all(String str)"));
@@ -1403,6 +1404,7 @@ private Ngrams ngrams;
 			tags.add(new Tag("Decode","d_html_entities",true,"decode_html_entities(String str)"));
 			tags.add(new Tag("Decode","d_html5_entities",true,"decode_html5_entities(String str)"));
 			tags.add(new Tag("Decode","d_js_string",true,"decode_js_string(String str)"));
+            tags.add(new Tag("Decode","d_burp_url",true,"burp_decode_url(String str)"));
 			tags.add(new Tag("Decode","d_url",true,"decode_url(String str)"));
 			tags.add(new Tag("Decode","d_css_escapes",true,"decode_css_escapes(String str)"));
 			tags.add(new Tag("Decode","d_octal_escapes",true,"decode_octal_escapes(String str)"));
@@ -1784,7 +1786,11 @@ private Ngrams ngrams;
             }
             return helpers.bytesToString(helpers.base64Decode(str));
         }
-		String urlencode(String str) {
+        String burp_urlencode(String str) {
+            str = helpers.urlEncode(str);
+            return str;
+        }
+        String urlencode(String str) {
 			try {
 	            str = URLEncoder.encode(str, "UTF-8");		    
 	        } catch (Exception e) {
@@ -1815,6 +1821,10 @@ private Ngrams ngrams;
                 }
             }
             return converted.toString();
+        }
+        String burp_decode_url(String str) {
+            str = helpers.urlDecode(str);
+            return str;
         }
 		String decode_url(String str) {
 			try {
@@ -3633,6 +3643,9 @@ private Ngrams ngrams;
                 case "d_base64url":
                     output = this.decode_base64url(output);
                     break;
+                case "burp_urlencode":
+                    output = this.burp_urlencode(output);
+                    break;
                 case "urlencode":
                     output = this.urlencode(output);
                     break;
@@ -3641,6 +3654,9 @@ private Ngrams ngrams;
                     break;
                 case "urlencode_all":
                     output = this.urlencode_all(output);
+                    break;
+                case "d_burp_url":
+                    output = this.burp_decode_url(output);
                     break;
                 case "d_url":
                     output = this.decode_url(output);
