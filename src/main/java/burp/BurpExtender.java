@@ -145,7 +145,7 @@ private Ngrams ngrams;
         blankPanel.setVisible(false);
         return blankPanel;
     }
-    private Hackvertor generateHackvertor() {
+    private Hackvertor generateHackvertor(boolean showLogo) {
         JTabbedPane tabs = new JTabbedPane();
         tabs.setAutoscrolls(true);
         Hackvertor hv = new Hackvertor();
@@ -160,6 +160,9 @@ private Ngrams ngrams;
             logoLabel = new JLabel(createImageIcon("/images/logo-dark.png", "logo"));
         } else {
             logoLabel = new JLabel(createImageIcon("/images/logo-light.png", "logo"));
+        }
+        if(!showLogo) {
+            logoLabel = new JLabel();
         }
         final JTextArea hexView = new JTextArea();
         hexView.setRows(0);
@@ -569,9 +572,9 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v1.1");
+	            	stdout.println("Hackvertor v1.2");
 	            	inputTabs = new JTabbedPaneClosable();
-	            	final Hackvertor mainHV = generateHackvertor();
+	            	final Hackvertor mainHV = generateHackvertor(true);
 	            	mainHV.registerPayloadProcessor();
 	            	hv = mainHV;
 	            	hv.getPanel().addComponentListener(new ComponentAdapter() {
@@ -606,7 +609,7 @@ private Ngrams ngrams;
                                 }
                                  if(pane.getTitleAt(pane.getSelectedIndex()).equals("...")) {
                                     tabCounter++;
-                                    final Hackvertor hvTab = generateHackvertor();
+                                    final Hackvertor hvTab = generateHackvertor(true);
                                     JPanel panel = hvTab.getPanel();
                                     panel.addComponentListener(new ComponentAdapter() {
                                         @Override
@@ -993,7 +996,7 @@ private Ngrams ngrams;
                     if(messageEditorHV == null && !hvShutdown) {
                         SwingUtilities.invokeLater(new Runnable() {
                             public void run() {
-                                messageEditorHV = generateHackvertor();
+                                messageEditorHV = generateHackvertor(false);
                                 hackvertorContainer.add(messageEditorHV.getPanel());
                                 messageEditorHV.getInputArea().getDocument().addDocumentListener(new DocumentListener() {
                                     @Override
@@ -1034,7 +1037,7 @@ private Ngrams ngrams;
         @Override
         public boolean isEnabled(byte[] content, boolean isRequest)
         {
-            return isRequest;
+            return true;
         }
         @Override
         public void setMessage(byte[] content, boolean isRequest)
