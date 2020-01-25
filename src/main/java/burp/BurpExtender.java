@@ -1326,6 +1326,9 @@ private Ngrams ngrams;
             tag.argument1 = new TagArgument("string","from");
             tag.argument2 = new TagArgument("string","to");
             tags.add(tag);
+            tag = new Tag("Charsets","utf7",true,"utf7(String str, String excludeCharacters)");
+            tag.argument1 = new TagArgument("string", "\\s\\t\\r'(),-./:?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789=+!");
+            tags.add(tag);
             tags.add(new Tag("Compression","brotli_decompress",true,"brotli_decompress(String str)"));
             tags.add(new Tag("Compression","gzip_compress",true,"gzip_compress(String str)"));
             tags.add(new Tag("Compression","gzip_decompress",true,"gzip_decompress(String str)"));
@@ -1605,6 +1608,19 @@ private Ngrams ngrams;
                 return e.toString();
             }
             return helpers.bytesToString(output);
+        }
+        String utf7(String input, String excludeCharacters) {
+            String output = "";
+            for (int i = 0; i < input.length(); i++){
+                char c = input.charAt(i);
+                if(excludeCharacters.indexOf(c) > -1) {
+                    output += c;
+                    continue;
+                }
+                output += "+" + base64Encode("\u0000"+c).replaceAll("=+$", "") + "-";
+
+            }
+            return output;
         }
         byte[] readUniBytes(String uniBytes) {
             byte[] result = new byte[uniBytes.length()];
@@ -3489,6 +3505,9 @@ private Ngrams ngrams;
                     break;
                 case "charset_convert":
                     output = this.charset_convert(output, this.getString(arguments, 0), this.getString(arguments, 1));
+                    break;
+                case "utf7":
+                    output = this.utf7(output, this.getString(arguments,0));
                     break;
                 case "brotli_decompress":
                     output = this.brotli_decompress(output);
