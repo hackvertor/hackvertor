@@ -145,7 +145,7 @@ private Ngrams ngrams;
         blankPanel.setVisible(false);
         return blankPanel;
     }
-    private Hackvertor generateHackvertor() {
+    private Hackvertor generateHackvertor(boolean showLogo) {
         JTabbedPane tabs = new JTabbedPane();
         tabs.setAutoscrolls(true);
         Hackvertor hv = new Hackvertor();
@@ -160,6 +160,9 @@ private Ngrams ngrams;
             logoLabel = new JLabel(createImageIcon("/images/logo-dark.png", "logo"));
         } else {
             logoLabel = new JLabel(createImageIcon("/images/logo-light.png", "logo"));
+        }
+        if(!showLogo) {
+            logoLabel = new JLabel();
         }
         final JTextArea hexView = new JTextArea();
         hexView.setRows(0);
@@ -569,9 +572,9 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v1.1");
+	            	stdout.println("Hackvertor v1.2");
 	            	inputTabs = new JTabbedPaneClosable();
-	            	final Hackvertor mainHV = generateHackvertor();
+	            	final Hackvertor mainHV = generateHackvertor(true);
 	            	mainHV.registerPayloadProcessor();
 	            	hv = mainHV;
 	            	hv.getPanel().addComponentListener(new ComponentAdapter() {
@@ -606,7 +609,7 @@ private Ngrams ngrams;
                                 }
                                  if(pane.getTitleAt(pane.getSelectedIndex()).equals("...")) {
                                     tabCounter++;
-                                    final Hackvertor hvTab = generateHackvertor();
+                                    final Hackvertor hvTab = generateHackvertor(true);
                                     JPanel panel = hvTab.getPanel();
                                     panel.addComponentListener(new ComponentAdapter() {
                                         @Override
@@ -993,7 +996,7 @@ private Ngrams ngrams;
                     if(messageEditorHV == null && !hvShutdown) {
                         SwingUtilities.invokeLater(new Runnable() {
                             public void run() {
-                                messageEditorHV = generateHackvertor();
+                                messageEditorHV = generateHackvertor(false);
                                 hackvertorContainer.add(messageEditorHV.getPanel());
                                 messageEditorHV.getInputArea().getDocument().addDocumentListener(new DocumentListener() {
                                     @Override
@@ -1034,7 +1037,7 @@ private Ngrams ngrams;
         @Override
         public boolean isEnabled(byte[] content, boolean isRequest)
         {
-            return isRequest;
+            return true;
         }
         @Override
         public void setMessage(byte[] content, boolean isRequest)
@@ -1323,6 +1326,9 @@ private Ngrams ngrams;
             tag.argument1 = new TagArgument("string","from");
             tag.argument2 = new TagArgument("string","to");
             tags.add(tag);
+            tag = new Tag("Charsets","utf7",true,"utf7(String str, String excludeCharacters)");
+            tag.argument1 = new TagArgument("string", "\\s\\t\\r'(),-./:?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789=+!");
+            tags.add(tag);
             tags.add(new Tag("Compression","brotli_decompress",true,"brotli_decompress(String str)"));
             tags.add(new Tag("Compression","gzip_compress",true,"gzip_compress(String str)"));
             tags.add(new Tag("Compression","gzip_decompress",true,"gzip_decompress(String str)"));
@@ -1602,6 +1608,19 @@ private Ngrams ngrams;
                 return e.toString();
             }
             return helpers.bytesToString(output);
+        }
+        String utf7(String input, String excludeCharacters) {
+            String output = "";
+            for (int i = 0; i < input.length(); i++){
+                char c = input.charAt(i);
+                if(excludeCharacters.indexOf(c) > -1) {
+                    output += c;
+                    continue;
+                }
+                output += "+" + base64Encode("\u0000"+c).replaceAll("=+$", "") + "-";
+
+            }
+            return output;
         }
         byte[] readUniBytes(String uniBytes) {
             byte[] result = new byte[uniBytes.length()];
@@ -3486,6 +3505,9 @@ private Ngrams ngrams;
                     break;
                 case "charset_convert":
                     output = this.charset_convert(output, this.getString(arguments, 0), this.getString(arguments, 1));
+                    break;
+                case "utf7":
+                    output = this.utf7(output, this.getString(arguments,0));
                     break;
                 case "brotli_decompress":
                     output = this.brotli_decompress(output);
