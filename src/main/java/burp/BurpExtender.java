@@ -52,6 +52,8 @@ import org.bouncycastle.crypto.digests.*;
 import org.bouncycastle.jcajce.provider.digest.Skein;
 import org.bouncycastle.util.encoders.Hex;
 import org.brotli.dec.BrotliInputStream;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.python.core.PyException;
 import org.python.core.PyObject;
 import org.python.util.PythonInterpreter;
@@ -80,6 +82,7 @@ private PrintWriter stderr;
 private PrintWriter stdout;
 private Hackvertor hv;
 private Hackvertor hvInRequest;
+private JSONArray customTags = new JSONArray();
 private List<String> NATIVE_LOOK_AND_FEELS = Arrays.asList("GTK","Windows","Aqua");
 private List<String> DARK_THEMES = Arrays.asList("Darcula");
   /**
@@ -139,6 +142,17 @@ private Ngrams ngrams;
 		
 		return hasMethod;
 	}
+	private Tag generateCustomTag(JSONObject customTag) {
+        Tag tag = new Tag("Custom", customTag.getString("tagName"), true, customTag.getString("language")+"(String input, String code, String codeExecuteKey)");
+        String language = customTag.getString("language").toLowerCase();
+        if(language.equals("python")) {
+            tag.argument1 = new TagArgument("string", "output = input.upper()");
+        } else {
+            tag.argument1 = new TagArgument("string", "output = input.toUpperCase()");
+        }
+        tag.argument2 = new TagArgument("string", tagCodeExecutionKey);
+        return tag;
+    }
 	private JPanel generateBlankPanel() {
         JPanel blankPanel = new JPanel();
         blankPanel.setMaximumSize(new Dimension(0,0));
@@ -572,7 +586,8 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v1.2");
+	            	stdout.println("Hackvertor v1.3");
+                    loadCustomTags();
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor(true);
 	            	mainHV.registerPayloadProcessor();
@@ -713,6 +728,22 @@ private Ngrams ngrams;
                         }
                     });
                     hvMenuBar.add(fixContentLengthMenu);
+                    JMenuItem createCustomTagsMenu = new JMenuItem("Create custom tags");
+                    createCustomTagsMenu.addActionListener(new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            showCreateTagDialog();
+                        }
+                    });
+                    JMenuItem listCustomTagsMenu = new JMenuItem("List custom tags");
+                    listCustomTagsMenu.addActionListener(new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            showListTagsDialog();
+                        }
+                    });
+                    hvMenuBar.add(createCustomTagsMenu);
+                    hvMenuBar.add(listCustomTagsMenu);
                     burpMenuBar.add(hvMenuBar);
                     callbacks.registerMessageEditorTabFactory(BurpExtender.this);
 	            }
@@ -721,6 +752,153 @@ private Ngrams ngrams;
         isNativeTheme = NATIVE_LOOK_AND_FEELS.contains(UIManager.getLookAndFeel().getID());
         isDarkTheme = DARK_THEMES.contains(UIManager.getLookAndFeel().getID());
 	}
+
+	public void showCreateTagDialog() {
+	    JPanel createTagPanel = new JPanel();
+	    JFrame createTagWindow = new JFrame("Create custom tag");
+	    createTagWindow.setResizable(false);
+        createTagWindow.setPreferredSize(new Dimension(500, 600));
+        JLabel tagLabel = new JLabel("Tag name");
+        tagLabel.setPreferredSize(new Dimension(220, 25));
+        JTextField tagNameField = new JTextField();
+        tagNameField.setPreferredSize(new Dimension(220, 25));
+        createTagPanel.add(tagLabel);
+        createTagPanel.add(tagNameField);
+        JLabel languageLabel = new JLabel("Select language");
+        languageLabel.setPreferredSize(new Dimension(220, 25));
+        JTextArea codeArea = new JTextArea();
+        JComboBox languageCombo = new JComboBox();
+        languageCombo.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int index = languageCombo.getSelectedIndex();
+                if(index == 0) {
+                    codeArea.setText("output = input.toUpperCase()");
+                } else if(index == 1) {
+                    codeArea.setText("output = input.upper()");
+                }
+            }
+        });
+        languageCombo.setPreferredSize(new Dimension(220, 25));
+        languageCombo.addItem("JavaScript");
+        languageCombo.addItem("Python");
+        Container pane = createTagWindow.getContentPane();
+        createTagPanel.add(languageLabel);
+        createTagPanel.add(languageCombo);
+        JLabel codeLabel = new JLabel("Code");
+        codeLabel.setPreferredSize(new Dimension(450, 25));
+        codeArea.setText("output = input.toUpperCase()");
+        codeArea.setPreferredSize(new Dimension(450, 300));
+        createTagPanel.add(codeLabel);
+        createTagPanel.add(codeArea);
+        JButton cancelButton = new JButton("Cancel");
+        if(!isNativeTheme && !isDarkTheme) {
+            cancelButton.setBackground(Color.decode("#005a70"));
+            cancelButton.setForeground(Color.white);
+        }
+        cancelButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                createTagWindow.dispose();
+            }
+        });
+        JLabel errorMessage = new JLabel();
+        errorMessage.setPreferredSize(new Dimension(450, 25));
+        errorMessage.setForeground(Color.red);
+        JButton createButton = new JButton("Create tag");
+        createButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String tagName = tagNameField.getText().replaceAll("[^\\w+]", "");
+                String language = languageCombo.getSelectedItem().toString();
+                String code = codeArea.getText();
+                if(tagName.length() < 1) {
+                    errorMessage.setText("Invalid tag name. Use a-zA-Z_0-9 for tag names");
+                    return;
+                }
+                if(code.length() < 1) {
+                    errorMessage.setText("Please enter some code");
+                    return;
+                }
+                createCustomTag(tagName, language, code);
+                createTagWindow.dispose();
+            }
+        });
+        if(!isNativeTheme && !isDarkTheme) {
+            createButton.setBackground(Color.decode("#005a70"));
+            createButton.setForeground(Color.white);
+        }
+        createTagPanel.add(cancelButton);
+        createTagPanel.add(createButton);
+        createTagPanel.add(errorMessage);
+        pane.add(createTagPanel);
+        createTagWindow.pack();
+        createTagWindow.setLocationRelativeTo(null);
+        createTagWindow.setVisible(true);
+    }
+
+    public void showListTagsDialog() {
+        JPanel listTagsPanel = new JPanel();
+        JFrame listTagsWindow = new JFrame("List custom tags");
+        listTagsWindow.setResizable(false);
+        listTagsWindow.setPreferredSize(new Dimension(500, 100));
+        JLabel tagLabel = new JLabel("Tag");
+        tagLabel.setPreferredSize(new Dimension(100, 25));
+        JComboBox tagCombo = new JComboBox();
+        tagCombo.setPreferredSize(new Dimension(100, 25));
+        listTagsPanel.add(tagLabel);
+        listTagsPanel.add(tagCombo);
+        for(int i=0;i<customTags.length();i++) {
+            JSONObject customTag = (JSONObject) customTags.get(i);
+            tagCombo.addItem(customTag.getString("tagName"));
+        }
+        JButton deleteButton = new JButton("Delete tag");
+        deleteButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if(tagCombo.getSelectedIndex() == -1) {
+                    return;
+                }
+                for(int i=0;i<customTags.length();i++) {
+                    JSONObject customTag = (JSONObject) customTags.get(i);
+                    if(tagCombo.getSelectedItem().toString().equals(customTag.getString("tagName"))) {
+                        customTags.remove(i);
+                        tagCombo.removeItemAt(tagCombo.getSelectedIndex());
+                        saveCustomTags();
+                        break;
+                    }
+                }
+            }
+        });
+        if(!isNativeTheme && !isDarkTheme) {
+            deleteButton.setBackground(Color.decode("#005a70"));
+            deleteButton.setForeground(Color.white);
+        }
+        listTagsPanel.add(deleteButton);
+        listTagsWindow.add(listTagsPanel);
+        listTagsWindow.pack();
+        listTagsWindow.setLocationRelativeTo(null);
+        listTagsWindow.setVisible(true);
+    }
+    public void loadCustomTags() {
+        String json = callbacks.loadExtensionSetting("customTags");
+        if(json != null && json.length() > 0) {
+            customTags = new JSONArray(json);
+        } else {
+            customTags = new JSONArray();
+        }
+    }
+    public void saveCustomTags() {
+        callbacks.saveExtensionSetting("customTags", customTags.toString());
+    }
+    public void createCustomTag(String tagName, String language, String code) {
+        JSONObject tag = new JSONObject();
+        tag.put("tagName", "_"+tagName);
+        tag.put("language", language);
+        tag.put("code", code);
+	    customTags.put(tag);
+        saveCustomTags();
+    }
 
 	public void extensionUnloaded() {
         hvShutdown = true;
@@ -1173,7 +1351,7 @@ private Ngrams ngrams;
         private JTextArea outputArea;
         private JPanel panel;
         private String[] categories = {
-                "Charsets","Compression","Encrypt","Encode","Date","Decode","Convert","String","Hash","HMAC","Math","XSS","Variables","Loops","Other languages"
+                "Charsets","Compression","Encrypt","Encode","Date","Decode","Convert","String","Hash","HMAC","Math","XSS","Variables","Loops","Other languages","Custom"
         };
         void setInputArea(JTextArea inputArea) {
             this.inputArea = inputArea;
@@ -1208,8 +1386,23 @@ private Ngrams ngrams;
         }
 		void buildTabs(JTabbedPane tabs) {
             for(int i=0;i<categories.length;i++) {
+                if(categories[i].equals("Custom")) {
+                    continue;
+                }
                 tabs.addTab(categories[i], createButtonsOrMenu(categories[i],"button", null, null, "", false));
             }
+            tabs.addChangeListener(new ChangeListener() {
+                @Override
+                public void stateChanged(ChangeEvent e) {
+                    int tabIndex = tabs.getSelectedIndex();
+                    if(tabs.getTitleAt(tabIndex).equals("Custom")) {
+                        hv.tags = new ArrayList<Tag>();
+                        hv.init();
+                        tabs.setComponentAt(tabIndex, createButtonsOrMenu("Custom","button", null, null, "", false));
+                    }
+                }
+            });
+            tabs.addTab("Custom", new Panel());
             tabs.addTab("Search", generateSearchPanel());
 		}
 		String[] getCategories() {
@@ -1590,6 +1783,12 @@ private Ngrams ngrams;
             tag.argument1 = new TagArgument("string", "output = input.toUpperCase()");
             tag.argument2 = new TagArgument("string",tagCodeExecutionKey);
             tags.add(tag);
+            for(int j=0;j<customTags.length();j++) {
+                JSONObject customTag = (JSONObject) customTags.get(j);
+                tag = generateCustomTag(customTag);
+                tags.add(tag);
+            }
+
 		}
 		String convertCharset(String input, String to) {
             String output = "";
@@ -3396,7 +3595,7 @@ private Ngrams ngrams;
 		String template_eval(String str) {
 			return "eval(`"+str.replaceAll("(.)","$1\\${[]}")+"`)";
 		}
-        String python(String input, String code, String executionKey) {
+		String python(String input, String code, String executionKey) {
             if(!codeExecutionTagsEnabled) {
                return "Code execution tags are disabled by default. Use the menu bar to enable them.";
             }
@@ -3501,7 +3700,24 @@ private Ngrams ngrams;
 		private String callTag(String tag, String output, ArrayList<String> arguments) {
             switch (tag) {
                 default:
-                    output = this.charset_convert(output, "UTF-8", tag);
+                    if(tag.startsWith("_")) {
+                        for(int i=0;i<customTags.length();i++) {
+                            JSONObject customTag = (JSONObject) customTags.get(i);
+                            String customTagName = customTag.getString("tagName");
+                            if(customTagName.equals(tag)) {
+                                String language = customTag.getString("language").toLowerCase();
+                                String code = customTag.getString("code");
+                                if(language.equals("javascript")) {
+                                    output = this.javascript(output, code, this.getString(arguments,1));
+                                } else {
+                                    output = this.python(output, code, this.getString(arguments,1));
+                                }
+                                break;
+                            }
+                        }
+                    } else {
+                        output = this.charset_convert(output, "UTF-8", tag);
+                    }
                     break;
                 case "charset_convert":
                     output = this.charset_convert(output, this.getString(arguments, 0), this.getString(arguments, 1));
