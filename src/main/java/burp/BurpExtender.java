@@ -4525,6 +4525,7 @@ private Ngrams ngrams;
                         if(!isNativeTheme && !isDarkTheme) {
                             btn.setBackground(Color.decode("#005a70"));
                             btn.setForeground(Color.white);
+                            btn.setBorder(null);
                         }
                         btn.putClientProperty("tag", tagObj);
                     }
