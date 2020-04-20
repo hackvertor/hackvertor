@@ -19,6 +19,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.script.ScriptEngine;
@@ -1533,6 +1535,14 @@ private Ngrams ngrams;
             tag = new Tag("Date","date",false,"date(String format)");
             tag.argument1 = new TagArgument("string","yyyy-MM-dd HH:mm:ss");
             tags.add(tag);
+            tag = new Tag("Encrypt","aes_encrypt",true,"aes_encrypt(String plaintext, String key, String transformations)");
+            tag.argument1 = new TagArgument("string","supersecret12356");
+            tag.argument2 = new TagArgument("string","AES/ECB/PKCS5PADDING");
+            tags.add(tag);
+            tag = new Tag("Encrypt","aes_decrypt",true,"aes_decrypt(String ciphertext, String key, String transformations)");
+            tag.argument1 = new TagArgument("string","supersecret12356");
+            tag.argument2 = new TagArgument("string","AES/ECB/PKCS5PADDING");
+            tags.add(tag);
             tag = new Tag("Encrypt","rotN",true,"rotN(String str, int n)");
             tag.argument1 = new TagArgument("int","13");
             tags.add(tag);
@@ -1647,6 +1657,7 @@ private Ngrams ngrams;
 			tags.add(new Tag("String","to_charcode",true,"to_charcode(String str)"));
 			tags.add(new Tag("String","reverse",true,"reverse(String str)"));
             tags.add(new Tag("String","length",true,"len(String str)"));
+            tags.add(new Tag("String","unique",true,"unique(String str)"));
 			tag = new Tag("String","find",true,"find(String str, String find)");
 			tag.argument1 = new TagArgument("string","find");
 			tags.add(tag);
@@ -2085,6 +2096,11 @@ private Ngrams ngrams;
 		String lowercase(String str) {
 			return StringUtils.lowerCase(str);
 		}
+        String unique(String str) {
+            String words[] = str.split(" ");
+            Set result = new HashSet(Arrays.asList(words));
+            return String.join(" ", result);
+        }
 		String capitalise(String str) {
 			return StringUtils.capitalize(str);
 		}
@@ -2269,6 +2285,28 @@ private Ngrams ngrams;
                 }
             }
             return out;
+        }
+        String aes_encrypt(String plaintext, String key, String transformations) {
+            try {
+                return AES.encrypt(plaintext, key, transformations);
+            } catch(NoSuchAlgorithmException e) {
+                return "No such algorithm exception:"+e.toString();
+            } catch(UnsupportedEncodingException e) {
+                return "Unsupported encoding exception:"+e.toString();
+            } catch(Exception e) {
+                return "Error exception:"+e.toString();
+            }
+        }
+        String aes_decrypt(String ciphertext, String key, String transformations) {
+            try {
+                return AES.decrypt(ciphertext, key, transformations);
+            } catch(NoSuchAlgorithmException e) {
+                return "No such algorithm exception:"+e.toString();
+            } catch(UnsupportedEncodingException e) {
+                return "Unsupported encoding exception:"+e.toString();
+            } catch(Exception e) {
+                return "Error exception:"+e.toString();
+            }
         }
         String xor(String message, String key) {
             try {
@@ -3785,6 +3823,12 @@ private Ngrams ngrams;
                 case "rotN":
                     output = this.rotN(output, this.getInt(arguments, 0));
                     break;
+                case "aes_encrypt":
+                    output = this.aes_encrypt(output, this.getString(arguments, 0), this.getString(arguments, 1));
+                    break;
+                case "aes_decrypt":
+                    output = this.aes_decrypt(output, this.getString(arguments, 0), this.getString(arguments, 1));
+                    break;
                 case "rotN_bruteforce":
                     output = this.rotN_bruteforce(output);
                     break;
@@ -3907,6 +3951,9 @@ private Ngrams ngrams;
                     break;
                 case "lowercase":
                     output = this.lowercase(output);
+                    break;
+                case "unique":
+                    output = this.unique(output);
                     break;
                 case "capitalise":
                     output = this.capitalise(output);
