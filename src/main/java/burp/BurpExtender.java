@@ -19,8 +19,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.script.ScriptEngine;
@@ -145,14 +143,8 @@ private Ngrams ngrams;
 		return hasMethod;
 	}
 	private Tag generateCustomTag(JSONObject customTag) {
-        Tag tag = new Tag("Custom", customTag.getString("tagName"), true, customTag.getString("language")+"(String input, String code, String codeExecuteKey)");
-        String language = customTag.getString("language").toLowerCase();
-        if(language.equals("python")) {
-            tag.argument1 = new TagArgument("string", "output = input.upper()");
-        } else {
-            tag.argument1 = new TagArgument("string", "output = input.toUpperCase()");
-        }
-        tag.argument2 = new TagArgument("string", tagCodeExecutionKey);
+        Tag tag = new Tag("Custom", customTag.getString("tagName"), true, customTag.getString("language")+"(String input, String codeExecuteKey)");
+        tag.argument1 = new TagArgument("string", tagCodeExecutionKey);
         return tag;
     }
 	private JPanel generateBlankPanel() {
@@ -3746,9 +3738,9 @@ private Ngrams ngrams;
                                 String language = customTag.getString("language").toLowerCase();
                                 String code = customTag.getString("code");
                                 if(language.equals("javascript")) {
-                                    output = this.javascript(output, code, this.getString(arguments,1));
+                                    output = this.javascript(output, code, this.getString(arguments,0));
                                 } else {
-                                    output = this.python(output, code, this.getString(arguments,1));
+                                    output = this.python(output, code, this.getString(arguments,0));
                                 }
                                 break;
                             }
