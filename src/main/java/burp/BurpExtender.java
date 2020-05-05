@@ -19,8 +19,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.script.ScriptEngine;
@@ -145,14 +143,8 @@ private Ngrams ngrams;
 		return hasMethod;
 	}
 	private Tag generateCustomTag(JSONObject customTag) {
-        Tag tag = new Tag("Custom", customTag.getString("tagName"), true, customTag.getString("language")+"(String input, String code, String codeExecuteKey)");
-        String language = customTag.getString("language").toLowerCase();
-        if(language.equals("python")) {
-            tag.argument1 = new TagArgument("string", "output = input.upper()");
-        } else {
-            tag.argument1 = new TagArgument("string", "output = input.toUpperCase()");
-        }
-        tag.argument2 = new TagArgument("string", tagCodeExecutionKey);
+        Tag tag = new Tag("Custom", customTag.getString("tagName"), true, customTag.getString("language")+"(String input, String codeExecuteKey)");
+        tag.argument1 = new TagArgument("string", tagCodeExecutionKey);
         return tag;
     }
 	private JPanel generateBlankPanel() {
@@ -588,7 +580,7 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v1.3");
+	            	stdout.println("Hackvertor v1.4");
                     loadCustomTags();
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor(true);
@@ -1538,10 +1530,12 @@ private Ngrams ngrams;
             tag = new Tag("Encrypt","aes_encrypt",true,"aes_encrypt(String plaintext, String key, String transformations)");
             tag.argument1 = new TagArgument("string","supersecret12356");
             tag.argument2 = new TagArgument("string","AES/ECB/PKCS5PADDING");
+            tag.argument3 = new TagArgument("string","initVector123456");
             tags.add(tag);
             tag = new Tag("Encrypt","aes_decrypt",true,"aes_decrypt(String ciphertext, String key, String transformations)");
             tag.argument1 = new TagArgument("string","supersecret12356");
             tag.argument2 = new TagArgument("string","AES/ECB/PKCS5PADDING");
+            tag.argument3 = new TagArgument("string","initVector123456");
             tags.add(tag);
             tag = new Tag("Encrypt","rotN",true,"rotN(String str, int n)");
             tag.argument1 = new TagArgument("int","13");
@@ -2286,24 +2280,28 @@ private Ngrams ngrams;
             }
             return out;
         }
-        String aes_encrypt(String plaintext, String key, String transformations) {
+        String aes_encrypt(String plaintext, String key, String transformations, String iv) {
             try {
-                return AES.encrypt(plaintext, key, transformations);
+                return AES.encrypt(plaintext, key, transformations, iv);
             } catch(NoSuchAlgorithmException e) {
                 return "No such algorithm exception:"+e.toString();
             } catch(UnsupportedEncodingException e) {
-                return "Unsupported encoding exception:"+e.toString();
+                return "Unsupported encoding exception:" + e.toString();
+            } catch(IllegalArgumentException e) {
+                return "Invalid key length"+e.toString();
             } catch(Exception e) {
                 return "Error exception:"+e.toString();
             }
         }
-        String aes_decrypt(String ciphertext, String key, String transformations) {
+        String aes_decrypt(String ciphertext, String key, String transformations, String iv) {
             try {
-                return AES.decrypt(ciphertext, key, transformations);
+                return AES.decrypt(ciphertext, key, transformations, iv);
             } catch(NoSuchAlgorithmException e) {
                 return "No such algorithm exception:"+e.toString();
             } catch(UnsupportedEncodingException e) {
                 return "Unsupported encoding exception:"+e.toString();
+            } catch(IllegalArgumentException e) {
+                return "Invalid key length"+e.toString();
             } catch(Exception e) {
                 return "Error exception:"+e.toString();
             }
@@ -3746,9 +3744,9 @@ private Ngrams ngrams;
                                 String language = customTag.getString("language").toLowerCase();
                                 String code = customTag.getString("code");
                                 if(language.equals("javascript")) {
-                                    output = this.javascript(output, code, this.getString(arguments,1));
+                                    output = this.javascript(output, code, this.getString(arguments,0));
                                 } else {
-                                    output = this.python(output, code, this.getString(arguments,1));
+                                    output = this.python(output, code, this.getString(arguments,0));
                                 }
                                 break;
                             }
@@ -3824,10 +3822,10 @@ private Ngrams ngrams;
                     output = this.rotN(output, this.getInt(arguments, 0));
                     break;
                 case "aes_encrypt":
-                    output = this.aes_encrypt(output, this.getString(arguments, 0), this.getString(arguments, 1));
+                    output = this.aes_encrypt(output, this.getString(arguments, 0), this.getString(arguments, 1), this.getString(arguments, 2));
                     break;
                 case "aes_decrypt":
-                    output = this.aes_decrypt(output, this.getString(arguments, 0), this.getString(arguments, 1));
+                    output = this.aes_decrypt(output, this.getString(arguments, 0), this.getString(arguments, 1), this.getString(arguments, 2));
                     break;
                 case "rotN_bruteforce":
                     output = this.rotN_bruteforce(output);
