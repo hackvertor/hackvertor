@@ -6,8 +6,9 @@
     </artifacts-to-build>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7757c1c9-85a7-4326-a693-b026dce334d8" name="Default" comment="Added the ability to execute Python/JavaScript from tags.">
+    <list default="true" id="7757c1c9-85a7-4326-a693-b026dce334d8" name="Default" comment="REMO">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/burp/BurpExtender.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/burp/BurpExtender.java" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
@@ -22,43 +23,44 @@
     <session id="-1540839016">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="12" />
-          <entry key="project.open.time.0" value="4" />
+          <entry key="project.closed" value="14" />
+          <entry key="project.open.time.0" value="5" />
           <entry key="project.open.time.1" value="4" />
           <entry key="project.open.time.10" value="1" />
+          <entry key="project.open.time.13" value="1" />
           <entry key="project.open.time.3" value="2" />
           <entry key="project.open.time.9" value="1" />
-          <entry key="project.opened" value="12" />
+          <entry key="project.opened" value="14" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
         <counts>
-          <entry key="class" value="10" />
+          <entry key="class" value="14" />
           <entry key="iml" value="4" />
-          <entry key="java" value="18" />
-          <entry key="xml" value="10" />
+          <entry key="java" value="26" />
+          <entry key="xml" value="17" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
-          <entry key="CLASS" value="10" />
+          <entry key="CLASS" value="14" />
           <entry key="IDEA_MODULE" value="4" />
-          <entry key="JAVA" value="18" />
-          <entry key="XML" value="10" />
+          <entry key="JAVA" value="26" />
+          <entry key="XML" value="17" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="java" value="5690" />
-          <entry key="txt" value="1157" />
-          <entry key="xml" value="8" />
+          <entry key="java" value="10249" />
+          <entry key="txt" value="1480" />
+          <entry key="xml" value="12" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="JAVA" value="5690" />
-          <entry key="PLAIN_TEXT" value="1157" />
-          <entry key="XML" value="8" />
+          <entry key="JAVA" value="10249" />
+          <entry key="PLAIN_TEXT" value="1480" />
+          <entry key="XML" value="12" />
         </counts>
       </usages-collector>
     </session>
@@ -68,26 +70,10 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/java/burp/BurpExtender.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="363">
-              <caret line="1328" column="91" selection-start-line="1328" selection-start-column="91" selection-end-line="1328" selection-end-column="91" />
+            <state relative-caret-position="505">
+              <caret line="4522" column="38" lean-forward="true" selection-start-line="4522" selection-start-column="38" selection-end-line="4522" selection-end-column="38" />
               <folding>
                 <element signature="imports" expanded="true" />
-                <element signature="e#7314#7315#0" expanded="true" />
-                <element signature="e#7373#7374#0" expanded="true" />
-                <element signature="e#13359#13360#0" expanded="true" />
-                <element signature="e#13415#13416#0" expanded="true" />
-                <element signature="e#13483#13484#0" expanded="true" />
-                <element signature="e#13539#13540#0" expanded="true" />
-                <element signature="e#13607#13608#0" expanded="true" />
-                <element signature="e#13663#13664#0" expanded="true" />
-                <element signature="e#16258#16259#0" expanded="true" />
-                <element signature="e#16304#16305#0" expanded="true" />
-                <element signature="e#18037#18038#0" expanded="true" />
-                <element signature="e#18120#18121#0" expanded="true" />
-                <element signature="e#23769#23987#0" expanded="true" />
-                <element signature="e#23986#23987#0" expanded="true" />
-                <element signature="e#44486#44487#0" expanded="true" />
-                <element signature="e#44526#44527#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -104,36 +90,36 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>template_eval</find>
-      <find>final</find>
-      <find>codeExec</find>
-      <find>tagsIn</find>
+      <find>Charsets</find>
+      <find>createCustom</find>
+      <find>custom tag</find>
+      <find>charset</find>
+      <find>createCustomTag</find>
       <find>python</find>
-      <find>setInput</find>
-      <find>getUiComponent</find>
+      <find>customTags.</find>
+      <find>callTag</find>
+      <find>listCustomTags</find>
+      <find>customTag</find>
+      <find>tags =</find>
+      <find>createCustomTags</find>
+      <find>customTags.l</find>
+      <find>Custom</find>
+      <find>categories.length</find>
+      <find>custom</find>
+      <find>encrypt</find>
+      <find>rotN</find>
+      <find>lowercase</find>
+      <find>unique</find>
+      <find>createButton</find>
+      <find>convert(</find>
+      <find>customTags</find>
+      <find>generateCu</find>
+      <find>aes</find>
+      <find>aes_encrypt</find>
+      <find>createMenu</find>
+      <find>create</find>
       <find>version</find>
-      <find>burpextender</find>
-      <find>hackvertorContainer</find>
-      <find>panel</find>
-      <find>convertButton</find>
-      <find>Dig</find>
-      <find>codec</find>
-      <find>clipboard</find>
-      <find>gridbaglayout</find>
-      <find>Hackvertor</find>
-      <find>createMenuItems</find>
-      <find>menu.</find>
-      <find>register</find>
-      <find>isRequest</find>
-      <find>IMessage</find>
-      <find>createNewInstance</find>
-      <find>generateHackvertor</find>
-      <find>generateHack</find>
-      <find>encode</find>
-      <find>base64</find>
-      <find>charset_convert</find>
-      <find>abc</find>
-      <find>utf7</find>
+      <find>extender</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -153,6 +139,8 @@
         <option value="$PROJECT_DIR$/src/main/resources/quadgrams.txt" />
         <option value="$PROJECT_DIR$/src/main/java/burp/Ngrams.java" />
         <option value="$PROJECT_DIR$/src/main/java/burp/MenuScroller.java" />
+        <option value="$PROJECT_DIR$/src/main/java/burp/AESEncryption.java" />
+        <option value="$PROJECT_DIR$/src/main/java/burp/AES.java" />
         <option value="$PROJECT_DIR$/pom.xml" />
         <option value="$PROJECT_DIR$/src/main/java/burp/BurpExtender.java" />
       </list>
@@ -177,8 +165,8 @@
     </treeState>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="313" />
-    <option name="y" value="132" />
+    <option name="x" value="233" />
+    <option name="y" value="105" />
     <option name="width" value="2247" />
     <option name="height" value="1256" />
   </component>
@@ -187,17 +175,15 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
+      <pane id="PackagesPane" />
+      <pane id="AndroidView" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
             <path>
               <item name="hackvertor" type="b2602c69:ProjectViewProjectNode" />
               <item name="hackvertor" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="hackvertor" type="b2602c69:ProjectViewProjectNode" />
-              <item name="hackvertor" type="462c0819:PsiDirectoryNode" />
-              <item name=".idea" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="hackvertor" type="b2602c69:ProjectViewProjectNode" />
@@ -229,13 +215,10 @@
           <select />
         </subPane>
       </pane>
-      <pane id="PackagesPane" />
-      <pane id="AndroidView" />
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
-    <property name="com.android.tools.idea.instantapp.provision.ProvisionBeforeRunTaskProvider.myTimeStamp" value="1578599665860" />
+    <property name="com.android.tools.idea.instantapp.provision.ProvisionBeforeRunTaskProvider.myTimeStamp" value="1587545568181" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/pom.xml" />
     <property name="project.structure.last.edited" value="Artifacts" />
     <property name="project.structure.proportion" value="0.15" />
@@ -480,14 +463,56 @@
       <option name="project" value="LOCAL" />
       <updated>1579972099150</updated>
     </task>
-    <option name="localTasksCounter" value="24" />
+    <task id="LOCAL-00024" summary="Added UTF-7 encoder">
+      <created>1579976532243</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1579976532243</updated>
+    </task>
+    <task id="LOCAL-00025" summary="Implemented custom tags. The ability to save and remember custom tags.">
+      <created>1587323961121</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1587323961121</updated>
+    </task>
+    <task id="LOCAL-00026" summary="Added AES encryption/decryption. Added a unique tag to extract unique words.">
+      <created>1587403602389</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1587403602389</updated>
+    </task>
+    <task id="LOCAL-00027" summary="Removed border of button when in dark mode.">
+      <created>1587404260554</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1587404260554</updated>
+    </task>
+    <task id="LOCAL-00028" summary="Removed code argument from custom tags">
+      <created>1587485508900</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1587485508900</updated>
+    </task>
+    <task id="LOCAL-00029" summary="Improved AES encrypt/decrypt to handle custom IV and key length">
+      <created>1588628002970</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1588628002970</updated>
+    </task>
+    <option name="localTasksCounter" value="30" />
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="313" y="132" width="2247" height="1256" extended-state="0" />
+    <frame x="233" y="105" width="2247" height="1256" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.30793652" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.3133787" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Image Layers" order="2" />
       <window_info id="Designer" order="3" />
@@ -530,11 +555,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Added repeater style tabs to Hackvertor. Create a charset category and added more tags in encode." />
-    <MESSAGE value="Added workspace.xml file" />
-    <MESSAGE value="Updated class path" />
-    <MESSAGE value="Renamed phpfuck tag to be family friendly for the burp store. Fixed non-alpha generation to use unicode escapes to prevent characters being mangled." />
-    <MESSAGE value="Updated dist" />
     <MESSAGE value="Added support for conversions within requests. Added convert button. Added random tag. Restructured code to build jmenu as well as buttons." />
     <MESSAGE value="Updated gitignore" />
     <MESSAGE value="Updated group id in pom.xml" />
@@ -554,19 +574,13 @@
     <MESSAGE value="Added the ability to execute Python/JavaScript from tags. Disabled by default for obvious reasons." />
     <MESSAGE value="Caught exceptions when the output isn't set. Checked for NULL PTR." />
     <MESSAGE value="I now hide the logo when in a message editor tab. The message editor now shows for responses." />
-    <option name="LAST_COMMIT_MESSAGE" value="I now hide the logo when in a message editor tab. The message editor now shows for responses." />
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/main/java/burp/BurpExtender.java</url>
-          <line>4141</line>
-          <properties />
-          <option name="timeStamp" value="1" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
+    <MESSAGE value="Added UTF-7 encoder" />
+    <MESSAGE value="Implemented custom tags. The ability to save and remember custom tags." />
+    <MESSAGE value="Added AES encryption/decryption. Added a unique tag to extract unique words." />
+    <MESSAGE value="Removed border of button when in dark mode." />
+    <MESSAGE value="Removed code argument from custom tags" />
+    <MESSAGE value="Improved AES encrypt/decrypt to handle custom IV and key length" />
+    <option name="LAST_COMMIT_MESSAGE" value="Improved AES encrypt/decrypt to handle custom IV and key length" />
   </component>
   <component name="debuggerHistoryManager">
     <expressions id="evaluateExpression">
@@ -583,25 +597,6 @@
     </expressions>
   </component>
   <component name="editorHistoryManager">
-    <entry file="jar:///Library/Java/JavaVirtualMachines/jdk1.8.0_45.jdk/Contents/Home/src.zip!/java/lang/reflect/Parameter.java" />
-    <entry file="jar:///Library/Java/JavaVirtualMachines/jdk1.8.0_45.jdk/Contents/Home/src.zip!/java/lang/reflect/Executable.java" />
-    <entry file="jar://$MAVEN_REPOSITORY$/commons-codec/commons-codec/1.10/commons-codec-1.10.jar!/org/apache/commons/codec/binary/Base64.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="456">
-          <caret line="253" column="25" selection-start-line="253" selection-start-column="25" selection-end-line="253" selection-end-column="25" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="jar://$MAVEN_REPOSITORY$/com/auth0/java-jwt/3.4.0/java-jwt-3.4.0.jar!/com/auth0/jwt/JWTDecoder.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="270">
-          <caret line="31" column="66" lean-forward="true" selection-start-line="31" selection-start-column="66" selection-end-line="31" selection-end-column="66" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="jar:///Library/Java/JavaVirtualMachines/jdk1.8.0_45.jdk/Contents/Home/src.zip!/javax/swing/JTabbedPane.java" />
-    <entry file="jar:///Library/Java/JavaVirtualMachines/jdk1.8.0_45.jdk/Contents/Home/src.zip!/javax/swing/JScrollPane.java" />
-    <entry file="jar:///Library/Java/JavaVirtualMachines/jdk1.8.0_45.jdk/Contents/Home/src.zip!/java/awt/GridLayout.java" />
     <entry file="jar:///Library/Java/JavaVirtualMachines/jdk1.8.0_45.jdk/Contents/Home/src.zip!/java/awt/FlowLayout.java" />
     <entry file="jar:///Library/Java/JavaVirtualMachines/jdk1.8.0_45.jdk/Contents/Home/src.zip!/javax/swing/text/JTextComponent.java" />
     <entry file="jar://$MAVEN_REPOSITORY$/org/apache/commons/commons-compress/1.18/commons-compress-1.18.jar!/org/apache/commons/compress/archivers/dump/DumpArchiveConstants.class">
@@ -744,13 +739,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="jar:///Library/Java/JavaVirtualMachines/jdk1.8.0_131.jdk/Contents/Home/jre/lib/jce.jar!/javax/crypto/spec/SecretKeySpec.class">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="30">
-          <caret line="5" column="25" selection-start-line="5" selection-start-column="8" selection-end-line="5" selection-end-column="25" />
-        </state>
-      </provider>
-    </entry>
     <entry file="jar://$MAVEN_REPOSITORY$/com/auth0/java-jwt/3.4.0/java-jwt-3.4.0.jar!/com/auth0/jwt/JWTVerifier.class">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-1796">
@@ -809,13 +797,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/pom.xml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="120">
-          <caret line="8" column="16" selection-start-line="8" selection-start-column="16" selection-end-line="8" selection-end-column="16" />
-        </state>
-      </provider>
-    </entry>
     <entry file="jar://$MAVEN_REPOSITORY$/net/portswigger/burp/extender/burp-extender-api/1.7.22/burp-extender-api-1.7.22.jar!/burp/IMessageEditorTabFactory.class">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="75">
@@ -834,28 +815,76 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/burp/BurpExtender.java">
+    <entry file="jar:///Library/Java/JavaVirtualMachines/jdk1.8.0_131.jdk/Contents/Home/src.zip!/javax/swing/JComboBox.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="379">
+          <caret line="221" column="11" selection-start-line="221" selection-start-column="11" selection-end-line="221" selection-end-column="11" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar:///Library/Java/JavaVirtualMachines/jdk1.8.0_131.jdk/Contents/Home/src.zip!/java/awt/GridLayout.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="379">
+          <caret line="148" column="11" selection-start-line="148" selection-start-column="11" selection-end-line="148" selection-end-column="11" />
+          <folding>
+            <element signature="e#4362#4363#0" expanded="true" />
+            <element signature="e#4394#4395#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar:///Library/Java/JavaVirtualMachines/jdk1.8.0_131.jdk/Contents/Home/src.zip!/javax/swing/BoxLayout.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="379">
+          <caret line="178" column="11" selection-start-line="178" selection-start-column="11" selection-end-line="178" selection-end-column="11" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/net/portswigger/burp/extender/burp-extender-api/1.7.22/burp-extender-api-1.7.22.jar!/burp/IBurpExtenderCallbacks.class">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="379">
+          <caret line="125" column="11" selection-start-line="125" selection-start-column="11" selection-end-line="125" selection-end-column="11" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar:///Library/Java/JavaVirtualMachines/jdk1.8.0_131.jdk/Contents/Home/jre/lib/jce.jar!/javax/crypto/Cipher.class">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="363">
-          <caret line="1328" column="91" selection-start-line="1328" selection-start-column="91" selection-end-line="1328" selection-end-column="91" />
+          <caret line="239" column="31" selection-start-line="239" selection-start-column="31" selection-end-line="239" selection-end-column="31" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/burp/AESEncryption.java" />
+    <entry file="jar:///Library/Java/JavaVirtualMachines/jdk1.8.0_131.jdk/Contents/Home/jre/lib/jce.jar!/javax/crypto/spec/SecretKeySpec.class">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="104">
+          <caret line="17" column="11" selection-start-line="17" selection-start-column="11" selection-end-line="17" selection-end-column="11" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/burp/AES.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="330">
+          <caret line="22" column="32" selection-start-line="22" selection-start-column="32" selection-end-line="22" selection-end-column="32" />
           <folding>
             <element signature="imports" expanded="true" />
-            <element signature="e#7314#7315#0" expanded="true" />
-            <element signature="e#7373#7374#0" expanded="true" />
-            <element signature="e#13359#13360#0" expanded="true" />
-            <element signature="e#13415#13416#0" expanded="true" />
-            <element signature="e#13483#13484#0" expanded="true" />
-            <element signature="e#13539#13540#0" expanded="true" />
-            <element signature="e#13607#13608#0" expanded="true" />
-            <element signature="e#13663#13664#0" expanded="true" />
-            <element signature="e#16258#16259#0" expanded="true" />
-            <element signature="e#16304#16305#0" expanded="true" />
-            <element signature="e#18037#18038#0" expanded="true" />
-            <element signature="e#18120#18121#0" expanded="true" />
-            <element signature="e#23769#23987#0" expanded="true" />
-            <element signature="e#23986#23987#0" expanded="true" />
-            <element signature="e#44486#44487#0" expanded="true" />
-            <element signature="e#44526#44527#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/pom.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="120">
+          <caret line="8" column="18" selection-start-line="8" selection-start-column="18" selection-end-line="8" selection-end-column="18" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/burp/BurpExtender.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="505">
+          <caret line="4522" column="38" lean-forward="true" selection-start-line="4522" selection-start-column="38" selection-end-line="4522" selection-end-column="38" />
+          <folding>
+            <element signature="imports" expanded="true" />
           </folding>
         </state>
       </provider>
