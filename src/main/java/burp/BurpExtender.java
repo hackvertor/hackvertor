@@ -144,7 +144,40 @@ private Ngrams ngrams;
 	}
 	private Tag generateCustomTag(JSONObject customTag) {
         Tag tag = new Tag("Custom", customTag.getString("tagName"), true, customTag.getString("language")+"(String input, String codeExecuteKey)");
-        tag.argument1 = new TagArgument("string", tagCodeExecutionKey);
+        int numberOfArgs = 0;
+        if(customTag.has("numberOfArgs")) {
+            numberOfArgs = customTag.getInt("numberOfArgs");
+        }
+        if(numberOfArgs == 0) {
+            tag.argument1 = new TagArgument("string", tagCodeExecutionKey);
+        }
+        if(numberOfArgs == 1) {
+            String argument1Type = customTag.getString("argument1Type");
+            String argument1Default = customTag.getString("argument1Default");
+            if(argument1Type.equals("String")) {
+                tag.argument1 = new TagArgument("string", argument1Default);
+            } else {
+                tag.argument1 = new TagArgument("int", argument1Default);
+            }
+            tag.argument2 = new TagArgument("string", tagCodeExecutionKey);
+        }
+        if(numberOfArgs == 2) {
+            String argument1Type = customTag.getString("argument1Type");
+            String argument1Default = customTag.getString("argument1Default");
+            if(argument1Type.equals("String")) {
+                tag.argument1 = new TagArgument("string", argument1Default);
+            } else {
+                tag.argument1 = new TagArgument("int", argument1Default);
+            }
+            String argument2Type = customTag.getString("argument2Type");
+            String argument2Default = customTag.getString("argument2Default");
+            if(argument2Type.equals("String")) {
+                tag.argument2 = new TagArgument("string", argument2Default);
+            } else {
+                tag.argument2 = new TagArgument("int", argument2Default);
+            }
+            tag.argument3 = new TagArgument("string", tagCodeExecutionKey);
+        }
         return tag;
     }
 	private JPanel generateBlankPanel() {
@@ -580,7 +613,7 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v1.4.1");
+	            	stdout.println("Hackvertor v1.5");
                     loadCustomTags();
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor(true);
@@ -779,6 +812,52 @@ private Ngrams ngrams;
         Container pane = createTagWindow.getContentPane();
         createTagPanel.add(languageLabel);
         createTagPanel.add(languageCombo);
+        JLabel argument1Label = new JLabel("Argument1");
+        argument1Label.setPreferredSize(new Dimension(100, 25));
+        JComboBox argument1Combo = new JComboBox();
+        argument1Combo.addItem("None");
+        argument1Combo.addItem("String");
+        argument1Combo.addItem("Number");
+        JLabel argument1NameLabel = new JLabel("Param Name");
+        JTextField argument1NameField = new JTextField();
+        argument1NameField.setPreferredSize(new Dimension(100, 25));
+        JLabel argument1DefaultLabel = new JLabel("Default value");
+        argument1DefaultLabel.setPreferredSize(new Dimension(100, 25));
+        JTextField argument1DefaultValueField = new JTextField();
+        argument1DefaultValueField.setPreferredSize(new Dimension(100, 25));
+        JPanel argument1Panel = new JPanel();
+        argument1Panel.setLayout(new GridLayout(0,2));
+        argument1Panel.add(argument1Label);
+        argument1Panel.add(argument1Combo);
+        argument1Panel.add(argument1NameLabel);
+        argument1Panel.add(argument1NameField);
+        argument1Panel.add(argument1DefaultLabel);
+        argument1Panel.add(argument1DefaultValueField);
+        createTagPanel.add(argument1Panel);
+
+        JLabel argument2NameLabel = new JLabel("Param Name");
+        JLabel argument2Label = new JLabel("Argument2");
+        argument2Label.setPreferredSize(new Dimension(100, 25));
+        JComboBox argument2Combo = new JComboBox();
+        argument2Combo.addItem("None");
+        argument2Combo.addItem("String");
+        argument2Combo.addItem("Number");
+        JTextField argument2NameField = new JTextField();
+        argument2NameField.setPreferredSize(new Dimension(100, 25));
+        JLabel argument2DefaultLabel = new JLabel("Default value");
+        argument2DefaultLabel.setPreferredSize(new Dimension(100, 25));
+        JTextField argument2DefaultValueField = new JTextField();
+        argument2DefaultValueField.setPreferredSize(new Dimension(100, 25));
+        JPanel argument2Panel = new JPanel();
+        argument2Panel.setLayout(new GridLayout(0,2));
+        argument2Panel.add(argument2Label);
+        argument2Panel.add(argument2Combo);
+        argument2Panel.add(argument2NameLabel);
+        argument2Panel.add(argument2NameField);
+        argument2Panel.add(argument2DefaultLabel);
+        argument2Panel.add(argument2DefaultValueField);
+        createTagPanel.add(argument2Panel);
+
         JLabel codeLabel = new JLabel("Code");
         codeLabel.setPreferredSize(new Dimension(450, 25));
         codeArea.setText("output = input.toUpperCase()");
@@ -806,6 +885,13 @@ private Ngrams ngrams;
                 String tagName = tagNameField.getText().replaceAll("[^\\w+]", "");
                 String language = languageCombo.getSelectedItem().toString();
                 String code = codeArea.getText();
+                String argument1 = argument1NameField.getText();
+                String argument1DefaultValue = argument1DefaultValueField.getText();
+                String argument2 = argument2NameField.getText();
+                String argument2DefaultValue = argument2DefaultValueField.getText();
+                String paramRegex = "^[a-zA-Z_]\\w{0,10}$";
+                String numberRegex = "^(?:0x[a-fA-F0-9]+|\\d+)$";
+                int numberOfArgs = 0;
                 if(tagName.length() < 1) {
                     errorMessage.setText("Invalid tag name. Use a-zA-Z_0-9 for tag names");
                     return;
@@ -814,7 +900,41 @@ private Ngrams ngrams;
                     errorMessage.setText("Please enter some code");
                     return;
                 }
-                createCustomTag(tagName, language, code);
+                if(argument1Combo.getSelectedIndex() > 0 && !argument1.matches(paramRegex)) {
+                    errorMessage.setText("Invalid param name. For argument1. Use "+paramRegex);
+                    return;
+                }
+                if(argument1Combo.getSelectedItem().toString().equals("Number") && !argument1DefaultValue.matches(numberRegex)) {
+                    errorMessage.setText("Invalid default value for argument1. Use "+numberRegex);
+                    return;
+                }
+                if(argument2Combo.getSelectedIndex() > 0 && !argument2.matches(paramRegex)) {
+                    errorMessage.setText("Invalid param name for argument2. Use "+paramRegex);
+                    return;
+                }
+                if(argument1Combo.getSelectedIndex() > 0 && argument1DefaultValue.equals("")) {
+                    errorMessage.setText("Invalid default value for argument1. It cannot be empty.");
+                    return;
+                }
+                if(argument2Combo.getSelectedIndex() > 0 && argument2DefaultValue.equals("")) {
+                    errorMessage.setText("Invalid default value for argument2. It cannot be empty.");
+                    return;
+                }
+                if(argument2Combo.getSelectedIndex() > 0 && argument1Combo.getSelectedIndex() == 0) {
+                    errorMessage.setText("You have selected two arguments but not defined the first.");
+                    return;
+                }
+                if(argument2Combo.getSelectedItem().toString().equals("Number") && !argument2DefaultValue.matches(numberRegex)) {
+                    errorMessage.setText("Invalid default value for argument2. Use "+numberRegex);
+                    return;
+                }
+                if(argument1Combo.getSelectedIndex() > 0) {
+                    numberOfArgs++;
+                }
+                if(argument2Combo.getSelectedIndex() > 0) {
+                    numberOfArgs++;
+                }
+                createCustomTag(tagName, language, code, argument1, argument1Combo.getSelectedItem().toString(), argument1DefaultValue, argument2, argument2Combo.getSelectedItem().toString(), argument2DefaultValue, numberOfArgs);
                 createTagWindow.dispose();
             }
         });
@@ -885,10 +1005,24 @@ private Ngrams ngrams;
     public void saveCustomTags() {
         callbacks.saveExtensionSetting("customTags", customTags.toString());
     }
-    public void createCustomTag(String tagName, String language, String code) {
+    public void createCustomTag(String tagName, String language, String code, String argument1, String argument1Type, String argument1DefaultValue, String argument2, String argument2Type, String argument2DefaultValue, int numberOfArgs) {
         JSONObject tag = new JSONObject();
         tag.put("tagName", "_"+tagName);
         tag.put("language", language);
+        if(numberOfArgs == 1) {
+            tag.put("argument1", argument1);
+            tag.put("argument1Type", argument1Type);
+            tag.put("argument1Default", argument1DefaultValue);
+        }
+        if(numberOfArgs == 2) {
+            tag.put("argument1", argument1);
+            tag.put("argument1Type", argument1Type);
+            tag.put("argument1Default", argument1DefaultValue);
+            tag.put("argument2", argument2);
+            tag.put("argument2Type", argument2Type);
+            tag.put("argument2Default", argument2DefaultValue);
+        }
+        tag.put("numberOfArgs", numberOfArgs);
         tag.put("code", code);
 	    customTags.put(tag);
         saveCustomTags();
@@ -3631,7 +3765,7 @@ private Ngrams ngrams;
 		String template_eval(String str) {
 			return "eval(`"+str.replaceAll("(.)","$1\\${[]}")+"`)";
 		}
-		String python(String input, String code, String executionKey) {
+		String python(String input, String code, String executionKey, JSONObject customTagOptions) {
             if(!codeExecutionTagsEnabled) {
                return "Code execution tags are disabled by default. Use the menu bar to enable them.";
             }
@@ -3647,6 +3781,19 @@ private Ngrams ngrams;
             try {
                 PythonInterpreter pythonInterpreter = new PythonInterpreter();
                 pythonInterpreter.set("input", input);
+
+                if(customTagOptions != null) {
+                    JSONObject customTag = (JSONObject) customTagOptions.get("customTag");
+                    int numberOfArgs = customTag.getInt("numberOfArgs");
+                    if(numberOfArgs == 1) {
+                        pythonInterpreter.set(customTag.getString("argument1"), customTagOptions.get("param1"));
+                    }
+                    if(numberOfArgs == 2) {
+                        pythonInterpreter.set(customTag.getString("argument1"), customTagOptions.get("param1"));
+                        pythonInterpreter.set(customTag.getString("argument2"), customTagOptions.get("param2"));
+                    }
+                }
+
                 if(code.endsWith(".py")) {
                     pythonInterpreter.execfile(code);
                 } else {
@@ -3664,7 +3811,7 @@ private Ngrams ngrams;
                 return "Unable to parse Python:"+e.toString();
             }
         }
-        String javascript(String input, String code, String executionKey) {
+        String javascript(String input, String code, String executionKey, JSONObject customTagOptions) {
             if(!codeExecutionTagsEnabled) {
                 return "Code execution tags are disabled by default. Use the menu bar to enable them.";
             }
@@ -3680,6 +3827,17 @@ private Ngrams ngrams;
             ScriptEngineManager manager = new ScriptEngineManager();
             ScriptEngine engine = manager.getEngineByName("JavaScript");
             engine.put("input", input);
+            if(customTagOptions != null) {
+                JSONObject customTag = (JSONObject) customTagOptions.get("customTag");
+                int numberOfArgs = customTag.getInt("numberOfArgs");
+                if(numberOfArgs == 1) {
+                    engine.put(customTag.getString("argument1"), customTagOptions.get("param1"));
+                }
+                if(numberOfArgs == 2) {
+                    engine.put(customTag.getString("argument1"), customTagOptions.get("param1"));
+                    engine.put(customTag.getString("argument2"), customTagOptions.get("param2"));
+                }
+            }
             try {
                 if(code.endsWith(".js")) {
                     engine.eval(new FileReader(code));
@@ -3740,13 +3898,47 @@ private Ngrams ngrams;
                         for(int i=0;i<customTags.length();i++) {
                             JSONObject customTag = (JSONObject) customTags.get(i);
                             String customTagName = customTag.getString("tagName");
+                            int numberOfArgs = 0;
+                            if(customTag.has("numberOfArgs")) {
+                                numberOfArgs = customTag.getInt("numberOfArgs");
+                            }
+                            String eKey;
+                            JSONObject customTagOptions = new JSONObject();
+                            customTagOptions.put("customTag", customTag);
+                            if(numberOfArgs == 0) {
+                                eKey = this.getString(arguments,0);
+                                customTagOptions = null;
+                            } else if(numberOfArgs == 1) {
+                                if(customTag.getString("argument1Type").equals("String")) {
+                                    customTagOptions.put("param1", this.getString(arguments,0));
+                                } else if(customTag.getString("argument1Type").equals("Number")) {
+                                    customTagOptions.put("param1", this.getInt(arguments,0));
+                                }
+                                eKey = this.getString(arguments,1);
+
+                            } else if(numberOfArgs == 2) {
+                                if(customTag.getString("argument1Type").equals("String")) {
+                                    customTagOptions.put("param1", this.getString(arguments,0));
+                                } else if(customTag.getString("argument1Type").equals("Number")) {
+                                    customTagOptions.put("param1", this.getInt(arguments,0));
+                                }
+                                if(customTag.getString("argument2Type").equals("String")) {
+                                    customTagOptions.put("param2", this.getString(arguments,1));
+                                } else if(customTag.getString("argument2Type").equals("Number")) {
+                                    customTagOptions.put("param2", this.getInt(arguments,1));
+                                }
+                                eKey = this.getString(arguments,2);
+                            } else {
+                                eKey = this.getString(arguments,0);
+                            }
+
                             if(customTagName.equals(tag)) {
                                 String language = customTag.getString("language").toLowerCase();
                                 String code = customTag.getString("code");
                                 if(language.equals("javascript")) {
-                                    output = this.javascript(output, code, this.getString(arguments,0));
+                                    output = this.javascript(output, code, eKey, customTagOptions);
                                 } else {
-                                    output = this.python(output, code, this.getString(arguments,0));
+                                    output = this.python(output, code, eKey, customTagOptions);
                                 }
                                 break;
                             }
@@ -4206,10 +4398,10 @@ private Ngrams ngrams;
                     output = this.throw_eval(output);
                     break;
                 case "python":
-                    output = this.python(output, this.getString(arguments,0), this.getString(arguments,1));
+                    output = this.python(output, this.getString(arguments,0), this.getString(arguments,1), null);
                     break;
                 case "javascript":
-                    output = this.javascript(output, this.getString(arguments,0), this.getString(arguments,1));
+                    output = this.javascript(output, this.getString(arguments,0), this.getString(arguments,1), null);
                     break;
                 case "loop_for":
                     output = this.loop_for(output, this.getInt(arguments,0), this.getInt(arguments,1), this.getInt(arguments,2), this.getString(arguments,3));
