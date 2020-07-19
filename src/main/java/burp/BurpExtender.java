@@ -143,11 +143,19 @@ private Ngrams ngrams;
 		return hasMethod;
 	}
 	private Tag generateCustomTag(JSONObject customTag) {
-        Tag tag = new Tag("Custom", customTag.getString("tagName"), true, customTag.getString("language")+"(String input, String codeExecuteKey)");
         int numberOfArgs = 0;
         if(customTag.has("numberOfArgs")) {
             numberOfArgs = customTag.getInt("numberOfArgs");
         }
+        String argumentsTooltip = "";
+        if(numberOfArgs == 1) {
+            argumentsTooltip = "("+(customTag.getString("argument1Type").equals("String")?"String "+customTag.getString("argument1")+",":"int "+customTag.getString("argument1")+",")+"+String codeExecuteKey)";
+        } else if(numberOfArgs == 2) {
+            argumentsTooltip = "("+(customTag.getString("argument1Type").equals("String")?"String "+customTag.getString("argument1")+",":"int "+customTag.getString("argument1")+",")+(customTag.getString("argument2Type").equals("String")?"String "+customTag.getString("argument2")+",":"int "+customTag.getString("argument2")+",")+"String codeExecuteKey)";
+        } else {
+            argumentsTooltip = "(String codeExecuteKey)";
+        }
+        Tag tag = new Tag("Custom", customTag.getString("tagName"), true, customTag.getString("language")+argumentsTooltip);
         if(numberOfArgs == 0) {
             tag.argument1 = new TagArgument("string", tagCodeExecutionKey);
         }
@@ -192,7 +200,7 @@ private Ngrams ngrams;
         Hackvertor hv = new Hackvertor();
         hv.init();
         hv.buildTabs(tabs);
-        tabs.setSelectedIndex(3);
+        tabs.setSelectedIndex(4);
         JPanel topBar = new JPanel(new GridBagLayout());
         topBar.setPreferredSize(new Dimension(-1, 110));
         topBar.setMinimumSize(new Dimension(-1, 110));
@@ -788,21 +796,46 @@ private Ngrams ngrams;
         JLabel tagLabel = new JLabel("Tag name");
         tagLabel.setPreferredSize(new Dimension(220, 25));
         JTextField tagNameField = new JTextField();
-        tagNameField.setPreferredSize(new Dimension(220, 25));
+        tagNameField.setPreferredSize(new Dimension(220, 30));
         createTagPanel.add(tagLabel);
         createTagPanel.add(tagNameField);
         JLabel languageLabel = new JLabel("Select language");
         languageLabel.setPreferredSize(new Dimension(220, 25));
         JTextArea codeArea = new JTextArea();
+        JScrollPane codeScroll = new JScrollPane(codeArea);
+        codeArea.setText("output = input.toUpperCase()");
+        final int[] changes = {0};
+        codeArea.getDocument().addDocumentListener(new DocumentListener() {
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                changes[0]++;
+            }
+
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                changes[0]++;
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent arg0) {
+                changes[0]++;
+            }
+        });
         JComboBox languageCombo = new JComboBox();
         languageCombo.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 int index = languageCombo.getSelectedIndex();
+                if(changes[0] > 0) {
+                    return;
+                }
                 if(index == 0) {
                     codeArea.setText("output = input.toUpperCase()");
+                    changes[0] = 0;
                 } else if(index == 1) {
                     codeArea.setText("output = input.upper()");
+                    changes[0] = 0;
                 }
             }
         });
@@ -858,12 +891,11 @@ private Ngrams ngrams;
         argument2Panel.add(argument2DefaultValueField);
         createTagPanel.add(argument2Panel);
 
-        JLabel codeLabel = new JLabel("Code");
+        JLabel codeLabel = new JLabel("Code (if you end the code with .js/.py it will read a file)");
         codeLabel.setPreferredSize(new Dimension(450, 25));
-        codeArea.setText("output = input.toUpperCase()");
-        codeArea.setPreferredSize(new Dimension(450, 300));
+        codeScroll.setPreferredSize(new Dimension(450, 300));
         createTagPanel.add(codeLabel);
-        createTagPanel.add(codeArea);
+        createTagPanel.add(codeScroll);
         JButton cancelButton = new JButton("Cancel");
         if(!isNativeTheme && !isDarkTheme) {
             cancelButton.setBackground(Color.decode("#005a70"));
@@ -879,6 +911,87 @@ private Ngrams ngrams;
         errorMessage.setPreferredSize(new Dimension(450, 25));
         errorMessage.setForeground(Color.red);
         JButton createButton = new JButton("Create tag");
+        JButton testButton = new JButton("Test tag");
+        testButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String tagName = tagNameField.getText().replaceAll("[^\\w+]", "");
+                String language = languageCombo.getSelectedItem().toString();
+                String code = codeArea.getText();
+                String argument1 = argument1NameField.getText();
+                String argument1DefaultValue = argument1DefaultValueField.getText();
+                String argument2 = argument2NameField.getText();
+                String argument2DefaultValue = argument2DefaultValueField.getText();
+                String argument1Type = argument1Combo.getSelectedItem().toString();
+                String argument2Type = argument2Combo.getSelectedItem().toString();
+                int numberOfArgs = 0;
+                if(argument1Combo.getSelectedIndex() > 0) {
+                    numberOfArgs++;
+                }
+                if(argument2Combo.getSelectedIndex() > 0) {
+                    numberOfArgs++;
+                }
+                String input = JOptionPane.showInputDialog(null, "Enter input for your tag", "test");
+                String output = "";
+
+
+                JSONObject tag = new JSONObject();
+                tag.put("tagName", "_"+tagName);
+                tag.put("language", language);
+                if(numberOfArgs == 1) {
+                    tag.put("argument1", argument1);
+                    tag.put("argument1Type", argument1Type);
+                    tag.put("argument1Default", argument1DefaultValue);
+                }
+                if(numberOfArgs == 2) {
+                    tag.put("argument1", argument1);
+                    tag.put("argument1Type", argument1Type);
+                    tag.put("argument1Default", argument1DefaultValue);
+                    tag.put("argument2", argument2);
+                    tag.put("argument2Type", argument2Type);
+                    tag.put("argument2Default", argument2DefaultValue);
+                }
+                tag.put("numberOfArgs", numberOfArgs);
+                tag.put("code", code);
+                JSONObject customTagOptions = new JSONObject();
+                customTagOptions.put("customTag", tag);
+                Hackvertor hv = new Hackvertor();
+                ArrayList<String> args = new ArrayList<>();
+                if(numberOfArgs == 0) {
+                    customTagOptions = null;
+                } else if(numberOfArgs == 1) {
+                    if(argument1Type.equals("String")) {
+                        customTagOptions.put("param1", argument1DefaultValue);
+                    } else if(argument1Type.equals("Number")) {
+                        args.add(argument1DefaultValue);
+                        customTagOptions.put("param1", hv.getInt(args,0));
+                    }
+
+                } else if(numberOfArgs == 2) {
+                    int pos = 0;
+                    if(argument1Type.equals("String")) {
+                        customTagOptions.put("param1", argument1DefaultValue);
+                    } else if(argument1Type.equals("Number")) {
+                        args.add(argument1DefaultValue);
+                        customTagOptions.put("param1", hv.getInt(args,0));
+                        pos++;
+                    }
+                    if(argument2Type.equals("String")) {
+                        customTagOptions.put("param2", argument2DefaultValue);
+                    } else if(argument2Type.equals("Number")) {
+                        args.add(argument2DefaultValue);
+                        customTagOptions.put("param2", hv.getInt(args,pos));
+                    }
+                }
+
+                if(language.equals("JavaScript")) {
+                    output = hv.javascript(input, code, tagCodeExecutionKey, customTagOptions);
+                } else {
+                    output = hv.python(input, code, tagCodeExecutionKey, customTagOptions);
+                }
+                alert("Output from tag:"+output);
+            }
+        });
         createButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -912,14 +1025,6 @@ private Ngrams ngrams;
                     errorMessage.setText("Invalid param name for argument2. Use "+paramRegex);
                     return;
                 }
-                if(argument1Combo.getSelectedIndex() > 0 && argument1DefaultValue.equals("")) {
-                    errorMessage.setText("Invalid default value for argument1. It cannot be empty.");
-                    return;
-                }
-                if(argument2Combo.getSelectedIndex() > 0 && argument2DefaultValue.equals("")) {
-                    errorMessage.setText("Invalid default value for argument2. It cannot be empty.");
-                    return;
-                }
                 if(argument2Combo.getSelectedIndex() > 0 && argument1Combo.getSelectedIndex() == 0) {
                     errorMessage.setText("You have selected two arguments but not defined the first.");
                     return;
@@ -941,8 +1046,11 @@ private Ngrams ngrams;
         if(!isNativeTheme && !isDarkTheme) {
             createButton.setBackground(Color.decode("#005a70"));
             createButton.setForeground(Color.white);
+            testButton.setBackground(Color.decode("#005a70"));
+            testButton.setForeground(Color.white);
         }
         createTagPanel.add(cancelButton);
+        createTagPanel.add(testButton);
         createTagPanel.add(createButton);
         createTagPanel.add(errorMessage);
         pane.add(createTagPanel);
@@ -971,6 +1079,10 @@ private Ngrams ngrams;
             @Override
             public void actionPerformed(ActionEvent e) {
                 if(tagCombo.getSelectedIndex() == -1) {
+                    return;
+                }
+                int input = JOptionPane.showConfirmDialog(null, "Are you sure you want to delete this tag?");
+                if(input != 0) {
                     return;
                 }
                 for(int i=0;i<customTags.length();i++) {
@@ -1479,7 +1591,7 @@ private Ngrams ngrams;
         private JTextArea outputArea;
         private JPanel panel;
         private String[] categories = {
-                "Charsets","Compression","Encrypt","Encode","Date","Decode","Convert","String","Hash","HMAC","Math","XSS","Variables","Loops","Other languages","Custom"
+                "Charsets","Compression","Encrypt","Decrypt","Encode","Date","Decode","Convert","String","Hash","HMAC","Math","XSS","Variables","Loops","Languages","Custom"
         };
         void setInputArea(JTextArea inputArea) {
             this.inputArea = inputArea;
@@ -1666,7 +1778,7 @@ private Ngrams ngrams;
             tag.argument2 = new TagArgument("string","AES/ECB/PKCS5PADDING");
             tag.argument3 = new TagArgument("string","initVector123456");
             tags.add(tag);
-            tag = new Tag("Encrypt","aes_decrypt",true,"aes_decrypt(String ciphertext, String key, String transformations)");
+            tag = new Tag("Decrypt","aes_decrypt",true,"aes_decrypt(String ciphertext, String key, String transformations)");
             tag.argument1 = new TagArgument("string","supersecret12356");
             tag.argument2 = new TagArgument("string","AES/ECB/PKCS5PADDING");
             tag.argument3 = new TagArgument("string","initVector123456");
@@ -1677,7 +1789,7 @@ private Ngrams ngrams;
             tag = new Tag("Encrypt","xor",true,"xor(String message, String key)");
             tag.argument1 = new TagArgument("string","key");
             tags.add(tag);
-            tag = new Tag("Encrypt","xor_decrypt",true,"xor_decrypt(String ciphertext, int keyLength)");
+            tag = new Tag("Decrypt","xor_decrypt",true,"xor_decrypt(String ciphertext, int keyLength)");
             tag.argument1 = new TagArgument("int","3");
             tags.add(tag);
             tags.add(new Tag("Encrypt","xor_getkey",true,"xor_getkey(String ciphertext)"));
@@ -1685,23 +1797,23 @@ private Ngrams ngrams;
             tag.argument1 = new TagArgument("int","5");
             tag.argument2 = new TagArgument("int","9");
             tags.add(tag);
-            tag = new Tag("Encrypt","affine_decrypt",true,"affine_decrypt(String ciphertext, int key1, int key2)");
+            tag = new Tag("Decrypt","affine_decrypt",true,"affine_decrypt(String ciphertext, int key1, int key2)");
             tag.argument1 = new TagArgument("int","5");
             tag.argument2 = new TagArgument("int","9");
             tags.add(tag);
             tags.add(new Tag("Encrypt","atbash_encrypt",true,"atbash_encrypt(String message)"));
-            tags.add(new Tag("Encrypt","atbash_decrypt",true,"atbash_decrypt(String ciphertext)"));
+            tags.add(new Tag("Decrypt","atbash_decrypt",true,"atbash_decrypt(String ciphertext)"));
             tags.add(new Tag("Encrypt","rotN_bruteforce",true,"rotN_bruteforce(String str)"));
             tag = new Tag("Encrypt","rail_fence_encrypt",true,"rail_fence_encrypt(String message, int key)");
             tag.argument1 = new TagArgument("int","4");
             tags.add(tag);
-            tag = new Tag("Encrypt","rail_fence_decrypt",true,"rail_fence_decrypt(String encoded, int key)");
+            tag = new Tag("Decrypt","rail_fence_decrypt",true,"rail_fence_decrypt(String encoded, int key)");
             tag.argument1 = new TagArgument("int","4");
             tags.add(tag);
             tag = new Tag("Encrypt","substitution_encrypt",true,"substitution_encrypt(String message, String key)");
             tag.argument1 = new TagArgument("string","phqgiumeaylnofdxjkrcvstzwb");
             tags.add(tag);
-            tag = new Tag("Encrypt","substitution_decrypt",true,"substitution_decrypt(String ciphertext, String key)");
+            tag = new Tag("Decrypt","substitution_decrypt",true,"substitution_decrypt(String ciphertext, String key)");
             tag.argument1 = new TagArgument("string","phqgiumeaylnofdxjkrcvstzwb");
             tags.add(tag);
             tags.add(new Tag("Encrypt","is_like_english",true,"is_like_english(String str)"));
@@ -4548,13 +4660,13 @@ private Ngrams ngrams;
 			}
 			return len;
 		}
-		private String getString(ArrayList<String> args,Integer pos) {
+		public String getString(ArrayList<String> args,Integer pos) {
 			if(args.size() < pos+1) {
 				return "";
 			}
 			return args.get(pos);
 		}
-		private Integer getInt(ArrayList<String> args,Integer pos) {
+		public Integer getInt(ArrayList<String> args,Integer pos) {
             Integer output;
             output = 0;
             if(args.size() < pos+1) {
