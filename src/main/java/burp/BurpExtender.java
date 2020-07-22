@@ -621,7 +621,7 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v1.5");
+	            	stdout.println("Hackvertor v1.5.2");
                     loadCustomTags();
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor(true);
@@ -1320,6 +1320,7 @@ private Ngrams ngrams;
 		int[] bounds = invocation.getSelectionBounds();
 		
 		switch (invocation.getInvocationContext()) {
+            case IContextMenuInvocation.CONTEXT_INTRUDER_PAYLOAD_POSITIONS:
 			case IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST:
             case IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE:
 			break;
@@ -2026,11 +2027,11 @@ private Ngrams ngrams;
             tag = new Tag("Loops","loop_numbers",true,"loop_numbers(String input, String variable)//Loops through all numbers. Use a Hackvertor variable inside the tags to retrieve the number");
             tag.argument1 = new TagArgument("string", "number");
             tags.add(tag);
-            tag = new Tag("Other languages","python",true,"python(String input, String code, String codeExecuteKey)");
+            tag = new Tag("Languages","python",true,"python(String input, String code, String codeExecuteKey)");
             tag.argument1 = new TagArgument("string", "output = input.upper()");
             tag.argument2 = new TagArgument("string",tagCodeExecutionKey);
             tags.add(tag);
-            tag = new Tag("Other languages","javascript",true,"javascript(String input, String code, String codeExecuteKey)");
+            tag = new Tag("Languages","javascript",true,"javascript(String input, String code, String codeExecuteKey)");
             tag.argument1 = new TagArgument("string", "output = input.toUpperCase()");
             tag.argument2 = new TagArgument("string",tagCodeExecutionKey);
             tags.add(tag);
@@ -4859,7 +4860,7 @@ private Ngrams ngrams;
                                 }
                             }
                         } else {
-                            if(invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST || invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
+                            if(invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST || invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST || invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_INTRUDER_PAYLOAD_POSITIONS) {
                                 int[] bounds = invocation.getSelectionBounds();
                                 byte[] message = invocation.getSelectedMessages()[0].getRequest();
                                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
