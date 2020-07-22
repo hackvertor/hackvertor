@@ -767,7 +767,7 @@ private Ngrams ngrams;
                     createCustomTagsMenu.addActionListener(new ActionListener() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
-                            showCreateTagDialog();
+                            showCreateEditTagDialog(false, null);
                         }
                     });
                     JMenuItem listCustomTagsMenu = new JMenuItem("List custom tags");
@@ -788,14 +788,34 @@ private Ngrams ngrams;
         isDarkTheme = DARK_THEMES.contains(UIManager.getLookAndFeel().getID());
 	}
 
-	public void showCreateTagDialog() {
+	public void showCreateEditTagDialog(boolean edit, String editTagName) {
 	    JPanel createTagPanel = new JPanel();
-	    JFrame createTagWindow = new JFrame("Create custom tag");
+        JFrame createTagWindow;
+        JSONObject customTag = null;
+        if(edit) {
+            createTagWindow = new JFrame("Edit custom tag");
+        } else {
+            createTagWindow = new JFrame("Create custom tag");
+        }
+
+        if(edit) {
+            for(int i=0;i<customTags.length();i++) {
+                customTag = (JSONObject) customTags.get(i);
+                if(customTag.getString("tagName").equals(editTagName)) {
+                    break;
+                }
+            }
+        }
+
 	    createTagWindow.setResizable(false);
         createTagWindow.setPreferredSize(new Dimension(500, 600));
         JLabel tagLabel = new JLabel("Tag name");
         tagLabel.setPreferredSize(new Dimension(220, 25));
         JTextField tagNameField = new JTextField();
+        if(edit && customTag != null && customTag.has("tagName")) {
+            tagNameField.setText(customTag.getString("tagName"));
+            tagNameField.setEditable(false);
+        }
         tagNameField.setPreferredSize(new Dimension(220, 30));
         createTagPanel.add(tagLabel);
         createTagPanel.add(tagNameField);
@@ -803,7 +823,6 @@ private Ngrams ngrams;
         languageLabel.setPreferredSize(new Dimension(220, 25));
         JTextArea codeArea = new JTextArea();
         JScrollPane codeScroll = new JScrollPane(codeArea);
-        codeArea.setText("output = input.toUpperCase()");
         final int[] changes = {0};
         codeArea.getDocument().addDocumentListener(new DocumentListener() {
 
@@ -842,6 +861,17 @@ private Ngrams ngrams;
         languageCombo.setPreferredSize(new Dimension(220, 25));
         languageCombo.addItem("JavaScript");
         languageCombo.addItem("Python");
+
+        if(edit && customTag != null  && customTag.has("language")) {
+            if(customTag.getString("language").equals("JavaScript")) {
+                languageCombo.setSelectedIndex(0);
+            } else {
+                languageCombo.setSelectedIndex(1);
+            }
+        }
+        if(edit && customTag != null  && customTag.has("code")) {
+            codeArea.setText(customTag.getString("code"));
+        }
         Container pane = createTagWindow.getContentPane();
         createTagPanel.add(languageLabel);
         createTagPanel.add(languageCombo);
@@ -851,12 +881,25 @@ private Ngrams ngrams;
         argument1Combo.addItem("None");
         argument1Combo.addItem("String");
         argument1Combo.addItem("Number");
+        if(edit && customTag != null  && customTag.has("argument1Type")) {
+            if(customTag.getString("argument1Type").equals("String")) {
+                argument1Combo.setSelectedIndex(1);
+            } else if(customTag.getString("argument1Type").equals("Number")) {
+                argument1Combo.setSelectedIndex(2);
+            }
+        }
         JLabel argument1NameLabel = new JLabel("Param Name");
         JTextField argument1NameField = new JTextField();
+        if(edit && customTag != null  && customTag.has("argument1")) {
+            argument1NameField.setText(customTag.getString("argument1"));
+        }
         argument1NameField.setPreferredSize(new Dimension(100, 25));
         JLabel argument1DefaultLabel = new JLabel("Default value");
         argument1DefaultLabel.setPreferredSize(new Dimension(100, 25));
         JTextField argument1DefaultValueField = new JTextField();
+        if(edit && customTag != null  && customTag.has("argument1Default")) {
+            argument1DefaultValueField.setText(customTag.getString("argument1Default"));
+        }
         argument1DefaultValueField.setPreferredSize(new Dimension(100, 25));
         JPanel argument1Panel = new JPanel();
         argument1Panel.setLayout(new GridLayout(0,2));
@@ -875,11 +918,24 @@ private Ngrams ngrams;
         argument2Combo.addItem("None");
         argument2Combo.addItem("String");
         argument2Combo.addItem("Number");
+        if(edit && customTag != null  && customTag.has("argument2Type")) {
+            if(customTag.getString("argument2Type").equals("String")) {
+                argument2Combo.setSelectedIndex(1);
+            } else if(customTag.getString("argument2Type").equals("Number")) {
+                argument2Combo.setSelectedIndex(2);
+            }
+        }
         JTextField argument2NameField = new JTextField();
+        if(edit && customTag != null  && customTag.has("argument2")) {
+            argument2NameField.setText(customTag.getString("argument2"));
+        }
         argument2NameField.setPreferredSize(new Dimension(100, 25));
         JLabel argument2DefaultLabel = new JLabel("Default value");
         argument2DefaultLabel.setPreferredSize(new Dimension(100, 25));
         JTextField argument2DefaultValueField = new JTextField();
+        if(edit && customTag != null && customTag.has("argument2Default")) {
+            argument2DefaultValueField.setText(customTag.getString("argument2Default"));
+        }
         argument2DefaultValueField.setPreferredSize(new Dimension(100, 25));
         JPanel argument2Panel = new JPanel();
         argument2Panel.setLayout(new GridLayout(0,2));
@@ -911,6 +967,9 @@ private Ngrams ngrams;
         errorMessage.setPreferredSize(new Dimension(450, 25));
         errorMessage.setForeground(Color.red);
         JButton createButton = new JButton("Create tag");
+        if(edit) {
+            createButton.setText("Update tag");
+        }
         JButton testButton = new JButton("Test tag");
         testButton.addActionListener(new ActionListener() {
             @Override
@@ -1039,7 +1098,11 @@ private Ngrams ngrams;
                 if(argument2Combo.getSelectedIndex() > 0) {
                     numberOfArgs++;
                 }
-                createCustomTag(tagName, language, code, argument1, argument1Combo.getSelectedItem().toString(), argument1DefaultValue, argument2, argument2Combo.getSelectedItem().toString(), argument2DefaultValue, numberOfArgs);
+                if(edit) {
+                    updateCustomTag(tagName, language, code, argument1, argument1Combo.getSelectedItem().toString(), argument1DefaultValue, argument2, argument2Combo.getSelectedItem().toString(), argument2DefaultValue, numberOfArgs);
+                } else {
+                    createCustomTag(tagName, language, code, argument1, argument1Combo.getSelectedItem().toString(), argument1DefaultValue, argument2, argument2Combo.getSelectedItem().toString(), argument2DefaultValue, numberOfArgs);
+                }
                 createTagWindow.dispose();
             }
         });
@@ -1074,6 +1137,16 @@ private Ngrams ngrams;
             JSONObject customTag = (JSONObject) customTags.get(i);
             tagCombo.addItem(customTag.getString("tagName"));
         }
+        JButton editButton = new JButton("Edit tag");
+        editButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if(tagCombo.getSelectedIndex() == -1) {
+                    return;
+                }
+                showCreateEditTagDialog(true, tagCombo.getSelectedItem().toString());
+            }
+        });
         JButton deleteButton = new JButton("Delete tag");
         deleteButton.addActionListener(new ActionListener() {
             @Override
@@ -1099,7 +1172,10 @@ private Ngrams ngrams;
         if(!isNativeTheme && !isDarkTheme) {
             deleteButton.setBackground(Color.decode("#005a70"));
             deleteButton.setForeground(Color.white);
+            editButton.setBackground(Color.decode("#005a70"));
+            editButton.setForeground(Color.white);
         }
+        listTagsPanel.add(editButton);
         listTagsPanel.add(deleteButton);
         listTagsWindow.add(listTagsPanel);
         listTagsWindow.pack();
@@ -1117,6 +1193,37 @@ private Ngrams ngrams;
     public void saveCustomTags() {
         callbacks.saveExtensionSetting("customTags", customTags.toString());
     }
+
+    public void updateCustomTag(String tagName, String language, String code, String argument1, String argument1Type, String argument1DefaultValue, String argument2, String argument2Type, String argument2DefaultValue, int numberOfArgs) {
+        JSONObject tag = new JSONObject();
+        tag.put("tagName", tagName);
+        tag.put("language", language);
+        if(numberOfArgs == 1) {
+            tag.put("argument1", argument1);
+            tag.put("argument1Type", argument1Type);
+            tag.put("argument1Default", argument1DefaultValue);
+        }
+        if(numberOfArgs == 2) {
+            tag.put("argument1", argument1);
+            tag.put("argument1Type", argument1Type);
+            tag.put("argument1Default", argument1DefaultValue);
+            tag.put("argument2", argument2);
+            tag.put("argument2Type", argument2Type);
+            tag.put("argument2Default", argument2DefaultValue);
+        }
+        tag.put("numberOfArgs", numberOfArgs);
+        tag.put("code", code);
+        for(int i=0;i<customTags.length();i++) {
+            JSONObject customTag = (JSONObject) customTags.get(i);
+            if(tagName.equals(customTag.getString("tagName"))) {
+                customTags.put(i, tag);
+                saveCustomTags();
+                break;
+            }
+        }
+        saveCustomTags();
+    }
+
     public void createCustomTag(String tagName, String language, String code, String argument1, String argument1Type, String argument1DefaultValue, String argument2, String argument2Type, String argument2DefaultValue, int numberOfArgs) {
         JSONObject tag = new JSONObject();
         tag.put("tagName", "_"+tagName);
