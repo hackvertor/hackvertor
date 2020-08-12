@@ -621,7 +621,7 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v1.5.2");
+	            	stdout.println("Hackvertor v1.5.3");
                     loadCustomTags();
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor(true);
@@ -1497,6 +1497,7 @@ private Ngrams ngrams;
         });
         submenu.add(autodecodeConvert);
         submenu.addSeparator();
+        loadCustomTags();
         String[] categories = hv.getCategories();
         for(int i=0;i<categories.length;i++) {
             JMenu categoryMenu = new JMenu(categories[i]);
