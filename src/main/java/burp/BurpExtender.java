@@ -1226,7 +1226,12 @@ private Ngrams ngrams;
     public void loadCustomTags() {
         String json = callbacks.loadExtensionSetting("customTags");
         if(json != null && json.length() > 0) {
-            customTags = new JSONArray(json);
+            try {
+                customTags = new JSONArray(json);
+            } catch(JSONException e) {
+                alert("Failed to load custom tags");
+                customTags = new JSONArray();
+            }
         } else {
             customTags = new JSONArray();
         }
