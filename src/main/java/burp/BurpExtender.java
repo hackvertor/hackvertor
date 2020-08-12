@@ -53,6 +53,7 @@ import org.bouncycastle.jcajce.provider.digest.Skein;
 import org.bouncycastle.util.encoders.Hex;
 import org.brotli.dec.BrotliInputStream;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.python.core.PyException;
 import org.python.core.PyObject;
@@ -766,7 +767,7 @@ private Ngrams ngrams;
                         }
                     });
                     hvMenuBar.add(fixContentLengthMenu);
-                    JMenuItem createCustomTagsMenu = new JMenuItem("Create custom tags");
+                    JMenuItem createCustomTagsMenu = new JMenuItem("Create custom tag");
                     createCustomTagsMenu.addActionListener(new ActionListener() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
@@ -1129,11 +1130,11 @@ private Ngrams ngrams;
         JPanel listTagsPanel = new JPanel();
         JFrame listTagsWindow = new JFrame("List custom tags");
         listTagsWindow.setResizable(false);
-        listTagsWindow.setPreferredSize(new Dimension(500, 100));
+        listTagsWindow.setPreferredSize(new Dimension(500, 150));
         JLabel tagLabel = new JLabel("Tag");
-        tagLabel.setPreferredSize(new Dimension(100, 25));
+        tagLabel.setPreferredSize(new Dimension(50, 25));
         JComboBox tagCombo = new JComboBox();
-        tagCombo.setPreferredSize(new Dimension(100, 25));
+        tagCombo.setPreferredSize(new Dimension(200, 25));
         listTagsPanel.add(tagLabel);
         listTagsPanel.add(tagCombo);
         for(int i=0;i<customTags.length();i++) {
@@ -1151,24 +1152,55 @@ private Ngrams ngrams;
             }
         });
         JButton deleteButton = new JButton("Delete tag");
-        deleteButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if(tagCombo.getSelectedIndex() == -1) {
-                    return;
-                }
-                int input = JOptionPane.showConfirmDialog(null, "Are you sure you want to delete this tag?");
-                if(input != 0) {
-                    return;
-                }
-                for(int i=0;i<customTags.length();i++) {
-                    JSONObject customTag = (JSONObject) customTags.get(i);
-                    if(tagCombo.getSelectedItem().toString().equals(customTag.getString("tagName"))) {
-                        customTags.remove(i);
-                        tagCombo.removeItemAt(tagCombo.getSelectedIndex());
+        JButton loadButton = new JButton("Load tags from clipboard");
+        JButton exportButton = new JButton("Export all my tags to clipboard");
+        exportButton.addActionListener(e -> {
+            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+            StringSelection customTagsJSON = new StringSelection(customTags.toString());
+            clipboard.setContents(customTagsJSON, null);
+        });
+        loadButton.addActionListener(e -> {
+            int input = JOptionPane.showConfirmDialog(null, "Are you sure you sure you want to load all tags from the clipboard? This will replace your existing tags");
+            if(input != 0) {
+                return;
+            }
+            try {
+                String tagsJSON = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
+                if(tagsJSON != null && tagsJSON.length() > 0) {
+                    try {
+                        JSONArray tags = new JSONArray(tagsJSON);
+                        customTags = tags;
+                        alert("All your tags have been replaced from the clipboard");
                         saveCustomTags();
-                        break;
+                        listTagsWindow.dispose();
+                        showListTagsDialog();
+                    } catch(JSONException ex){
+                        alert("Invalid JSON");
                     }
+                }
+            } catch (UnsupportedFlavorException unsupportedFlavorException) {
+                unsupportedFlavorException.printStackTrace();
+                alert("Invalid JSON");
+            } catch (IOException ioException) {
+                ioException.printStackTrace();
+                alert("Invalid JSON");
+            }
+        });
+        deleteButton.addActionListener(e -> {
+            if(tagCombo.getSelectedIndex() == -1) {
+                return;
+            }
+            int input = JOptionPane.showConfirmDialog(null, "Are you sure you want to delete this tag?");
+            if(input != 0) {
+                return;
+            }
+            for(int i=0;i<customTags.length();i++) {
+                JSONObject customTag = (JSONObject) customTags.get(i);
+                if(tagCombo.getSelectedItem().toString().equals(customTag.getString("tagName"))) {
+                    customTags.remove(i);
+                    tagCombo.removeItemAt(tagCombo.getSelectedIndex());
+                    saveCustomTags();
+                    break;
                 }
             }
         });
@@ -1177,9 +1209,15 @@ private Ngrams ngrams;
             deleteButton.setForeground(Color.white);
             editButton.setBackground(Color.decode("#005a70"));
             editButton.setForeground(Color.white);
+            exportButton.setBackground(Color.decode("#005a70"));
+            exportButton.setForeground(Color.white);
+            loadButton.setBackground(Color.decode("#005a70"));
+            loadButton.setForeground(Color.white);
         }
         listTagsPanel.add(editButton);
         listTagsPanel.add(deleteButton);
+        listTagsPanel.add(loadButton);
+        listTagsPanel.add(exportButton);
         listTagsWindow.add(listTagsPanel);
         listTagsWindow.pack();
         listTagsWindow.setLocationRelativeTo(null);
