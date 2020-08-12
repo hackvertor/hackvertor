@@ -2164,8 +2164,8 @@ private Ngrams ngrams;
 			tags.add(new Tag("XSS","uppercase_script",true,"uppercase_script(String str)"));
 			tags.add(new Tag("XSS","template_eval",true,"template_eval(String str)"));
             tags.add(new Tag("XSS","throw_eval",true,"throw_eval(String str)"));
-            tags.add(new Tag("Variables", "set_var",true, "Special tag that lets you store the results of a conversion. Change var to your own variable name."));
-            tags.add(new Tag("Variables", "get_var",false, "Special tag that lets you get a previously set variable. Change var to your own variable name."));
+            tags.add(new Tag("Variables", "set_variable",true, "Special tag that lets you store the results of a conversion. Change var to your own variable name."));
+            tags.add(new Tag("Variables", "get_variable",false, "Special tag that lets you get a previously set variable. Change var to your own variable name."));
             tag = new Tag("Loops","loop_for",true,"loop_for(String input, int start, int end, int increment, String i)//Does a for loop. Use a Hackvertor variable inside the tags to retrieve the position in the loop.");
             tag.argument1 = new TagArgument("int", "0");
             tag.argument2 = new TagArgument("int", "10");
@@ -4048,7 +4048,13 @@ private Ngrams ngrams;
             try {
                 PythonInterpreter pythonInterpreter = new PythonInterpreter();
                 pythonInterpreter.set("input", input);
-
+                for (Map.Entry<String, String> entry : tagVariables.entrySet()) {
+                    String name = entry.getKey();
+                    Object value = entry.getValue();
+                    if(name.length() > 0) {
+                        pythonInterpreter.set(name, value);
+                    }
+                }
                 if(customTagOptions != null) {
                     JSONObject customTag = (JSONObject) customTagOptions.get("customTag");
                     int numberOfArgs = customTag.getInt("numberOfArgs");
@@ -4094,6 +4100,13 @@ private Ngrams ngrams;
             ScriptEngineManager manager = new ScriptEngineManager();
             ScriptEngine engine = manager.getEngineByName("JavaScript");
             engine.put("input", input);
+            for (Map.Entry<String, String> entry : tagVariables.entrySet()) {
+                String name = entry.getKey();
+                Object value = entry.getValue();
+                if(name.length() > 0) {
+                    engine.put(name, value);
+                }
+            }
             if(customTagOptions != null) {
                 JSONObject customTag = (JSONObject) customTagOptions.get("customTag");
                 int numberOfArgs = customTag.getInt("numberOfArgs");
