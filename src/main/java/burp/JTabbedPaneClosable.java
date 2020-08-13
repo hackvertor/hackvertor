@@ -15,10 +15,6 @@ public class JTabbedPaneClosable extends JTabbedPane {
     @Override
     public void addTab(String title, Icon icon, Component component, String tip) {
         super.addTab(title, icon, component, tip);
-        int count = this.getTabCount() - 1;
-        if (!title.equals("...")) {
-            setTabComponentAt(count, new CloseButtonTab(component, title, icon));
-        }
     }
 
     @Override
@@ -29,6 +25,14 @@ public class JTabbedPaneClosable extends JTabbedPane {
     @Override
     public void addTab(String title, Component component) {
         addTab(title, null, component);
+    }
+
+    @Override
+    public void insertTab(String title, Icon icon, Component component, String tip, int index) {
+        super.insertTab(title, icon, component, tip, index);
+        if (!title.equals("...")) {
+            setTabComponentAt(index, new CloseButtonTab(component, title, icon));
+        }
     }
 
     public void addTabNoExit(String title, Icon icon, Component component, String tip) {
