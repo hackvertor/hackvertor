@@ -73,114 +73,119 @@ import java.lang.reflect.Method;
 import java.util.stream.IntStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+
 import static java.awt.GridBagConstraints.*;
+
 public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, IHttpListener, IExtensionStateListener, IMessageEditorTabFactory {
-private IBurpExtenderCallbacks callbacks;
-private IExtensionHelpers helpers;
-private JTabbedPaneClosable inputTabs;
-private int tabCounter = 1;
-private PrintWriter stderr;
-private PrintWriter stdout;
-private Hackvertor hv;
-private Hackvertor hvInRequest;
-private JSONArray customTags = new JSONArray();
-private List<String> NATIVE_LOOK_AND_FEELS = Arrays.asList("GTK","Windows","Aqua");
-private List<String> DARK_THEMES = Arrays.asList("Darcula");
-  /**
-   * Native theme will not have the same color scheme as the default Nimbus L&F.
-   * The native theme on Windows does not allow the override of button background color.
-   */
-private boolean isNativeTheme;
-private boolean isDarkTheme;
-private boolean codeExecutionTagsEnabled = false;
-private boolean tagsInProxy = false;
-private boolean tagsInIntruder = true;
-private boolean tagsInRepeater = true;
-private boolean tagsInScanner = true;
-private boolean tagsInExtensions = true;
-private boolean autoUpdateContentLength = true;
-private boolean hvShutdown = false;
-private String tagCodeExecutionKey = null;
-private JMenuBar burpMenuBar;
-private JMenu hvMenuBar;
-private Ngrams ngrams;
-  
-	private GridBagConstraints createConstraints(int x, int y, int gridWidth) {
-		GridBagConstraints c = new GridBagConstraints();
-		c.fill = GridBagConstraints.HORIZONTAL;
+    private IBurpExtenderCallbacks callbacks;
+    private IExtensionHelpers helpers;
+    private JTabbedPaneClosable inputTabs;
+    private int tabCounter = 1;
+    private PrintWriter stderr;
+    private PrintWriter stdout;
+    private Hackvertor hv;
+    private Hackvertor hvInRequest;
+    private JSONArray customTags = new JSONArray();
+    private List<String> NATIVE_LOOK_AND_FEELS = Arrays.asList("GTK", "Windows", "Aqua");
+    private List<String> DARK_THEMES = Arrays.asList("Darcula");
+    /**
+     * Native theme will not have the same color scheme as the default Nimbus L&F.
+     * The native theme on Windows does not allow the override of button background color.
+     */
+    private boolean isNativeTheme;
+    private boolean isDarkTheme;
+    private boolean codeExecutionTagsEnabled = false;
+    private boolean tagsInProxy = false;
+    private boolean tagsInIntruder = true;
+    private boolean tagsInRepeater = true;
+    private boolean tagsInScanner = true;
+    private boolean tagsInExtensions = true;
+    private boolean autoUpdateContentLength = true;
+    private boolean hvShutdown = false;
+    private String tagCodeExecutionKey = null;
+    private JMenuBar burpMenuBar;
+    private JMenu hvMenuBar;
+    private Ngrams ngrams;
+
+    private GridBagConstraints createConstraints(int x, int y, int gridWidth) {
+        GridBagConstraints c = new GridBagConstraints();
+        c.fill = GridBagConstraints.HORIZONTAL;
         c.weightx = 0;
         c.weighty = 0;
         c.gridx = x;
         c.gridy = y;
         c.ipadx = 0;
         c.ipady = 0;
-        c.gridwidth = gridWidth;            
-		return c;
-	}
+        c.gridwidth = gridWidth;
+        return c;
+    }
+
     @Override
-    public IMessageEditorTab createNewInstance(IMessageEditorController controller, boolean editable)
-    {
+    public IMessageEditorTab createNewInstance(IMessageEditorController controller, boolean editable) {
         return new HackvertorInputTab(controller, editable);
     }
-	private ImageIcon createImageIcon(String path, String description) {
-		java.net.URL imgURL = getClass().getResource(path);
+
+    private ImageIcon createImageIcon(String path, String description) {
+        java.net.URL imgURL = getClass().getResource(path);
         if (imgURL != null) {
-			return new ImageIcon(imgURL, description);
-		} else {
-			stderr.println("Couldn't find file: " + path);
-			return null;
-		}
-	}
-	private boolean hasMethodAnd1Arg(Object obj, String methodStr) {
-		boolean hasMethod = false;
-		Method[] methods = obj.getClass().getDeclaredMethods();
-		for (Method m : methods) {
-		  if (m.getName().equals(methodStr) && m.getParameterTypes().length == 1) {
-		    hasMethod = true;
-		    break;
-		  }
-		}
-		
-		return hasMethod;
-	}
-	private Tag generateCustomTag(JSONObject customTag) {
+            return new ImageIcon(imgURL, description);
+        } else {
+            stderr.println("Couldn't find file: " + path);
+            return null;
+        }
+    }
+
+    private boolean hasMethodAnd1Arg(Object obj, String methodStr) {
+        boolean hasMethod = false;
+        Method[] methods = obj.getClass().getDeclaredMethods();
+        for (Method m : methods) {
+            if (m.getName().equals(methodStr) && m.getParameterTypes().length == 1) {
+                hasMethod = true;
+                break;
+            }
+        }
+
+        return hasMethod;
+    }
+
+    private Tag generateCustomTag(JSONObject customTag) {
         int numberOfArgs = 0;
-        if(customTag.has("numberOfArgs")) {
+        if (customTag.has("numberOfArgs")) {
             numberOfArgs = customTag.getInt("numberOfArgs");
         }
         String argumentsTooltip = "";
-        if(numberOfArgs == 1) {
-            argumentsTooltip = "("+(customTag.getString("argument1Type").equals("String")?"String "+customTag.getString("argument1")+",":"int "+customTag.getString("argument1")+",")+"+String codeExecuteKey)";
-        } else if(numberOfArgs == 2) {
-            argumentsTooltip = "("+(customTag.getString("argument1Type").equals("String")?"String "+customTag.getString("argument1")+",":"int "+customTag.getString("argument1")+",")+(customTag.getString("argument2Type").equals("String")?"String "+customTag.getString("argument2")+",":"int "+customTag.getString("argument2")+",")+"String codeExecuteKey)";
+        if (numberOfArgs == 1) {
+            argumentsTooltip = "(" + (customTag.getString("argument1Type").equals("String") ? "String " + customTag.getString("argument1") + "," : "int " + customTag.getString("argument1") + ",") + "+String codeExecuteKey)";
+        } else if (numberOfArgs == 2) {
+            argumentsTooltip = "(" + (customTag.getString("argument1Type").equals("String") ? "String " + customTag.getString("argument1") + "," : "int " + customTag.getString("argument1") + ",") + (customTag.getString("argument2Type").equals("String") ? "String " + customTag.getString("argument2") + "," : "int " + customTag.getString("argument2") + ",") + "String codeExecuteKey)";
         } else {
             argumentsTooltip = "(String codeExecuteKey)";
         }
-        Tag tag = new Tag("Custom", customTag.getString("tagName"), true, customTag.getString("language")+argumentsTooltip);
-        if(numberOfArgs == 0) {
+        Tag tag = new Tag("Custom", customTag.getString("tagName"), true, customTag.getString("language") + argumentsTooltip);
+        if (numberOfArgs == 0) {
             tag.argument1 = new TagArgument("string", tagCodeExecutionKey);
         }
-        if(numberOfArgs == 1) {
+        if (numberOfArgs == 1) {
             String argument1Type = customTag.getString("argument1Type");
             String argument1Default = customTag.getString("argument1Default");
-            if(argument1Type.equals("String")) {
+            if (argument1Type.equals("String")) {
                 tag.argument1 = new TagArgument("string", argument1Default);
             } else {
                 tag.argument1 = new TagArgument("int", argument1Default);
             }
             tag.argument2 = new TagArgument("string", tagCodeExecutionKey);
         }
-        if(numberOfArgs == 2) {
+        if (numberOfArgs == 2) {
             String argument1Type = customTag.getString("argument1Type");
             String argument1Default = customTag.getString("argument1Default");
-            if(argument1Type.equals("String")) {
+            if (argument1Type.equals("String")) {
                 tag.argument1 = new TagArgument("string", argument1Default);
             } else {
                 tag.argument1 = new TagArgument("int", argument1Default);
             }
             String argument2Type = customTag.getString("argument2Type");
             String argument2Default = customTag.getString("argument2Default");
-            if(argument2Type.equals("String")) {
+            if (argument2Type.equals("String")) {
                 tag.argument2 = new TagArgument("string", argument2Default);
             } else {
                 tag.argument2 = new TagArgument("int", argument2Default);
@@ -189,12 +194,14 @@ private Ngrams ngrams;
         }
         return tag;
     }
-	private JPanel generateBlankPanel() {
+
+    private JPanel generateBlankPanel() {
         JPanel blankPanel = new JPanel();
-        blankPanel.setMaximumSize(new Dimension(0,0));
+        blankPanel.setMaximumSize(new Dimension(0, 0));
         blankPanel.setVisible(false);
         return blankPanel;
     }
+
     private Hackvertor generateHackvertor(boolean showLogo) {
         JTabbedPane tabs = new JTabbedPane();
         tabs.setAutoscrolls(true);
@@ -206,12 +213,12 @@ private Ngrams ngrams;
         topBar.setPreferredSize(new Dimension(-1, 110));
         topBar.setMinimumSize(new Dimension(-1, 110));
         JLabel logoLabel;
-        if(isDarkTheme) {
+        if (isDarkTheme) {
             logoLabel = new JLabel(createImageIcon("/images/logo-dark.png", "logo"));
         } else {
             logoLabel = new JLabel(createImageIcon("/images/logo-light.png", "logo"));
         }
-        if(!showLogo) {
+        if (!showLogo) {
             logoLabel = new JLabel();
         }
         final JTextArea hexView = new JTextArea();
@@ -220,14 +227,14 @@ private Ngrams ngrams;
         hexView.setOpaque(true);
         hexView.setEditable(false);
         hexView.setLineWrap(true);
-        if(!isDarkTheme) {
+        if (!isDarkTheme) {
             hexView.setBackground(Color.decode("#FFF5BF"));
             hexView.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
         }
         hexView.setVisible(false);
         final JScrollPane hexScroll = new JScrollPane(hexView);
-        hexScroll.setPreferredSize(new Dimension(-1,100));
-        hexScroll.setMinimumSize(new Dimension(-1,100));
+        hexScroll.setPreferredSize(new Dimension(-1, 100));
+        hexScroll.setMinimumSize(new Dimension(-1, 100));
         JPanel buttonsPanel = new JPanel(new GridLayout(1, 0, 10, 0));
         JPanel panel = new JPanel(new GridBagLayout());
         hv.setPanel(panel);
@@ -274,7 +281,7 @@ private Ngrams ngrams;
         final JLabel inputLenLabel = new JLabel("0");
         final JLabel inputRealLenLabel = new JLabel("0");
         inputRealLenLabel.setOpaque(true);
-        if(!isDarkTheme) {
+        if (!isDarkTheme) {
             inputRealLenLabel.setForeground(Color.decode("#ffffff"));
             inputRealLenLabel.setBackground(Color.decode("#ff0027"));
             inputRealLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#CCCCCC"), 1));
@@ -284,7 +291,7 @@ private Ngrams ngrams;
             inputRealLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#CCCCCC"), 1));
         }
         inputLenLabel.setOpaque(true);
-        if(!isDarkTheme) {
+        if (!isDarkTheme) {
             inputLenLabel.setBackground(Color.decode("#FFF5BF"));
             inputLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
         }
@@ -296,19 +303,22 @@ private Ngrams ngrams;
                 updateLen(documentEvent);
                 outputArea.setText(hv.convert(inputArea.getText()));
             }
+
             public void insertUpdate(DocumentEvent documentEvent) {
                 updateLen(documentEvent);
                 outputArea.setText(hv.convert(inputArea.getText()));
             }
+
             public void removeUpdate(DocumentEvent documentEvent) {
                 updateLen(documentEvent);
                 outputArea.setText(hv.convert(inputArea.getText()));
             }
+
             private void updateLen(DocumentEvent documentEvent) {
                 int len = inputArea.getText().length();
                 int realLen = hv.calculateRealLen(inputArea.getText());
-                inputLenLabel.setText(""+len);
-                inputRealLenLabel.setText(""+realLen);
+                inputLenLabel.setText("" + len);
+                inputRealLenLabel.setText("" + realLen);
             }
         };
         inputArea.getDocument().addDocumentListener(documentListener);
@@ -325,11 +335,10 @@ private Ngrams ngrams;
                 }
             }
         });
-        inputArea.addCaretListener(new CaretListener()
-        {
+        inputArea.addCaretListener(new CaretListener() {
             public void caretUpdate(CaretEvent e) {
                 String selectedText = inputArea.getSelectedText();
-                if(selectedText != null) {
+                if (selectedText != null) {
                     hexView.setVisible(true);
                     String output = hv.ascii2hex(selectedText, " ");
                     hexView.setText(output);
@@ -341,11 +350,10 @@ private Ngrams ngrams;
         });
         outputArea.setRows(0);
         outputArea.setLineWrap(true);
-        outputArea.addCaretListener(new CaretListener()
-        {
+        outputArea.addCaretListener(new CaretListener() {
             public void caretUpdate(CaretEvent e) {
                 String selectedText = outputArea.getSelectedText();
-                if(selectedText != null) {
+                if (selectedText != null) {
                     hexView.setVisible(true);
                     String output = hv.ascii2hex(selectedText, " ");
                     hexView.setText(output);
@@ -360,7 +368,7 @@ private Ngrams ngrams;
         final JLabel outputLenLabel = new JLabel("0");
         final JLabel outputRealLenLabel = new JLabel("0");
         outputRealLenLabel.setOpaque(true);
-        if(!isDarkTheme) {
+        if (!isDarkTheme) {
             outputRealLenLabel.setForeground(Color.decode("#ffffff"));
             outputRealLenLabel.setBackground(Color.decode("#ff0027"));
             outputRealLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#CCCCCC"), 1));
@@ -370,7 +378,7 @@ private Ngrams ngrams;
             outputRealLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#CCCCCC"), 1));
         }
         outputLenLabel.setOpaque(true);
-        if(!isDarkTheme) {
+        if (!isDarkTheme) {
             outputLenLabel.setBackground(Color.decode("#FFF5BF"));
             outputLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
         }
@@ -378,17 +386,20 @@ private Ngrams ngrams;
             public void changedUpdate(DocumentEvent documentEvent) {
                 updateLen(documentEvent);
             }
+
             public void insertUpdate(DocumentEvent documentEvent) {
                 updateLen(documentEvent);
             }
+
             public void removeUpdate(DocumentEvent documentEvent) {
                 updateLen(documentEvent);
             }
+
             private void updateLen(DocumentEvent documentEvent) {
                 int len = outputArea.getText().length();
                 int realLen = hv.calculateRealLen(outputArea.getText());
-                outputLenLabel.setText(""+len);
-                outputRealLenLabel.setText(""+realLen);
+                outputLenLabel.setText("" + len);
+                outputRealLenLabel.setText("" + realLen);
             }
         };
         outputArea.getDocument().addDocumentListener(documentListener2);
@@ -406,7 +417,7 @@ private Ngrams ngrams;
             }
         });
         final JButton swapButton = new JButton("Swap");
-        if(!isNativeTheme && !isDarkTheme) {
+        if (!isNativeTheme && !isDarkTheme) {
             swapButton.setBackground(Color.black);
             swapButton.setForeground(Color.white);
         }
@@ -425,7 +436,7 @@ private Ngrams ngrams;
                 inputArea.selectAll();
             }
         });
-        if(!isNativeTheme && !isDarkTheme) {
+        if (!isNativeTheme && !isDarkTheme) {
             selectInputButton.setForeground(Color.white);
             selectInputButton.setBackground(Color.black);
         }
@@ -437,7 +448,7 @@ private Ngrams ngrams;
                 outputArea.selectAll();
             }
         });
-        if(!isNativeTheme && !isDarkTheme) {
+        if (!isNativeTheme && !isDarkTheme) {
             selectOutputButton.setForeground(Color.white);
             selectOutputButton.setBackground(Color.black);
         }
@@ -448,7 +459,7 @@ private Ngrams ngrams;
                 hv.clearTags();
             }
         });
-        if(!isNativeTheme && !isDarkTheme) {
+        if (!isNativeTheme && !isDarkTheme) {
             clearTagsButton.setForeground(Color.white);
             clearTagsButton.setBackground(Color.black);
         }
@@ -461,7 +472,7 @@ private Ngrams ngrams;
                 inputArea.requestFocus();
             }
         });
-        if(!isNativeTheme && !isDarkTheme) {
+        if (!isNativeTheme && !isDarkTheme) {
             clearButton.setForeground(Color.white);
             clearButton.setBackground(Color.black);
         }
@@ -472,14 +483,14 @@ private Ngrams ngrams;
                 outputArea.setText("");
                 String input = inputArea.getText();
                 try {
-                    input = input.replaceAll("((?:<@?[\\w\\-]+_\\d+(?:[(](?:,?"+hv.argumentsRegex+")*[)])?>)+)[\\s\\S]*?(?:<@/)","$1"+Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor).toString()+"<@/");
+                    input = input.replaceAll("((?:<@?[\\w\\-]+_\\d+(?:[(](?:,?" + hv.argumentsRegex + ")*[)])?>)+)[\\s\\S]*?(?:<@/)", "$1" + Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor).toString() + "<@/");
                     hv.setInput(input);
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }
             }
         });
-        if(!isNativeTheme && !isDarkTheme) {
+        if (!isNativeTheme && !isDarkTheme) {
             pasteInsideButton.setForeground(Color.white);
             pasteInsideButton.setBackground(Color.black);
         }
@@ -490,7 +501,7 @@ private Ngrams ngrams;
                 outputArea.setText(hv.convert(inputArea.getText()));
             }
         });
-        if(!isNativeTheme && !isDarkTheme) {
+        if (!isNativeTheme && !isDarkTheme) {
             convertButton.setBackground(Color.decode("#005a70"));
             convertButton.setForeground(Color.white);
         }
@@ -501,322 +512,323 @@ private Ngrams ngrams;
         buttonsPanel.add(selectOutputButton);
         buttonsPanel.add(pasteInsideButton);
         buttonsPanel.add(convertButton);
-        GridBagConstraints c = createConstraints(1,0,1);
+        GridBagConstraints c = createConstraints(1, 0, 1);
         c.anchor = FIRST_LINE_END;
         c.ipadx = 20;
         c.ipady = 20;
-        topBar.add(logoLabel,c);
+        topBar.add(logoLabel, c);
         c = createConstraints(0, 0, 1);
         c.anchor = FIRST_LINE_START;
         c.fill = BOTH;
         c.weightx = 1.0;
         c.weighty = 1;
         topBar.add(tabs, c);
-        c = createConstraints(0,0,2);
+        c = createConstraints(0, 0, 2);
         c.anchor = FIRST_LINE_START;
         c.fill = BOTH;
         c.weightx = 1.0;
-        panel.add(topBar,c);
+        panel.add(topBar, c);
         JPanel inputLabelsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        c = createConstraints(0,0,1);
-        c.insets = new Insets(5,5,5,5);
+        c = createConstraints(0, 0, 1);
+        c.insets = new Insets(5, 5, 5, 5);
         c.anchor = GridBagConstraints.WEST;
-        inputLabelsPanel.add(inputLabel,c);
-        c = createConstraints(1,1,1);
-        c.insets = new Insets(5,5,5,5);
+        inputLabelsPanel.add(inputLabel, c);
+        c = createConstraints(1, 1, 1);
+        c.insets = new Insets(5, 5, 5, 5);
         c.anchor = GridBagConstraints.WEST;
-        inputLabelsPanel.add(inputLenLabel,c);
-        c = createConstraints(2,1,1);
-        c.insets = new Insets(5,5,5,5);
+        inputLabelsPanel.add(inputLenLabel, c);
+        c = createConstraints(2, 1, 1);
+        c.insets = new Insets(5, 5, 5, 5);
         c.anchor = GridBagConstraints.WEST;
-        inputLabelsPanel.add(inputRealLenLabel,c);
-        panel.add(inputLabelsPanel,createConstraints(0,2,1));
-        c = createConstraints(0,3,1);
+        inputLabelsPanel.add(inputRealLenLabel, c);
+        panel.add(inputLabelsPanel, createConstraints(0, 2, 1));
+        c = createConstraints(0, 3, 1);
         c.anchor = FIRST_LINE_START;
         c.fill = BOTH;
         c.weightx = 0.5;
         c.weighty = 1.0;
-        panel.add(inputScroll,c);
+        panel.add(inputScroll, c);
         JPanel outputLabelsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        c = createConstraints(0,1,1);
-        c.insets = new Insets(5,5,5,5);
-        outputLabelsPanel.add(outputLabel,c);
-        c = createConstraints(1,1,1);
-        c.insets = new Insets(5,5,5,5);
-        outputLabelsPanel.add(outputLenLabel,c);
-        c = createConstraints(2,1,1);
-        c.insets = new Insets(5,5,5,5);
-        outputLabelsPanel.add(outputRealLenLabel,c);
-        panel.add(outputLabelsPanel,createConstraints(1,2,1));
-        c = createConstraints(1,3,1);
+        c = createConstraints(0, 1, 1);
+        c.insets = new Insets(5, 5, 5, 5);
+        outputLabelsPanel.add(outputLabel, c);
+        c = createConstraints(1, 1, 1);
+        c.insets = new Insets(5, 5, 5, 5);
+        outputLabelsPanel.add(outputLenLabel, c);
+        c = createConstraints(2, 1, 1);
+        c.insets = new Insets(5, 5, 5, 5);
+        outputLabelsPanel.add(outputRealLenLabel, c);
+        panel.add(outputLabelsPanel, createConstraints(1, 2, 1));
+        c = createConstraints(1, 3, 1);
         c.anchor = FIRST_LINE_START;
         c.fill = BOTH;
         c.weightx = 0.5;
         c.weighty = 1.0;
-        panel.add(outputScroll,c);
-        c = createConstraints(0,4,2);
+        panel.add(outputScroll, c);
+        c = createConstraints(0, 4, 2);
         c.anchor = GridBagConstraints.SOUTH;
         c.fill = BOTH;
         c.weightx = 1.0;
-        panel.add(buttonsPanel,c);
-        c = createConstraints(0,5,2);
-        c.insets = new Insets(5,5,5,5);
+        panel.add(buttonsPanel, c);
+        c = createConstraints(0, 5, 2);
+        c.insets = new Insets(5, 5, 5, 5);
         c.anchor = LAST_LINE_START;
         c.fill = BOTH;
         c.weightx = 1.0;
-        panel.add(hexScroll,c);
+        panel.add(hexScroll, c);
         callbacks.customizeUiComponent(inputArea);
         callbacks.customizeUiComponent(outputArea);
         callbacks.customizeUiComponent(panel);
         return hv;
     }
+
     private void readClipboardAndDecode(Hackvertor hv) {
         try {
             String data = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
             String inputValue = hv.getInput();
-            if(inputValue.length() == 0 && !data.contains(tagCodeExecutionKey)) {
+            if (inputValue.length() == 0 && !data.contains(tagCodeExecutionKey)) {
                 String code;
-                if(data.contains("<@/")) {
-                   code = data;
+                if (data.contains("<@/")) {
+                    code = data;
                 } else {
-                   code = "<@auto_decode_no_decrypt_1>" + data + "<@/auto_decode_no_decrypt_1>";
+                    code = "<@auto_decode_no_decrypt_1>" + data + "<@/auto_decode_no_decrypt_1>";
                 }
                 String converted = hv.convert(code);
-                if(!data.equals(converted)) {
+                if (!data.equals(converted)) {
                     hv.setInput(code);
                 }
             }
         } catch (UnsupportedFlavorException e) {
-            stderr.println("Error reading data:"+e);
+            stderr.println("Error reading data:" + e);
         } catch (IOException e) {
-            stderr.println("IO exception, error reading data:"+e);
+            stderr.println("IO exception, error reading data:" + e);
         }
     }
+
     private String generateRandomCodeExecutionKey() {
         byte[] randomBytes = new byte[256];
         SecureRandom secureRandom = null;
         try {
             secureRandom = SecureRandom.getInstanceStrong();
         } catch (NoSuchAlgorithmException e) {
-            stderr.println("Error get algo:"+e.toString());
+            stderr.println("Error get algo:" + e.toString());
             return null;
         }
         secureRandom.nextBytes(randomBytes);
-        return DigestUtils.sha256Hex(helpers.bytesToString(randomBytes)).substring(0,32);
+        return DigestUtils.sha256Hex(helpers.bytesToString(randomBytes)).substring(0, 32);
     }
-	public void registerExtenderCallbacks(final IBurpExtenderCallbacks callbacks) {
-		helpers = callbacks.getHelpers();
-		stderr = new PrintWriter(callbacks.getStderr(), true);
-		stdout = new PrintWriter(callbacks.getStdout(), true);
+
+    public void registerExtenderCallbacks(final IBurpExtenderCallbacks callbacks) {
+        helpers = callbacks.getHelpers();
+        stderr = new PrintWriter(callbacks.getStderr(), true);
+        stdout = new PrintWriter(callbacks.getStdout(), true);
         hvShutdown = false;
         tagCodeExecutionKey = generateRandomCodeExecutionKey();
-		try {
+        try {
             ngrams = new Ngrams("/quadgrams.txt");
         } catch (IOException e) {
             stderr.println(e.getMessage());
         }
         this.callbacks = callbacks;
-		callbacks.setExtensionName("Hackvertor");
-		callbacks.registerContextMenuFactory(this);
-		callbacks.registerHttpListener(this);
-		callbacks.registerExtensionStateListener(this);
-		Security.addProvider(new BouncyCastleProvider());
-        SwingUtilities.invokeLater(new Runnable()
-	        {
-	            public void run()
-	            {	   
-	            	stdout.println("Hackvertor v1.5.3");
-                    loadCustomTags();
-	            	inputTabs = new JTabbedPaneClosable();
-	            	final Hackvertor mainHV = generateHackvertor(true);
-	            	mainHV.registerPayloadProcessor();
-	            	hv = mainHV;
-	            	hv.getPanel().addComponentListener(new ComponentAdapter() {
-                        @Override
-                        public void componentShown(ComponentEvent e) {
-                            hv = mainHV;
-                        }
-                    });
-                    inputTabs.addComponentListener(new ComponentAdapter() {
-                        @Override
-                        public void componentShown(ComponentEvent e) {
-                            readClipboardAndDecode(hv);
-                        }
-                    });
-                    inputTabs.addTab("1", hv.getPanel());
-                    inputTabs.addTab("...", generateBlankPanel());
-	            	inputTabs.addChangeListener(new ChangeListener() {
-                        public void stateChanged(ChangeEvent e) {
-                            if (e.getSource() instanceof JTabbedPane) {
-                                JTabbedPaneClosable pane = (JTabbedPaneClosable) e.getSource();
-                                if(pane.getSelectedIndex() == -1) {
+        callbacks.setExtensionName("Hackvertor");
+        callbacks.registerContextMenuFactory(this);
+        callbacks.registerHttpListener(this);
+        callbacks.registerExtensionStateListener(this);
+        Security.addProvider(new BouncyCastleProvider());
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                stdout.println("Hackvertor v1.5.3");
+                loadCustomTags();
+                inputTabs = new JTabbedPaneClosable();
+                final Hackvertor mainHV = generateHackvertor(true);
+                mainHV.registerPayloadProcessor();
+                hv = mainHV;
+                hv.getPanel().addComponentListener(new ComponentAdapter() {
+                    @Override
+                    public void componentShown(ComponentEvent e) {
+                        hv = mainHV;
+                    }
+                });
+                inputTabs.addComponentListener(new ComponentAdapter() {
+                    @Override
+                    public void componentShown(ComponentEvent e) {
+                        readClipboardAndDecode(hv);
+                    }
+                });
+                inputTabs.addTab("1", hv.getPanel());
+                inputTabs.addTab("...", generateBlankPanel());
+                inputTabs.addChangeListener(new ChangeListener() {
+                    public void stateChanged(ChangeEvent e) {
+                        if (e.getSource() instanceof JTabbedPane) {
+                            JTabbedPaneClosable pane = (JTabbedPaneClosable) e.getSource();
+                            if (pane.getSelectedIndex() == -1) {
+                                return;
+                            }
+                            if (pane.clickedDelete) {
+                                pane.clickedDelete = false;
+                                if (pane.getTabCount() > 1) {
+                                    if (pane.getSelectedIndex() == pane.getTabCount() - 1) {
+                                        pane.setSelectedIndex(pane.getTabCount() - 2);
+                                    }
                                     return;
                                 }
-                                if(pane.clickedDelete) {
-                                    pane.clickedDelete = false;
-                                    if(pane.getTabCount() > 1) {
-                                        if(pane.getSelectedIndex() == pane.getTabCount()-1) {
-                                            pane.setSelectedIndex(pane.getTabCount()-2);
-                                        }
-                                        return;
+                            }
+                            if (pane.getTitleAt(pane.getSelectedIndex()).equals("...")) {
+                                tabCounter++;
+                                final Hackvertor hvTab = generateHackvertor(true);
+                                JPanel panel = hvTab.getPanel();
+                                panel.addComponentListener(new ComponentAdapter() {
+                                    @Override
+                                    public void componentShown(ComponentEvent e) {
+                                        hv = hvTab;
+                                        readClipboardAndDecode(hv);
                                     }
-                                }
-                                 if(pane.getTitleAt(pane.getSelectedIndex()).equals("...")) {
-                                    tabCounter++;
-                                    final Hackvertor hvTab = generateHackvertor(true);
-                                    JPanel panel = hvTab.getPanel();
-                                    panel.addComponentListener(new ComponentAdapter() {
-                                        @Override
-                                        public void componentShown(ComponentEvent e) {
-                                            hv = hvTab;
-                                            readClipboardAndDecode(hv);
-                                        }
-                                    });
-                                    pane.remove(pane.getSelectedIndex());
-                                    pane.addTab(tabCounter+"", panel);
-                                    pane.addTab("...", generateBlankPanel());
-                                    pane.setSelectedIndex(pane.getTabCount()-2);
-                                }
+                                });
+                                pane.remove(pane.getSelectedIndex());
+                                pane.addTab(tabCounter + "", panel);
+                                pane.addTab("...", generateBlankPanel());
+                                pane.setSelectedIndex(pane.getTabCount() - 2);
                             }
                         }
-                    });
-	                callbacks.addSuiteTab(BurpExtender.this);
-                    burpMenuBar = getBurpFrame().getJMenuBar();
-                    hvMenuBar = new JMenu("Hackvertor");
-                    final JCheckBoxMenuItem codeExecutionMenu = new JCheckBoxMenuItem(
-                            "Allow code execution tags", tagsInProxy);
-                    codeExecutionMenu.addItemListener(new ItemListener() {
-                        public void itemStateChanged(ItemEvent e) {
-                            if(codeExecutionMenu.getState()){
-                                codeExecutionTagsEnabled = true;
-                            } else {
-                                codeExecutionTagsEnabled = false;
-                            }
+                    }
+                });
+                callbacks.addSuiteTab(BurpExtender.this);
+                burpMenuBar = getBurpFrame().getJMenuBar();
+                hvMenuBar = new JMenu("Hackvertor");
+                final JCheckBoxMenuItem codeExecutionMenu = new JCheckBoxMenuItem(
+                        "Allow code execution tags", tagsInProxy);
+                codeExecutionMenu.addItemListener(new ItemListener() {
+                    public void itemStateChanged(ItemEvent e) {
+                        if (codeExecutionMenu.getState()) {
+                            codeExecutionTagsEnabled = true;
+                        } else {
+                            codeExecutionTagsEnabled = false;
                         }
-                    });
-                    hvMenuBar.add(codeExecutionMenu);
-                    final JCheckBoxMenuItem tagsInProxyMenu = new JCheckBoxMenuItem(
-                            "Allow tags in Proxy", tagsInProxy);
-                    tagsInProxyMenu.addItemListener(new ItemListener() {
-                        public void itemStateChanged(ItemEvent e) {
-                            if(tagsInProxyMenu.getState()){
-                                tagsInProxy = true;
-                            } else {
-                                tagsInProxy = false;
-                            }
+                    }
+                });
+                hvMenuBar.add(codeExecutionMenu);
+                final JCheckBoxMenuItem tagsInProxyMenu = new JCheckBoxMenuItem(
+                        "Allow tags in Proxy", tagsInProxy);
+                tagsInProxyMenu.addItemListener(new ItemListener() {
+                    public void itemStateChanged(ItemEvent e) {
+                        if (tagsInProxyMenu.getState()) {
+                            tagsInProxy = true;
+                        } else {
+                            tagsInProxy = false;
                         }
-                    });
-                    hvMenuBar.add(tagsInProxyMenu);
-                    final JCheckBoxMenuItem tagsInIntruderMenu = new JCheckBoxMenuItem(
-                            "Allow tags in Intruder", tagsInIntruder);
-                    tagsInIntruderMenu.addItemListener(new ItemListener() {
-                        public void itemStateChanged(ItemEvent e) {
-                            if(tagsInIntruderMenu.getState()){
-                                tagsInIntruder = true;
-                            } else {
-                                tagsInIntruder = false;
-                            }
+                    }
+                });
+                hvMenuBar.add(tagsInProxyMenu);
+                final JCheckBoxMenuItem tagsInIntruderMenu = new JCheckBoxMenuItem(
+                        "Allow tags in Intruder", tagsInIntruder);
+                tagsInIntruderMenu.addItemListener(new ItemListener() {
+                    public void itemStateChanged(ItemEvent e) {
+                        if (tagsInIntruderMenu.getState()) {
+                            tagsInIntruder = true;
+                        } else {
+                            tagsInIntruder = false;
                         }
-                    });
-                    hvMenuBar.add(tagsInIntruderMenu);
-                    final JCheckBoxMenuItem tagsInRepeaterMenu = new JCheckBoxMenuItem(
-                            "Allow tags in Repeater", tagsInRepeater);
-                    tagsInRepeaterMenu.addItemListener(new ItemListener() {
-                        public void itemStateChanged(ItemEvent e) {
-                            if(tagsInRepeaterMenu.getState()){
-                                tagsInRepeater = true;
-                            } else {
-                                tagsInRepeater = false;
-                            }
+                    }
+                });
+                hvMenuBar.add(tagsInIntruderMenu);
+                final JCheckBoxMenuItem tagsInRepeaterMenu = new JCheckBoxMenuItem(
+                        "Allow tags in Repeater", tagsInRepeater);
+                tagsInRepeaterMenu.addItemListener(new ItemListener() {
+                    public void itemStateChanged(ItemEvent e) {
+                        if (tagsInRepeaterMenu.getState()) {
+                            tagsInRepeater = true;
+                        } else {
+                            tagsInRepeater = false;
                         }
-                    });
-                    hvMenuBar.add(tagsInRepeaterMenu);
-                    final JCheckBoxMenuItem tagsInScannerMenu = new JCheckBoxMenuItem(
-                            "Allow tags in Scanner", tagsInScanner);
-                    tagsInScannerMenu.addItemListener(new ItemListener() {
-                        public void itemStateChanged(ItemEvent e) {
-                            if(tagsInScannerMenu.getState()){
-                                tagsInScanner = true;
-                            } else {
-                                tagsInScanner = false;
-                            }
+                    }
+                });
+                hvMenuBar.add(tagsInRepeaterMenu);
+                final JCheckBoxMenuItem tagsInScannerMenu = new JCheckBoxMenuItem(
+                        "Allow tags in Scanner", tagsInScanner);
+                tagsInScannerMenu.addItemListener(new ItemListener() {
+                    public void itemStateChanged(ItemEvent e) {
+                        if (tagsInScannerMenu.getState()) {
+                            tagsInScanner = true;
+                        } else {
+                            tagsInScanner = false;
                         }
-                    });
-                    hvMenuBar.add(tagsInScannerMenu);
-                    final JCheckBoxMenuItem tagsInExtensionsMenu = new JCheckBoxMenuItem(
-                            "Allow tags in Extensions", tagsInExtensions);
-                    tagsInExtensionsMenu.addItemListener(new ItemListener() {
-                        public void itemStateChanged(ItemEvent e) {
-                            if(tagsInExtensionsMenu.getState()){
-                                tagsInExtensions = true;
-                            } else {
-                                tagsInExtensions = false;
-                            }
+                    }
+                });
+                hvMenuBar.add(tagsInScannerMenu);
+                final JCheckBoxMenuItem tagsInExtensionsMenu = new JCheckBoxMenuItem(
+                        "Allow tags in Extensions", tagsInExtensions);
+                tagsInExtensionsMenu.addItemListener(new ItemListener() {
+                    public void itemStateChanged(ItemEvent e) {
+                        if (tagsInExtensionsMenu.getState()) {
+                            tagsInExtensions = true;
+                        } else {
+                            tagsInExtensions = false;
                         }
-                    });
-                    hvMenuBar.add(tagsInExtensionsMenu);
-                    final JCheckBoxMenuItem fixContentLengthMenu = new JCheckBoxMenuItem(
-                            "Auto update content length", autoUpdateContentLength);
-                    fixContentLengthMenu.addItemListener(new ItemListener() {
-                        public void itemStateChanged(ItemEvent e) {
-                            if(fixContentLengthMenu.getState()){
-                                autoUpdateContentLength = true;
-                            } else {
-                                autoUpdateContentLength = false;
-                            }
+                    }
+                });
+                hvMenuBar.add(tagsInExtensionsMenu);
+                final JCheckBoxMenuItem fixContentLengthMenu = new JCheckBoxMenuItem(
+                        "Auto update content length", autoUpdateContentLength);
+                fixContentLengthMenu.addItemListener(new ItemListener() {
+                    public void itemStateChanged(ItemEvent e) {
+                        if (fixContentLengthMenu.getState()) {
+                            autoUpdateContentLength = true;
+                        } else {
+                            autoUpdateContentLength = false;
                         }
-                    });
-                    hvMenuBar.add(fixContentLengthMenu);
-                    JMenuItem createCustomTagsMenu = new JMenuItem("Create custom tag");
-                    createCustomTagsMenu.addActionListener(new ActionListener() {
-                        @Override
-                        public void actionPerformed(ActionEvent e) {
-                            showCreateEditTagDialog(false, null);
-                        }
-                    });
-                    JMenuItem listCustomTagsMenu = new JMenuItem("List custom tags");
-                    listCustomTagsMenu.addActionListener(new ActionListener() {
-                        @Override
-                        public void actionPerformed(ActionEvent e) {
-                            showListTagsDialog();
-                        }
-                    });
-                    hvMenuBar.add(createCustomTagsMenu);
-                    hvMenuBar.add(listCustomTagsMenu);
-                    burpMenuBar.add(hvMenuBar);
-                    callbacks.registerMessageEditorTabFactory(BurpExtender.this);
-	            }
-	        });
+                    }
+                });
+                hvMenuBar.add(fixContentLengthMenu);
+                JMenuItem createCustomTagsMenu = new JMenuItem("Create custom tag");
+                createCustomTagsMenu.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        showCreateEditTagDialog(false, null);
+                    }
+                });
+                JMenuItem listCustomTagsMenu = new JMenuItem("List custom tags");
+                listCustomTagsMenu.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        showListTagsDialog();
+                    }
+                });
+                hvMenuBar.add(createCustomTagsMenu);
+                hvMenuBar.add(listCustomTagsMenu);
+                burpMenuBar.add(hvMenuBar);
+                callbacks.registerMessageEditorTabFactory(BurpExtender.this);
+            }
+        });
         //callbacks.printOutput("Look And Feel: "+UIManager.getLookAndFeel().getID()); //For debug purpose
         isNativeTheme = NATIVE_LOOK_AND_FEELS.contains(UIManager.getLookAndFeel().getID());
         isDarkTheme = DARK_THEMES.contains(UIManager.getLookAndFeel().getID());
-	}
+    }
 
-	public void showCreateEditTagDialog(boolean edit, String editTagName) {
-	    JPanel createTagPanel = new JPanel();
+    public void showCreateEditTagDialog(boolean edit, String editTagName) {
+        JPanel createTagPanel = new JPanel();
         JFrame createTagWindow;
         JSONObject customTag = null;
-        if(edit) {
+        if (edit) {
             createTagWindow = new JFrame("Edit custom tag");
         } else {
             createTagWindow = new JFrame("Create custom tag");
         }
 
-        if(edit) {
-            for(int i=0;i<customTags.length();i++) {
+        if (edit) {
+            for (int i = 0; i < customTags.length(); i++) {
                 customTag = (JSONObject) customTags.get(i);
-                if(customTag.getString("tagName").equals(editTagName)) {
+                if (customTag.getString("tagName").equals(editTagName)) {
                     break;
                 }
             }
         }
 
-	    createTagWindow.setResizable(false);
+        createTagWindow.setResizable(false);
         createTagWindow.setPreferredSize(new Dimension(500, 600));
         JLabel tagLabel = new JLabel("Tag name");
         tagLabel.setPreferredSize(new Dimension(220, 25));
         JTextField tagNameField = new JTextField();
-        if(edit && customTag != null && customTag.has("tagName")) {
+        if (edit && customTag != null && customTag.has("tagName")) {
             tagNameField.setText(customTag.getString("tagName"));
             tagNameField.setEditable(false);
         }
@@ -850,13 +862,13 @@ private Ngrams ngrams;
             @Override
             public void actionPerformed(ActionEvent e) {
                 int index = languageCombo.getSelectedIndex();
-                if(changes[0] > 0) {
+                if (changes[0] > 0) {
                     return;
                 }
-                if(index == 0) {
+                if (index == 0) {
                     codeArea.setText("output = input.toUpperCase()");
                     changes[0] = 0;
-                } else if(index == 1) {
+                } else if (index == 1) {
                     codeArea.setText("output = input.upper()");
                     changes[0] = 0;
                 }
@@ -866,14 +878,14 @@ private Ngrams ngrams;
         languageCombo.addItem("JavaScript");
         languageCombo.addItem("Python");
 
-        if(edit && customTag != null  && customTag.has("language")) {
-            if(customTag.getString("language").equals("JavaScript")) {
+        if (edit && customTag != null && customTag.has("language")) {
+            if (customTag.getString("language").equals("JavaScript")) {
                 languageCombo.setSelectedIndex(0);
             } else {
                 languageCombo.setSelectedIndex(1);
             }
         }
-        if(edit && customTag != null  && customTag.has("code")) {
+        if (edit && customTag != null && customTag.has("code")) {
             codeArea.setText(customTag.getString("code"));
         }
         Container pane = createTagWindow.getContentPane();
@@ -885,28 +897,28 @@ private Ngrams ngrams;
         argument1Combo.addItem("None");
         argument1Combo.addItem("String");
         argument1Combo.addItem("Number");
-        if(edit && customTag != null  && customTag.has("argument1Type")) {
-            if(customTag.getString("argument1Type").equals("String")) {
+        if (edit && customTag != null && customTag.has("argument1Type")) {
+            if (customTag.getString("argument1Type").equals("String")) {
                 argument1Combo.setSelectedIndex(1);
-            } else if(customTag.getString("argument1Type").equals("Number")) {
+            } else if (customTag.getString("argument1Type").equals("Number")) {
                 argument1Combo.setSelectedIndex(2);
             }
         }
         JLabel argument1NameLabel = new JLabel("Param Name");
         JTextField argument1NameField = new JTextField();
-        if(edit && customTag != null  && customTag.has("argument1")) {
+        if (edit && customTag != null && customTag.has("argument1")) {
             argument1NameField.setText(customTag.getString("argument1"));
         }
         argument1NameField.setPreferredSize(new Dimension(100, 25));
         JLabel argument1DefaultLabel = new JLabel("Default value");
         argument1DefaultLabel.setPreferredSize(new Dimension(100, 25));
         JTextField argument1DefaultValueField = new JTextField();
-        if(edit && customTag != null  && customTag.has("argument1Default")) {
+        if (edit && customTag != null && customTag.has("argument1Default")) {
             argument1DefaultValueField.setText(customTag.getString("argument1Default"));
         }
         argument1DefaultValueField.setPreferredSize(new Dimension(100, 25));
         JPanel argument1Panel = new JPanel();
-        argument1Panel.setLayout(new GridLayout(0,2));
+        argument1Panel.setLayout(new GridLayout(0, 2));
         argument1Panel.add(argument1Label);
         argument1Panel.add(argument1Combo);
         argument1Panel.add(argument1NameLabel);
@@ -922,27 +934,27 @@ private Ngrams ngrams;
         argument2Combo.addItem("None");
         argument2Combo.addItem("String");
         argument2Combo.addItem("Number");
-        if(edit && customTag != null  && customTag.has("argument2Type")) {
-            if(customTag.getString("argument2Type").equals("String")) {
+        if (edit && customTag != null && customTag.has("argument2Type")) {
+            if (customTag.getString("argument2Type").equals("String")) {
                 argument2Combo.setSelectedIndex(1);
-            } else if(customTag.getString("argument2Type").equals("Number")) {
+            } else if (customTag.getString("argument2Type").equals("Number")) {
                 argument2Combo.setSelectedIndex(2);
             }
         }
         JTextField argument2NameField = new JTextField();
-        if(edit && customTag != null  && customTag.has("argument2")) {
+        if (edit && customTag != null && customTag.has("argument2")) {
             argument2NameField.setText(customTag.getString("argument2"));
         }
         argument2NameField.setPreferredSize(new Dimension(100, 25));
         JLabel argument2DefaultLabel = new JLabel("Default value");
         argument2DefaultLabel.setPreferredSize(new Dimension(100, 25));
         JTextField argument2DefaultValueField = new JTextField();
-        if(edit && customTag != null && customTag.has("argument2Default")) {
+        if (edit && customTag != null && customTag.has("argument2Default")) {
             argument2DefaultValueField.setText(customTag.getString("argument2Default"));
         }
         argument2DefaultValueField.setPreferredSize(new Dimension(100, 25));
         JPanel argument2Panel = new JPanel();
-        argument2Panel.setLayout(new GridLayout(0,2));
+        argument2Panel.setLayout(new GridLayout(0, 2));
         argument2Panel.add(argument2Label);
         argument2Panel.add(argument2Combo);
         argument2Panel.add(argument2NameLabel);
@@ -957,7 +969,7 @@ private Ngrams ngrams;
         createTagPanel.add(codeLabel);
         createTagPanel.add(codeScroll);
         JButton cancelButton = new JButton("Cancel");
-        if(!isNativeTheme && !isDarkTheme) {
+        if (!isNativeTheme && !isDarkTheme) {
             cancelButton.setBackground(Color.decode("#005a70"));
             cancelButton.setForeground(Color.white);
         }
@@ -971,7 +983,7 @@ private Ngrams ngrams;
         errorMessage.setPreferredSize(new Dimension(450, 25));
         errorMessage.setForeground(Color.red);
         JButton createButton = new JButton("Create tag");
-        if(edit) {
+        if (edit) {
             createButton.setText("Update tag");
         }
         JButton testButton = new JButton("Test tag");
@@ -988,10 +1000,10 @@ private Ngrams ngrams;
                 String argument1Type = argument1Combo.getSelectedItem().toString();
                 String argument2Type = argument2Combo.getSelectedItem().toString();
                 int numberOfArgs = 0;
-                if(argument1Combo.getSelectedIndex() > 0) {
+                if (argument1Combo.getSelectedIndex() > 0) {
                     numberOfArgs++;
                 }
-                if(argument2Combo.getSelectedIndex() > 0) {
+                if (argument2Combo.getSelectedIndex() > 0) {
                     numberOfArgs++;
                 }
                 String input = JOptionPane.showInputDialog(null, "Enter input for your tag", "test");
@@ -999,14 +1011,14 @@ private Ngrams ngrams;
 
 
                 JSONObject tag = new JSONObject();
-                tag.put("tagName", "_"+tagName);
+                tag.put("tagName", "_" + tagName);
                 tag.put("language", language);
-                if(numberOfArgs == 1) {
+                if (numberOfArgs == 1) {
                     tag.put("argument1", argument1);
                     tag.put("argument1Type", argument1Type);
                     tag.put("argument1Default", argument1DefaultValue);
                 }
-                if(numberOfArgs == 2) {
+                if (numberOfArgs == 2) {
                     tag.put("argument1", argument1);
                     tag.put("argument1Type", argument1Type);
                     tag.put("argument1Default", argument1DefaultValue);
@@ -1020,39 +1032,39 @@ private Ngrams ngrams;
                 customTagOptions.put("customTag", tag);
                 Hackvertor hv = new Hackvertor();
                 ArrayList<String> args = new ArrayList<>();
-                if(numberOfArgs == 0) {
+                if (numberOfArgs == 0) {
                     customTagOptions = null;
-                } else if(numberOfArgs == 1) {
-                    if(argument1Type.equals("String")) {
+                } else if (numberOfArgs == 1) {
+                    if (argument1Type.equals("String")) {
                         customTagOptions.put("param1", argument1DefaultValue);
-                    } else if(argument1Type.equals("Number")) {
+                    } else if (argument1Type.equals("Number")) {
                         args.add(argument1DefaultValue);
-                        customTagOptions.put("param1", hv.getInt(args,0));
+                        customTagOptions.put("param1", hv.getInt(args, 0));
                     }
 
-                } else if(numberOfArgs == 2) {
+                } else if (numberOfArgs == 2) {
                     int pos = 0;
-                    if(argument1Type.equals("String")) {
+                    if (argument1Type.equals("String")) {
                         customTagOptions.put("param1", argument1DefaultValue);
-                    } else if(argument1Type.equals("Number")) {
+                    } else if (argument1Type.equals("Number")) {
                         args.add(argument1DefaultValue);
-                        customTagOptions.put("param1", hv.getInt(args,0));
+                        customTagOptions.put("param1", hv.getInt(args, 0));
                         pos++;
                     }
-                    if(argument2Type.equals("String")) {
+                    if (argument2Type.equals("String")) {
                         customTagOptions.put("param2", argument2DefaultValue);
-                    } else if(argument2Type.equals("Number")) {
+                    } else if (argument2Type.equals("Number")) {
                         args.add(argument2DefaultValue);
-                        customTagOptions.put("param2", hv.getInt(args,pos));
+                        customTagOptions.put("param2", hv.getInt(args, pos));
                     }
                 }
 
-                if(language.equals("JavaScript")) {
+                if (language.equals("JavaScript")) {
                     output = hv.javascript(input, code, tagCodeExecutionKey, customTagOptions);
                 } else {
                     output = hv.python(input, code, tagCodeExecutionKey, customTagOptions);
                 }
-                alert("Output from tag:"+output);
+                alert("Output from tag:" + output);
             }
         });
         createButton.addActionListener(new ActionListener() {
@@ -1068,41 +1080,41 @@ private Ngrams ngrams;
                 String paramRegex = "^[a-zA-Z_]\\w{0,10}$";
                 String numberRegex = "^(?:0x[a-fA-F0-9]+|\\d+)$";
                 int numberOfArgs = 0;
-                if(tagName.length() < 1) {
+                if (tagName.length() < 1) {
                     errorMessage.setText("Invalid tag name. Use a-zA-Z_0-9 for tag names");
                     return;
                 }
-                if(code.length() < 1) {
+                if (code.length() < 1) {
                     errorMessage.setText("Please enter some code");
                     return;
                 }
-                if(argument1Combo.getSelectedIndex() > 0 && !argument1.matches(paramRegex)) {
-                    errorMessage.setText("Invalid param name. For argument1. Use "+paramRegex);
+                if (argument1Combo.getSelectedIndex() > 0 && !argument1.matches(paramRegex)) {
+                    errorMessage.setText("Invalid param name. For argument1. Use " + paramRegex);
                     return;
                 }
-                if(argument1Combo.getSelectedItem().toString().equals("Number") && !argument1DefaultValue.matches(numberRegex)) {
-                    errorMessage.setText("Invalid default value for argument1. Use "+numberRegex);
+                if (argument1Combo.getSelectedItem().toString().equals("Number") && !argument1DefaultValue.matches(numberRegex)) {
+                    errorMessage.setText("Invalid default value for argument1. Use " + numberRegex);
                     return;
                 }
-                if(argument2Combo.getSelectedIndex() > 0 && !argument2.matches(paramRegex)) {
-                    errorMessage.setText("Invalid param name for argument2. Use "+paramRegex);
+                if (argument2Combo.getSelectedIndex() > 0 && !argument2.matches(paramRegex)) {
+                    errorMessage.setText("Invalid param name for argument2. Use " + paramRegex);
                     return;
                 }
-                if(argument2Combo.getSelectedIndex() > 0 && argument1Combo.getSelectedIndex() == 0) {
+                if (argument2Combo.getSelectedIndex() > 0 && argument1Combo.getSelectedIndex() == 0) {
                     errorMessage.setText("You have selected two arguments but not defined the first.");
                     return;
                 }
-                if(argument2Combo.getSelectedItem().toString().equals("Number") && !argument2DefaultValue.matches(numberRegex)) {
-                    errorMessage.setText("Invalid default value for argument2. Use "+numberRegex);
+                if (argument2Combo.getSelectedItem().toString().equals("Number") && !argument2DefaultValue.matches(numberRegex)) {
+                    errorMessage.setText("Invalid default value for argument2. Use " + numberRegex);
                     return;
                 }
-                if(argument1Combo.getSelectedIndex() > 0) {
+                if (argument1Combo.getSelectedIndex() > 0) {
                     numberOfArgs++;
                 }
-                if(argument2Combo.getSelectedIndex() > 0) {
+                if (argument2Combo.getSelectedIndex() > 0) {
                     numberOfArgs++;
                 }
-                if(edit) {
+                if (edit) {
                     updateCustomTag(tagName, language, code, argument1, argument1Combo.getSelectedItem().toString(), argument1DefaultValue, argument2, argument2Combo.getSelectedItem().toString(), argument2DefaultValue, numberOfArgs);
                 } else {
                     createCustomTag(tagName, language, code, argument1, argument1Combo.getSelectedItem().toString(), argument1DefaultValue, argument2, argument2Combo.getSelectedItem().toString(), argument2DefaultValue, numberOfArgs);
@@ -1110,7 +1122,7 @@ private Ngrams ngrams;
                 createTagWindow.dispose();
             }
         });
-        if(!isNativeTheme && !isDarkTheme) {
+        if (!isNativeTheme && !isDarkTheme) {
             createButton.setBackground(Color.decode("#005a70"));
             createButton.setForeground(Color.white);
             testButton.setBackground(Color.decode("#005a70"));
@@ -1137,7 +1149,7 @@ private Ngrams ngrams;
         tagCombo.setPreferredSize(new Dimension(200, 25));
         listTagsPanel.add(tagLabel);
         listTagsPanel.add(tagCombo);
-        for(int i=0;i<customTags.length();i++) {
+        for (int i = 0; i < customTags.length(); i++) {
             JSONObject customTag = (JSONObject) customTags.get(i);
             tagCombo.addItem(customTag.getString("tagName"));
         }
@@ -1145,7 +1157,7 @@ private Ngrams ngrams;
         editButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if(tagCombo.getSelectedIndex() == -1) {
+                if (tagCombo.getSelectedIndex() == -1) {
                     return;
                 }
                 showCreateEditTagDialog(true, tagCombo.getSelectedItem().toString());
@@ -1161,12 +1173,12 @@ private Ngrams ngrams;
         });
         loadButton.addActionListener(e -> {
             int input = JOptionPane.showConfirmDialog(null, "Are you sure you sure you want to load all tags from the clipboard? This will replace your existing tags");
-            if(input != 0) {
+            if (input != 0) {
                 return;
             }
             try {
                 String tagsJSON = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
-                if(tagsJSON != null && tagsJSON.length() > 0) {
+                if (tagsJSON != null && tagsJSON.length() > 0) {
                     try {
                         JSONArray tags = new JSONArray(tagsJSON);
                         customTags = tags;
@@ -1174,7 +1186,7 @@ private Ngrams ngrams;
                         saveCustomTags();
                         listTagsWindow.dispose();
                         showListTagsDialog();
-                    } catch(JSONException ex){
+                    } catch (JSONException ex) {
                         alert("Invalid JSON");
                     }
                 }
@@ -1187,16 +1199,16 @@ private Ngrams ngrams;
             }
         });
         deleteButton.addActionListener(e -> {
-            if(tagCombo.getSelectedIndex() == -1) {
+            if (tagCombo.getSelectedIndex() == -1) {
                 return;
             }
             int input = JOptionPane.showConfirmDialog(null, "Are you sure you want to delete this tag?");
-            if(input != 0) {
+            if (input != 0) {
                 return;
             }
-            for(int i=0;i<customTags.length();i++) {
+            for (int i = 0; i < customTags.length(); i++) {
                 JSONObject customTag = (JSONObject) customTags.get(i);
-                if(tagCombo.getSelectedItem().toString().equals(customTag.getString("tagName"))) {
+                if (tagCombo.getSelectedItem().toString().equals(customTag.getString("tagName"))) {
                     customTags.remove(i);
                     tagCombo.removeItemAt(tagCombo.getSelectedIndex());
                     saveCustomTags();
@@ -1204,7 +1216,7 @@ private Ngrams ngrams;
                 }
             }
         });
-        if(!isNativeTheme && !isDarkTheme) {
+        if (!isNativeTheme && !isDarkTheme) {
             deleteButton.setBackground(Color.decode("#005a70"));
             deleteButton.setForeground(Color.white);
             editButton.setBackground(Color.decode("#005a70"));
@@ -1223,12 +1235,13 @@ private Ngrams ngrams;
         listTagsWindow.setLocationRelativeTo(null);
         listTagsWindow.setVisible(true);
     }
+
     public void loadCustomTags() {
         String json = callbacks.loadExtensionSetting("customTags");
-        if(json != null && json.length() > 0) {
+        if (json != null && json.length() > 0) {
             try {
                 customTags = new JSONArray(json);
-            } catch(JSONException e) {
+            } catch (JSONException e) {
                 alert("Failed to load custom tags");
                 customTags = new JSONArray();
             }
@@ -1236,6 +1249,7 @@ private Ngrams ngrams;
             customTags = new JSONArray();
         }
     }
+
     public void saveCustomTags() {
         callbacks.saveExtensionSetting("customTags", customTags.toString());
     }
@@ -1244,12 +1258,12 @@ private Ngrams ngrams;
         JSONObject tag = new JSONObject();
         tag.put("tagName", tagName);
         tag.put("language", language);
-        if(numberOfArgs == 1) {
+        if (numberOfArgs == 1) {
             tag.put("argument1", argument1);
             tag.put("argument1Type", argument1Type);
             tag.put("argument1Default", argument1DefaultValue);
         }
-        if(numberOfArgs == 2) {
+        if (numberOfArgs == 2) {
             tag.put("argument1", argument1);
             tag.put("argument1Type", argument1Type);
             tag.put("argument1Default", argument1DefaultValue);
@@ -1259,9 +1273,9 @@ private Ngrams ngrams;
         }
         tag.put("numberOfArgs", numberOfArgs);
         tag.put("code", code);
-        for(int i=0;i<customTags.length();i++) {
+        for (int i = 0; i < customTags.length(); i++) {
             JSONObject customTag = (JSONObject) customTags.get(i);
-            if(tagName.equals(customTag.getString("tagName"))) {
+            if (tagName.equals(customTag.getString("tagName"))) {
                 customTags.put(i, tag);
                 saveCustomTags();
                 break;
@@ -1272,14 +1286,14 @@ private Ngrams ngrams;
 
     public void createCustomTag(String tagName, String language, String code, String argument1, String argument1Type, String argument1DefaultValue, String argument2, String argument2Type, String argument2DefaultValue, int numberOfArgs) {
         JSONObject tag = new JSONObject();
-        tag.put("tagName", "_"+tagName);
+        tag.put("tagName", "_" + tagName);
         tag.put("language", language);
-        if(numberOfArgs == 1) {
+        if (numberOfArgs == 1) {
             tag.put("argument1", argument1);
             tag.put("argument1Type", argument1Type);
             tag.put("argument1Default", argument1DefaultValue);
         }
-        if(numberOfArgs == 2) {
+        if (numberOfArgs == 2) {
             tag.put("argument1", argument1);
             tag.put("argument1Type", argument1Type);
             tag.put("argument1Default", argument1DefaultValue);
@@ -1289,14 +1303,14 @@ private Ngrams ngrams;
         }
         tag.put("numberOfArgs", numberOfArgs);
         tag.put("code", code);
-	    customTags.put(tag);
+        customTags.put(tag);
         saveCustomTags();
     }
 
-	public void extensionUnloaded() {
+    public void extensionUnloaded() {
         hvShutdown = true;
-	    burpMenuBar.remove(hvMenuBar);
-	    burpMenuBar.repaint();
+        burpMenuBar.remove(hvMenuBar);
+        burpMenuBar.repaint();
         stdout.println("Hackvertor unloaded");
     }
 
@@ -1306,8 +1320,7 @@ private Ngrams ngrams;
             int start = analyzedRequest.getBodyOffset();
             int contentLength = request.length - start;
             return setHeader(request, "Content-Length", Integer.toString(contentLength));
-        }
-        else {
+        } else {
             return request;
         }
     }
@@ -1341,11 +1354,11 @@ private Ngrams ngrams;
         return null;
     }
 
-    public  byte[] setHeader(byte[] request, String header, String value) {
+    public byte[] setHeader(byte[] request, String header, String value) {
         int[] offsets = getHeaderOffsets(request, header);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try {
-            outputStream.write( Arrays.copyOfRange(request, 0, offsets[1]));
+            outputStream.write(Arrays.copyOfRange(request, 0, offsets[1]));
             outputStream.write(helpers.stringToBytes(value));
             outputStream.write(Arrays.copyOfRange(request, offsets[2], request.length));
             return outputStream.toByteArray();
@@ -1375,74 +1388,72 @@ private Ngrams ngrams;
     }
 
     public void processHttpMessage(int toolFlag, boolean messageIsRequest, IHttpRequestResponse messageInfo) {
-        if(!messageIsRequest) {
+        if (!messageIsRequest) {
             return;
         }
-        switch(toolFlag) {
+        switch (toolFlag) {
             case IBurpExtenderCallbacks.TOOL_PROXY:
-                if(!tagsInProxy) {
+                if (!tagsInProxy) {
                     return;
                 }
                 break;
             case IBurpExtenderCallbacks.TOOL_INTRUDER:
-                if(!tagsInIntruder) {
+                if (!tagsInIntruder) {
                     return;
                 }
-                 break;
+                break;
             case IBurpExtenderCallbacks.TOOL_REPEATER:
-                if(!tagsInRepeater) {
+                if (!tagsInRepeater) {
                     return;
                 }
                 break;
             case IBurpExtenderCallbacks.TOOL_SCANNER:
-                if(!tagsInScanner) {
+                if (!tagsInScanner) {
                     return;
                 }
                 break;
             case IBurpExtenderCallbacks.TOOL_EXTENDER:
-                if(!tagsInExtensions) {
+                if (!tagsInExtensions) {
                     return;
                 }
-		        break;
+                break;
             default:
                 return;
         }
         byte[] request = messageInfo.getRequest();
-	    if(helpers.indexOf(request,helpers.stringToBytes("<@"), true, 0, request.length) > -1) {
-	        Hackvertor hv = new Hackvertor();
-	        request = helpers.stringToBytes(hv.convert(helpers.bytesToString(request)));
-            if(autoUpdateContentLength) {
+        if (helpers.indexOf(request, helpers.stringToBytes("<@"), true, 0, request.length) > -1) {
+            Hackvertor hv = new Hackvertor();
+            request = helpers.stringToBytes(hv.convert(helpers.bytesToString(request)));
+            if (autoUpdateContentLength) {
                 request = fixContentLength(request);
             }
             messageInfo.setRequest(request);
         }
     }
 
-    private static JFrame getBurpFrame()
-    {
-        for(Frame f : Frame.getFrames())
-        {
-            if(f.isVisible() && f.getTitle().startsWith(("Burp Suite")))
-            {
+    private static JFrame getBurpFrame() {
+        for (Frame f : Frame.getFrames()) {
+            if (f.isVisible() && f.getTitle().startsWith(("Burp Suite"))) {
                 return (JFrame) f;
             }
         }
         return null;
     }
 
-	public String getTabCaption() {
-		return "Hackvertor";
-	}
-	
-	private int getTabIndex(ITab your_itab) {
-		JTabbedPane parent = (JTabbedPane) your_itab.getUiComponent().getParent();
-		for(int i = 0; i < parent.getTabCount(); ++i) {
-			if(your_itab.getTabCaption().equals(parent.getTitleAt(i))) {
-				return i;
-			}
-		}
-		return -1;
-	}
+    public String getTabCaption() {
+        return "Hackvertor";
+    }
+
+    private int getTabIndex(ITab your_itab) {
+        JTabbedPane parent = (JTabbedPane) your_itab.getUiComponent().getParent();
+        for (int i = 0; i < parent.getTabCount(); ++i) {
+            if (your_itab.getTabCaption().equals(parent.getTitleAt(i))) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     public String buildUrl(URL url) {
         int port = url.getPort();
         StringBuilder urlResult = new StringBuilder();
@@ -1459,7 +1470,7 @@ private Ngrams ngrams;
         if (url.getPath() != null) {
             urlResult.append(url.getPath());
         }
-        if(url.getQuery() != null) {
+        if (url.getQuery() != null) {
             urlResult.append("?");
             urlResult.append(url.getQuery());
         }
@@ -1469,34 +1480,35 @@ private Ngrams ngrams;
         }
         return urlResult.toString();
     }
+
     public List<JMenuItem> createMenuItems(IContextMenuInvocation invocation) {
-		int[] bounds = invocation.getSelectionBounds();
-		
-		switch (invocation.getInvocationContext()) {
+        int[] bounds = invocation.getSelectionBounds();
+
+        switch (invocation.getInvocationContext()) {
             case IContextMenuInvocation.CONTEXT_INTRUDER_PAYLOAD_POSITIONS:
-			case IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST:
+            case IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST:
             case IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE:
-			break;
-			default:
-				return null;
-		}
-		List<JMenuItem> menu = new ArrayList<JMenuItem>();
+                break;
+            default:
+                return null;
+        }
+        List<JMenuItem> menu = new ArrayList<JMenuItem>();
         JMenu submenu = new JMenu("Hackvertor");
         Action hackvertorAction;
-        if(bounds[0] == bounds[1] && invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE) {
+        if (bounds[0] == bounds[1] && invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE) {
             hackvertorAction = new HackvertorAction("Send response body to Hackvertor", invocation);
         } else {
             hackvertorAction = new HackvertorAction("Send to Hackvertor", invocation);
         }
-        JMenuItem sendToHackvertor = new JMenuItem(hackvertorAction); 
+        JMenuItem sendToHackvertor = new JMenuItem(hackvertorAction);
         submenu.add(sendToHackvertor);
 
-        if(invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE) {
+        if (invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE) {
             menu.add(submenu);
             return menu;
         }
 
-        if(hvInRequest == null) {
+        if (hvInRequest == null) {
             hvInRequest = new Hackvertor();
             hvInRequest.init();
         }
@@ -1514,7 +1526,7 @@ private Ngrams ngrams;
         JMenuItem convert = new JMenuItem("Convert tags");
         convert.addActionListener(e -> {
             Hackvertor hv = new Hackvertor();
-            if(invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST || invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
+            if (invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST || invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
                 byte[] message = invocation.getSelectedMessages()[0].getRequest();
                 invocation.getSelectedMessages()[0].setRequest(helpers.stringToBytes(hv.convert(helpers.bytesToString(message))));
             }
@@ -1523,15 +1535,15 @@ private Ngrams ngrams;
         JMenuItem autodecodeConvert = new JMenuItem("Auto decode & Convert");
         autodecodeConvert.addActionListener(e -> {
             Hackvertor hv = new Hackvertor();
-            if(invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST || invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
+            if (invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST || invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
                 byte[] message = invocation.getSelectedMessages()[0].getRequest();
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
                 try {
                     outputStream.write(Arrays.copyOfRange(message, 0, bounds[0]));
                     outputStream.write(helpers.stringToBytes("<@auto_decode_no_decrypt_1>"));
-                    outputStream.write(Arrays.copyOfRange(message,bounds[0], bounds[1]));
+                    outputStream.write(Arrays.copyOfRange(message, bounds[0], bounds[1]));
                     outputStream.write(helpers.stringToBytes("<@/auto_decode_no_decrypt_1>"));
-                    outputStream.write(Arrays.copyOfRange(message, bounds[1],message.length));
+                    outputStream.write(Arrays.copyOfRange(message, bounds[1], message.length));
                     outputStream.flush();
                     invocation.getSelectedMessages()[0].setRequest(outputStream.toByteArray());
                 } catch (IOException e1) {
@@ -1545,28 +1557,30 @@ private Ngrams ngrams;
         submenu.addSeparator();
         loadCustomTags();
         String[] categories = hv.getCategories();
-        for(int i=0;i<categories.length;i++) {
+        for (int i = 0; i < categories.length; i++) {
             JMenu categoryMenu = new JMenu(categories[i]);
             String category = categories[i];
-            hvInRequest.createButtonsOrMenu(category, "menu", categoryMenu, invocation, "" , false);
+            hvInRequest.createButtonsOrMenu(category, "menu", categoryMenu, invocation, "", false);
             submenu.add(categoryMenu);
         }
         menu.add(submenu);
         return menu;
     }
+
     class HackvertorInputTab implements IMessageEditorTab {
         private boolean editable;
         private byte[] currentMessage;
         private JPanel hackvertorContainer = new JPanel(new BorderLayout());
         private Hackvertor messageEditorHV;
         private Boolean changed = false;
+
         public HackvertorInputTab(IMessageEditorController controller, boolean editable) {
             this.editable = editable;
             messageEditorHV = null;
             hackvertorContainer.addComponentListener(new ComponentAdapter() {
                 @Override
                 public void componentShown(ComponentEvent e) {
-                    if(messageEditorHV == null && !hvShutdown) {
+                    if (messageEditorHV == null && !hvShutdown) {
                         SwingUtilities.invokeLater(new Runnable() {
                             public void run() {
                                 messageEditorHV = generateHackvertor(false);
@@ -1587,7 +1601,7 @@ private Ngrams ngrams;
                                         changed = true;
                                     }
                                 });
-                                if(currentMessage != null) {
+                                if (currentMessage != null) {
                                     messageEditorHV.setInput(helpers.bytesToString(currentMessage));
                                     messageEditorHV.getInputArea().setText(helpers.bytesToString(currentMessage));
                                 }
@@ -1597,216 +1611,237 @@ private Ngrams ngrams;
                 }
             });
         }
+
         @Override
-        public String getTabCaption()
-        {
+        public String getTabCaption() {
             return "Hackvertor";
         }
+
         @Override
-        public Component getUiComponent()
-        {
+        public Component getUiComponent() {
             return hackvertorContainer;
         }
+
         @Override
-        public boolean isEnabled(byte[] content, boolean isRequest)
-        {
+        public boolean isEnabled(byte[] content, boolean isRequest) {
             return true;
         }
+
         @Override
-        public void setMessage(byte[] content, boolean isRequest)
-        {
+        public void setMessage(byte[] content, boolean isRequest) {
             if (content == null) {
                 changed = false;
             } else {
-                if(messageEditorHV != null) {
+                if (messageEditorHV != null) {
                     messageEditorHV.setInput(helpers.bytesToString(content));
                     messageEditorHV.getInputArea().setText(helpers.bytesToString(content));
                 }
             }
             currentMessage = content;
         }
+
         @Override
-        public byte[] getMessage()
-        {
-            if(changed) {
+        public byte[] getMessage() {
+            if (changed) {
                 return helpers.stringToBytes(messageEditorHV.getInput());
             } else {
                 return currentMessage;
             }
 
         }
+
         @Override
-        public boolean isModified()
-        {
+        public boolean isModified() {
             return changed;
         }
 
         @Override
-        public byte[] getSelectedData()
-        {
+        public byte[] getSelectedData() {
             return helpers.stringToBytes(messageEditorHV.getInputArea().getSelectedText());
         }
     }
-	class HackvertorAction extends AbstractAction {
+
+    class HackvertorAction extends AbstractAction {
 
         IContextMenuInvocation invocation;
         private static final long serialVersionUID = 1L;
-        
+
         HackvertorAction(String text, IContextMenuInvocation invocation) {
             super(text);
-            this.invocation = invocation;	          
+            this.invocation = invocation;
         }
 
         public void actionPerformed(ActionEvent e) {
-        	byte[] message = null;
-        	switch (invocation.getInvocationContext()) {
-        		case IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST:
-        		case IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST:
-        		case IContextMenuInvocation.CONTEXT_INTRUDER_PAYLOAD_POSITIONS:
-        			message = invocation.getSelectedMessages()[0].getRequest();		        			
-        		break;
-        		case IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE:     		
-        			message = invocation.getSelectedMessages()[0].getResponse();	        		
-        		break;	    
-        	}  	
-        	int[] bounds = invocation.getSelectionBounds(); 	        
-        	if(message != null) {
+            byte[] message = null;
+            switch (invocation.getInvocationContext()) {
+                case IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST:
+                case IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST:
+                case IContextMenuInvocation.CONTEXT_INTRUDER_PAYLOAD_POSITIONS:
+                    message = invocation.getSelectedMessages()[0].getRequest();
+                    break;
+                case IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE:
+                    message = invocation.getSelectedMessages()[0].getResponse();
+                    break;
+            }
+            int[] bounds = invocation.getSelectionBounds();
+            if (message != null) {
                 try {
-                    if(bounds[0] == bounds[1]) {
+                    if (bounds[0] == bounds[1]) {
                         IResponseInfo analyzedResponse = helpers.analyzeResponse(message);
                         message = Arrays.copyOfRange(message, analyzedResponse.getBodyOffset(), message.length);
-                        hv.setInput(new String(message,"ISO-8859-1"));
+                        hv.setInput(new String(message, "ISO-8859-1"));
                     } else {
-                        hv.setInput("<@auto_decode_no_decrypt_1>"+new String(Arrays.copyOfRange(message, bounds[0], bounds[1]), "ISO-8859-1").trim()+"<@/auto_decode_no_decrypt_1>");
+                        hv.setInput("<@auto_decode_no_decrypt_1>" + new String(Arrays.copyOfRange(message, bounds[0], bounds[1]), "ISO-8859-1").trim() + "<@/auto_decode_no_decrypt_1>");
                     }
                 } catch (UnsupportedEncodingException err) {
-                    System.err.println("Error while converting to charset:"+err.toString());
+                    System.err.println("Error while converting to charset:" + err.toString());
                 }
                 JTabbedPane tp = (JTabbedPane) BurpExtender.this.getUiComponent().getParent();
-				int tIndex = getTabIndex(BurpExtender.this);
-				if(tIndex > -1) {
-					tp.setSelectedIndex(tIndex);
-				}
-        	}
+                int tIndex = getTabIndex(BurpExtender.this);
+                if (tIndex > -1) {
+                    tp.setSelectedIndex(tIndex);
+                }
+            }
         }
-        
+
     }
-	public void alert(String msg) {
-		JOptionPane.showMessageDialog(null, msg);
-	}
-	public Component getUiComponent() {
+
+    public void alert(String msg) {
+        JOptionPane.showMessageDialog(null, msg);
+    }
+
+    public Component getUiComponent() {
         return inputTabs;
     }
-	class HackvertorPayloadProcessor implements IIntruderPayloadProcessor {
-		String name;
-		String tag;
-		public byte[] processPayload(byte[] currentPayload, byte[] originalPayload, byte[] baseValue) {
-			String input = helpers.bytesToString(currentPayload);
-			byte[] output = helpers.stringToBytes(hv.callTag(this.tag,input,new ArrayList<String>()));
-			return output;
-		}
-		public String getProcessorName() {
-			return this.name;
-		}
-		HackvertorPayloadProcessor(String name, String tag) {
-			this.name = name;
-			this.tag = tag;
-		}
-	}
-	class Tag {
-		String category;
-		String name;
-		boolean hasInput = true;
-		String tooltip;
-		TagArgument argument1 = null;
-		TagArgument argument2 = null;
-		TagArgument argument3 = null;
+
+    class HackvertorPayloadProcessor implements IIntruderPayloadProcessor {
+        String name;
+        String tag;
+
+        public byte[] processPayload(byte[] currentPayload, byte[] originalPayload, byte[] baseValue) {
+            String input = helpers.bytesToString(currentPayload);
+            byte[] output = helpers.stringToBytes(hv.callTag(this.tag, input, new ArrayList<String>()));
+            return output;
+        }
+
+        public String getProcessorName() {
+            return this.name;
+        }
+
+        HackvertorPayloadProcessor(String name, String tag) {
+            this.name = name;
+            this.tag = tag;
+        }
+    }
+
+    class Tag {
+        String category;
+        String name;
+        boolean hasInput = true;
+        String tooltip;
+        TagArgument argument1 = null;
+        TagArgument argument2 = null;
+        TagArgument argument3 = null;
         TagArgument argument4 = null;
-		Tag(String tagCategory, String tagName, boolean hasInput, String tooltip) {
-			this.category = tagCategory;
-			this.name = tagName;
-			this.hasInput = hasInput;
-			this.tooltip = tooltip;
-		}
-	}
-	class TagArgument {
-		String type;
-		String value;
-		TagArgument(String type, String value) {
-			this.type = type;
-			this.value = value;
-		}
-	}
-	class Hackvertor {
-		private int tagCounter = 0;
-		private Map<String,String> tagVariables=new HashMap<String,String>();
-		String argumentsRegex = "(?:0x[a-fA-F0-9]+|\\d+|'(?:\\\\'|[^']*)'|\"(?:\\\\\"|[^\"]*)\")";
-		private ArrayList<Tag> tags = new ArrayList<Tag>();
-		private JTextArea inputArea;
+
+        Tag(String tagCategory, String tagName, boolean hasInput, String tooltip) {
+            this.category = tagCategory;
+            this.name = tagName;
+            this.hasInput = hasInput;
+            this.tooltip = tooltip;
+        }
+    }
+
+    class TagArgument {
+        String type;
+        String value;
+
+        TagArgument(String type, String value) {
+            this.type = type;
+            this.value = value;
+        }
+    }
+
+    class Hackvertor {
+        private int tagCounter = 0;
+        private Map<String, String> tagVariables = new HashMap<String, String>();
+        String argumentsRegex = "(?:0x[a-fA-F0-9]+|\\d+|'(?:\\\\'|[^']*)'|\"(?:\\\\\"|[^\"]*)\")";
+        private ArrayList<Tag> tags = new ArrayList<Tag>();
+        private JTextArea inputArea;
         private JTextArea outputArea;
         private JPanel panel;
         private String[] categories = {
-                "Charsets","Compression","Encrypt","Decrypt","Encode","Date","Decode","Convert","String","Hash","HMAC","Math","XSS","Variables","Loops","Languages","Custom"
+                "Charsets", "Compression", "Encrypt", "Decrypt", "Encode", "Date", "Decode", "Convert", "String", "Hash", "HMAC", "Math", "XSS", "Variables", "Loops", "Languages", "Custom"
         };
+
         void setInputArea(JTextArea inputArea) {
             this.inputArea = inputArea;
         }
+
         void setOutputArea(JTextArea outputArea) {
             this.outputArea = outputArea;
         }
+
         JTextArea getInputArea() {
             return this.inputArea;
         }
+
         void setPanel(JPanel panel) {
             this.panel = panel;
         }
+
         int getTagCount(String category) {
             int count = 0;
-            for(final Tag tagObj:tags) {
-                if(tagObj.category.equals(category)) {
+            for (final Tag tagObj : tags) {
+                if (tagObj.category.equals(category)) {
                     count++;
                 }
             }
             return count;
-         }
-         void registerPayloadProcessor() {
-             for(final Tag tagObj:tags) {
-                 if(hasMethodAnd1Arg(this, tagObj.name)) {
-                     callbacks.registerIntruderPayloadProcessor(new HackvertorPayloadProcessor("Hackvertor_"+this.capitalise(tagObj.name),tagObj.name));
-                 }
-             }
-         }
+        }
+
+        void registerPayloadProcessor() {
+            for (final Tag tagObj : tags) {
+                if (hasMethodAnd1Arg(this, tagObj.name)) {
+                    callbacks.registerIntruderPayloadProcessor(new HackvertorPayloadProcessor("Hackvertor_" + this.capitalise(tagObj.name), tagObj.name));
+                }
+            }
+        }
+
         JPanel getPanel() {
             return this.panel;
         }
-		void buildTabs(JTabbedPane tabs) {
-            for(int i=0;i<categories.length;i++) {
-                if(categories[i].equals("Custom")) {
+
+        void buildTabs(JTabbedPane tabs) {
+            for (int i = 0; i < categories.length; i++) {
+                if (categories[i].equals("Custom")) {
                     continue;
                 }
-                tabs.addTab(categories[i], createButtonsOrMenu(categories[i],"button", null, null, "", false));
+                tabs.addTab(categories[i], createButtonsOrMenu(categories[i], "button", null, null, "", false));
             }
             tabs.addChangeListener(new ChangeListener() {
                 @Override
                 public void stateChanged(ChangeEvent e) {
                     int tabIndex = tabs.getSelectedIndex();
-                    if(tabs.getTitleAt(tabIndex).equals("Custom")) {
+                    if (tabs.getTitleAt(tabIndex).equals("Custom")) {
                         hv.tags = new ArrayList<Tag>();
                         hv.init();
-                        tabs.setComponentAt(tabIndex, createButtonsOrMenu("Custom","button", null, null, "", false));
+                        tabs.setComponentAt(tabIndex, createButtonsOrMenu("Custom", "button", null, null, "", false));
                     }
                 }
             });
             tabs.addTab("Custom", new Panel());
             tabs.addTab("Search", generateSearchPanel());
-		}
-		String[] getCategories() {
+        }
+
+        String[] getCategories() {
             return categories;
         }
+
         JPanel generateSearchPanel() {
             JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
             searchPanel.setPreferredSize(new Dimension(700, 80));
-            String[] searchOptionsText = {"Search tags","Search Input","Search output"};
+            String[] searchOptionsText = {"Search tags", "Search Input", "Search output"};
             JComboBox searchOptions = new JComboBox(searchOptionsText);
             JTextField searchBox = new JTextField();
             JCheckBox regexCheckbox = new JCheckBox("Regex?");
@@ -1819,17 +1854,17 @@ private Ngrams ngrams;
 
                     try {
                         Pattern pattern = Pattern.compile(searchBox.getText());
-                    } catch(PatternSyntaxException ex){
+                    } catch (PatternSyntaxException ex) {
                         stderr.println(ex);
                         return;
                     }
 
-                    if(searchOptions.getSelectedIndex() == 0) {
+                    if (searchOptions.getSelectedIndex() == 0) {
                         searchTags(searchBox.getText(), tagsPanel, regexCheckbox.isSelected());
-                    } else if(searchOptions.getSelectedIndex() == 1) {
-                        search(searchBox.getText(),inputArea, regexCheckbox.isSelected());
-                    } else if(searchOptions.getSelectedIndex() == 2) {
-                        search(searchBox.getText(),outputArea, regexCheckbox.isSelected());
+                    } else if (searchOptions.getSelectedIndex() == 1) {
+                        search(searchBox.getText(), inputArea, regexCheckbox.isSelected());
+                    } else if (searchOptions.getSelectedIndex() == 2) {
+                        search(searchBox.getText(), outputArea, regexCheckbox.isSelected());
                     }
                 }
             });
@@ -1839,6 +1874,7 @@ private Ngrams ngrams;
             searchPanel.add(tagsPanel);
             return searchPanel;
         }
+
         void searchTags(String input, JPanel tagsPanel, Boolean regex) {
             tagsPanel.removeAll();
             JScrollPane tags = createButtonsOrMenu("", "button", null, null, input, regex);
@@ -1849,12 +1885,12 @@ private Ngrams ngrams;
             tagsPanel.repaint();
             tagsPanel.validate();
         }
+
         void search(String findText, JTextArea element, Boolean regex) {
-            try
-            {
+            try {
                 Highlighter.HighlightPainter painter = new DefaultHighlighter.DefaultHighlightPainter(isDarkTheme ? Color.gray : Color.yellow);
                 element.getHighlighter().removeAllHighlights();
-                if(findText.length() == 0) {
+                if (findText.length() == 0) {
                     return;
                 }
                 int findLength = findText.length();
@@ -1865,32 +1901,33 @@ private Ngrams ngrams;
                 Pattern pattern = null;
                 Matcher matcher = null;
                 Boolean matched = false;
-                if(regex) {
+                if (regex) {
                     pattern = Pattern.compile(findText);
                     matcher = pattern.matcher(text);
                 }
-                while ((offset = regex ? (matcher.find() ? matcher.start() : -1) : text.indexOf(findText, offset)) != -1)
-                {
-                    if(regex) {
+                while ((offset = regex ? (matcher.find() ? matcher.start() : -1) : text.indexOf(findText, offset)) != -1) {
+                    if (regex) {
                         findLength = matcher.group().length();
                     }
                     element.select(offset, offset + findLength);
                     element.getHighlighter().addHighlight(offset, offset + findLength, painter);
-                    offset+=findLength;
+                    offset += findLength;
                     matched = true;
                     count++;
                 }
-                if(!matched) {
-                    element.select(0,0);
+                if (!matched) {
+                    element.select(0, 0);
                 }
+            } catch (BadLocationException e) {
             }
-            catch(BadLocationException e) {}
         }
-        public ArrayList<Tag> getTags(){
+
+        public ArrayList<Tag> getTags() {
             return tags;
         }
-		void init() {
-			Tag tag;
+
+        void init() {
+            Tag tag;
             SortedMap m = Charset.availableCharsets();
             Set k = m.keySet();
             Iterator i = k.iterator();
@@ -1899,304 +1936,305 @@ private Ngrams ngrams;
                 Charset e = (Charset) m.get(n);
                 String d = e.displayName();
                 boolean c = e.canEncode();
-                if(!c) {
+                if (!c) {
                     continue;
                 }
                 Set s = e.aliases();
                 Iterator j = s.iterator();
                 while (j.hasNext()) {
                     String a = (String) j.next();
-                    tags.add(new Tag("Charsets",a,true,a+"(String input)"));
+                    tags.add(new Tag("Charsets", a, true, a + "(String input)"));
                 }
             }
 
-            tag = new Tag("Charsets","charset_convert",true,"charset_convert(String input, String from, String to)");
-            tag.argument1 = new TagArgument("string","from");
-            tag.argument2 = new TagArgument("string","to");
+            tag = new Tag("Charsets", "charset_convert", true, "charset_convert(String input, String from, String to)");
+            tag.argument1 = new TagArgument("string", "from");
+            tag.argument2 = new TagArgument("string", "to");
             tags.add(tag);
-            tag = new Tag("Charsets","utf7",true,"utf7(String str, String excludeCharacters)");
+            tag = new Tag("Charsets", "utf7", true, "utf7(String str, String excludeCharacters)");
             tag.argument1 = new TagArgument("string", "\\s\\t\\r'(),-./:?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789=+!");
             tags.add(tag);
-            tags.add(new Tag("Compression","brotli_decompress",true,"brotli_decompress(String str)"));
-            tags.add(new Tag("Compression","gzip_compress",true,"gzip_compress(String str)"));
-            tags.add(new Tag("Compression","gzip_decompress",true,"gzip_decompress(String str)"));
-            tags.add(new Tag("Compression","bzip2_compress",true,"bzip2_compress(String str)"));
-            tags.add(new Tag("Compression","bzip2_decompress",true,"bzip2_decompress(String str)"));
-            tags.add(new Tag("Compression","deflate_compress",true,"deflate_compress(String str)"));
-            tags.add(new Tag("Compression","deflate_decompress",true,"deflate_decompress(String str)"));
-            tags.add(new Tag("Date","timestamp",false,"timestamp()"));
-            tag = new Tag("Date","date",false,"date(String format)");
-            tag.argument1 = new TagArgument("string","yyyy-MM-dd HH:mm:ss");
+            tags.add(new Tag("Compression", "brotli_decompress", true, "brotli_decompress(String str)"));
+            tags.add(new Tag("Compression", "gzip_compress", true, "gzip_compress(String str)"));
+            tags.add(new Tag("Compression", "gzip_decompress", true, "gzip_decompress(String str)"));
+            tags.add(new Tag("Compression", "bzip2_compress", true, "bzip2_compress(String str)"));
+            tags.add(new Tag("Compression", "bzip2_decompress", true, "bzip2_decompress(String str)"));
+            tags.add(new Tag("Compression", "deflate_compress", true, "deflate_compress(String str)"));
+            tags.add(new Tag("Compression", "deflate_decompress", true, "deflate_decompress(String str)"));
+            tags.add(new Tag("Date", "timestamp", false, "timestamp()"));
+            tag = new Tag("Date", "date", false, "date(String format)");
+            tag.argument1 = new TagArgument("string", "yyyy-MM-dd HH:mm:ss");
             tags.add(tag);
-            tag = new Tag("Encrypt","aes_encrypt",true,"aes_encrypt(String plaintext, String key, String transformations)");
-            tag.argument1 = new TagArgument("string","supersecret12356");
-            tag.argument2 = new TagArgument("string","AES/ECB/PKCS5PADDING");
-            tag.argument3 = new TagArgument("string","initVector123456");
+            tag = new Tag("Encrypt", "aes_encrypt", true, "aes_encrypt(String plaintext, String key, String transformations)");
+            tag.argument1 = new TagArgument("string", "supersecret12356");
+            tag.argument2 = new TagArgument("string", "AES/ECB/PKCS5PADDING");
+            tag.argument3 = new TagArgument("string", "initVector123456");
             tags.add(tag);
-            tag = new Tag("Decrypt","aes_decrypt",true,"aes_decrypt(String ciphertext, String key, String transformations)");
-            tag.argument1 = new TagArgument("string","supersecret12356");
-            tag.argument2 = new TagArgument("string","AES/ECB/PKCS5PADDING");
-            tag.argument3 = new TagArgument("string","initVector123456");
+            tag = new Tag("Decrypt", "aes_decrypt", true, "aes_decrypt(String ciphertext, String key, String transformations)");
+            tag.argument1 = new TagArgument("string", "supersecret12356");
+            tag.argument2 = new TagArgument("string", "AES/ECB/PKCS5PADDING");
+            tag.argument3 = new TagArgument("string", "initVector123456");
             tags.add(tag);
-            tag = new Tag("Encrypt","rotN",true,"rotN(String str, int n)");
-            tag.argument1 = new TagArgument("int","13");
+            tag = new Tag("Encrypt", "rotN", true, "rotN(String str, int n)");
+            tag.argument1 = new TagArgument("int", "13");
             tags.add(tag);
-            tag = new Tag("Encrypt","xor",true,"xor(String message, String key)");
-            tag.argument1 = new TagArgument("string","key");
+            tag = new Tag("Encrypt", "xor", true, "xor(String message, String key)");
+            tag.argument1 = new TagArgument("string", "key");
             tags.add(tag);
-            tag = new Tag("Decrypt","xor_decrypt",true,"xor_decrypt(String ciphertext, int keyLength)");
-            tag.argument1 = new TagArgument("int","3");
+            tag = new Tag("Decrypt", "xor_decrypt", true, "xor_decrypt(String ciphertext, int keyLength)");
+            tag.argument1 = new TagArgument("int", "3");
             tags.add(tag);
-            tags.add(new Tag("Encrypt","xor_getkey",true,"xor_getkey(String ciphertext)"));
-            tag = new Tag("Encrypt","affine_encrypt",true,"affine_encrypt(String message, int key1, int key2)");
-            tag.argument1 = new TagArgument("int","5");
-            tag.argument2 = new TagArgument("int","9");
+            tags.add(new Tag("Encrypt", "xor_getkey", true, "xor_getkey(String ciphertext)"));
+            tag = new Tag("Encrypt", "affine_encrypt", true, "affine_encrypt(String message, int key1, int key2)");
+            tag.argument1 = new TagArgument("int", "5");
+            tag.argument2 = new TagArgument("int", "9");
             tags.add(tag);
-            tag = new Tag("Decrypt","affine_decrypt",true,"affine_decrypt(String ciphertext, int key1, int key2)");
-            tag.argument1 = new TagArgument("int","5");
-            tag.argument2 = new TagArgument("int","9");
+            tag = new Tag("Decrypt", "affine_decrypt", true, "affine_decrypt(String ciphertext, int key1, int key2)");
+            tag.argument1 = new TagArgument("int", "5");
+            tag.argument2 = new TagArgument("int", "9");
             tags.add(tag);
-            tags.add(new Tag("Encrypt","atbash_encrypt",true,"atbash_encrypt(String message)"));
-            tags.add(new Tag("Decrypt","atbash_decrypt",true,"atbash_decrypt(String ciphertext)"));
-            tags.add(new Tag("Encrypt","rotN_bruteforce",true,"rotN_bruteforce(String str)"));
-            tag = new Tag("Encrypt","rail_fence_encrypt",true,"rail_fence_encrypt(String message, int key)");
-            tag.argument1 = new TagArgument("int","4");
+            tags.add(new Tag("Encrypt", "atbash_encrypt", true, "atbash_encrypt(String message)"));
+            tags.add(new Tag("Decrypt", "atbash_decrypt", true, "atbash_decrypt(String ciphertext)"));
+            tags.add(new Tag("Encrypt", "rotN_bruteforce", true, "rotN_bruteforce(String str)"));
+            tag = new Tag("Encrypt", "rail_fence_encrypt", true, "rail_fence_encrypt(String message, int key)");
+            tag.argument1 = new TagArgument("int", "4");
             tags.add(tag);
-            tag = new Tag("Decrypt","rail_fence_decrypt",true,"rail_fence_decrypt(String encoded, int key)");
-            tag.argument1 = new TagArgument("int","4");
+            tag = new Tag("Decrypt", "rail_fence_decrypt", true, "rail_fence_decrypt(String encoded, int key)");
+            tag.argument1 = new TagArgument("int", "4");
             tags.add(tag);
-            tag = new Tag("Encrypt","substitution_encrypt",true,"substitution_encrypt(String message, String key)");
-            tag.argument1 = new TagArgument("string","phqgiumeaylnofdxjkrcvstzwb");
+            tag = new Tag("Encrypt", "substitution_encrypt", true, "substitution_encrypt(String message, String key)");
+            tag.argument1 = new TagArgument("string", "phqgiumeaylnofdxjkrcvstzwb");
             tags.add(tag);
-            tag = new Tag("Decrypt","substitution_decrypt",true,"substitution_decrypt(String ciphertext, String key)");
-            tag.argument1 = new TagArgument("string","phqgiumeaylnofdxjkrcvstzwb");
+            tag = new Tag("Decrypt", "substitution_decrypt", true, "substitution_decrypt(String ciphertext, String key)");
+            tag.argument1 = new TagArgument("string", "phqgiumeaylnofdxjkrcvstzwb");
             tags.add(tag);
-            tags.add(new Tag("Encrypt","is_like_english",true,"is_like_english(String str)"));
-            tags.add(new Tag("Encrypt","index_of_coincidence",true,"index_of_coincidence(String str)"));
-            tags.add(new Tag("Encrypt","guess_key_length",true,"guess_key_length(String ciphertext)"));
-            tags.add(new Tag("Encode","base32",true,"base32_encode(String str)"));
-			tags.add(new Tag("Encode","base64",true,"base64Encode(String str)"));
-            tags.add(new Tag("Encode","base64url",true,"base64urlEncode(String str)"));
-			tags.add(new Tag("Encode","html_entities",true,"html_entities(String str)"));
-			tags.add(new Tag("Encode","html5_entities",true,"html5_entities(String str)"));
-            tag = new Tag("Encode","hex",true,"hex(String str, String separator)");
-            tag.argument1 = new TagArgument("string"," ");
+            tags.add(new Tag("Encrypt", "is_like_english", true, "is_like_english(String str)"));
+            tags.add(new Tag("Encrypt", "index_of_coincidence", true, "index_of_coincidence(String str)"));
+            tags.add(new Tag("Encrypt", "guess_key_length", true, "guess_key_length(String ciphertext)"));
+            tags.add(new Tag("Encode", "base32", true, "base32_encode(String str)"));
+            tags.add(new Tag("Encode", "base64", true, "base64Encode(String str)"));
+            tags.add(new Tag("Encode", "base64url", true, "base64urlEncode(String str)"));
+            tags.add(new Tag("Encode", "html_entities", true, "html_entities(String str)"));
+            tags.add(new Tag("Encode", "html5_entities", true, "html5_entities(String str)"));
+            tag = new Tag("Encode", "hex", true, "hex(String str, String separator)");
+            tag.argument1 = new TagArgument("string", " ");
             tags.add(tag);
-			tags.add(new Tag("Encode","hex_entities",true,"hex_entities(String str)"));
-			tags.add(new Tag("Encode","hex_escapes",true,"hex_escapes(String str)"));
-			tags.add(new Tag("Encode","octal_escapes",true,"octal_escapes(String str)"));
-			tags.add(new Tag("Encode","dec_entities",true,"dec_entities(String str)"));
-			tags.add(new Tag("Encode","unicode_escapes",true,"unicode_escapes(String str)"));
-			tags.add(new Tag("Encode","css_escapes",true,"css_escapes(String Bstr)"));
-			tags.add(new Tag("Encode","css_escapes6",true,"css_escapes6(String str)"));
-            tags.add(new Tag("Encode","burp_urlencode",true,"burp_urlencode(String str)"));
-			tags.add(new Tag("Encode","urlencode",true,"urlencode(String str)"));
-            tags.add(new Tag("Encode","urlencode_not_plus",true,"urlencode_not_plus(String str)"));
-            tags.add(new Tag("Encode","urlencode_all",true,"urlencode_all(String str)"));
-            tags.add(new Tag("Encode","php_non_alpha",true,"php_non_alpha(String input)"));
-			tags.add(new Tag("Encode","php_chr",true,"php_chr(String str)"));
-			tags.add(new Tag("Encode","sql_hex",true,"sql_hex(String str)"));
-            tag = new Tag("Encode","jwt",true,"jwt(String payload, String algo, String secret)");
-            tag.argument1 = new TagArgument("string","HS256");
-            tag.argument2 = new TagArgument("string","secret");
+            tags.add(new Tag("Encode", "hex_entities", true, "hex_entities(String str)"));
+            tags.add(new Tag("Encode", "hex_escapes", true, "hex_escapes(String str)"));
+            tags.add(new Tag("Encode", "octal_escapes", true, "octal_escapes(String str)"));
+            tags.add(new Tag("Encode", "dec_entities", true, "dec_entities(String str)"));
+            tags.add(new Tag("Encode", "unicode_escapes", true, "unicode_escapes(String str)"));
+            tags.add(new Tag("Encode", "css_escapes", true, "css_escapes(String Bstr)"));
+            tags.add(new Tag("Encode", "css_escapes6", true, "css_escapes6(String str)"));
+            tags.add(new Tag("Encode", "burp_urlencode", true, "burp_urlencode(String str)"));
+            tags.add(new Tag("Encode", "urlencode", true, "urlencode(String str)"));
+            tags.add(new Tag("Encode", "urlencode_not_plus", true, "urlencode_not_plus(String str)"));
+            tags.add(new Tag("Encode", "urlencode_all", true, "urlencode_all(String str)"));
+            tags.add(new Tag("Encode", "php_non_alpha", true, "php_non_alpha(String input)"));
+            tags.add(new Tag("Encode", "php_chr", true, "php_chr(String str)"));
+            tags.add(new Tag("Encode", "sql_hex", true, "sql_hex(String str)"));
+            tag = new Tag("Encode", "jwt", true, "jwt(String payload, String algo, String secret)");
+            tag.argument1 = new TagArgument("string", "HS256");
+            tag.argument2 = new TagArgument("string", "secret");
             tags.add(tag);
-			tags.add(new Tag("Decode","auto_decode",true,"auto_decode(String str)"));
-            tags.add(new Tag("Decode","auto_decode_no_decrypt",true,"auto_decode_no_decrypt(String str)"));
-			tags.add(new Tag("Decode","d_base32",true,"decode_base32(String str)"));
-			tags.add(new Tag("Decode","d_base64",true,"decode_base64(String str)"));
-            tags.add(new Tag("Decode","d_base64url",true,"decode_base64url(String str)"));
-			tags.add(new Tag("Decode","d_html_entities",true,"decode_html_entities(String str)"));
-			tags.add(new Tag("Decode","d_html5_entities",true,"decode_html5_entities(String str)"));
-			tags.add(new Tag("Decode","d_js_string",true,"decode_js_string(String str)"));
-            tags.add(new Tag("Decode","d_burp_url",true,"burp_decode_url(String str)"));
-			tags.add(new Tag("Decode","d_url",true,"decode_url(String str)"));
-			tags.add(new Tag("Decode","d_css_escapes",true,"decode_css_escapes(String str)"));
-			tags.add(new Tag("Decode","d_octal_escapes",true,"decode_octal_escapes(String str)"));
-			tags.add(new Tag("Decode","d_unicode_escapes",true,"decode_js_string(String str)"));
-            tags.add(new Tag("Decode","d_jwt_get_payload",true,"d_jwt_get_payload(String token)"));
-            tags.add(new Tag("Decode","d_jwt_get_header",true,"d_jwt_get_header(String token)"));
-            tag = new Tag("Decode","d_jwt_verify",true,"d_jwt_verify(String token, String secret)");
-            tag.argument1 = new TagArgument("string","secret");
+            tags.add(new Tag("Decode", "auto_decode", true, "auto_decode(String str)"));
+            tags.add(new Tag("Decode", "auto_decode_no_decrypt", true, "auto_decode_no_decrypt(String str)"));
+            tags.add(new Tag("Decode", "d_base32", true, "decode_base32(String str)"));
+            tags.add(new Tag("Decode", "d_base64", true, "decode_base64(String str)"));
+            tags.add(new Tag("Decode", "d_base64url", true, "decode_base64url(String str)"));
+            tags.add(new Tag("Decode", "d_html_entities", true, "decode_html_entities(String str)"));
+            tags.add(new Tag("Decode", "d_html5_entities", true, "decode_html5_entities(String str)"));
+            tags.add(new Tag("Decode", "d_js_string", true, "decode_js_string(String str)"));
+            tags.add(new Tag("Decode", "d_burp_url", true, "burp_decode_url(String str)"));
+            tags.add(new Tag("Decode", "d_url", true, "decode_url(String str)"));
+            tags.add(new Tag("Decode", "d_css_escapes", true, "decode_css_escapes(String str)"));
+            tags.add(new Tag("Decode", "d_octal_escapes", true, "decode_octal_escapes(String str)"));
+            tags.add(new Tag("Decode", "d_unicode_escapes", true, "decode_js_string(String str)"));
+            tags.add(new Tag("Decode", "d_jwt_get_payload", true, "d_jwt_get_payload(String token)"));
+            tags.add(new Tag("Decode", "d_jwt_get_header", true, "d_jwt_get_header(String token)"));
+            tag = new Tag("Decode", "d_jwt_verify", true, "d_jwt_verify(String token, String secret)");
+            tag.argument1 = new TagArgument("string", "secret");
             tags.add(tag);
-            tags.add(new Tag("Convert","chunked_dec2hex",true,"chunked_dec2hex(String str)"));
-			tag = new Tag("Convert","dec2hex",true,"dec2hex(String str, String splitChar)");
-			tag.argument1 = new TagArgument("string",",");
-			tags.add(tag);
-			tag = new Tag("Convert","dec2oct",true,"dec2oct(String str, String splitChar)");
-			tag.argument1 = new TagArgument("string",",");
-			tags.add(tag);
-			tag = new Tag("Convert","dec2bin",true,"dec2bin(String str, String splitChar)");
-			tag.argument1 = new TagArgument("string",",");
-			tags.add(tag);
-			tag = new Tag("Convert","hex2dec",true,"hex2dec(String str, String splitChar)");
-			tag.argument1 = new TagArgument("string",",");
-			tags.add(tag);
-			tag = new Tag("Convert","oct2dec",true,"oct2dec(String str, String splitChar)");
-			tag.argument1 = new TagArgument("string",",");
-			tags.add(tag);
-			tag = new Tag("Convert","bin2dec",true,"bin2dec(String str, String splitChar)");
-			tag.argument1 = new TagArgument("string",",");
-			tags.add(tag);
-			tags.add(new Tag("Convert","ascii2bin",true,"ascii2bin(String str)"));
-			tags.add(new Tag("Convert","bin2ascii",true,"bin2ascii(String str)"));
-			tag = new Tag("Convert","ascii2hex",true,"ascii2hex(String str, String separator)");
-			tag.argument1 = new TagArgument("string"," ");
-			tags.add(tag);
-			tags.add(new Tag("Convert","hex2ascii",true,"hex2ascii(String str)"));
-			tags.add(new Tag("Convert","ascii2reverse_hex",true, "ascii2reverse_hex(String str, String separator)"));
-			tags.add(new Tag("String","uppercase",true,"uppercase(String str)"));
-			tags.add(new Tag("String","lowercase",true,"lowercase(String str)"));
-			tags.add(new Tag("String","capitalise",true,"capitalise(String str)"));
-			tags.add(new Tag("String","uncapitalise",true,"uncapitalise(String str)"));
-			tags.add(new Tag("String","from_charcode",true,"from_charcode(String str)"));
-			tags.add(new Tag("String","to_charcode",true,"to_charcode(String str)"));
-			tags.add(new Tag("String","reverse",true,"reverse(String str)"));
-            tags.add(new Tag("String","length",true,"len(String str)"));
-            tags.add(new Tag("String","unique",true,"unique(String str)"));
-			tag = new Tag("String","find",true,"find(String str, String find)");
-			tag.argument1 = new TagArgument("string","find");
-			tags.add(tag);
-			tag = new Tag("String","replace",true,"replace(String str, String find, String replace)");
-			tag.argument1 = new TagArgument("string","find");
-			tag.argument2 = new TagArgument("string","replace");
-			tags.add(tag);
-			tag = new Tag("String","regex_replace",true,"regex_replace(String str, String find, String replace)");
-			tag.argument1 = new TagArgument("string","find");
-			tag.argument2 = new TagArgument("string","replace");
-			tags.add(tag);
-			tag = new Tag("String","repeat",true,"repeat(String str, int amount)");
-			tag.argument1 = new TagArgument("int","100");
-			tags.add(tag);
-			tag = new Tag("String","split_join",true,"split_join(String str, String splitChar, String joinChar)");
-			tag.argument1 = new TagArgument("string","split char");
-			tag.argument2 = new TagArgument("string","join char");
-			tags.add(tag);
-            tag = new Tag("HMAC","hmac_md5",true,"hmacmd5(String str, String key)");
-            tag.argument1 = new TagArgument("string","SECRET");
+            tags.add(new Tag("Convert", "chunked_dec2hex", true, "chunked_dec2hex(String str)"));
+            tag = new Tag("Convert", "dec2hex", true, "dec2hex(String str, String splitChar)");
+            tag.argument1 = new TagArgument("string", ",");
             tags.add(tag);
-            tag = new Tag("HMAC","hmac_sha1",true,"hmacsha1(String str, String key)");
-            tag.argument1 = new TagArgument("string","SECRET");
+            tag = new Tag("Convert", "dec2oct", true, "dec2oct(String str, String splitChar)");
+            tag.argument1 = new TagArgument("string", ",");
             tags.add(tag);
-            tag = new Tag("HMAC","hmac_sha224",true,"hmacsha224(String str, String key)");
-            tag.argument1 = new TagArgument("string","SECRET");
+            tag = new Tag("Convert", "dec2bin", true, "dec2bin(String str, String splitChar)");
+            tag.argument1 = new TagArgument("string", ",");
             tags.add(tag);
-            tag = new Tag("HMAC","hmac_sha256",true,"hmacsha256(String str, String key)");
-            tag.argument1 = new TagArgument("string","SECRET");
+            tag = new Tag("Convert", "hex2dec", true, "hex2dec(String str, String splitChar)");
+            tag.argument1 = new TagArgument("string", ",");
             tags.add(tag);
-            tag = new Tag("HMAC","hmac_sha384",true,"hmacsha384(String str, String key)");
-            tag.argument1 = new TagArgument("string","SECRET");
+            tag = new Tag("Convert", "oct2dec", true, "oct2dec(String str, String splitChar)");
+            tag.argument1 = new TagArgument("string", ",");
             tags.add(tag);
-            tag = new Tag("HMAC","hmac_sha512",true,"hmacsha512(String str, String key)");
-            tag.argument1 = new TagArgument("string","SECRET");
+            tag = new Tag("Convert", "bin2dec", true, "bin2dec(String str, String splitChar)");
+            tag.argument1 = new TagArgument("string", ",");
             tags.add(tag);
-			tags.add(new Tag("Hash","sha1",true,"sha1(String str)"));
-            tags.add(new Tag("Hash","sha224",true,"sha224(String message)"));
-			tags.add(new Tag("Hash","sha256",true,"sha256(String str)"));
-			tags.add(new Tag("Hash","sha384",true,"sha384(String str)"));
-			tags.add(new Tag("Hash","sha512",true,"sha512(String str)"));
-            tags.add(new Tag("Hash","sha3",true,"sha3(String message)"));
-            tags.add(new Tag("Hash","sha3_224",true,"sha3_224(String message)"));
-            tags.add(new Tag("Hash","sha3_256",true,"sha3_256(String message)"));
-            tags.add(new Tag("Hash","sha3_384",true,"sha3_384(String message)"));
-            tags.add(new Tag("Hash","sha3_512",true,"sha3_512(String message)"));
-            tags.add(new Tag("Hash","skein_256_128",true,"skein_256_128(String message)"));
-            tags.add(new Tag("Hash","skein_256_160",true,"skein_256_160(String message)"));
-            tags.add(new Tag("Hash","skein_256_224",true,"skein_256_224(String message)"));
-            tags.add(new Tag("Hash","skein_256_256",true,"skein_256_256(String message)"));
-            tags.add(new Tag("Hash","skein_512_128",true,"skein_512_128(String message)"));
-            tags.add(new Tag("Hash","skein_512_160",true,"skein_512_160(String message)"));
-            tags.add(new Tag("Hash","skein_512_224",true,"skein_512_224(String message)"));
-            tags.add(new Tag("Hash","skein_512_256",true,"skein_512_256(String message)"));
-            tags.add(new Tag("Hash","skein_512_384",true,"skein_512_384(String message)"));
-            tags.add(new Tag("Hash","skein_512_512",true,"skein_512_512(String message)"));
-            tags.add(new Tag("Hash","skein_1024_384",true,"skein_1024_384(String message)"));
-            tags.add(new Tag("Hash","skein_1024_512",true,"skein_1024_512(String message)"));
-            tags.add(new Tag("Hash","skein_1024_1024",true,"skein_1024_1024(String message)"));
-            tags.add(new Tag("Hash","sm3",true,"sm3(String message)"));
-            tags.add(new Tag("Hash","tiger",true,"tiger(String message)"));
-			tags.add(new Tag("Hash","md2",true,"md2(String str)"));
-            tags.add(new Tag("Hash","md4",true,"md4(String message)"));
-			tags.add(new Tag("Hash","md5",true,"md5(String str)"));
-            tags.add(new Tag("Hash","gost3411",true,"gost3411(String message)"));
-            tags.add(new Tag("Hash","ripemd128",true,"ripemd128(String message)"));
-            tags.add(new Tag("Hash","ripemd160",true,"ripemd160(String message)"));
-            tags.add(new Tag("Hash","ripemd256",true,"ripemd256(String message)"));
-            tags.add(new Tag("Hash","ripemd320",true,"ripemd320(String message)"));
-            tags.add(new Tag("Hash","whirlpool",true,"whirlpool(String message)"));
-			tag = new Tag("Math","range",true,"range(String str, int from, int to, int step)");
-			tag.argument1 = new TagArgument("int","0");
-			tag.argument2 = new TagArgument("int","100");
-			tag.argument3 = new TagArgument("int","1");
-			tags.add(tag);
-			tags.add(new Tag("Math","total",true,"total(String str)"));
-			tag = new Tag("Math","arithmetic",true,"arithmetic(String str, int amount, String operation, String splitChar)");
-			tag.argument1 = new TagArgument("int","10");
-			tag.argument2 = new TagArgument("string","+");
-			tag.argument3 = new TagArgument("string",",");
-			tags.add(tag);
-			tag = new Tag("Math","convert_base",true,"convert_base(String str, String splitChar, int from, int to)");
-			tag.argument1 = new TagArgument("string",",");
-			tag.argument2 = new TagArgument("int","from");
-			tag.argument3 = new TagArgument("int","to");
-			tags.add(tag);
-            tag = new Tag("Math","random",true,"random(String chars, int len)");
-            tag.argument1 = new TagArgument("int","10");
+            tags.add(new Tag("Convert", "ascii2bin", true, "ascii2bin(String str)"));
+            tags.add(new Tag("Convert", "bin2ascii", true, "bin2ascii(String str)"));
+            tag = new Tag("Convert", "ascii2hex", true, "ascii2hex(String str, String separator)");
+            tag.argument1 = new TagArgument("string", " ");
             tags.add(tag);
-            tag = new Tag("Math","random_num",false,"random_num(int len)");
-            tag.argument1 = new TagArgument("int","10");
+            tags.add(new Tag("Convert", "hex2ascii", true, "hex2ascii(String str)"));
+            tags.add(new Tag("Convert", "ascii2reverse_hex", true, "ascii2reverse_hex(String str, String separator)"));
+            tags.add(new Tag("String", "uppercase", true, "uppercase(String str)"));
+            tags.add(new Tag("String", "lowercase", true, "lowercase(String str)"));
+            tags.add(new Tag("String", "capitalise", true, "capitalise(String str)"));
+            tags.add(new Tag("String", "uncapitalise", true, "uncapitalise(String str)"));
+            tags.add(new Tag("String", "from_charcode", true, "from_charcode(String str)"));
+            tags.add(new Tag("String", "to_charcode", true, "to_charcode(String str)"));
+            tags.add(new Tag("String", "reverse", true, "reverse(String str)"));
+            tags.add(new Tag("String", "length", true, "len(String str)"));
+            tags.add(new Tag("String", "unique", true, "unique(String str)"));
+            tag = new Tag("String", "find", true, "find(String str, String find)");
+            tag.argument1 = new TagArgument("string", "find");
             tags.add(tag);
-            tag = new Tag("Math","random_unicode",false,"random_unicode(int from, int to, int amount)");
-            tag.argument1 = new TagArgument("int","0");
-            tag.argument2 = new TagArgument("int","0xffff");
-            tag.argument3 = new TagArgument("int","100");
+            tag = new Tag("String", "replace", true, "replace(String str, String find, String replace)");
+            tag.argument1 = new TagArgument("string", "find");
+            tag.argument2 = new TagArgument("string", "replace");
             tags.add(tag);
-			tag = new Tag("Math","zeropad",true,"zeropad(String str, String splitChar, int amount)");
-			tag.argument1 = new TagArgument("string",",");
-			tag.argument2 = new TagArgument("int","2");
-			tags.add(tag);
-			tags.add(new Tag("XSS","behavior",true,"behavior(String str)"));
-			tags.add(new Tag("XSS","css_expression",true,"css_expression(String str)"));
-			tags.add(new Tag("XSS","datasrc",true,"datasrc(String str)"));
-			tags.add(new Tag("XSS","eval_fromcharcode",true,"eval_fromcharcode(String str)"));
-			tags.add(new Tag("XSS","iframe_data_url",true,"iframe_data_url(String str)"));
-			tags.add(new Tag("XSS","iframe_src_doc",true,"iframe_src_doc(String str)"));
-			tags.add(new Tag("XSS","script_data",true,"script_data(String str)"));
-			tags.add(new Tag("XSS","uppercase_script",true,"uppercase_script(String str)"));
-			tags.add(new Tag("XSS","template_eval",true,"template_eval(String str)"));
-            tags.add(new Tag("XSS","throw_eval",true,"throw_eval(String str)"));
-            tags.add(new Tag("Variables", "set_variable1",true, "Special tag that lets you store the results of a conversion. Change var to your own variable name."));
-            tags.add(new Tag("Variables", "get_variable1",false, "Special tag that lets you get a previously set variable. Change var to your own variable name."));
-            tag = new Tag("Loops","loop_for",true,"loop_for(String input, int start, int end, int increment, String i)//Does a for loop. Use a Hackvertor variable inside the tags to retrieve the position in the loop.");
+            tag = new Tag("String", "regex_replace", true, "regex_replace(String str, String find, String replace)");
+            tag.argument1 = new TagArgument("string", "find");
+            tag.argument2 = new TagArgument("string", "replace");
+            tags.add(tag);
+            tag = new Tag("String", "repeat", true, "repeat(String str, int amount)");
+            tag.argument1 = new TagArgument("int", "100");
+            tags.add(tag);
+            tag = new Tag("String", "split_join", true, "split_join(String str, String splitChar, String joinChar)");
+            tag.argument1 = new TagArgument("string", "split char");
+            tag.argument2 = new TagArgument("string", "join char");
+            tags.add(tag);
+            tag = new Tag("HMAC", "hmac_md5", true, "hmacmd5(String str, String key)");
+            tag.argument1 = new TagArgument("string", "SECRET");
+            tags.add(tag);
+            tag = new Tag("HMAC", "hmac_sha1", true, "hmacsha1(String str, String key)");
+            tag.argument1 = new TagArgument("string", "SECRET");
+            tags.add(tag);
+            tag = new Tag("HMAC", "hmac_sha224", true, "hmacsha224(String str, String key)");
+            tag.argument1 = new TagArgument("string", "SECRET");
+            tags.add(tag);
+            tag = new Tag("HMAC", "hmac_sha256", true, "hmacsha256(String str, String key)");
+            tag.argument1 = new TagArgument("string", "SECRET");
+            tags.add(tag);
+            tag = new Tag("HMAC", "hmac_sha384", true, "hmacsha384(String str, String key)");
+            tag.argument1 = new TagArgument("string", "SECRET");
+            tags.add(tag);
+            tag = new Tag("HMAC", "hmac_sha512", true, "hmacsha512(String str, String key)");
+            tag.argument1 = new TagArgument("string", "SECRET");
+            tags.add(tag);
+            tags.add(new Tag("Hash", "sha1", true, "sha1(String str)"));
+            tags.add(new Tag("Hash", "sha224", true, "sha224(String message)"));
+            tags.add(new Tag("Hash", "sha256", true, "sha256(String str)"));
+            tags.add(new Tag("Hash", "sha384", true, "sha384(String str)"));
+            tags.add(new Tag("Hash", "sha512", true, "sha512(String str)"));
+            tags.add(new Tag("Hash", "sha3", true, "sha3(String message)"));
+            tags.add(new Tag("Hash", "sha3_224", true, "sha3_224(String message)"));
+            tags.add(new Tag("Hash", "sha3_256", true, "sha3_256(String message)"));
+            tags.add(new Tag("Hash", "sha3_384", true, "sha3_384(String message)"));
+            tags.add(new Tag("Hash", "sha3_512", true, "sha3_512(String message)"));
+            tags.add(new Tag("Hash", "skein_256_128", true, "skein_256_128(String message)"));
+            tags.add(new Tag("Hash", "skein_256_160", true, "skein_256_160(String message)"));
+            tags.add(new Tag("Hash", "skein_256_224", true, "skein_256_224(String message)"));
+            tags.add(new Tag("Hash", "skein_256_256", true, "skein_256_256(String message)"));
+            tags.add(new Tag("Hash", "skein_512_128", true, "skein_512_128(String message)"));
+            tags.add(new Tag("Hash", "skein_512_160", true, "skein_512_160(String message)"));
+            tags.add(new Tag("Hash", "skein_512_224", true, "skein_512_224(String message)"));
+            tags.add(new Tag("Hash", "skein_512_256", true, "skein_512_256(String message)"));
+            tags.add(new Tag("Hash", "skein_512_384", true, "skein_512_384(String message)"));
+            tags.add(new Tag("Hash", "skein_512_512", true, "skein_512_512(String message)"));
+            tags.add(new Tag("Hash", "skein_1024_384", true, "skein_1024_384(String message)"));
+            tags.add(new Tag("Hash", "skein_1024_512", true, "skein_1024_512(String message)"));
+            tags.add(new Tag("Hash", "skein_1024_1024", true, "skein_1024_1024(String message)"));
+            tags.add(new Tag("Hash", "sm3", true, "sm3(String message)"));
+            tags.add(new Tag("Hash", "tiger", true, "tiger(String message)"));
+            tags.add(new Tag("Hash", "md2", true, "md2(String str)"));
+            tags.add(new Tag("Hash", "md4", true, "md4(String message)"));
+            tags.add(new Tag("Hash", "md5", true, "md5(String str)"));
+            tags.add(new Tag("Hash", "gost3411", true, "gost3411(String message)"));
+            tags.add(new Tag("Hash", "ripemd128", true, "ripemd128(String message)"));
+            tags.add(new Tag("Hash", "ripemd160", true, "ripemd160(String message)"));
+            tags.add(new Tag("Hash", "ripemd256", true, "ripemd256(String message)"));
+            tags.add(new Tag("Hash", "ripemd320", true, "ripemd320(String message)"));
+            tags.add(new Tag("Hash", "whirlpool", true, "whirlpool(String message)"));
+            tag = new Tag("Math", "range", true, "range(String str, int from, int to, int step)");
+            tag.argument1 = new TagArgument("int", "0");
+            tag.argument2 = new TagArgument("int", "100");
+            tag.argument3 = new TagArgument("int", "1");
+            tags.add(tag);
+            tags.add(new Tag("Math", "total", true, "total(String str)"));
+            tag = new Tag("Math", "arithmetic", true, "arithmetic(String str, int amount, String operation, String splitChar)");
+            tag.argument1 = new TagArgument("int", "10");
+            tag.argument2 = new TagArgument("string", "+");
+            tag.argument3 = new TagArgument("string", ",");
+            tags.add(tag);
+            tag = new Tag("Math", "convert_base", true, "convert_base(String str, String splitChar, int from, int to)");
+            tag.argument1 = new TagArgument("string", ",");
+            tag.argument2 = new TagArgument("int", "from");
+            tag.argument3 = new TagArgument("int", "to");
+            tags.add(tag);
+            tag = new Tag("Math", "random", true, "random(String chars, int len)");
+            tag.argument1 = new TagArgument("int", "10");
+            tags.add(tag);
+            tag = new Tag("Math", "random_num", false, "random_num(int len)");
+            tag.argument1 = new TagArgument("int", "10");
+            tags.add(tag);
+            tag = new Tag("Math", "random_unicode", false, "random_unicode(int from, int to, int amount)");
+            tag.argument1 = new TagArgument("int", "0");
+            tag.argument2 = new TagArgument("int", "0xffff");
+            tag.argument3 = new TagArgument("int", "100");
+            tags.add(tag);
+            tag = new Tag("Math", "zeropad", true, "zeropad(String str, String splitChar, int amount)");
+            tag.argument1 = new TagArgument("string", ",");
+            tag.argument2 = new TagArgument("int", "2");
+            tags.add(tag);
+            tags.add(new Tag("XSS", "behavior", true, "behavior(String str)"));
+            tags.add(new Tag("XSS", "css_expression", true, "css_expression(String str)"));
+            tags.add(new Tag("XSS", "datasrc", true, "datasrc(String str)"));
+            tags.add(new Tag("XSS", "eval_fromcharcode", true, "eval_fromcharcode(String str)"));
+            tags.add(new Tag("XSS", "iframe_data_url", true, "iframe_data_url(String str)"));
+            tags.add(new Tag("XSS", "iframe_src_doc", true, "iframe_src_doc(String str)"));
+            tags.add(new Tag("XSS", "script_data", true, "script_data(String str)"));
+            tags.add(new Tag("XSS", "uppercase_script", true, "uppercase_script(String str)"));
+            tags.add(new Tag("XSS", "template_eval", true, "template_eval(String str)"));
+            tags.add(new Tag("XSS", "throw_eval", true, "throw_eval(String str)"));
+            tags.add(new Tag("Variables", "set_variable1", true, "Special tag that lets you store the results of a conversion. Change var to your own variable name."));
+            tags.add(new Tag("Variables", "get_variable1", false, "Special tag that lets you get a previously set variable. Change var to your own variable name."));
+            tag = new Tag("Loops", "loop_for", true, "loop_for(String input, int start, int end, int increment, String i)//Does a for loop. Use a Hackvertor variable inside the tags to retrieve the position in the loop.");
             tag.argument1 = new TagArgument("int", "0");
             tag.argument2 = new TagArgument("int", "10");
             tag.argument3 = new TagArgument("int", "1");
             tag.argument4 = new TagArgument("string", "i");
             tags.add(tag);
-            tag = new Tag("Loops","loop_letters_lower",true,"loop_letters_lower(String input, String variable)//Loops through all lowecase letters. Use a Hackvertor variable inside the tags to retrieve the letter");
+            tag = new Tag("Loops", "loop_letters_lower", true, "loop_letters_lower(String input, String variable)//Loops through all lowecase letters. Use a Hackvertor variable inside the tags to retrieve the letter");
             tag.argument1 = new TagArgument("string", "letter");
             tags.add(tag);
-            tag = new Tag("Loops","loop_letters_upper",true,"loop_letters_upper(String input, String variable)//Loops through all uppercase letters. Use a Hackvertor variable inside the tags to retrieve the letter");
+            tag = new Tag("Loops", "loop_letters_upper", true, "loop_letters_upper(String input, String variable)//Loops through all uppercase letters. Use a Hackvertor variable inside the tags to retrieve the letter");
             tag.argument1 = new TagArgument("string", "letter");
             tags.add(tag);
-            tag = new Tag("Loops","loop_numbers",true,"loop_numbers(String input, String variable)//Loops through all numbers. Use a Hackvertor variable inside the tags to retrieve the number");
+            tag = new Tag("Loops", "loop_numbers", true, "loop_numbers(String input, String variable)//Loops through all numbers. Use a Hackvertor variable inside the tags to retrieve the number");
             tag.argument1 = new TagArgument("string", "number");
             tags.add(tag);
-            tag = new Tag("Languages","python",true,"python(String input, String code, String codeExecuteKey)");
+            tag = new Tag("Languages", "python", true, "python(String input, String code, String codeExecuteKey)");
             tag.argument1 = new TagArgument("string", "output = input.upper()");
-            tag.argument2 = new TagArgument("string",tagCodeExecutionKey);
+            tag.argument2 = new TagArgument("string", tagCodeExecutionKey);
             tags.add(tag);
-            tag = new Tag("Languages","javascript",true,"javascript(String input, String code, String codeExecuteKey)");
+            tag = new Tag("Languages", "javascript", true, "javascript(String input, String code, String codeExecuteKey)");
             tag.argument1 = new TagArgument("string", "output = input.toUpperCase()");
-            tag.argument2 = new TagArgument("string",tagCodeExecutionKey);
+            tag.argument2 = new TagArgument("string", tagCodeExecutionKey);
             tags.add(tag);
-            for(int j=0;j<customTags.length();j++) {
+            for (int j = 0; j < customTags.length(); j++) {
                 JSONObject customTag = (JSONObject) customTags.get(j);
                 tag = generateCustomTag(customTag);
                 tags.add(tag);
             }
 
-		}
-		String convertCharset(String input, String to) {
+        }
+
+        String convertCharset(String input, String to) {
             String output = "";
             try {
                 return helpers.bytesToString(input.getBytes(to));
@@ -2204,6 +2242,7 @@ private Ngrams ngrams;
                 return e.toString();
             }
         }
+
         String charset_convert(String input, String from, String to) {
             byte[] inputBytes = input.getBytes();
             byte[] output = new byte[0];
@@ -2214,19 +2253,21 @@ private Ngrams ngrams;
             }
             return helpers.bytesToString(output);
         }
+
         String utf7(String input, String excludeCharacters) {
             String output = "";
-            for (int i = 0; i < input.length(); i++){
+            for (int i = 0; i < input.length(); i++) {
                 char c = input.charAt(i);
-                if(excludeCharacters.indexOf(c) > -1) {
+                if (excludeCharacters.indexOf(c) > -1) {
                     output += c;
                     continue;
                 }
-                output += "+" + base64Encode("\u0000"+c).replaceAll("=+$", "") + "-";
+                output += "+" + base64Encode("\u0000" + c).replaceAll("=+$", "") + "-";
 
             }
             return output;
         }
+
         byte[] readUniBytes(String uniBytes) {
             byte[] result = new byte[uniBytes.length()];
             for (int i = 0; i < result.length; ++i) {
@@ -2234,6 +2275,7 @@ private Ngrams ngrams;
             }
             return result;
         }
+
         String brotli_decompress(String str) {
             byte[] buffer = new byte[65536];
             ByteArrayInputStream input = new ByteArrayInputStream(readUniBytes(str));
@@ -2263,6 +2305,7 @@ private Ngrams ngrams;
             }
             return output.toString();
         }
+
         String gzip_compress(String input) {
             ByteArrayOutputStream bos = new ByteArrayOutputStream(input.length());
             GZIPOutputStream gzip = null;
@@ -2275,9 +2318,10 @@ private Ngrams ngrams;
                 return helpers.bytesToString(compressed);
             } catch (IOException e) {
                 e.printStackTrace();
-                return "Error:"+e.toString();
+                return "Error:" + e.toString();
             }
         }
+
         String gzip_decompress(String input) {
             ByteArrayInputStream bis = new ByteArrayInputStream(helpers.stringToBytes(input));
             GZIPInputStream gis = null;
@@ -2288,9 +2332,10 @@ private Ngrams ngrams;
                 return new String(bytes);
             } catch (IOException e) {
                 e.printStackTrace();
-                return "Error:"+e.toString();
+                return "Error:" + e.toString();
             }
         }
+
         String bzip2_compress(String input) {
             ByteArrayOutputStream bos = new ByteArrayOutputStream(input.length());
             CompressorOutputStream cos = null;
@@ -2299,7 +2344,7 @@ private Ngrams ngrams;
                         .createCompressorOutputStream(CompressorStreamFactory.getBzip2(), bos);
             } catch (CompressorException e) {
                 e.printStackTrace();
-                return "Error creating compressor:"+e.toString();
+                return "Error creating compressor:" + e.toString();
             }
             try {
                 cos.write(input.getBytes());
@@ -2309,9 +2354,10 @@ private Ngrams ngrams;
                 return helpers.bytesToString(compressed);
             } catch (IOException e) {
                 e.printStackTrace();
-                return "Error:"+e.toString();
+                return "Error:" + e.toString();
             }
         }
+
         String bzip2_decompress(String input) {
             ByteArrayInputStream bis = new ByteArrayInputStream(helpers.stringToBytes(input));
             BZip2CompressorInputStream cis = null;
@@ -2322,9 +2368,10 @@ private Ngrams ngrams;
                 return new String(bytes);
             } catch (IOException e) {
                 e.printStackTrace();
-                return "Error:"+e.toString();
+                return "Error:" + e.toString();
             }
         }
+
         String deflate_compress(String input) {
             ByteArrayOutputStream bos = new ByteArrayOutputStream(input.length());
             CompressorOutputStream cos = null;
@@ -2333,7 +2380,7 @@ private Ngrams ngrams;
                         .createCompressorOutputStream(CompressorStreamFactory.getDeflate(), bos);
             } catch (CompressorException e) {
                 e.printStackTrace();
-                return "Error creating compressor:"+e.toString();
+                return "Error creating compressor:" + e.toString();
             }
             try {
                 cos.write(input.getBytes());
@@ -2343,9 +2390,10 @@ private Ngrams ngrams;
                 return helpers.bytesToString(compressed);
             } catch (IOException e) {
                 e.printStackTrace();
-                return "Error:"+e.toString();
+                return "Error:" + e.toString();
             }
         }
+
         String deflate_decompress(String input) {
             ByteArrayInputStream bis = new ByteArrayInputStream(helpers.stringToBytes(input));
             DeflateCompressorInputStream cis = null;
@@ -2356,13 +2404,15 @@ private Ngrams ngrams;
                 return new String(bytes);
             } catch (IOException e) {
                 e.printStackTrace();
-                return "Error:"+e.toString();
+                return "Error:" + e.toString();
             }
         }
+
         String timestamp() {
             long unixTime = System.currentTimeMillis() / 1000L;
-            return unixTime+"";
+            return unixTime + "";
         }
+
         String date(String format) {
             try {
                 SimpleDateFormat dateF = new SimpleDateFormat(format);
@@ -2372,69 +2422,86 @@ private Ngrams ngrams;
                 return "Invalid date format";
             }
         }
-		String html_entities(String str) {
+
+        String html_entities(String str) {
             return HtmlEscape.escapeHtml(str, HtmlEscapeType.HTML4_NAMED_REFERENCES_DEFAULT_TO_DECIMAL, HtmlEscapeLevel.LEVEL_3_ALL_NON_ALPHANUMERIC);
-		}
-		String decode_html_entities(String str) {
+        }
+
+        String decode_html_entities(String str) {
             return HtmlEscape.unescapeHtml(str);
-		}
-		String base32_encode(String str) {
-			Base32 base32 = new Base32();
-	        return new String(base32.encode(str.getBytes()));
-		}
-		String decode_base32(String str) {
-			Base32 base32 = new Base32();
-			return new String(base32.decode(str.getBytes()));
-		}
-		String base64Encode(String str) {
-			return helpers.base64Encode(str);
-		}
-		String decode_base64(String str) {
-			try{
-				str = helpers.bytesToString(helpers.base64Decode(str));
-			} catch(Exception e){ 
-				stderr.println(e.getMessage());
-			}
-			return str;
-		}
-        String base64urlEncode(String str) {
-            return base64Encode(str).replaceAll("\\+","-").replaceAll("/","_").replaceAll("=+$","");
         }
-        String decode_base64url(String str) {
-            str = str.replaceAll("-","+");
-            str = str.replaceAll("_","/");
-            switch (str.length() % 4) {
-                case 0: break;
-                case 2: str += "=="; break;
-                case 3: str += "="; break;
-            }
-            return helpers.bytesToString(helpers.base64Decode(str));
+
+        String base32_encode(String str) {
+            Base32 base32 = new Base32();
+            return new String(base32.encode(str.getBytes()));
         }
-        String burp_urlencode(String str) {
-            str = helpers.urlEncode(str);
-            return str;
+
+        String decode_base32(String str) {
+            Base32 base32 = new Base32();
+            return new String(base32.decode(str.getBytes()));
         }
-        String urlencode(String str) {
-			try {
-	            str = URLEncoder.encode(str, "UTF-8");		    
-	        } catch (Exception e) {
-	        	stderr.println(e.getMessage());
-	        }
-			return str;
-		}
-        String urlencode_not_plus(String str) {
+
+        String base64Encode(String str) {
+            return helpers.base64Encode(str);
+        }
+
+        String decode_base64(String str) {
             try {
-                str = URLEncoder.encode(str, "UTF-8").replaceAll("\\+","%20");
+                str = helpers.bytesToString(helpers.base64Decode(str));
             } catch (Exception e) {
                 stderr.println(e.getMessage());
             }
             return str;
         }
+
+        String base64urlEncode(String str) {
+            return base64Encode(str).replaceAll("\\+", "-").replaceAll("/", "_").replaceAll("=+$", "");
+        }
+
+        String decode_base64url(String str) {
+            str = str.replaceAll("-", "+");
+            str = str.replaceAll("_", "/");
+            switch (str.length() % 4) {
+                case 0:
+                    break;
+                case 2:
+                    str += "==";
+                    break;
+                case 3:
+                    str += "=";
+                    break;
+            }
+            return helpers.bytesToString(helpers.base64Decode(str));
+        }
+
+        String burp_urlencode(String str) {
+            str = helpers.urlEncode(str);
+            return str;
+        }
+
+        String urlencode(String str) {
+            try {
+                str = URLEncoder.encode(str, "UTF-8");
+            } catch (Exception e) {
+                stderr.println(e.getMessage());
+            }
+            return str;
+        }
+
+        String urlencode_not_plus(String str) {
+            try {
+                str = URLEncoder.encode(str, "UTF-8").replaceAll("\\+", "%20");
+            } catch (Exception e) {
+                stderr.println(e.getMessage());
+            }
+            return str;
+        }
+
         String urlencode_all(String str) {
             StringBuilder converted = new StringBuilder();
-            for(int i=0;i<str.length();i++) {
+            for (int i = 0; i < str.length(); i++) {
                 int codePoint = Character.codePointAt(str, i);
-                if(codePoint<=0xff) {
+                if (codePoint <= 0xff) {
                     converted.append("%" + String.format("%02X", codePoint));
                 } else {
                     try {
@@ -2446,23 +2513,27 @@ private Ngrams ngrams;
             }
             return converted.toString();
         }
+
         String burp_decode_url(String str) {
             str = helpers.urlDecode(str);
             return str;
         }
-		String decode_url(String str) {
-			try {
-	            str = URLDecoder.decode(str, "UTF-8");		          
-	        } catch (Exception e) {
-	        	stderr.println(e.getMessage());
-	        }
-			return str;
-		}
-		String random_num(int len) {
+
+        String decode_url(String str) {
+            try {
+                str = URLDecoder.decode(str, "UTF-8");
+            } catch (Exception e) {
+                stderr.println(e.getMessage());
+            }
+            return str;
+        }
+
+        String random_num(int len) {
             return random("0123456789", len);
         }
+
         String random(String chars, int len) {
-            if(len > 0 && chars.length() > 0) {
+            if (len > 0 && chars.length() > 0) {
                 StringBuilder sb = new StringBuilder();
                 Random random = new Random();
                 for (int i = 0; i < len; i++) {
@@ -2472,73 +2543,85 @@ private Ngrams ngrams;
             }
             return "";
         }
+
         String random_unicode(int from, int to, int amount) {
             String out = "";
             try {
                 for (int i = 0; i < amount; i++) {
-                   Random random = new Random();
-                    int  n = random.nextInt(to) + from;
+                    Random random = new Random();
+                    int n = random.nextInt(to) + from;
                     out += (char) n;
                 }
                 return out;
-            } catch(Exception e) {
+            } catch (Exception e) {
                 return "Unable to create unicode characters";
             }
         }
-		String uppercase(String str) {
-			return StringUtils.upperCase(str);
-		}
-		String lowercase(String str) {
-			return StringUtils.lowerCase(str);
-		}
+
+        String uppercase(String str) {
+            return StringUtils.upperCase(str);
+        }
+
+        String lowercase(String str) {
+            return StringUtils.lowerCase(str);
+        }
+
         String unique(String str) {
             String words[] = str.split(" ");
             Set result = new HashSet(Arrays.asList(words));
             return String.join(" ", result);
         }
-		String capitalise(String str) {
-			return StringUtils.capitalize(str);
-		}
-		String uncapitalise(String str) {
-			return StringUtils.uncapitalize(str);
-		}
-		String html5_entities(String str) {
-			return HtmlEscape.escapeHtml(str, HtmlEscapeType.HTML5_NAMED_REFERENCES_DEFAULT_TO_DECIMAL, HtmlEscapeLevel.LEVEL_3_ALL_NON_ALPHANUMERIC);
-		}
-		String decode_html5_entities(String str) {
-			return HtmlEscape.unescapeHtml(str);
-		}
-        String hex(String str, String separator) {
-            return ascii2hex(str,separator);
+
+        String capitalise(String str) {
+            return StringUtils.capitalize(str);
         }
-		String hex_entities(String str) {
-			return HtmlEscape.escapeHtml(str, HtmlEscapeType.HEXADECIMAL_REFERENCES,HtmlEscapeLevel.LEVEL_4_ALL_CHARACTERS);
-		}
-		String dec_entities(String str) {
-			return HtmlEscape.escapeHtml(str, HtmlEscapeType.DECIMAL_REFERENCES,HtmlEscapeLevel.LEVEL_4_ALL_CHARACTERS);
-		}
-		String jwt(String payload, String algo, String secret) {
+
+        String uncapitalise(String str) {
+            return StringUtils.uncapitalize(str);
+        }
+
+        String html5_entities(String str) {
+            return HtmlEscape.escapeHtml(str, HtmlEscapeType.HTML5_NAMED_REFERENCES_DEFAULT_TO_DECIMAL, HtmlEscapeLevel.LEVEL_3_ALL_NON_ALPHANUMERIC);
+        }
+
+        String decode_html5_entities(String str) {
+            return HtmlEscape.unescapeHtml(str);
+        }
+
+        String hex(String str, String separator) {
+            return ascii2hex(str, separator);
+        }
+
+        String hex_entities(String str) {
+            return HtmlEscape.escapeHtml(str, HtmlEscapeType.HEXADECIMAL_REFERENCES, HtmlEscapeLevel.LEVEL_4_ALL_CHARACTERS);
+        }
+
+        String dec_entities(String str) {
+            return HtmlEscape.escapeHtml(str, HtmlEscapeType.DECIMAL_REFERENCES, HtmlEscapeLevel.LEVEL_4_ALL_CHARACTERS);
+        }
+
+        String jwt(String payload, String algo, String secret) {
             try {
                 algo = algo.toUpperCase();
                 String algoName;
-                if(algo.equals("HS256")) {
+                if (algo.equals("HS256")) {
                     algoName = "HmacSHA256";
-                } else if(algo.equals("HS384")) {
+                } else if (algo.equals("HS384")) {
                     algoName = "HmacSHA384";
-                } else if(algo.equals("HS512")) {
+                } else if (algo.equals("HS512")) {
                     algoName = "HmacSHA512";
-                } else if(algo.equals("NONE")) {
+                } else if (algo.equals("NONE")) {
                     algoName = "none";
                 } else {
                     return "Unsupported algorithm";
                 }
                 String message = "";
                 String header = "{\n" +
-                        "  \"alg\": \""+algo+"\",\n" +
+                        "  \"alg\": \"" + algo + "\",\n" +
                         "  \"typ\": \"JWT\"\n" +
                         "}";
                 message = base64urlEncode(header) + "." + base64urlEncode(payload);
-                if(!algoName.equals("none")) {
+                if (!algoName.equals("none")) {
                     Mac hashMac = Mac.getInstance(algoName);
                     SecretKeySpec secret_key = new SecretKeySpec(secret.getBytes(), algoName);
                     hashMac.init(secret_key);
@@ -2546,41 +2629,44 @@ private Ngrams ngrams;
                 } else {
                     return message + ".";
                 }
-            } catch (Exception e){
+            } catch (Exception e) {
                 return "Unable to create token";
             }
         }
+
         String d_jwt_get_payload(String token) {
             try {
                 DecodedJWT jwt = JWT.decode(token);
                 return decode_base64url(jwt.getPayload());
-            } catch (JWTDecodeException exception){
+            } catch (JWTDecodeException exception) {
                 return "Invalid token";
             }
         }
+
         String d_jwt_get_header(String token) {
             try {
                 DecodedJWT jwt = JWT.decode(token);
                 return decode_base64url(jwt.getHeader());
-            } catch (JWTDecodeException exception){
+            } catch (JWTDecodeException exception) {
                 return "Invalid token";
             }
         }
+
         String d_jwt_verify(String token, String secret) {
             DecodedJWT jwt;
             try {
                 jwt = JWT.decode(token);
-            } catch (JWTDecodeException exception){
+            } catch (JWTDecodeException exception) {
                 return "Invalid token";
             }
             try {
                 String algo = jwt.getAlgorithm().toUpperCase();
                 Algorithm algorithm = null;
-                if(algo.equals("HS256")) {
+                if (algo.equals("HS256")) {
                     algorithm = Algorithm.HMAC256(secret);
-                } else if(algo.equals("HS384")) {
+                } else if (algo.equals("HS384")) {
                     algorithm = Algorithm.HMAC384(secret);
-                } else if(algo.equals("HS512")) {
+                } else if (algo.equals("HS512")) {
                     algorithm = Algorithm.HMAC512(secret);
                 } else {
                     return "0";
@@ -2596,117 +2682,130 @@ private Ngrams ngrams;
                 return "0";
             }
         }
-		String hex_escapes(String str) {
-			return JavaScriptEscape.escapeJavaScript(str,JavaScriptEscapeType.XHEXA_DEFAULT_TO_UHEXA, JavaScriptEscapeLevel.LEVEL_4_ALL_CHARACTERS);
-		}
-		String octal_escapes(String str) {
-			StringBuilder converted = new StringBuilder();
-			for(int i=0;i<str.length();i++) {
-				converted.append("\\" + Integer.toOctalString(Character.codePointAt(str, i)));
-			}
-			return converted.toString();
-		}
-		String decode_octal_escapes(String str) {
-			return this.decode_js_string(str);
-		}
-		String css_escapes(String str) {
-			return CssEscape.escapeCssString(str,CssStringEscapeType.BACKSLASH_ESCAPES_DEFAULT_TO_COMPACT_HEXA, CssStringEscapeLevel.LEVEL_4_ALL_CHARACTERS);
-		}
-		String css_escapes6(String str) {
-			return CssEscape.escapeCssString(str,CssStringEscapeType.BACKSLASH_ESCAPES_DEFAULT_TO_SIX_DIGIT_HEXA, CssStringEscapeLevel.LEVEL_4_ALL_CHARACTERS);
-		}
-		String unicode_escapes(String str) {
-			return JavaScriptEscape.escapeJavaScript(str,JavaScriptEscapeType.UHEXA, JavaScriptEscapeLevel.LEVEL_4_ALL_CHARACTERS);
-		}
-		String php_non_alpha(String input) {
-                String converted = "";
-                converted += "$_[]++;$_[]=$_._;";
-                converted += "$_____=$_[(++$__[])][(++$__[])+(++$__[])+(++$__[])];";
-                converted += "$_=$_[$_[+_]];";
-                converted += "$___=$__=$_[++$__[]];";
-                converted += "$____=$_=$_[+_];";
-                converted += "$_++;$_++;$_++;";
-                converted += "$_=$____.++$___.$___.++$_.$__.++$___;";
-                converted += "$__=$_;";
-                converted += "$_=$_____;";
-                converted += "$_++;$_++;$_++;$_++;$_++;$_++;$_++;$_++;$_++;$_++;";
-                converted += "$___=+_;";
-                converted += "$___.=$__;";
-                converted += "$___=++$_^$___[+_];$\u00c0=+_;$\u00c1=$\u00c2=$\u00c3=$\u00c4=$\u00c6=$\u00c8=$\u00c9=$\u00ca=$\u00cb=++$\u00c1[];";
-                converted += "$\u00c2++;";
-                converted += "$\u00c3++;$\u00c3++;";
-                converted += "$\u00c4++;$\u00c4++;$\u00c4++;";
-                converted += "$\u00c6++;$\u00c6++;$\u00c6++;$\u00c6++;";
-                converted += "$\u00c8++;$\u00c8++;$\u00c8++;$\u00c8++;$\u00c8++;";
-                converted += "$\u00c9++;$\u00c9++;$\u00c9++;$\u00c9++;$\u00c9++;$\u00c9++;";
-                converted += "$\u00ca++;$\u00ca++;$\u00ca++;$\u00ca++;$\u00ca++;$\u00ca++;$\u00ca++;";
-                converted += "$\u00cb++;$\u00cb++;$\u00cb++;$\u00cb++;$\u00cb++;$\u00cb++;$\u00cb++;";
-                converted += "$__('$_=\"'";
-                String[] lookup = {"\u00c0","\u00c1","\u00c2","\u00c3","\u00c4","\u00c6","\u00c8","\u00c9","\u00ca","\u00cb"};
-                for(int i=0;i<input.length();i++) {
-                    ArrayList<String> vars = new ArrayList<String>();
-                    String chrs = Integer.toOctalString(Character.codePointAt(input, i)).toString();
-                    for(int j=0;j<chrs.length();j++) {
-                        vars.add("$"+lookup[Integer.parseInt(chrs.charAt(j)+"")]);
-                    }
-                    converted += ".$___."+StringUtils.join(vars,".");
-                }
-                converted += ".'";
-                converted += "\"');$__($_);";
-                return "<?php "+converted+"?>";
+
+        String hex_escapes(String str) {
+            return JavaScriptEscape.escapeJavaScript(str, JavaScriptEscapeType.XHEXA_DEFAULT_TO_UHEXA, JavaScriptEscapeLevel.LEVEL_4_ALL_CHARACTERS);
         }
-		String php_chr(String str) {
-			ArrayList<String> output = new ArrayList<String>();
-			for(int i=0;i<str.length();i++) {
-				output.add("chr("+Character.codePointAt(str, i)+")");
-			}
-			return StringUtils.join(output,".");
-		}
-		String sql_hex(String str) {
-			return "0x"+this.ascii2hex(str, "");
-		}
+
+        String octal_escapes(String str) {
+            StringBuilder converted = new StringBuilder();
+            for (int i = 0; i < str.length(); i++) {
+                converted.append("\\" + Integer.toOctalString(Character.codePointAt(str, i)));
+            }
+            return converted.toString();
+        }
+
+        String decode_octal_escapes(String str) {
+            return this.decode_js_string(str);
+        }
+
+        String css_escapes(String str) {
+            return CssEscape.escapeCssString(str, CssStringEscapeType.BACKSLASH_ESCAPES_DEFAULT_TO_COMPACT_HEXA, CssStringEscapeLevel.LEVEL_4_ALL_CHARACTERS);
+        }
+
+        String css_escapes6(String str) {
+            return CssEscape.escapeCssString(str, CssStringEscapeType.BACKSLASH_ESCAPES_DEFAULT_TO_SIX_DIGIT_HEXA, CssStringEscapeLevel.LEVEL_4_ALL_CHARACTERS);
+        }
+
+        String unicode_escapes(String str) {
+            return JavaScriptEscape.escapeJavaScript(str, JavaScriptEscapeType.UHEXA, JavaScriptEscapeLevel.LEVEL_4_ALL_CHARACTERS);
+        }
+
+        String php_non_alpha(String input) {
+            String converted = "";
+            converted += "$_[]++;$_[]=$_._;";
+            converted += "$_____=$_[(++$__[])][(++$__[])+(++$__[])+(++$__[])];";
+            converted += "$_=$_[$_[+_]];";
+            converted += "$___=$__=$_[++$__[]];";
+            converted += "$____=$_=$_[+_];";
+            converted += "$_++;$_++;$_++;";
+            converted += "$_=$____.++$___.$___.++$_.$__.++$___;";
+            converted += "$__=$_;";
+            converted += "$_=$_____;";
+            converted += "$_++;$_++;$_++;$_++;$_++;$_++;$_++;$_++;$_++;$_++;";
+            converted += "$___=+_;";
+            converted += "$___.=$__;";
+            converted += "$___=++$_^$___[+_];$\u00c0=+_;$\u00c1=$\u00c2=$\u00c3=$\u00c4=$\u00c6=$\u00c8=$\u00c9=$\u00ca=$\u00cb=++$\u00c1[];";
+            converted += "$\u00c2++;";
+            converted += "$\u00c3++;$\u00c3++;";
+            converted += "$\u00c4++;$\u00c4++;$\u00c4++;";
+            converted += "$\u00c6++;$\u00c6++;$\u00c6++;$\u00c6++;";
+            converted += "$\u00c8++;$\u00c8++;$\u00c8++;$\u00c8++;$\u00c8++;";
+            converted += "$\u00c9++;$\u00c9++;$\u00c9++;$\u00c9++;$\u00c9++;$\u00c9++;";
+            converted += "$\u00ca++;$\u00ca++;$\u00ca++;$\u00ca++;$\u00ca++;$\u00ca++;$\u00ca++;";
+            converted += "$\u00cb++;$\u00cb++;$\u00cb++;$\u00cb++;$\u00cb++;$\u00cb++;$\u00cb++;";
+            converted += "$__('$_=\"'";
+            String[] lookup = {"\u00c0", "\u00c1", "\u00c2", "\u00c3", "\u00c4", "\u00c6", "\u00c8", "\u00c9", "\u00ca", "\u00cb"};
+            for (int i = 0; i < input.length(); i++) {
+                ArrayList<String> vars = new ArrayList<String>();
+                String chrs = Integer.toOctalString(Character.codePointAt(input, i)).toString();
+                for (int j = 0; j < chrs.length(); j++) {
+                    vars.add("$" + lookup[Integer.parseInt(chrs.charAt(j) + "")]);
+                }
+                converted += ".$___." + StringUtils.join(vars, ".");
+            }
+            converted += ".'";
+            converted += "\"');$__($_);";
+            return "<?php " + converted + "?>";
+        }
+
+        String php_chr(String str) {
+            ArrayList<String> output = new ArrayList<String>();
+            for (int i = 0; i < str.length(); i++) {
+                output.add("chr(" + Character.codePointAt(str, i) + ")");
+            }
+            return StringUtils.join(output, ".");
+        }
+
+        String sql_hex(String str) {
+            return "0x" + this.ascii2hex(str, "");
+        }
+
         String rotN(String str, int n) {
             String out = "";
             int len = str.length();
-            for(int i=0;i<len;i++) {
+            for (int i = 0; i < len; i++) {
                 char chr = str.charAt(i);
                 int chrCode = (int) chr;
-                if(Character.isLowerCase(chr)) {
-                    out += (char) ((chrCode-97+n)%26+97);
-                } else if(Character.isUpperCase(str.charAt(i))) {
-                    out += (char) ((chrCode-65+n)%26+65);
+                if (Character.isLowerCase(chr)) {
+                    out += (char) ((chrCode - 97 + n) % 26 + 97);
+                } else if (Character.isUpperCase(str.charAt(i))) {
+                    out += (char) ((chrCode - 65 + n) % 26 + 65);
                 } else {
                     out += chr;
                 }
             }
             return out;
         }
+
         String aes_encrypt(String plaintext, String key, String transformations, String iv) {
             try {
                 return AES.encrypt(plaintext, key, transformations, iv);
-            } catch(NoSuchAlgorithmException e) {
-                return "No such algorithm exception:"+e.toString();
-            } catch(UnsupportedEncodingException e) {
+            } catch (NoSuchAlgorithmException e) {
+                return "No such algorithm exception:" + e.toString();
+            } catch (UnsupportedEncodingException e) {
                 return "Unsupported encoding exception:" + e.toString();
-            } catch(IllegalArgumentException e) {
-                return "Invalid key length"+e.toString();
-            } catch(Exception e) {
-                return "Error exception:"+e.toString();
+            } catch (IllegalArgumentException e) {
+                return "Invalid key length" + e.toString();
+            } catch (Exception e) {
+                return "Error exception:" + e.toString();
             }
         }
+
         String aes_decrypt(String ciphertext, String key, String transformations, String iv) {
             try {
                 return AES.decrypt(ciphertext, key, transformations, iv);
-            } catch(NoSuchAlgorithmException e) {
-                return "No such algorithm exception:"+e.toString();
-            } catch(UnsupportedEncodingException e) {
-                return "Unsupported encoding exception:"+e.toString();
-            } catch(IllegalArgumentException e) {
-                return "Invalid key length"+e.toString();
-            } catch(Exception e) {
-                return "Error exception:"+e.toString();
+            } catch (NoSuchAlgorithmException e) {
+                return "No such algorithm exception:" + e.toString();
+            } catch (UnsupportedEncodingException e) {
+                return "Unsupported encoding exception:" + e.toString();
+            } catch (IllegalArgumentException e) {
+                return "Invalid key length" + e.toString();
+            } catch (Exception e) {
+                return "Error exception:" + e.toString();
             }
         }
+
         String xor(String message, String key) {
             try {
                 int len = message.length();
@@ -2720,72 +2819,74 @@ private Ngrams ngrams;
                 return "Unable to encode";
             }
         }
+
         int guess_key_length(String ciphertext) {
             int max = 30;
-            TreeMap<Integer,Double> totalIC = new TreeMap<Integer,Double>();
-            TreeMap<Integer,Double> normalizedIC = new TreeMap<Integer,Double>();
-            for(int candidateLength=2;candidateLength<=max;candidateLength++) {
-                double[][] frequencies = new double[256][max+1];
-                for(int pos=0;pos<ciphertext.length();pos++) {
+            TreeMap<Integer, Double> totalIC = new TreeMap<Integer, Double>();
+            TreeMap<Integer, Double> normalizedIC = new TreeMap<Integer, Double>();
+            for (int candidateLength = 2; candidateLength <= max; candidateLength++) {
+                double[][] frequencies = new double[256][max + 1];
+                for (int pos = 0; pos < ciphertext.length(); pos++) {
                     int column = pos % candidateLength;
                     int cp = ciphertext.codePointAt(pos);
-                    if(cp <= 255 && cp > -1) {
+                    if (cp <= 255 && cp > -1) {
                         frequencies[ciphertext.codePointAt(pos)][column] += 1;
                     }
                 }
 
-                double[] lengthN = new double[max+1];
-                for(int column=0;column<candidateLength;column++) {
-                    for(int character=0;character<=255;character++) {
+                double[] lengthN = new double[max + 1];
+                for (int column = 0; column < candidateLength; column++) {
+                    for (int character = 0; character <= 255; character++) {
                         lengthN[column] += frequencies[character][column];
                     }
                 }
-                for(int column=0;column<candidateLength;column++) {
+                for (int column = 0; column < candidateLength; column++) {
                     for (int character = 0; character <= 255; character++) {
                         frequencies[character][column] *= frequencies[character][column] * (frequencies[character][column] - 1);
                     }
                 }
-                double[] frequencySum = new double[max+1];
-                for(int column=0;column<candidateLength;column++) {
+                double[] frequencySum = new double[max + 1];
+                for (int column = 0; column < candidateLength; column++) {
                     for (int character = 0; character <= 255; character++) {
                         frequencySum[column] += frequencies[character][column];
                     }
                 }
-                double[] columnIC = new double[max+1];
-                for(int column=0;column<candidateLength;column++) {
-                    if(lengthN[column] > 1) {
+                double[] columnIC = new double[max + 1];
+                for (int column = 0; column < candidateLength; column++) {
+                    if (lengthN[column] > 1) {
                         columnIC[column] = frequencySum[column] / (lengthN[column] * (lengthN[column] - 1.0));
                     }
                 }
                 double ic = 0;
-                for(int column=0;column<candidateLength;column++) {
+                for (int column = 0; column < candidateLength; column++) {
                     ic += columnIC[column];
                 }
-                totalIC.put(candidateLength,ic);
+                totalIC.put(candidateLength, ic);
             }
             Map sortedMap = sortByValuesDesc(totalIC);
             Iterator it = sortedMap.entrySet().iterator();
             int pos = 0;
             while (it.hasNext()) {
-                if(pos > 8) {
+                if (pos > 8) {
                     break;
                 }
-                Map.Entry pair = (Map.Entry)it.next();
+                Map.Entry pair = (Map.Entry) it.next();
                 int key = (int) pair.getKey();
-                normalizedIC.put(key, (double) pair.getValue()/key);
+                normalizedIC.put(key, (double) pair.getValue() / key);
                 pos++;
             }
             sortedMap = sortByValuesDesc(normalizedIC);
             it = sortedMap.entrySet().iterator();
-            Map.Entry pair = (Map.Entry)it.next();
+            Map.Entry pair = (Map.Entry) it.next();
             return (int) pair.getKey();
         }
+
         int getScore(char clearTextByte) {
             int score = 0;
-            if(clearTextByte >= ' ' && clearTextByte < '\u00ff') {
+            if (clearTextByte >= ' ' && clearTextByte < '\u00ff') {
                 score += 1;
             }
-            if ((clearTextByte >= 'A') && (clearTextByte <= 'Z')){
+            if ((clearTextByte >= 'A') && (clearTextByte <= 'Z')) {
                 score += 1;
             }
             if ((clearTextByte >= 'a') && (clearTextByte <= 'z')) {
@@ -2803,41 +2904,42 @@ private Ngrams ngrams;
             }
             return score;
         }
+
         String xor_decrypt(String ciphertext, int keyLength, boolean returnKey) {
-            if(keyLength < 1) {
+            if (keyLength < 1) {
                 return "Unable to decrypt";
             }
             String[] guessedKey = new String[keyLength];
             ArrayList<ArrayList<Character>> potentialKeys = new ArrayList<>();
             ArrayList<ArrayList<Character>> blacklistChars = new ArrayList<>();
             ArrayList<ArrayList<Character>> filteredKeys = new ArrayList<>();
-            for(int i=0;i<keyLength;i++) {
+            for (int i = 0; i < keyLength; i++) {
                 potentialKeys.add(new ArrayList<>());
                 blacklistChars.add(new ArrayList<>());
                 filteredKeys.add(new ArrayList<>());
             }
-            for(int column = 0; column < keyLength; column++) {
+            for (int column = 0; column < keyLength; column++) {
                 double maxScore = 0;
-                for(int keyByte=0;keyByte<=255;keyByte++) {
+                for (int keyByte = 0; keyByte <= 255; keyByte++) {
                     int score = 0;
-                    for(int pos=0;pos<ciphertext.length();pos++) {
-                        if((pos - column) % keyLength == 0) {
+                    for (int pos = 0; pos < ciphertext.length(); pos++) {
+                        if ((pos - column) % keyLength == 0) {
                             char clearTextByte = (char) (ciphertext.charAt(pos) ^ (char) keyByte);
                             score += getScore(clearTextByte);
-                            if ((clearTextByte >= 'A' && clearTextByte <= 'Z') || (clearTextByte >= 'a' && clearTextByte <= 'z') || clearTextByte == ' '){
-                                if(!potentialKeys.get(column).contains((char) keyByte)) {
+                            if ((clearTextByte >= 'A' && clearTextByte <= 'Z') || (clearTextByte >= 'a' && clearTextByte <= 'z') || clearTextByte == ' ') {
+                                if (!potentialKeys.get(column).contains((char) keyByte)) {
                                     potentialKeys.get(column).add((char) keyByte);
                                 }
                             }
                         }
                     }
-                    if(score > maxScore) {
+                    if (score > maxScore) {
                         maxScore = score;
                         guessedKey[column] = "" + (char) keyByte;
                     }
                 }
             }
-            if(keyLength <= 10 && ciphertext.length() < 200 && (((float) keyLength/ciphertext.length())*100) <= 20) {
+            if (keyLength <= 10 && ciphertext.length() < 200 && (((float) keyLength / ciphertext.length()) * 100) <= 20) {
                 for (int pos = 0; pos < ciphertext.length(); pos++) {
                     int keypos = pos % keyLength;
                     char chr = ciphertext.charAt(pos);
@@ -2874,18 +2976,19 @@ private Ngrams ngrams;
                 }
                 guessedKey = bestKey.split("");
             }
-            if(returnKey) {
+            if (returnKey) {
                 return StringUtils.join(guessedKey, "");
             } else {
                 return xor(ciphertext, StringUtils.join(guessedKey, ""));
             }
         }
+
         void doOneChar(String key, int l, ArrayList<ArrayList<Character>> charCandidates, ArrayList<String> keyPermutations, String[] guessedKey) {
-            if(l == charCandidates.size()) {
+            if (l == charCandidates.size()) {
                 keyPermutations.add(key);
                 return;
             }
-            if(charCandidates.get(l).size() == 0) {
+            if (charCandidates.get(l).size() == 0) {
                 doOneChar(key + guessedKey[l], l + 1, charCandidates, keyPermutations, guessedKey);
             } else {
                 for (char c : charCandidates.get(l)) {
@@ -2893,24 +2996,26 @@ private Ngrams ngrams;
                 }
             }
         }
+
         String xor_getkey(String ciphertext) {
             int len = guess_key_length(ciphertext);
             return xor_decrypt(ciphertext, len, true);
         }
+
         String affine_encrypt(String message, int key1, int key2) {
-            int[] keyArray1 = {1,3,5,7,9,11,15,17,19,21,23,25};
-            int[] keyArray2 = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25};
+            int[] keyArray1 = {1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25};
+            int[] keyArray2 = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25};
             String encoded = "";
-            if(!IntStream.of(keyArray1).anyMatch(x -> x == key1)) {
+            if (!IntStream.of(keyArray1).anyMatch(x -> x == key1)) {
                 return "Invalid key1 must be one of:1,3,5,7,9,11,15,17,19,21,23,25";
             }
-            if(!IntStream.of(keyArray2).anyMatch(x -> x == key2)) {
+            if (!IntStream.of(keyArray2).anyMatch(x -> x == key2)) {
                 return "Invalid key2 must be one of:0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25";
             }
             message = message.toLowerCase();
-            for(int i=0;i<message.length();i++) {
+            for (int i = 0; i < message.length(); i++) {
                 char chr = message.charAt(i);
-                if(Character.isLowerCase(chr)) {
+                if (Character.isLowerCase(chr)) {
                     int chrCode = Character.codePointAt(message, i) - 97;
                     int newChrCode = ((key1 * chrCode + key2) % 26) + 97;
                     encoded += (char) newChrCode;
@@ -2920,14 +3025,15 @@ private Ngrams ngrams;
             }
             return encoded;
         }
+
         String affine_decrypt(String ciphertext, int key1, int key2) {
-            int[] keyArray1 = {1,3,5,7,9,11,15,17,19,21,23,25};
-            int[] keyArray2 = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25};
+            int[] keyArray1 = {1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25};
+            int[] keyArray2 = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25};
             String plaintext = "";
-            if(!IntStream.of(keyArray1).anyMatch(x -> x == key1)) {
+            if (!IntStream.of(keyArray1).anyMatch(x -> x == key1)) {
                 return "Invalid key1 must be one of:1,3,5,7,9,11,15,17,19,21,23,25";
             }
-            if(!IntStream.of(keyArray2).anyMatch(x -> x == key2)) {
+            if (!IntStream.of(keyArray2).anyMatch(x -> x == key2)) {
                 return "Invalid key2 must be one of:0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25";
             }
             int multinverse = 1;
@@ -2936,9 +3042,9 @@ private Ngrams ngrams;
                     multinverse = i;
                 }
             }
-            for(int i=0;i<ciphertext.length();i++) {
+            for (int i = 0; i < ciphertext.length(); i++) {
                 char chr = ciphertext.charAt(i);
-                if(Character.isLowerCase(chr)) {
+                if (Character.isLowerCase(chr)) {
                     int chrCode = Character.codePointAt(ciphertext, i) - 97;
                     int newChrCode = ((multinverse * (chrCode + 26 - key2)) % 26) + 97;
                     plaintext += (char) newChrCode;
@@ -2948,101 +3054,67 @@ private Ngrams ngrams;
             }
             return plaintext;
         }
+
         String atbash_encrypt(String message) {
             message = message.toLowerCase();
             String encoded = "";
             String key = "ZYXWVUTSRQPONMLKJIHGFEDCBA".toLowerCase();
-            for(int i=0;i<message.length();i++) {
+            for (int i = 0; i < message.length(); i++) {
                 char chr = message.charAt(i);
-                if(Character.isLowerCase(chr)) {
-                    encoded += key.charAt(message.codePointAt(i)-97);
+                if (Character.isLowerCase(chr)) {
+                    encoded += key.charAt(message.codePointAt(i) - 97);
                 } else {
                     encoded += chr;
                 }
             }
             return encoded;
         }
+
         String atbash_decrypt(String ciphertext) {
             ciphertext = ciphertext.toLowerCase();
             String plaintext = "";
             String key = "ZYXWVUTSRQPONMLKJIHGFEDCBA".toLowerCase();
-            for(int i=0;i<ciphertext.length();i++) {
+            for (int i = 0; i < ciphertext.length(); i++) {
                 char chr = ciphertext.charAt(i);
-                if(Character.isLowerCase(chr)) {
-                    plaintext += (char) (key.indexOf(ciphertext.charAt(i))+97);
+                if (Character.isLowerCase(chr)) {
+                    plaintext += (char) (key.indexOf(ciphertext.charAt(i)) + 97);
                 } else {
                     plaintext += chr;
                 }
             }
             return plaintext;
         }
+
         String rotN_bruteforce(String str) {
             String out = "";
-            for(int i = 1; i <= 25;i++) {
+            for (int i = 1; i <= 25; i++) {
                 out += i + "=" + rotN(str, i) + "\n";
             }
             return out;
         }
+
         String rail_fence_encrypt(String message, int key) {
             String ciphertext = "";
-            message = message.toLowerCase().replaceAll("[^a-z]","");
-            if(key < 1) {
+            message = message.toLowerCase().replaceAll("[^a-z]", "");
+            if (key < 1) {
                 return "";
             }
-            if(message.length() < 1) {
+            if (message.length() < 1) {
                 return "";
             }
-            if(key > Math.floor(2*message.length()-1)) {
+            if (key > Math.floor(2 * message.length() - 1)) {
                 return "Error: key is too large for plaintext length";
             }
-            if(key == 1) {
+            if (key == 1) {
                 return message;
             } else {
                 int line = 0;
-                for(line=0;line<key-1;line++) {
-                    int skip = 2 * (key-line-1);
+                for (line = 0; line < key - 1; line++) {
+                    int skip = 2 * (key - line - 1);
                     int j = 0;
-                    for(int i=line;i<message.length();) {
+                    for (int i = line; i < message.length(); ) {
                         ciphertext += message.charAt(i);
-                        if((line == 0) || (j % 2 == 0)) {
-                            i+=skip;
-                        } else {
-                            i += 2 * (key - 1) - skip;
-                        }
-                        j++;
-                    }
-                }
-                for(int i = line; i < message.length(); i += 2 *(key-1)) {
-                    ciphertext += message.charAt(i);
-                }
-                return ciphertext;
-            }
-
-        }
-        String rail_fence_decrypt(String encoded, int key) {
-            String plaintext = "";
-            encoded = encoded.toLowerCase().replaceAll("[^a-z]","");
-            if(key < 1) {
-                return "";
-            }
-            if(encoded.length() < 1) {
-                return "";
-            }
-            if(key > Math.floor(2*encoded.length()-1)) {
-                return "Error: key is too large for plaintext length";
-            }
-            if(key == 1) {
-                return encoded;
-            } else {
-                String[] pt = new String[encoded.length()];
-                int k = 0;
-                int line = 0;
-                for(line = 0;line<key-1;line++) {
-                    int skip = 2 * (key-line-1);
-                    int j = 0;
-                    for(int i=line;i<encoded.length();) {
-                        pt[i] = "" + encoded.charAt(k++);
-                        if((line == 0) || (j % 2 == 0)) {
+                        if ((line == 0) || (j % 2 == 0)) {
                             i += skip;
                         } else {
                             i += 2 * (key - 1) - skip;
@@ -3050,46 +3122,87 @@ private Ngrams ngrams;
                         j++;
                     }
                 }
-                for(int i=line; i < encoded.length(); i += 2 * (key -1)) {
+                for (int i = line; i < message.length(); i += 2 * (key - 1)) {
+                    ciphertext += message.charAt(i);
+                }
+                return ciphertext;
+            }
+
+        }
+
+        String rail_fence_decrypt(String encoded, int key) {
+            String plaintext = "";
+            encoded = encoded.toLowerCase().replaceAll("[^a-z]", "");
+            if (key < 1) {
+                return "";
+            }
+            if (encoded.length() < 1) {
+                return "";
+            }
+            if (key > Math.floor(2 * encoded.length() - 1)) {
+                return "Error: key is too large for plaintext length";
+            }
+            if (key == 1) {
+                return encoded;
+            } else {
+                String[] pt = new String[encoded.length()];
+                int k = 0;
+                int line = 0;
+                for (line = 0; line < key - 1; line++) {
+                    int skip = 2 * (key - line - 1);
+                    int j = 0;
+                    for (int i = line; i < encoded.length(); ) {
+                        pt[i] = "" + encoded.charAt(k++);
+                        if ((line == 0) || (j % 2 == 0)) {
+                            i += skip;
+                        } else {
+                            i += 2 * (key - 1) - skip;
+                        }
+                        j++;
+                    }
+                }
+                for (int i = line; i < encoded.length(); i += 2 * (key - 1)) {
                     pt[i] = "" + encoded.charAt(k++);
                 }
                 plaintext = String.join("", pt);
             }
             return plaintext;
         }
+
         String substitution_encrypt(String message, String key) {
             String ciphertext = "";
             message = message.toLowerCase();
-            key = key.replaceAll("[^a-z]","");
-            if(key.length() != 26) {
+            key = key.replaceAll("[^a-z]", "");
+            if (key.length() != 26) {
                 return "Error: Key length must be 26 characters";
             }
-            if(message.length() < 1) {
+            if (message.length() < 1) {
                 return "";
             }
-            for(int i=0;i<message.length();i++) {
+            for (int i = 0; i < message.length(); i++) {
                 char chr = message.charAt(i);
-                if(Character.isLowerCase(chr)) {
-                    ciphertext += key.charAt(message.codePointAt(i)-97);
+                if (Character.isLowerCase(chr)) {
+                    ciphertext += key.charAt(message.codePointAt(i) - 97);
                 } else {
                     ciphertext += "" + chr;
                 }
             }
             return ciphertext;
         }
+
         String substitution_decrypt(String ciphertext, String key) {
             ciphertext = ciphertext.toLowerCase();
             String plaintext = "";
-            key = key.toLowerCase().replaceAll("[^a-z]","");
-            if(key.length() != 26) {
+            key = key.toLowerCase().replaceAll("[^a-z]", "");
+            if (key.length() != 26) {
                 return "Error: Key length must be 26 characters";
             }
-            if(ciphertext.length() < 1) {
+            if (ciphertext.length() < 1) {
                 return "";
             }
-            for(int i=0;i<ciphertext.length();i++) {
+            for (int i = 0; i < ciphertext.length(); i++) {
                 char chr = ciphertext.charAt(i);
-                if(Character.isLowerCase(chr)) {
+                if (Character.isLowerCase(chr)) {
                     plaintext += (char) (key.indexOf(ciphertext.charAt(i)) + 97);
                 } else {
                     plaintext += ciphertext.charAt(i);
@@ -3097,204 +3210,221 @@ private Ngrams ngrams;
             }
             return plaintext;
         }
-		String decode_js_string(String str) {
-			return JavaScriptEscape.unescapeJavaScript(str);
-		}
-		String decode_css_escapes(String str) {
-			return CssEscape.unescapeCss(str);
-		}
-		String dec2hex(String str, String splitChar) {
-			String[] chars = {};
-			try {
-				chars = str.split(splitChar);
-			} catch(PatternSyntaxException e) {
-				stderr.println(e.getMessage());				
-			}
-			for(int i=0;i<chars.length;i++) {
-				try {
-					chars[i] = this.zeropad(Integer.toHexString(Integer.parseInt(chars[i])),",",2);	
-				} catch(NumberFormatException e){
-					stderr.println(e.getMessage());
-				}				
-			}
-			return StringUtils.join(chars, ",");
-		}
+
+        String decode_js_string(String str) {
+            return JavaScriptEscape.unescapeJavaScript(str);
+        }
+
+        String decode_css_escapes(String str) {
+            return CssEscape.unescapeCss(str);
+        }
+
+        String dec2hex(String str, String splitChar) {
+            String[] chars = {};
+            try {
+                chars = str.split(splitChar);
+            } catch (PatternSyntaxException e) {
+                stderr.println(e.getMessage());
+            }
+            for (int i = 0; i < chars.length; i++) {
+                try {
+                    chars[i] = this.zeropad(Integer.toHexString(Integer.parseInt(chars[i])), ",", 2);
+                } catch (NumberFormatException e) {
+                    stderr.println(e.getMessage());
+                }
+            }
+            return StringUtils.join(chars, ",");
+        }
+
         String chunked_dec2hex(String str) {
             try {
                 return Integer.toHexString(Integer.parseInt(str));
-            } catch(NumberFormatException e){
+            } catch (NumberFormatException e) {
                 return e.getMessage();
             }
         }
-		String dec2oct(String str, String splitChar) {
-			String[] chars = {};
-			try {
-				chars = str.split(splitChar);
-			} catch(PatternSyntaxException e) {
-				stderr.println(e.getMessage());				
-			}		
-			for(int i=0;i<chars.length;i++) {
-				try {
-					chars[i] = Integer.toOctalString(Integer.parseInt(chars[i]));	
-				} catch(NumberFormatException e){
-					stderr.println(e.getMessage());
-				}				
-			}
-			return StringUtils.join(chars, ",");
-		}
-		String dec2bin(String str, String splitChar) {
-			String[] chars = {};
-			try {
-				chars = str.split(splitChar);
-			} catch(PatternSyntaxException e) {
-				stderr.println(e.getMessage());				
-			}		
-			for(int i=0;i<chars.length;i++) {
-				try {
-					chars[i] = Integer.toBinaryString(Integer.parseInt(chars[i]));	
-				} catch(NumberFormatException e){
-					stderr.println(e.getMessage());
-				}				
-			}
-			return StringUtils.join(chars, ",");
-		}
-		String hex2dec(String str, String splitChar) {
-			String[] chars = {};
-			try {
-				chars = str.split(splitChar);
-			} catch(PatternSyntaxException e) {
-				stderr.println(e.getMessage());				
-			}		
-			for(int i=0;i<chars.length;i++) {
-				try {
-					chars[i] = Integer.toString(Integer.parseInt(chars[i],16));	
-				} catch(NumberFormatException e){
-					stderr.println(e.getMessage());
-				}				
-			}
-			return StringUtils.join(chars, ",");
-		}
-		String oct2dec(String str, String splitChar) {
-			String[] chars = {};
-			try {
-				chars = str.split(splitChar);
-			} catch(PatternSyntaxException e) {
-				stderr.println(e.getMessage());				
-			}		
-			for(int i=0;i<chars.length;i++) {
-				try {
-					chars[i] = Integer.toString(Integer.parseInt(chars[i],8));	
-				} catch(NumberFormatException e){
-					stderr.println(e.getMessage());
-				}				
-			}
-			return StringUtils.join(chars, ",");
-		}
-		String bin2dec(String str, String splitChar) {
-			String[] chars = {};
-			try {
-				chars = str.split(splitChar);
-			} catch(PatternSyntaxException e) {
-				stderr.println(e.getMessage());				
-			}		
-			for(int i=0;i<chars.length;i++) {
-				try {
-					chars[i] = Integer.toString(Integer.parseInt(chars[i],2));	
-				} catch(NumberFormatException e){
-					stderr.println(e.getMessage());
-				}				
-			}
-			return StringUtils.join(chars, ",");
-		}
-		String from_charcode(String str) {
-		   String[] chars = str.split("[\\s,]");
-		   String output = "";	   
-		   for(int i=0;i<chars.length;i++) {
-			   try {
-				   output += Character.toString((char) Integer.parseInt(chars[i]));
-			   } catch(NumberFormatException e){ 
-					stderr.println(e.getMessage()); 
-			   }
-		   }
-		   return output;
-		}
-		String to_charcode(String str) {
-			ArrayList<Integer> output = new ArrayList<Integer>();
-			for(int i=0;i<str.length();i++) {
-				output.add(Character.codePointAt(str, i));
-			}
-			return StringUtils.join(output,",");
-		}
-		String ascii2bin(String str) {
-			String output = "";
-			for(int i=0;i<str.length();i++) {
-			   try {
-				   output += Integer.toBinaryString(Character.codePointAt(str, i));
-				   output += " ";
-			   } catch(NumberFormatException e){ 
-					stderr.println(e.getMessage()); 
-			   }
-		   }
-			return output;
-		}
-		String bin2ascii(String str) {
-			String[] chars = str.split(" ");
-			String output = "";
-			for(int i=0;i<chars.length;i++) {
-				   try {
-					   output += Character.toString((char) Integer.parseInt(chars[i],2));
-				   } catch(NumberFormatException e){ 
-						stderr.println(e.getMessage()); 
-				   }
-			   }
-			return output;
-		}
-		String ascii2hex(String str, String separator) {
-			String output = "";
-			String hex = "";
-			for(int i=0;i<str.length();i++) {
-			   try {
-				   hex = Integer.toHexString(Character.codePointAt(str, i));
-				   if(hex.length() % 2 != 0) {
-					   hex = "0" + hex;
-				   }
-				   output += hex;
-				   if(separator.length() > 0 && i < str.length()-1) {
-					   output += separator;
-				   }
-			   } catch(NumberFormatException e){ 
-					stderr.println(e.getMessage()); 
-			   }
-			}
-			return output;
-		}
-		String ascii2reverse_hex(String str, String separator) {
-			String hex = "";
-			List<String> output = new ArrayList<>();
-			for(int i=0;i<str.length();i++) {
-			   try {
-				   hex = Integer.toHexString(Character.codePointAt(str, i));
-				   if(hex.length() % 2 != 0) {
-					   hex = "0" + hex;
-				   }
-				   output.add(hex);				
-			   } catch(NumberFormatException e){ 
-					stderr.println(e.getMessage()); 
-			   }
-			}
-			Collections.reverse(output);
-			return StringUtils.join(output,"");
-		}		
-		String hex2ascii(String str) {
+
+        String dec2oct(String str, String splitChar) {
+            String[] chars = {};
+            try {
+                chars = str.split(splitChar);
+            } catch (PatternSyntaxException e) {
+                stderr.println(e.getMessage());
+            }
+            for (int i = 0; i < chars.length; i++) {
+                try {
+                    chars[i] = Integer.toOctalString(Integer.parseInt(chars[i]));
+                } catch (NumberFormatException e) {
+                    stderr.println(e.getMessage());
+                }
+            }
+            return StringUtils.join(chars, ",");
+        }
+
+        String dec2bin(String str, String splitChar) {
+            String[] chars = {};
+            try {
+                chars = str.split(splitChar);
+            } catch (PatternSyntaxException e) {
+                stderr.println(e.getMessage());
+            }
+            for (int i = 0; i < chars.length; i++) {
+                try {
+                    chars[i] = Integer.toBinaryString(Integer.parseInt(chars[i]));
+                } catch (NumberFormatException e) {
+                    stderr.println(e.getMessage());
+                }
+            }
+            return StringUtils.join(chars, ",");
+        }
+
+        String hex2dec(String str, String splitChar) {
+            String[] chars = {};
+            try {
+                chars = str.split(splitChar);
+            } catch (PatternSyntaxException e) {
+                stderr.println(e.getMessage());
+            }
+            for (int i = 0; i < chars.length; i++) {
+                try {
+                    chars[i] = Integer.toString(Integer.parseInt(chars[i], 16));
+                } catch (NumberFormatException e) {
+                    stderr.println(e.getMessage());
+                }
+            }
+            return StringUtils.join(chars, ",");
+        }
+
+        String oct2dec(String str, String splitChar) {
+            String[] chars = {};
+            try {
+                chars = str.split(splitChar);
+            } catch (PatternSyntaxException e) {
+                stderr.println(e.getMessage());
+            }
+            for (int i = 0; i < chars.length; i++) {
+                try {
+                    chars[i] = Integer.toString(Integer.parseInt(chars[i], 8));
+                } catch (NumberFormatException e) {
+                    stderr.println(e.getMessage());
+                }
+            }
+            return StringUtils.join(chars, ",");
+        }
+
+        String bin2dec(String str, String splitChar) {
+            String[] chars = {};
+            try {
+                chars = str.split(splitChar);
+            } catch (PatternSyntaxException e) {
+                stderr.println(e.getMessage());
+            }
+            for (int i = 0; i < chars.length; i++) {
+                try {
+                    chars[i] = Integer.toString(Integer.parseInt(chars[i], 2));
+                } catch (NumberFormatException e) {
+                    stderr.println(e.getMessage());
+                }
+            }
+            return StringUtils.join(chars, ",");
+        }
+
+        String from_charcode(String str) {
+            String[] chars = str.split("[\\s,]");
+            String output = "";
+            for (int i = 0; i < chars.length; i++) {
+                try {
+                    output += Character.toString((char) Integer.parseInt(chars[i]));
+                } catch (NumberFormatException e) {
+                    stderr.println(e.getMessage());
+                }
+            }
+            return output;
+        }
+
+        String to_charcode(String str) {
+            ArrayList<Integer> output = new ArrayList<Integer>();
+            for (int i = 0; i < str.length(); i++) {
+                output.add(Character.codePointAt(str, i));
+            }
+            return StringUtils.join(output, ",");
+        }
+
+        String ascii2bin(String str) {
+            String output = "";
+            for (int i = 0; i < str.length(); i++) {
+                try {
+                    output += Integer.toBinaryString(Character.codePointAt(str, i));
+                    output += " ";
+                } catch (NumberFormatException e) {
+                    stderr.println(e.getMessage());
+                }
+            }
+            return output;
+        }
+
+        String bin2ascii(String str) {
+            String[] chars = str.split(" ");
+            String output = "";
+            for (int i = 0; i < chars.length; i++) {
+                try {
+                    output += Character.toString((char) Integer.parseInt(chars[i], 2));
+                } catch (NumberFormatException e) {
+                    stderr.println(e.getMessage());
+                }
+            }
+            return output;
+        }
+
+        String ascii2hex(String str, String separator) {
+            String output = "";
+            String hex = "";
+            for (int i = 0; i < str.length(); i++) {
+                try {
+                    hex = Integer.toHexString(Character.codePointAt(str, i));
+                    if (hex.length() % 2 != 0) {
+                        hex = "0" + hex;
+                    }
+                    output += hex;
+                    if (separator.length() > 0 && i < str.length() - 1) {
+                        output += separator;
+                    }
+                } catch (NumberFormatException e) {
+                    stderr.println(e.getMessage());
+                }
+            }
+            return output;
+        }
+
+        String ascii2reverse_hex(String str, String separator) {
+            String hex = "";
+            List<String> output = new ArrayList<>();
+            for (int i = 0; i < str.length(); i++) {
+                try {
+                    hex = Integer.toHexString(Character.codePointAt(str, i));
+                    if (hex.length() % 2 != 0) {
+                        hex = "0" + hex;
+                    }
+                    output.add(hex);
+                } catch (NumberFormatException e) {
+                    stderr.println(e.getMessage());
+                }
+            }
+            Collections.reverse(output);
+            return StringUtils.join(output, "");
+        }
+
+        String hex2ascii(String str) {
             Pattern p = Pattern.compile("([0-9a-fA-F]{2})(?:[\\s,\\-]?)");
             Matcher m = p.matcher(str);
             StringBuffer sb = new StringBuffer();
             while (m.find()) {
                 m.appendReplacement(sb, "");
-                sb.append(Character.toString((char) Integer.parseInt(m.group(1),16)));
+                sb.append(Character.toString((char) Integer.parseInt(m.group(1), 16)));
             }
             return sb.toString();
-		}
+        }
+
         String hmac(String str, String key, String algoName) {
             Mac hashMac = null;
             try {
@@ -3309,205 +3439,245 @@ private Ngrams ngrams;
                 return e.getMessage();
             }
         }
+
         String hmacmd5(String str, String key) {
             return hmac(str, key, "HmacMD5");
         }
+
         String hmacsha1(String str, String key) {
             return hmac(str, key, "HmacSHA1");
         }
+
         String hmacsha224(String str, String key) {
             return hmac(str, key, "HmacSHA224");
         }
+
         String hmacsha256(String str, String key) {
             return hmac(str, key, "HmacSHA256");
         }
+
         String hmacsha384(String str, String key) {
             return hmac(str, key, "HmacSHA384");
         }
+
         String hmacsha512(String str, String key) {
             return hmac(str, key, "HmacSHA512");
         }
+
         String sha1(String str) {
-			return DigestUtils.sha1Hex(str);
-		}
+            return DigestUtils.sha1Hex(str);
+        }
+
         String sha224(String message) {
             SHA224Digest digest = new SHA224Digest();
-            digest.update(message.getBytes(),0,message.getBytes().length);
+            digest.update(message.getBytes(), 0, message.getBytes().length);
             byte[] bytes = new byte[digest.getDigestSize()];
             digest.doFinal(bytes, 0);
             return org.bouncycastle.util.encoders.Hex.toHexString(bytes);
         }
-		String sha256(String str) {
-			return DigestUtils.sha256Hex(str);
-		}
-		String sha384(String str) {
-			return DigestUtils.sha384Hex(str);
-		}
-		String sha512(String str) {
-			return DigestUtils.sha512Hex(str);
-		}
+
+        String sha256(String str) {
+            return DigestUtils.sha256Hex(str);
+        }
+
+        String sha384(String str) {
+            return DigestUtils.sha384Hex(str);
+        }
+
+        String sha512(String str) {
+            return DigestUtils.sha512Hex(str);
+        }
+
         String sha3(String message) {
             SHA3Digest digest = new SHA3Digest();
-            digest.update(message.getBytes(),0,message.getBytes().length);
+            digest.update(message.getBytes(), 0, message.getBytes().length);
             byte[] bytes = new byte[digest.getDigestSize()];
             digest.doFinal(bytes, 0);
             return org.bouncycastle.util.encoders.Hex.toHexString(bytes);
         }
+
         String sha3_224(String message) {
             SHA3Digest digest = new SHA3Digest(224);
-            digest.update(message.getBytes(),0,message.getBytes().length);
+            digest.update(message.getBytes(), 0, message.getBytes().length);
             byte[] bytes = new byte[digest.getDigestSize()];
             digest.doFinal(bytes, 0);
             return org.bouncycastle.util.encoders.Hex.toHexString(bytes);
         }
+
         String sha3_256(String message) {
             SHA3Digest digest = new SHA3Digest(256);
-            digest.update(message.getBytes(),0,message.getBytes().length);
+            digest.update(message.getBytes(), 0, message.getBytes().length);
             byte[] bytes = new byte[digest.getDigestSize()];
             digest.doFinal(bytes, 0);
             return org.bouncycastle.util.encoders.Hex.toHexString(bytes);
         }
+
         String sha3_384(String message) {
             SHA3Digest digest = new SHA3Digest(384);
-            digest.update(message.getBytes(),0,message.getBytes().length);
+            digest.update(message.getBytes(), 0, message.getBytes().length);
             byte[] bytes = new byte[digest.getDigestSize()];
             digest.doFinal(bytes, 0);
             return org.bouncycastle.util.encoders.Hex.toHexString(bytes);
         }
+
         String sha3_512(String message) {
             SHA3Digest digest = new SHA3Digest(512);
-            digest.update(message.getBytes(),0,message.getBytes().length);
+            digest.update(message.getBytes(), 0, message.getBytes().length);
             byte[] bytes = new byte[digest.getDigestSize()];
             digest.doFinal(bytes, 0);
             return org.bouncycastle.util.encoders.Hex.toHexString(bytes);
         }
+
         String skein_256_128(String message) {
             Skein.Digest_256_128 digest = new Skein.Digest_256_128();
-            digest.update(message.getBytes(),0,message.getBytes().length);
+            digest.update(message.getBytes(), 0, message.getBytes().length);
             return org.bouncycastle.util.encoders.Hex.toHexString(digest.digest());
         }
+
         String skein_256_160(String message) {
             Skein.Digest_256_160 digest = new Skein.Digest_256_160();
-            digest.update(message.getBytes(),0,message.getBytes().length);
+            digest.update(message.getBytes(), 0, message.getBytes().length);
             return org.bouncycastle.util.encoders.Hex.toHexString(digest.digest());
         }
+
         String skein_256_224(String message) {
             Skein.Digest_256_224 digest = new Skein.Digest_256_224();
-            digest.update(message.getBytes(),0,message.getBytes().length);
+            digest.update(message.getBytes(), 0, message.getBytes().length);
             return org.bouncycastle.util.encoders.Hex.toHexString(digest.digest());
         }
+
         String skein_256_256(String message) {
             Skein.Digest_256_256 digest = new Skein.Digest_256_256();
-            digest.update(message.getBytes(),0,message.getBytes().length);
+            digest.update(message.getBytes(), 0, message.getBytes().length);
             return org.bouncycastle.util.encoders.Hex.toHexString(digest.digest());
         }
+
         String skein_512_128(String message) {
             Skein.Digest_512_128 digest = new Skein.Digest_512_128();
-            digest.update(message.getBytes(),0,message.getBytes().length);
+            digest.update(message.getBytes(), 0, message.getBytes().length);
             return org.bouncycastle.util.encoders.Hex.toHexString(digest.digest());
         }
+
         String skein_512_160(String message) {
             Skein.Digest_512_160 digest = new Skein.Digest_512_160();
-            digest.update(message.getBytes(),0,message.getBytes().length);
+            digest.update(message.getBytes(), 0, message.getBytes().length);
             return org.bouncycastle.util.encoders.Hex.toHexString(digest.digest());
         }
+
         String skein_512_224(String message) {
             Skein.Digest_512_224 digest = new Skein.Digest_512_224();
-            digest.update(message.getBytes(),0,message.getBytes().length);
+            digest.update(message.getBytes(), 0, message.getBytes().length);
             return org.bouncycastle.util.encoders.Hex.toHexString(digest.digest());
         }
+
         String skein_512_256(String message) {
             Skein.Digest_512_256 digest = new Skein.Digest_512_256();
-            digest.update(message.getBytes(),0,message.getBytes().length);
+            digest.update(message.getBytes(), 0, message.getBytes().length);
             return org.bouncycastle.util.encoders.Hex.toHexString(digest.digest());
         }
+
         String skein_512_384(String message) {
             Skein.Digest_512_384 digest = new Skein.Digest_512_384();
-            digest.update(message.getBytes(),0,message.getBytes().length);
+            digest.update(message.getBytes(), 0, message.getBytes().length);
             return org.bouncycastle.util.encoders.Hex.toHexString(digest.digest());
         }
+
         String skein_512_512(String message) {
             Skein.Digest_512_512 digest = new Skein.Digest_512_512();
-            digest.update(message.getBytes(),0,message.getBytes().length);
+            digest.update(message.getBytes(), 0, message.getBytes().length);
             return org.bouncycastle.util.encoders.Hex.toHexString(digest.digest());
         }
+
         String skein_1024_384(String message) {
             Skein.Digest_1024_384 digest = new Skein.Digest_1024_384();
-            digest.update(message.getBytes(),0,message.getBytes().length);
+            digest.update(message.getBytes(), 0, message.getBytes().length);
             return org.bouncycastle.util.encoders.Hex.toHexString(digest.digest());
         }
+
         String skein_1024_512(String message) {
             Skein.Digest_1024_512 digest = new Skein.Digest_1024_512();
-            digest.update(message.getBytes(),0,message.getBytes().length);
+            digest.update(message.getBytes(), 0, message.getBytes().length);
             return org.bouncycastle.util.encoders.Hex.toHexString(digest.digest());
         }
+
         String skein_1024_1024(String message) {
             Skein.Digest_1024_1024 digest = new Skein.Digest_1024_1024();
-            digest.update(message.getBytes(),0,message.getBytes().length);
+            digest.update(message.getBytes(), 0, message.getBytes().length);
             return org.bouncycastle.util.encoders.Hex.toHexString(digest.digest());
         }
+
         String sm3(String message) {
             SM3Digest digest = new SM3Digest();
-            digest.update(message.getBytes(),0,message.getBytes().length);
+            digest.update(message.getBytes(), 0, message.getBytes().length);
             byte[] bytes = new byte[digest.getDigestSize()];
             digest.doFinal(bytes, 0);
             return org.bouncycastle.util.encoders.Hex.toHexString(bytes);
         }
+
         String tiger(String message) {
             TigerDigest digest = new TigerDigest();
-            digest.update(message.getBytes(),0,message.getBytes().length);
+            digest.update(message.getBytes(), 0, message.getBytes().length);
             byte[] bytes = new byte[digest.getDigestSize()];
             digest.doFinal(bytes, 0);
             return org.bouncycastle.util.encoders.Hex.toHexString(bytes);
         }
-		String md2(String str) {
-			return DigestUtils.md2Hex(str);
-		}
-		String md5(String str) {
+
+        String md2(String str) {
+            return DigestUtils.md2Hex(str);
+        }
+
+        String md5(String str) {
             return DigestUtils.md5Hex(str);
         }
+
         String md4(String message) {
             MD4Digest digest = new MD4Digest();
-            digest.update(message.getBytes(),0,message.getBytes().length);
+            digest.update(message.getBytes(), 0, message.getBytes().length);
             byte[] md4Bytes = new byte[digest.getDigestSize()];
             digest.doFinal(md4Bytes, 0);
             return org.bouncycastle.util.encoders.Hex.toHexString(md4Bytes);
         }
+
         String gost3411(String message) {
             GOST3411Digest digest = new GOST3411Digest();
-            digest.update(message.getBytes(),0,message.getBytes().length);
+            digest.update(message.getBytes(), 0, message.getBytes().length);
             byte[] bytes = new byte[digest.getDigestSize()];
             digest.doFinal(bytes, 0);
             return org.bouncycastle.util.encoders.Hex.toHexString(bytes);
         }
+
         String ripemd128(String message) {
             RIPEMD128Digest digest = new RIPEMD128Digest();
-            digest.update(message.getBytes(),0,message.getBytes().length);
+            digest.update(message.getBytes(), 0, message.getBytes().length);
             byte[] bytes = new byte[digest.getDigestSize()];
             digest.doFinal(bytes, 0);
             return org.bouncycastle.util.encoders.Hex.toHexString(bytes);
         }
+
         String ripemd160(String message) {
             RIPEMD160Digest digest = new RIPEMD160Digest();
-            digest.update(message.getBytes(),0,message.getBytes().length);
+            digest.update(message.getBytes(), 0, message.getBytes().length);
             byte[] bytes = new byte[digest.getDigestSize()];
             digest.doFinal(bytes, 0);
             return org.bouncycastle.util.encoders.Hex.toHexString(bytes);
         }
+
         String ripemd256(String message) {
             RIPEMD256Digest digest = new RIPEMD256Digest();
-            digest.update(message.getBytes(),0,message.getBytes().length);
+            digest.update(message.getBytes(), 0, message.getBytes().length);
             byte[] bytes = new byte[digest.getDigestSize()];
             digest.doFinal(bytes, 0);
             return org.bouncycastle.util.encoders.Hex.toHexString(bytes);
         }
+
         String ripemd320(String message) {
             RIPEMD320Digest digest = new RIPEMD320Digest();
-            digest.update(message.getBytes(),0,message.getBytes().length);
+            digest.update(message.getBytes(), 0, message.getBytes().length);
             byte[] bytes = new byte[digest.getDigestSize()];
             digest.doFinal(bytes, 0);
             return org.bouncycastle.util.encoders.Hex.toHexString(bytes);
         }
+
         String whirlpool(String message) {
             MessageDigest digest = null;
             try {
@@ -3520,82 +3690,93 @@ private Ngrams ngrams;
             byte[] result = digest.digest(message.getBytes());
             return new String(Hex.encode(result));
         }
-		String reverse(String str) {
-			return new StringBuilder(str).reverse().toString();
-		}
+
+        String reverse(String str) {
+            return new StringBuilder(str).reverse().toString();
+        }
+
         String len(String str) {
             return Integer.toString(str.length());
         }
-		String find(String str, String find) {
-			List<String> allMatches = new ArrayList<String>();
-			 try {
-				 Matcher m = Pattern.compile(find).matcher(str);
-				 while (m.find()) {
-				   allMatches.add(m.group());
-				 }
-			 } catch(PatternSyntaxException e) {
-				 stderr.println(e.getMessage());
-			 }
-			 return StringUtils.join(allMatches,",");
-		}
-		String replace(String str, String find, String replace) {
-			return str.replace(find, replace);
-		}
-		String regex_replace(String str, String find, String replace) {
-			String output = "";
-			try {
-				output = str.replaceAll(find, replace.replace("\\","\\\\").replace("$","\\$"));
-			} catch(PatternSyntaxException e) {
-				 stderr.println(e.getMessage());
-			}
-			return output;
-		}
-		String repeat(String str, int amount) {
-			String output = "";
-			if(amount > 0 && amount < 10000) {
-				for(int i=0;i<amount;i++) {
-					output += str;
-				}
-			}
-			return output;
-		}
-		String split_join(String str, String splitChar, String joinChar) {
-			String[] chars = {};
-			try {
-				chars = str.split(splitChar);
-			} catch(PatternSyntaxException e) {
-				stderr.println(e.getMessage());				
-			}
-			return StringUtils.join(chars, joinChar);
-		}
-		double is_like_english(String str) {
+
+        String find(String str, String find) {
+            List<String> allMatches = new ArrayList<String>();
+            try {
+                Matcher m = Pattern.compile(find).matcher(str);
+                while (m.find()) {
+                    allMatches.add(m.group());
+                }
+            } catch (PatternSyntaxException e) {
+                stderr.println(e.getMessage());
+            }
+            return StringUtils.join(allMatches, ",");
+        }
+
+        String replace(String str, String find, String replace) {
+            return str.replace(find, replace);
+        }
+
+        String regex_replace(String str, String find, String replace) {
+            String output = "";
+            try {
+                output = str.replaceAll(find, replace.replace("\\", "\\\\").replace("$", "\\$"));
+            } catch (PatternSyntaxException e) {
+                stderr.println(e.getMessage());
+            }
+            return output;
+        }
+
+        String repeat(String str, int amount) {
+            String output = "";
+            if (amount > 0 && amount < 10000) {
+                for (int i = 0; i < amount; i++) {
+                    output += str;
+                }
+            }
+            return output;
+        }
+
+        String split_join(String str, String splitChar, String joinChar) {
+            String[] chars = {};
+            try {
+                chars = str.split(splitChar);
+            } catch (PatternSyntaxException e) {
+                stderr.println(e.getMessage());
+            }
+            return StringUtils.join(chars, joinChar);
+        }
+
+        double is_like_english(String str) {
             ngrams.setInput(str);
             return ngrams.getScore();
         }
+
         double index_of_coincidence(String str) {
-            Map<Integer,Integer> charCounter=new HashMap<Integer,Integer>();
-            for(int i=0;i<=0xff;i++) {
+            Map<Integer, Integer> charCounter = new HashMap<Integer, Integer>();
+            for (int i = 0; i <= 0xff; i++) {
                 charCounter.put(i, 0);
             }
-            for(int i=0;i<str.length();i++) {
+            for (int i = 0; i < str.length(); i++) {
                 int cp = str.codePointAt(i);
-                charCounter.put(cp, charCounter.get(cp)+1);
+                charCounter.put(cp, charCounter.get(cp) + 1);
 
             }
             double sum = 0;
             int total = str.length();
-            for(int i=0;i<=0xff;i++) {
-                sum = sum + charCounter.get(i) * (i -1 < 0 ? 0 : charCounter.get(i-1));
+            for (int i = 0; i <= 0xff; i++) {
+                sum = sum + charCounter.get(i) * (i - 1 < 0 ? 0 : charCounter.get(i - 1));
             }
             double ic = sum / (total * (total - 1));
             return ic;
         }
+
         int getGCD(int n1, int n2) {
-            if(n2 == 0) {
+            if (n2 == 0) {
                 return n1;
             }
             return getGCD(n2, n1 % n2);
         }
+
         <K, V extends Comparable<V>> Map<K, V>
         sortByValuesDesc(final Map<K, V> map) {
             Comparator<K> valueComparator =
@@ -3615,6 +3796,7 @@ private Ngrams ngrams;
             sortedByValues.putAll(map);
             return sortedByValues;
         }
+
         <K, V extends Comparable<V>> Map<K, V>
         sortByValuesAsc(final Map<K, V> map) {
             Comparator<K> valueComparator =
@@ -3634,115 +3816,118 @@ private Ngrams ngrams;
             sortedByValues.putAll(map);
             return sortedByValues;
         }
+
         String auto_decode(String str) {
             return auto_decode_decrypt(str, true);
         }
+
         String auto_decode_no_decrypt(String str) {
             return auto_decode_decrypt(str, false);
         }
-		String auto_decode_decrypt(String str, Boolean decrypt) {
-			int repeats = 20;
-			int repeat = 0;
-			boolean matched;
-			String test;
-			String encodingOpeningTags = "";
+
+        String auto_decode_decrypt(String str, Boolean decrypt) {
+            int repeats = 20;
+            int repeat = 0;
+            boolean matched;
+            String test;
+            String encodingOpeningTags = "";
             String encodingClosingTags = "";
             String tag = "";
-			do {
-			    String startStr = str;
-				matched = false;
-				if(Pattern.compile("^\\x1f\\x8b\\x08").matcher(str).find()) {
+            do {
+                String startStr = str;
+                matched = false;
+                if (Pattern.compile("^\\x1f\\x8b\\x08").matcher(str).find()) {
                     str = this.gzip_decompress(str);
                     matched = true;
-                    encodingOpeningTags = encodingOpeningTags + "<@gzip_compress_"+(++tagCounter)+">";
-                    encodingClosingTags = "<@/gzip_compress_"+(tagCounter)+">" + encodingClosingTags;
+                    encodingOpeningTags = encodingOpeningTags + "<@gzip_compress_" + (++tagCounter) + ">";
+                    encodingClosingTags = "<@/gzip_compress_" + (tagCounter) + ">" + encodingClosingTags;
                 }
-				if(Pattern.compile("[01]{4,}\\s+[01]{4,}").matcher(str).find()) {
-					str = this.bin2ascii(str);
-					matched = true;
-                    encodingOpeningTags = encodingOpeningTags + "<@ascii2bin_"+(++tagCounter)+">";
-                    encodingClosingTags = "<@/ascii2bin_"+(tagCounter)+">" + encodingClosingTags;
-				}
-                if(Pattern.compile("(?:[0-9a-fA-F]{2}[\\s,\\-]?){3,}").matcher(str).find()) {
+                if (Pattern.compile("[01]{4,}\\s+[01]{4,}").matcher(str).find()) {
+                    str = this.bin2ascii(str);
+                    matched = true;
+                    encodingOpeningTags = encodingOpeningTags + "<@ascii2bin_" + (++tagCounter) + ">";
+                    encodingClosingTags = "<@/ascii2bin_" + (tagCounter) + ">" + encodingClosingTags;
+                }
+                if (Pattern.compile("(?:[0-9a-fA-F]{2}[\\s,\\-]?){3,}").matcher(str).find()) {
                     test = this.hex2ascii(str);
-                    if(Pattern.compile("^[\\x09-\\x7f]+$",Pattern.CASE_INSENSITIVE).matcher(test).find()) {
+                    if (Pattern.compile("^[\\x09-\\x7f]+$", Pattern.CASE_INSENSITIVE).matcher(test).find()) {
                         str = test;
-                        encodingOpeningTags = encodingOpeningTags + "<@ascii2hex_"+(++tagCounter)+"(\" \")>";
-                        encodingClosingTags = "<@/ascii2hex_"+(tagCounter)+">" + encodingClosingTags;
+                        encodingOpeningTags = encodingOpeningTags + "<@ascii2hex_" + (++tagCounter) + "(\" \")>";
+                        encodingClosingTags = "<@/ascii2hex_" + (tagCounter) + ">" + encodingClosingTags;
                         repeat++;
                         continue;
                     }
                 }
-                if(Pattern.compile("^[0-9a-fA-F]+$").matcher(str).find() && str.length() % 2 == 0) {
+                if (Pattern.compile("^[0-9a-fA-F]+$").matcher(str).find() && str.length() % 2 == 0) {
                     str = this.hex2ascii(str);
                     matched = true;
-                    encodingOpeningTags = encodingOpeningTags + "<@ascii2hex_"+(++tagCounter)+"(\"\")>";
-                    encodingClosingTags = "<@/ascii2hex_"+(tagCounter)+">" + encodingClosingTags;
+                    encodingOpeningTags = encodingOpeningTags + "<@ascii2hex_" + (++tagCounter) + "(\"\")>";
+                    encodingClosingTags = "<@/ascii2hex_" + (tagCounter) + ">" + encodingClosingTags;
                 }
-				if(!Pattern.compile("[^\\d,\\s]").matcher(str).find() && Pattern.compile("\\d+[,\\s]+").matcher(str).find()) {
-					str = this.from_charcode(str);
-					matched = true;
-                    encodingOpeningTags = encodingOpeningTags + "<@to_charcode_"+(++tagCounter)+">";
-                    encodingClosingTags = "<@/to_charcode_"+(tagCounter)+">" + encodingClosingTags;
-				}
-                if(Pattern.compile("(?:\\\\[0]{0,4}[0-9a-fA-F]{2}[\\s,\\-]?){3,}").matcher(str).find()) {
+                if (!Pattern.compile("[^\\d,\\s]").matcher(str).find() && Pattern.compile("\\d+[,\\s]+").matcher(str).find()) {
+                    str = this.from_charcode(str);
+                    matched = true;
+                    encodingOpeningTags = encodingOpeningTags + "<@to_charcode_" + (++tagCounter) + ">";
+                    encodingClosingTags = "<@/to_charcode_" + (tagCounter) + ">" + encodingClosingTags;
+                }
+                if (Pattern.compile("(?:\\\\[0]{0,4}[0-9a-fA-F]{2}[\\s,\\-]?){3,}").matcher(str).find()) {
                     test = this.decode_css_escapes(str);
-                    if(Pattern.compile("^[\\x09-\\x7f]+$",Pattern.CASE_INSENSITIVE).matcher(test).find()) {
+                    if (Pattern.compile("^[\\x09-\\x7f]+$", Pattern.CASE_INSENSITIVE).matcher(test).find()) {
                         str = test;
                         matched = true;
-                        encodingOpeningTags = encodingOpeningTags + "<@css_escapes_"+(++tagCounter)+">";
-                        encodingClosingTags = "<@/css_escapes_"+(tagCounter)+">" + encodingClosingTags;
+                        encodingOpeningTags = encodingOpeningTags + "<@css_escapes_" + (++tagCounter) + ">";
+                        encodingClosingTags = "<@/css_escapes_" + (tagCounter) + ">" + encodingClosingTags;
                     }
                 }
-				if(Pattern.compile("\\\\x[0-9a-f]{2}",Pattern.CASE_INSENSITIVE).matcher(str).find()) {
-				    test = this.decode_js_string(str);
-                    if(Pattern.compile("^[\\x09-\\x7f]+$",Pattern.CASE_INSENSITIVE).matcher(test).find()) {
-                        str = test;
-                        matched = true;
-                        encodingOpeningTags = encodingOpeningTags + "<@hex_escapes_"+(++tagCounter)+">";
-                        encodingClosingTags = "<@/hex_escapes_"+(tagCounter)+">" + encodingClosingTags;
-                    }
-				}
-                if(Pattern.compile("\\\\[0-9]{1,3}").matcher(str).find()) {
+                if (Pattern.compile("\\\\x[0-9a-f]{2}", Pattern.CASE_INSENSITIVE).matcher(str).find()) {
                     test = this.decode_js_string(str);
-                    if(Pattern.compile("^[\\x09-\\x7f]+$",Pattern.CASE_INSENSITIVE).matcher(test).find()) {
+                    if (Pattern.compile("^[\\x09-\\x7f]+$", Pattern.CASE_INSENSITIVE).matcher(test).find()) {
                         str = test;
                         matched = true;
-                        encodingOpeningTags = encodingOpeningTags + "<@octal_escapes_"+(++tagCounter)+">";
-                        encodingClosingTags = "<@/octal_escapes_"+(tagCounter)+">" + encodingClosingTags;
+                        encodingOpeningTags = encodingOpeningTags + "<@hex_escapes_" + (++tagCounter) + ">";
+                        encodingClosingTags = "<@/hex_escapes_" + (tagCounter) + ">" + encodingClosingTags;
                     }
                 }
-                if(Pattern.compile("\\\\u[0-9a-f]{4}",Pattern.CASE_INSENSITIVE).matcher(str).find()) {
+                if (Pattern.compile("\\\\[0-9]{1,3}").matcher(str).find()) {
                     test = this.decode_js_string(str);
-                    if(Pattern.compile("^[\\x09-\\x7f]+$",Pattern.CASE_INSENSITIVE).matcher(test).find()) {
+                    if (Pattern.compile("^[\\x09-\\x7f]+$", Pattern.CASE_INSENSITIVE).matcher(test).find()) {
                         str = test;
                         matched = true;
-                        encodingOpeningTags = encodingOpeningTags + "<@unicode_escapes_"+(++tagCounter)+">";
-                        encodingClosingTags = "<@/unicode_escapes_"+(tagCounter)+">" + encodingClosingTags;
+                        encodingOpeningTags = encodingOpeningTags + "<@octal_escapes_" + (++tagCounter) + ">";
+                        encodingClosingTags = "<@/octal_escapes_" + (tagCounter) + ">" + encodingClosingTags;
                     }
                 }
-				if(Pattern.compile("&[a-zA-Z]+;",Pattern.CASE_INSENSITIVE).matcher(str).find()) {
-					str = this.decode_html5_entities(str);
-					matched = true;
-                    tag = "htmlentities";
-                    encodingOpeningTags = encodingOpeningTags + "<@html_entities_"+(++tagCounter)+">";
-                    encodingClosingTags = "<@/html_entities_"+(tagCounter)+">" + encodingClosingTags;
-				}
-                if(Pattern.compile("&#x?[0-9a-f]+;?",Pattern.CASE_INSENSITIVE).matcher(str).find()) {
+                if (Pattern.compile("\\\\u[0-9a-f]{4}", Pattern.CASE_INSENSITIVE).matcher(str).find()) {
+                    test = this.decode_js_string(str);
+                    if (Pattern.compile("^[\\x09-\\x7f]+$", Pattern.CASE_INSENSITIVE).matcher(test).find()) {
+                        str = test;
+                        matched = true;
+                        encodingOpeningTags = encodingOpeningTags + "<@unicode_escapes_" + (++tagCounter) + ">";
+                        encodingClosingTags = "<@/unicode_escapes_" + (tagCounter) + ">" + encodingClosingTags;
+                    }
+                }
+                if (Pattern.compile("&[a-zA-Z]+;", Pattern.CASE_INSENSITIVE).matcher(str).find()) {
                     str = this.decode_html5_entities(str);
                     matched = true;
                     tag = "htmlentities";
-                    encodingOpeningTags = encodingOpeningTags + "<@hex_entities_"+(++tagCounter)+">";
-                    encodingClosingTags = "<@/hex_entities_"+(tagCounter)+">" + encodingClosingTags;
+                    encodingOpeningTags = encodingOpeningTags + "<@html_entities_" + (++tagCounter) + ">";
+                    encodingClosingTags = "<@/html_entities_" + (tagCounter) + ">" + encodingClosingTags;
                 }
-				if(Pattern.compile("%[0-9a-f]{2}",Pattern.CASE_INSENSITIVE).matcher(str).find()) {
-					boolean plus = false;
-				    if(str.contains("+")) {
+                if (Pattern.compile("&#x?[0-9a-f]+;?", Pattern.CASE_INSENSITIVE).matcher(str).find()) {
+                    str = this.decode_html5_entities(str);
+                    matched = true;
+                    tag = "htmlentities";
+                    encodingOpeningTags = encodingOpeningTags + "<@hex_entities_" + (++tagCounter) + ">";
+                    encodingClosingTags = "<@/hex_entities_" + (tagCounter) + ">" + encodingClosingTags;
+                }
+                if (Pattern.compile("%[0-9a-f]{2}", Pattern.CASE_INSENSITIVE).matcher(str).find()) {
+                    boolean plus = false;
+                    if (str.contains("+")) {
                         plus = true;
                     }
                     str = this.decode_url(str);
-					matched = true;
-                    if(plus) {
+                    matched = true;
+                    if (plus) {
                         tag = "urldecode";
                         encodingOpeningTags = encodingOpeningTags + "<@urlencode_" + (++tagCounter) + ">";
                         encodingClosingTags = "<@/urlencode_" + (tagCounter) + ">" + encodingClosingTags;
@@ -3751,62 +3936,62 @@ private Ngrams ngrams;
                         encodingOpeningTags = encodingOpeningTags + "<@urlencode_not_plus_" + (++tagCounter) + ">";
                         encodingClosingTags = "<@/urlencode_not_plus_" + (tagCounter) + ">" + encodingClosingTags;
                     }
-				}
-                if(Pattern.compile("^[a-zA-Z0-9\\-_.]+$",Pattern.CASE_INSENSITIVE).matcher(str).find()) {
+                }
+                if (Pattern.compile("^[a-zA-Z0-9\\-_.]+$", Pattern.CASE_INSENSITIVE).matcher(str).find()) {
                     String[] parts = str.split("\\.");
-                    if(parts.length == 3 && !d_jwt_get_header(str).equals("Invalid token")) {
-                        return d_jwt_get_header(str) + "\n" +d_jwt_get_payload(str) + "\n" + decode_base64url(parts[2]);
+                    if (parts.length == 3 && !d_jwt_get_header(str).equals("Invalid token")) {
+                        return d_jwt_get_header(str) + "\n" + d_jwt_get_payload(str) + "\n" + decode_base64url(parts[2]);
                     }
                 }
-				if(Pattern.compile("[a-zA-Z0-9+/]{4,}=*$",Pattern.CASE_INSENSITIVE).matcher(str).find() && str.length() % 4 == 0) {
-					test = this.decode_base64(str);
-					if(Pattern.compile("^[\\x00-\\x7f]+$",Pattern.CASE_INSENSITIVE).matcher(test).find()) {
-						str = test;
-						matched = true;
+                if (Pattern.compile("[a-zA-Z0-9+/]{4,}=*$", Pattern.CASE_INSENSITIVE).matcher(str).find() && str.length() % 4 == 0) {
+                    test = this.decode_base64(str);
+                    if (Pattern.compile("^[\\x00-\\x7f]+$", Pattern.CASE_INSENSITIVE).matcher(test).find()) {
+                        str = test;
+                        matched = true;
                         tag = "base64";
-                        encodingOpeningTags = encodingOpeningTags + "<@base64_"+(++tagCounter)+">";
-                        encodingClosingTags = "<@/base64_"+(tagCounter)+">" + encodingClosingTags;
-					}
-				}
+                        encodingOpeningTags = encodingOpeningTags + "<@base64_" + (++tagCounter) + ">";
+                        encodingClosingTags = "<@/base64_" + (tagCounter) + ">" + encodingClosingTags;
+                    }
+                }
 
-                if(Pattern.compile("[A-Z0-9+/]{4,}=*$",Pattern.CASE_INSENSITIVE).matcher(str).find() && str.length() % 4 == 0) {
-				    test = this.decode_base32(str);
-				    if(Pattern.compile("^[\\x00-\\x7f]+$",Pattern.CASE_INSENSITIVE).matcher(test).find()) {
+                if (Pattern.compile("[A-Z0-9+/]{4,}=*$", Pattern.CASE_INSENSITIVE).matcher(str).find() && str.length() % 4 == 0) {
+                    test = this.decode_base32(str);
+                    if (Pattern.compile("^[\\x00-\\x7f]+$", Pattern.CASE_INSENSITIVE).matcher(test).find()) {
                         str = test;
                         matched = true;
                         tag = "base32";
-                        encodingOpeningTags = encodingOpeningTags + "<@base32_"+(++tagCounter)+">";
-                        encodingClosingTags = "<@/base32_"+(tagCounter)+">" + encodingClosingTags;
+                        encodingOpeningTags = encodingOpeningTags + "<@base32_" + (++tagCounter) + ">";
+                        encodingClosingTags = "<@/base32_" + (tagCounter) + ">" + encodingClosingTags;
                     }
                 }
-                if(decrypt) {
-                    if(Pattern.compile("(?:[a-zA-Z]+[\\s,-]){2,}").matcher(str).find()) {
+                if (decrypt) {
+                    if (Pattern.compile("(?:[a-zA-Z]+[\\s,-]){2,}").matcher(str).find()) {
                         double total = 0;
                         double bestScore = -9999999;
                         int n = 0;
-                        for(int i = 1; i <= 25;i++) {
+                        for (int i = 1; i <= 25; i++) {
                             String rotString = rotN(str, i);
                             double score = is_like_english(rotString);
                             total += score;
-                            if(score > bestScore) {
+                            if (score > bestScore) {
                                 bestScore = score;
                                 n = i;
                             }
                         }
                         double average = (total / 25);
-                        if((((average - bestScore) / average) * 100) > 20) {
+                        if ((((average - bestScore) / average) * 100) > 20) {
                             String originalString = str;
                             str = rotN(str, n);
                             matched = true;
                             tag = "rotN";
-                            for(int i = 1; i <= 25;i++) {
-                                if(rotN(str, i).equals(originalString)) {
+                            for (int i = 1; i <= 25; i++) {
+                                if (rotN(str, i).equals(originalString)) {
                                     n = i;
                                     break;
                                 }
                             }
-                            encodingOpeningTags = encodingOpeningTags + "<@rotN_"+(++tagCounter)+"("+n+")>";
-                            encodingClosingTags = "<@/rotN_"+(tagCounter)+">" + encodingClosingTags;
+                            encodingOpeningTags = encodingOpeningTags + "<@rotN_" + (++tagCounter) + "(" + n + ")>";
+                            encodingClosingTags = "<@/rotN_" + (tagCounter) + ">" + encodingClosingTags;
                         }
                     }
                     if (Pattern.compile("(?:[a-z]+[\\s,-]){2,}").matcher(str).find()) {
@@ -3888,161 +4073,177 @@ private Ngrams ngrams;
                         }
                     }
                 }
-				if(!matched || startStr.equals(str)) {
-					break;
-				}
-				repeat++;
-			} while(repeat < repeats);
-			return encodingOpeningTags+str+encodingClosingTags;
-		}
-		String range(String str, int from, int to, int step) {
-			ArrayList<Integer> output = new ArrayList<Integer>();
-			to++;
-			if(from >= 0 && to-from<=10000 && step > 0) {
-				for(int i=from;i<to;i+=step) {
-					output.add(i);
-				}
-			}
-			return StringUtils.join(output,",");
-		}
-		String total(String str) {
-			String[] chars = str.split(",");
-			int total = 0;
-			for(int i=0;i<chars.length;i++) {
-				try {
-					total += Integer.parseInt(chars[i]);
-				} catch(NumberFormatException e){
-					stderr.println(e.getMessage());
-				}
-			}
-			return Integer.toString(total);
-		}
-		String arithmetic(String str, int amount, String operation, String splitChar) {
-			String[] chars = {};
-			try {
-				chars = str.split(splitChar);
-			} catch(PatternSyntaxException e) {
-				stderr.println(e.getMessage());				
-			}
-			ArrayList<String> output = new ArrayList<>();
-			int num = 0;
-			for(int i=0;i<chars.length;i++) {
-			   try {
-				   num = Integer.parseInt(chars[i]);
-                   switch (operation) {
-                       case "+":
-                           num = num + amount;
-                           break;
-                       case "-":
-                           num = num - amount;
-                           break;
-                       case "/":
-                           num = num / amount;
-                           break;
-                       case "*":
-                           num = num * amount;
-                           break;
-                       case "%":
-                           num = num % amount;
-                           break;
-                       case ">>":
-                           num = num >> amount;
-                           break;
-                       case ">>>":
-                           num = num >>> amount;
-                           break;
-                       case "<<":
-                           num = num << amount;
-                           break;
-                   }
-				   output.add(""+num);
-			   } catch(NumberFormatException e){ 
-					stderr.println(e.getMessage()); 
-			   }
-		   }
-		   return StringUtils.join(output, ",");
-		}
-		String convert_base(String str, String splitChar, int from, int to) {
-			String[] chars = {};
-			try {
-				chars = str.split(splitChar);
-			} catch(PatternSyntaxException e) {
-				stderr.println(e.getMessage());				
-			}
-			for(int i=0;i<chars.length;i++) {
-				try {
-					chars[i] = ""+Integer.toString(Integer.parseInt(chars[i], from), to);
-				} catch(NumberFormatException e){
-					stderr.println(e.getMessage());
-				}				
-			}
-			return StringUtils.join(chars, ",");
-		}
-		String zeropad(String str, String splitChar, int amount) {
-			String[] chars = {};
-			try {
-				chars = str.split(splitChar);
-			} catch(PatternSyntaxException e) {
-				stderr.println(e.getMessage());				
-			}
-			if(amount > 0 && amount < 10000) {
-				for(int i=0;i<chars.length;i++) {
-					chars[i] = StringUtils.leftPad(chars[i], amount, '0');
-				}
-			}
-			return StringUtils.join(chars, ",");
-		}
-		String eval_fromcharcode(String str) {
-			return "eval(String.fromCharCode("+this.to_charcode(str)+"))";
-		}
-		String behavior(String str) {
-			return "<PUBLIC:ATTACH EVENT=onload ONEVENT="+str+" FOR=window />";
-		}
-		String css_expression(String str) {
-			return "xss:expression(open("+str+"))";
-		}
-		String datasrc(String str) {
-			return "<xml ID=xss><x><B>&lt;IMG src=1 onerror="+str+"&gt;</B></x></xml><SPAN DATASRC=#xss DATAFLD=B DATAFORMATAS=HTML></SPAN>";
-		}
-		String iframe_data_url(String str) {
-			return "<iframe src=data:text/html;base64,"+this.base64Encode(str)+">";
-		}
-		String uppercase_script(String str) {
-			return "<SVG><SCRIPT>"+this.dec_entities(str)+"</SCRIPT></SVG>";
-		}
-		String script_data(String str) {
-			return "<script src=data:;base64,"+this.base64Encode(str)+"></script>";
-		}
-		String throw_eval(String str) {
+                if (!matched || startStr.equals(str)) {
+                    break;
+                }
+                repeat++;
+            } while (repeat < repeats);
+            return encodingOpeningTags + str + encodingClosingTags;
+        }
+
+        String range(String str, int from, int to, int step) {
+            ArrayList<Integer> output = new ArrayList<Integer>();
+            to++;
+            if (from >= 0 && to - from <= 10000 && step > 0) {
+                for (int i = from; i < to; i += step) {
+                    output.add(i);
+                }
+            }
+            return StringUtils.join(output, ",");
+        }
+
+        String total(String str) {
+            String[] chars = str.split(",");
+            int total = 0;
+            for (int i = 0; i < chars.length; i++) {
+                try {
+                    total += Integer.parseInt(chars[i]);
+                } catch (NumberFormatException e) {
+                    stderr.println(e.getMessage());
+                }
+            }
+            return Integer.toString(total);
+        }
+
+        String arithmetic(String str, int amount, String operation, String splitChar) {
+            String[] chars = {};
+            try {
+                chars = str.split(splitChar);
+            } catch (PatternSyntaxException e) {
+                stderr.println(e.getMessage());
+            }
+            ArrayList<String> output = new ArrayList<>();
+            int num = 0;
+            for (int i = 0; i < chars.length; i++) {
+                try {
+                    num = Integer.parseInt(chars[i]);
+                    switch (operation) {
+                        case "+":
+                            num = num + amount;
+                            break;
+                        case "-":
+                            num = num - amount;
+                            break;
+                        case "/":
+                            num = num / amount;
+                            break;
+                        case "*":
+                            num = num * amount;
+                            break;
+                        case "%":
+                            num = num % amount;
+                            break;
+                        case ">>":
+                            num = num >> amount;
+                            break;
+                        case ">>>":
+                            num = num >>> amount;
+                            break;
+                        case "<<":
+                            num = num << amount;
+                            break;
+                    }
+                    output.add("" + num);
+                } catch (NumberFormatException e) {
+                    stderr.println(e.getMessage());
+                }
+            }
+            return StringUtils.join(output, ",");
+        }
+
+        String convert_base(String str, String splitChar, int from, int to) {
+            String[] chars = {};
+            try {
+                chars = str.split(splitChar);
+            } catch (PatternSyntaxException e) {
+                stderr.println(e.getMessage());
+            }
+            for (int i = 0; i < chars.length; i++) {
+                try {
+                    chars[i] = "" + Integer.toString(Integer.parseInt(chars[i], from), to);
+                } catch (NumberFormatException e) {
+                    stderr.println(e.getMessage());
+                }
+            }
+            return StringUtils.join(chars, ",");
+        }
+
+        String zeropad(String str, String splitChar, int amount) {
+            String[] chars = {};
+            try {
+                chars = str.split(splitChar);
+            } catch (PatternSyntaxException e) {
+                stderr.println(e.getMessage());
+            }
+            if (amount > 0 && amount < 10000) {
+                for (int i = 0; i < chars.length; i++) {
+                    chars[i] = StringUtils.leftPad(chars[i], amount, '0');
+                }
+            }
+            return StringUtils.join(chars, ",");
+        }
+
+        String eval_fromcharcode(String str) {
+            return "eval(String.fromCharCode(" + this.to_charcode(str) + "))";
+        }
+
+        String behavior(String str) {
+            return "<PUBLIC:ATTACH EVENT=onload ONEVENT=" + str + " FOR=window />";
+        }
+
+        String css_expression(String str) {
+            return "xss:expression(open(" + str + "))";
+        }
+
+        String datasrc(String str) {
+            return "<xml ID=xss><x><B>&lt;IMG src=1 onerror=" + str + "&gt;</B></x></xml><SPAN DATASRC=#xss DATAFLD=B DATAFORMATAS=HTML></SPAN>";
+        }
+
+        String iframe_data_url(String str) {
+            return "<iframe src=data:text/html;base64," + this.base64Encode(str) + ">";
+        }
+
+        String uppercase_script(String str) {
+            return "<SVG><SCRIPT>" + this.dec_entities(str) + "</SCRIPT></SVG>";
+        }
+
+        String script_data(String str) {
+            return "<script src=data:;base64," + this.base64Encode(str) + "></script>";
+        }
+
+        String throw_eval(String str) {
             String out = "window.onerror=eval;throw'=";
-            for(int i=0;i<str.length();i++) {
+            for (int i = 0; i < str.length(); i++) {
                 char chr = str.charAt(i);
-                if(Character.isDigit(chr) || Character.isAlphabetic(chr)) {
+                if (Character.isDigit(chr) || Character.isAlphabetic(chr)) {
                     out += chr;
                 } else {
-                    out += this.hex_escapes(""+chr);
+                    out += this.hex_escapes("" + chr);
                 }
             }
             out += "'";
             return out;
         }
-		String iframe_src_doc(String str) {
-			return "<iframe srcdoc="+this.html5_entities(str)+"></iframe>";
-		}
-		String template_eval(String str) {
-			return "eval(`"+str.replaceAll("(.)","$1\\${[]}")+"`)";
-		}
-		String python(String input, String code, String executionKey, JSONObject customTagOptions) {
-            if(!codeExecutionTagsEnabled) {
-               return "Code execution tags are disabled by default. Use the menu bar to enable them.";
+
+        String iframe_src_doc(String str) {
+            return "<iframe srcdoc=" + this.html5_entities(str) + "></iframe>";
+        }
+
+        String template_eval(String str) {
+            return "eval(`" + str.replaceAll("(.)", "$1\\${[]}") + "`)";
+        }
+
+        String python(String input, String code, String executionKey, JSONObject customTagOptions) {
+            if (!codeExecutionTagsEnabled) {
+                return "Code execution tags are disabled by default. Use the menu bar to enable them.";
             }
-            if(executionKey == null) {
+            if (executionKey == null) {
                 return "No execution key defined";
             }
-            if(executionKey.length() != 32) {
+            if (executionKey.length() != 32) {
                 return "Code execution key length incorrect";
             }
-            if(!tagCodeExecutionKey.equals(executionKey)) {
+            if (!tagCodeExecutionKey.equals(executionKey)) {
                 return "Incorrect tag code execution key";
             }
             try {
@@ -4051,50 +4252,51 @@ private Ngrams ngrams;
                 for (Map.Entry<String, String> entry : tagVariables.entrySet()) {
                     String name = entry.getKey();
                     Object value = entry.getValue();
-                    if(name.length() > 0) {
+                    if (name.length() > 0) {
                         pythonInterpreter.set(name, value);
                     }
                 }
-                if(customTagOptions != null) {
+                if (customTagOptions != null) {
                     JSONObject customTag = (JSONObject) customTagOptions.get("customTag");
                     int numberOfArgs = customTag.getInt("numberOfArgs");
-                    if(numberOfArgs == 1) {
+                    if (numberOfArgs == 1) {
                         pythonInterpreter.set(customTag.getString("argument1"), customTagOptions.get("param1"));
                     }
-                    if(numberOfArgs == 2) {
+                    if (numberOfArgs == 2) {
                         pythonInterpreter.set(customTag.getString("argument1"), customTagOptions.get("param1"));
                         pythonInterpreter.set(customTag.getString("argument2"), customTagOptions.get("param2"));
                     }
                 }
 
-                if(code.endsWith(".py")) {
+                if (code.endsWith(".py")) {
                     pythonInterpreter.execfile(code);
                 } else {
                     pythonInterpreter.exec(code);
                 }
                 PyObject output = pythonInterpreter.get("output");
-                if(output != null) {
+                if (output != null) {
                     return output.asString();
                 } else {
                     return "No output variable defined";
                 }
-            } catch(PyException e) {
-                return "Invalid Python code:"+e.toString();
+            } catch (PyException e) {
+                return "Invalid Python code:" + e.toString();
             } catch (Exception e) {
-                return "Unable to parse Python:"+e.toString();
+                return "Unable to parse Python:" + e.toString();
             }
         }
+
         String javascript(String input, String code, String executionKey, JSONObject customTagOptions) {
-            if(!codeExecutionTagsEnabled) {
+            if (!codeExecutionTagsEnabled) {
                 return "Code execution tags are disabled by default. Use the menu bar to enable them.";
             }
-            if(executionKey == null) {
+            if (executionKey == null) {
                 return "No execution key defined";
             }
-            if(executionKey.length() != 32) {
+            if (executionKey.length() != 32) {
                 return "Code execution key length incorrect";
             }
-            if(!tagCodeExecutionKey.equals(executionKey)) {
+            if (!tagCodeExecutionKey.equals(executionKey)) {
                 return "Incorrect tag code execution key";
             }
             ScriptEngineManager manager = new ScriptEngineManager();
@@ -4103,50 +4305,52 @@ private Ngrams ngrams;
             for (Map.Entry<String, String> entry : tagVariables.entrySet()) {
                 String name = entry.getKey();
                 Object value = entry.getValue();
-                if(name.length() > 0) {
+                if (name.length() > 0) {
                     engine.put(name, value);
                 }
             }
-            if(customTagOptions != null) {
+            if (customTagOptions != null) {
                 JSONObject customTag = (JSONObject) customTagOptions.get("customTag");
                 int numberOfArgs = customTag.getInt("numberOfArgs");
-                if(numberOfArgs == 1) {
+                if (numberOfArgs == 1) {
                     engine.put(customTag.getString("argument1"), customTagOptions.get("param1"));
                 }
-                if(numberOfArgs == 2) {
+                if (numberOfArgs == 2) {
                     engine.put(customTag.getString("argument1"), customTagOptions.get("param1"));
                     engine.put(customTag.getString("argument2"), customTagOptions.get("param2"));
                 }
             }
             try {
-                if(code.endsWith(".js")) {
+                if (code.endsWith(".js")) {
                     engine.eval(new FileReader(code));
                 } else {
                     engine.eval(code);
                 }
                 return engine.get("output").toString();
             } catch (ScriptException e) {
-                return "Invalid JavaScript:"+e.toString();
+                return "Invalid JavaScript:" + e.toString();
             } catch (FileNotFoundException e) {
-                return "Unable to find JavaScript file:"+e.toString();
-            } catch(NullPointerException e) {
-                return "Unable to get output. Make sure you have defined an output variable:"+e.toString();
-            } catch(IllegalArgumentException e) {
+                return "Unable to find JavaScript file:" + e.toString();
+            } catch (NullPointerException e) {
+                return "Unable to get output. Make sure you have defined an output variable:" + e.toString();
+            } catch (IllegalArgumentException e) {
                 return "Invalid JavaScript:" + e.toString();
             } catch (AssertionError e) {
-                return "Unable to parse JavaScript:"+e.toString();
-            } catch(Exception e) {
-                return "Unable to parse JavaScript:"+e.toString();
+                return "Unable to parse JavaScript:" + e.toString();
+            } catch (Exception e) {
+                return "Unable to parse JavaScript:" + e.toString();
             }
         }
+
         String loop_for(String input, int start, int end, int increment, String variable) {
             String output = "";
-            for(int i=start;i<end; i+= increment) {
+            for (int i = start; i < end; i += increment) {
                 tagVariables.put(variable, Integer.toString(i));
                 output += convert(input);
             }
             return output;
         }
+
         String loop_letters_lower(String input, String variable) {
             String output = "";
             for (char letter = 'a'; letter <= 'z'; letter++) {
@@ -4155,6 +4359,7 @@ private Ngrams ngrams;
             }
             return output;
         }
+
         String loop_letters_upper(String input, String variable) {
             String output = "";
             for (char letter = 'A'; letter <= 'Z'; letter++) {
@@ -4163,6 +4368,7 @@ private Ngrams ngrams;
             }
             return output;
         }
+
         String loop_letters_numbers(String input, String variable) {
             String output = "";
             for (char num = '0'; num <= '9'; num++) {
@@ -4171,51 +4377,52 @@ private Ngrams ngrams;
             }
             return output;
         }
-		private String callTag(String tag, String output, ArrayList<String> arguments) {
+
+        private String callTag(String tag, String output, ArrayList<String> arguments) {
             switch (tag) {
                 default:
-                    if(tag.startsWith("_")) {
-                        for(int i=0;i<customTags.length();i++) {
+                    if (tag.startsWith("_")) {
+                        for (int i = 0; i < customTags.length(); i++) {
                             JSONObject customTag = (JSONObject) customTags.get(i);
                             String customTagName = customTag.getString("tagName");
                             int numberOfArgs = 0;
-                            if(customTag.has("numberOfArgs")) {
+                            if (customTag.has("numberOfArgs")) {
                                 numberOfArgs = customTag.getInt("numberOfArgs");
                             }
                             String eKey;
                             JSONObject customTagOptions = new JSONObject();
                             customTagOptions.put("customTag", customTag);
-                            if(numberOfArgs == 0) {
-                                eKey = this.getString(arguments,0);
+                            if (numberOfArgs == 0) {
+                                eKey = this.getString(arguments, 0);
                                 customTagOptions = null;
-                            } else if(numberOfArgs == 1) {
-                                if(customTag.getString("argument1Type").equals("String")) {
-                                    customTagOptions.put("param1", this.getString(arguments,0));
-                                } else if(customTag.getString("argument1Type").equals("Number")) {
-                                    customTagOptions.put("param1", this.getInt(arguments,0));
+                            } else if (numberOfArgs == 1) {
+                                if (customTag.getString("argument1Type").equals("String")) {
+                                    customTagOptions.put("param1", this.getString(arguments, 0));
+                                } else if (customTag.getString("argument1Type").equals("Number")) {
+                                    customTagOptions.put("param1", this.getInt(arguments, 0));
                                 }
-                                eKey = this.getString(arguments,1);
+                                eKey = this.getString(arguments, 1);
 
-                            } else if(numberOfArgs == 2) {
-                                if(customTag.getString("argument1Type").equals("String")) {
-                                    customTagOptions.put("param1", this.getString(arguments,0));
-                                } else if(customTag.getString("argument1Type").equals("Number")) {
-                                    customTagOptions.put("param1", this.getInt(arguments,0));
+                            } else if (numberOfArgs == 2) {
+                                if (customTag.getString("argument1Type").equals("String")) {
+                                    customTagOptions.put("param1", this.getString(arguments, 0));
+                                } else if (customTag.getString("argument1Type").equals("Number")) {
+                                    customTagOptions.put("param1", this.getInt(arguments, 0));
                                 }
-                                if(customTag.getString("argument2Type").equals("String")) {
-                                    customTagOptions.put("param2", this.getString(arguments,1));
-                                } else if(customTag.getString("argument2Type").equals("Number")) {
-                                    customTagOptions.put("param2", this.getInt(arguments,1));
+                                if (customTag.getString("argument2Type").equals("String")) {
+                                    customTagOptions.put("param2", this.getString(arguments, 1));
+                                } else if (customTag.getString("argument2Type").equals("Number")) {
+                                    customTagOptions.put("param2", this.getInt(arguments, 1));
                                 }
-                                eKey = this.getString(arguments,2);
+                                eKey = this.getString(arguments, 2);
                             } else {
-                                eKey = this.getString(arguments,0);
+                                eKey = this.getString(arguments, 0);
                             }
 
-                            if(customTagName.equals(tag)) {
+                            if (customTagName.equals(tag)) {
                                 String language = customTag.getString("language").toLowerCase();
                                 String code = customTag.getString("code");
-                                if(language.equals("javascript")) {
+                                if (language.equals("javascript")) {
                                     output = this.javascript(output, code, eKey, customTagOptions);
                                 } else {
                                     output = this.python(output, code, eKey, customTagOptions);
@@ -4231,7 +4438,7 @@ private Ngrams ngrams;
                     output = this.charset_convert(output, this.getString(arguments, 0), this.getString(arguments, 1));
                     break;
                 case "utf7":
-                    output = this.utf7(output, this.getString(arguments,0));
+                    output = this.utf7(output, this.getString(arguments, 0));
                     break;
                 case "brotli_decompress":
                     output = this.brotli_decompress(output);
@@ -4678,63 +4885,68 @@ private Ngrams ngrams;
                     output = this.throw_eval(output);
                     break;
                 case "python":
-                    output = this.python(output, this.getString(arguments,0), this.getString(arguments,1), null);
+                    output = this.python(output, this.getString(arguments, 0), this.getString(arguments, 1), null);
                     break;
                 case "javascript":
-                    output = this.javascript(output, this.getString(arguments,0), this.getString(arguments,1), null);
+                    output = this.javascript(output, this.getString(arguments, 0), this.getString(arguments, 1), null);
                     break;
                 case "loop_for":
-                    output = this.loop_for(output, this.getInt(arguments,0), this.getInt(arguments,1), this.getInt(arguments,2), this.getString(arguments,3));
+                    output = this.loop_for(output, this.getInt(arguments, 0), this.getInt(arguments, 1), this.getInt(arguments, 2), this.getString(arguments, 3));
                     break;
                 case "loop_letters_lower":
-                    output = this.loop_letters_lower(output, this.getString(arguments,0));
+                    output = this.loop_letters_lower(output, this.getString(arguments, 0));
                     break;
                 case "loop_letters_upper":
-                    output = this.loop_letters_upper(output, this.getString(arguments,0));
+                    output = this.loop_letters_upper(output, this.getString(arguments, 0));
                     break;
                 case "loop_numbers":
-                    output = this.loop_letters_numbers(output, this.getString(arguments,0));
+                    output = this.loop_letters_numbers(output, this.getString(arguments, 0));
                     break;
             }
-			return output;
-		}
-		void clearTags() {
-			String input = inputArea.getText();	                	
-			input = input.replaceAll("<@/?[\\w\\-]+(?:[(](?:,?"+argumentsRegex+")*[)])?(?:\\s/)?>","");
-      	  	inputArea.setText(input);	                	  	                	  
-      	  	inputArea.requestFocus();
-		}
-		String convertNoInputTags(String input) {
+            return output;
+        }
+
+        void clearTags() {
+            String input = inputArea.getText();
+            input = input.replaceAll("<@/?[\\w\\-]+(?:[(](?:,?" + argumentsRegex + ")*[)])?(?:\\s/)?>", "");
+            inputArea.setText(input);
+            inputArea.requestFocus();
+        }
+
+        String convertNoInputTags(String input) {
             List<String> allMatches = new ArrayList<>();
-            Matcher m = Pattern.compile("<@([\\w\\d\\-]+(_\\d*)?)((?:[(](?:,?"+argumentsRegex+")*[)])?) />").matcher(input);
+            Matcher m = Pattern.compile("<@([\\w\\d\\-]+(_\\d*)?)((?:[(](?:,?" + argumentsRegex + ")*[)])?) />").matcher(input);
             while (m.find()) {
                 allMatches.add(m.group(1));
             }
-            for(String tagNameWithID:allMatches) {
+            for (String tagNameWithID : allMatches) {
                 String arguments = "";
-                String tagName = tagNameWithID.replaceAll("_\\d+$","");
-                m = Pattern.compile("<@"+tagNameWithID+"((?:[(](?:,?"+argumentsRegex+")*[)])?) />").matcher(input);
-                if(m.find()) {
+                String tagName = tagNameWithID.replaceAll("_\\d+$", "");
+                m = Pattern.compile("<@" + tagNameWithID + "((?:[(](?:,?" + argumentsRegex + ")*[)])?) />").matcher(input);
+                if (m.find()) {
                     arguments = m.group(1);
                 }
                 String result;
-                if(tagName.startsWith("get_")) {
-                    result = getVariable(tagName) == null ? "" : getVariable(tagName) ;
+                if (tagName.startsWith("get_")) {
+                    result = getVariable(tagName) == null ? "" : getVariable(tagName);
                 } else {
                     result = this.callTag(tagName, "", this.parseArguments(arguments));
                 }
-                input = input.replaceAll("<@"+tagNameWithID+"(?:[(](?:,?"+argumentsRegex+")*[)])? />", result.replace("\\","\\\\").replace("$","\\$"));
+                input = input.replaceAll("<@" + tagNameWithID + "(?:[(](?:,?" + argumentsRegex + ")*[)])? />", result.replace("\\", "\\\\").replace("$", "\\$"));
             }
             return input;
         }
+
         void setVariable(String name, String value) {
-            name = name.replaceAll("^set_","");
+            name = name.replaceAll("^set_", "");
             tagVariables.put(name, convert(value));
         }
+
         String getVariable(String name) {
-            name = name.replaceAll("^get_","");
+            name = name.replaceAll("^get_", "");
             return tagVariables.get(name);
         }
+
         String convertSetVariables(String input) {
             String output = input;
             List<String> allMatches = new ArrayList<>();
@@ -4742,223 +4954,232 @@ private Ngrams ngrams;
             while (m.find()) {
                 allMatches.add(m.group(1));
             }
-            for(String tagNameWithID:allMatches) {
+            for (String tagNameWithID : allMatches) {
                 String code = "";
-                String tagName = tagNameWithID.replaceAll("_\\d+$","");
-                m = Pattern.compile("<@"+tagNameWithID+">([\\d\\D]*?)<@/"+tagNameWithID+">").matcher(output);
-                if(m.find()) {
+                String tagName = tagNameWithID.replaceAll("_\\d+$", "");
+                m = Pattern.compile("<@" + tagNameWithID + ">([\\d\\D]*?)<@/" + tagNameWithID + ">").matcher(output);
+                if (m.find()) {
                     code = m.group(1);
                 }
                 setVariable(tagName, convert(code));
-                String result = code.replaceAll("<@/?[\\w\\-]+(?:_\\d+)?(?:[(](?:,?"+argumentsRegex+")*[)])?(?:\\s/)?>","");
-                output = output.replaceAll("<@"+tagNameWithID+"(?:[(](?:,?"+argumentsRegex+")*[)])?>[\\d\\D]*?<@/"+tagNameWithID+">", result.replace("\\","\\\\").replace("$","\\$"));
+                String result = code.replaceAll("<@/?[\\w\\-]+(?:_\\d+)?(?:[(](?:,?" + argumentsRegex + ")*[)])?(?:\\s/)?>", "");
+                output = output.replaceAll("<@" + tagNameWithID + "(?:[(](?:,?" + argumentsRegex + ")*[)])?>[\\d\\D]*?<@/" + tagNameWithID + ">", result.replace("\\", "\\\\").replace("$", "\\$"));
             }
             return output;
         }
+
         String convertLoops(String input) {
             String output = input;
             List<String> allMatches = new ArrayList<>();
-            Matcher m = Pattern.compile("<@(loop_[\\w\\d\\-]+(?:_\\d+)?)((?:[(](?:,?"+argumentsRegex+")*[)])?)>").matcher(input);
+            Matcher m = Pattern.compile("<@(loop_[\\w\\d\\-]+(?:_\\d+)?)((?:[(](?:,?" + argumentsRegex + ")*[)])?)>").matcher(input);
             while (m.find()) {
                 allMatches.add(m.group(1));
             }
-            for(String tagNameWithID:allMatches) {
+            for (String tagNameWithID : allMatches) {
                 String arguments = "";
                 String code = "";
-                String tagName = tagNameWithID.replaceAll("_\\d+$","");
-                m = Pattern.compile("<@"+tagNameWithID+"((?:[(](?:,?"+argumentsRegex+")*[)])?)>([\\d\\D]*?)<@/"+tagNameWithID+">").matcher(output);
-                if(m.find()) {
+                String tagName = tagNameWithID.replaceAll("_\\d+$", "");
+                m = Pattern.compile("<@" + tagNameWithID + "((?:[(](?:,?" + argumentsRegex + ")*[)])?)>([\\d\\D]*?)<@/" + tagNameWithID + ">").matcher(output);
+                if (m.find()) {
                     arguments = m.group(1);
                     code = m.group(2);
                 }
-                String result = this.callTag(tagName,code,this.parseArguments(arguments));
-                output = output.replaceAll("<@"+tagNameWithID+"(?:[(](?:,?"+argumentsRegex+")*[)])?>[\\d\\D]*?<@/"+tagNameWithID+">", result.replace("\\","\\\\").replace("$","\\$"));
+                String result = this.callTag(tagName, code, this.parseArguments(arguments));
+                output = output.replaceAll("<@" + tagNameWithID + "(?:[(](?:,?" + argumentsRegex + ")*[)])?>[\\d\\D]*?<@/" + tagNameWithID + ">", result.replace("\\", "\\\\").replace("$", "\\$"));
             }
             return output;
         }
-		String convert(String input) {
-            if(input.contains("<@loop_")) {
+
+        String convert(String input) {
+            if (input.contains("<@loop_")) {
                 input = convertLoops(input);
             }
-            if(input.contains("<@set_")) {
-               input = convertSetVariables(input);
+            if (input.contains("<@set_")) {
+                input = convertSetVariables(input);
             }
-            if(input.contains(" />")) {
+            if (input.contains(" />")) {
                 input = convertNoInputTags(input);
             }
-			String output = input;
-			List<String> allMatches = new ArrayList<>();
-			 Matcher m = Pattern.compile("<@/([\\w\\d\\-]+(?:_\\d+)?)>").matcher(input);
-			 while (m.find()) {
-			   allMatches.add(m.group(1));
-			 }
-			 for(String tagNameWithID:allMatches) {
-				 String code = "";
-				 String arguments = "";
-				 String tagName = tagNameWithID.replaceAll("_\\d+$","");				 
-				 m = Pattern.compile("<@"+tagNameWithID+"((?:[(](?:,?"+argumentsRegex+")*[)])?)>([\\d\\D]*?)<@/"+tagNameWithID+">").matcher(output);
-				 if(m.find()) {
-					arguments = m.group(1);
-					code = m.group(2); 
-				 } 	
-				 String result = this.callTag(tagName,code,this.parseArguments(arguments));
-				 output = output.replaceAll("<@"+tagNameWithID+"(?:[(](?:,?"+argumentsRegex+")*[)])?>[\\d\\D]*?<@/"+tagNameWithID+">", result.replace("\\","\\\\").replace("$","\\$"));
-			 }
-			return output;			
-		}
-		void setInput(String input) {
-			inputArea.setText(input);
-		}
-		String getInput() {
+            String output = input;
+            List<String> allMatches = new ArrayList<>();
+            Matcher m = Pattern.compile("<@/([\\w\\d\\-]+(?:_\\d+)?)>").matcher(input);
+            while (m.find()) {
+                allMatches.add(m.group(1));
+            }
+            for (String tagNameWithID : allMatches) {
+                String code = "";
+                String arguments = "";
+                String tagName = tagNameWithID.replaceAll("_\\d+$", "");
+                m = Pattern.compile("<@" + tagNameWithID + "((?:[(](?:,?" + argumentsRegex + ")*[)])?)>([\\d\\D]*?)<@/" + tagNameWithID + ">").matcher(output);
+                if (m.find()) {
+                    arguments = m.group(1);
+                    code = m.group(2);
+                }
+                String result = this.callTag(tagName, code, this.parseArguments(arguments));
+                output = output.replaceAll("<@" + tagNameWithID + "(?:[(](?:,?" + argumentsRegex + ")*[)])?>[\\d\\D]*?<@/" + tagNameWithID + ">", result.replace("\\", "\\\\").replace("$", "\\$"));
+            }
+            return output;
+        }
+
+        void setInput(String input) {
+            inputArea.setText(input);
+        }
+
+        String getInput() {
             return inputArea.getText();
         }
-		int calculateRealLen(String str) {
-			int len = 0;
-			for(int i=0;i<str.length();i++) {
-				int cp = Character.codePointAt(str, i);
-				if(cp <= 0x007F) {
-					len++;
-				} else if(cp <= 0x07FF) {
-					len+=2;
-				} else if(cp <= 0xFFFF) {
-					len+=3;
-				} else if(cp <= 0x10FFFF) {
-					len+=4;
-				}		
-			}
-			return len;
-		}
-		public String getString(ArrayList<String> args,Integer pos) {
-			if(args.size() < pos+1) {
-				return "";
-			}
-			return args.get(pos);
-		}
-		public Integer getInt(ArrayList<String> args,Integer pos) {
+
+        int calculateRealLen(String str) {
+            int len = 0;
+            for (int i = 0; i < str.length(); i++) {
+                int cp = Character.codePointAt(str, i);
+                if (cp <= 0x007F) {
+                    len++;
+                } else if (cp <= 0x07FF) {
+                    len += 2;
+                } else if (cp <= 0xFFFF) {
+                    len += 3;
+                } else if (cp <= 0x10FFFF) {
+                    len += 4;
+                }
+            }
+            return len;
+        }
+
+        public String getString(ArrayList<String> args, Integer pos) {
+            if (args.size() < pos + 1) {
+                return "";
+            }
+            return args.get(pos);
+        }
+
+        public Integer getInt(ArrayList<String> args, Integer pos) {
             Integer output;
             output = 0;
-            if(args.size() < pos+1) {
-				return 0;
-			}
-			if(args.get(pos).contains("0x")) {
+            if (args.size() < pos + 1) {
+                return 0;
+            }
+            if (args.get(pos).contains("0x")) {
                 try {
-                    return Integer.parseInt(args.get(pos).replaceAll("^0x",""),16);
-                } catch(NumberFormatException e){
+                    return Integer.parseInt(args.get(pos).replaceAll("^0x", ""), 16);
+                } catch (NumberFormatException e) {
                     stderr.println(e.getMessage());
                 }
             }
-			try {
-				output = Integer.parseInt(args.get(pos));
-			} catch(NumberFormatException e){
-				stderr.println(e.getMessage());
-			}
-			return output;
-		}
-		private ArrayList<String> parseArguments(String arguments) {
-			if(arguments.length() == 0) {
-				return new ArrayList<>();
-			}
-			arguments = arguments.substring(1, arguments.length()-1);
-			String argument1;
-			String argument2;
-			String argument3;
+            try {
+                output = Integer.parseInt(args.get(pos));
+            } catch (NumberFormatException e) {
+                stderr.println(e.getMessage());
+            }
+            return output;
+        }
+
+        private ArrayList<String> parseArguments(String arguments) {
+            if (arguments.length() == 0) {
+                return new ArrayList<>();
+            }
+            arguments = arguments.substring(1, arguments.length() - 1);
+            String argument1;
+            String argument2;
+            String argument3;
             String argument4;
-			ArrayList<String> convertedArgs = new ArrayList<>();
-			String regex = "("+argumentsRegex+")(,"+argumentsRegex+")?(,"+argumentsRegex+")?(,"+argumentsRegex+")?";
-			Matcher m = Pattern.compile(regex).matcher(arguments);
-			 if(m.find()) {
-				argument1 = m.group(1);
-				argument2 = m.group(2);
-				argument3 = m.group(3);
-				argument4 = m.group(4);
-				if(argument1 != null) {
-					String chr = ""+argument1.charAt(0); 
-					if(chr.equals("'") || chr.equals("\"")) {
-						argument1 = argument1.substring(1, argument1.length()-1);
-						argument1 = argument1.replace("\\'", "'").replace("\\\"", "\"");						
-						convertedArgs.add(this.decode_js_string(argument1));
-					} else {
-						convertedArgs.add(argument1);
-					}
-				}
-				if(argument2 != null) {
-					argument2 = argument2.substring(1);
-					String chr = ""+argument2.charAt(0); 
-					if(chr.equals("'") || chr.equals("\"")) {
-						argument2 = argument2.substring(1, argument2.length()-1);
-						argument2 = argument2.replace("\\'", "'").replace("\\\"", "\"");
-						convertedArgs.add(this.decode_js_string(argument2));
-					} else {
-						convertedArgs.add(argument2);
-					}
-				}
-				if(argument3 != null) {
-					argument3 = argument3.substring(1);
-					String chr = ""+argument3.charAt(0); 
-					if(chr.equals("'") || chr.equals("\"")) {
-						argument3 = argument3.substring(1, argument3.length()-1);
-						argument3 = argument3.replace("\\'", "'").replace("\\\"", "\"");
-						convertedArgs.add(this.decode_js_string(argument3));
-					} else {
-						convertedArgs.add(argument3);
-					}
-				}
-                 if(argument4 != null) {
-                     argument4 = argument4.substring(1);
-                     String chr = ""+argument4.charAt(0);
-                     if(chr.equals("'") || chr.equals("\"")) {
-                         argument4 = argument4.substring(1, argument4.length()-1);
-                         argument4 = argument4.replace("\\'", "'").replace("\\\"", "\"");
-                         convertedArgs.add(this.decode_js_string(argument4));
-                     } else {
-                         convertedArgs.add(argument4);
-                     }
-                 }
-			 } 
-			return convertedArgs;
-		}
-		private String[] generateTagStartEnd(Tag tagObj) {
+            ArrayList<String> convertedArgs = new ArrayList<>();
+            String regex = "(" + argumentsRegex + ")(," + argumentsRegex + ")?(," + argumentsRegex + ")?(," + argumentsRegex + ")?";
+            Matcher m = Pattern.compile(regex).matcher(arguments);
+            if (m.find()) {
+                argument1 = m.group(1);
+                argument2 = m.group(2);
+                argument3 = m.group(3);
+                argument4 = m.group(4);
+                if (argument1 != null) {
+                    String chr = "" + argument1.charAt(0);
+                    if (chr.equals("'") || chr.equals("\"")) {
+                        argument1 = argument1.substring(1, argument1.length() - 1);
+                        argument1 = argument1.replace("\\'", "'").replace("\\\"", "\"");
+                        convertedArgs.add(this.decode_js_string(argument1));
+                    } else {
+                        convertedArgs.add(argument1);
+                    }
+                }
+                if (argument2 != null) {
+                    argument2 = argument2.substring(1);
+                    String chr = "" + argument2.charAt(0);
+                    if (chr.equals("'") || chr.equals("\"")) {
+                        argument2 = argument2.substring(1, argument2.length() - 1);
+                        argument2 = argument2.replace("\\'", "'").replace("\\\"", "\"");
+                        convertedArgs.add(this.decode_js_string(argument2));
+                    } else {
+                        convertedArgs.add(argument2);
+                    }
+                }
+                if (argument3 != null) {
+                    argument3 = argument3.substring(1);
+                    String chr = "" + argument3.charAt(0);
+                    if (chr.equals("'") || chr.equals("\"")) {
+                        argument3 = argument3.substring(1, argument3.length() - 1);
+                        argument3 = argument3.replace("\\'", "'").replace("\\\"", "\"");
+                        convertedArgs.add(this.decode_js_string(argument3));
+                    } else {
+                        convertedArgs.add(argument3);
+                    }
+                }
+                if (argument4 != null) {
+                    argument4 = argument4.substring(1);
+                    String chr = "" + argument4.charAt(0);
+                    if (chr.equals("'") || chr.equals("\"")) {
+                        argument4 = argument4.substring(1, argument4.length() - 1);
+                        argument4 = argument4.replace("\\'", "'").replace("\\\"", "\"");
+                        convertedArgs.add(this.decode_js_string(argument4));
+                    } else {
+                        convertedArgs.add(argument4);
+                    }
+                }
+            }
+            return convertedArgs;
+        }
+
+        private String[] generateTagStartEnd(Tag tagObj) {
             String tagStart;
             String tagEnd;
-            tagStart = "<@"+tagObj.name+"_"+tagCounter;
-            if(tagObj.argument1 != null) {
+            tagStart = "<@" + tagObj.name + "_" + tagCounter;
+            if (tagObj.argument1 != null) {
                 tagStart += "(";
             }
-            if(tagObj.argument1 != null) {
-                if(tagObj.argument1.type.equals("int")) {
+            if (tagObj.argument1 != null) {
+                if (tagObj.argument1.type.equals("int")) {
                     tagStart += tagObj.argument1.value;
-                } else if(tagObj.argument1.type.equals("string")) {
+                } else if (tagObj.argument1.type.equals("string")) {
                     tagStart += "\"" + tagObj.argument1.value + "\"";
                 }
             }
-            if(tagObj.argument2 != null) {
+            if (tagObj.argument2 != null) {
                 tagStart += ",";
-                if(tagObj.argument2.type.equals("int")) {
+                if (tagObj.argument2.type.equals("int")) {
                     tagStart += tagObj.argument2.value;
-                } else if(tagObj.argument2.type.equals("string")) {
+                } else if (tagObj.argument2.type.equals("string")) {
                     tagStart += "\"" + tagObj.argument2.value + "\"";
                 }
             }
-            if(tagObj.argument3 != null) {
+            if (tagObj.argument3 != null) {
                 tagStart += ",";
-                if(tagObj.argument3.type.equals("int")) {
+                if (tagObj.argument3.type.equals("int")) {
                     tagStart += tagObj.argument3.value;
-                } else if(tagObj.argument3.type.equals("string")) {
+                } else if (tagObj.argument3.type.equals("string")) {
                     tagStart += "\"" + tagObj.argument3.value + "\"";
                 }
             }
-            if(tagObj.argument4 != null) {
+            if (tagObj.argument4 != null) {
                 tagStart += ",";
-                if(tagObj.argument4.type.equals("int")) {
+                if (tagObj.argument4.type.equals("int")) {
                     tagStart += tagObj.argument4.value;
-                } else if(tagObj.argument4.type.equals("string")) {
+                } else if (tagObj.argument4.type.equals("string")) {
                     tagStart += "\"" + tagObj.argument4.value + "\"";
                 }
             }
-            if(tagObj.argument1 != null) {
+            if (tagObj.argument1 != null) {
                 tagStart += ")";
             }
-            if(tagObj.hasInput) {
+            if (tagObj.hasInput) {
                 tagStart += ">";
                 tagEnd = "<@/" + tagObj.name + "_" + tagCounter + ">";
             } else {
@@ -4967,12 +5188,13 @@ private Ngrams ngrams;
             }
             return new String[]{tagStart, tagEnd};
         }
-		private JScrollPane createButtonsOrMenu(String category, final String type, JMenu parentMenu, final IContextMenuInvocation invocation, String searchTag, Boolean regex) {
-			JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-			JScrollPane scrollFrame = new JScrollPane(panel,JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-			tags.sort((t1, t2) -> t1.name.compareToIgnoreCase(t2.name));
+
+        private JScrollPane createButtonsOrMenu(String category, final String type, JMenu parentMenu, final IContextMenuInvocation invocation, String searchTag, Boolean regex) {
+            JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+            JScrollPane scrollFrame = new JScrollPane(panel, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+            tags.sort((t1, t2) -> t1.name.compareToIgnoreCase(t2.name));
             int tagCount = this.getTagCount(category);
-            if(tagCount > 40 && !type.equals("button")) {
+            if (tagCount > 40 && !type.equals("button")) {
                 JMenu numberMenu = new JMenu("0-9");
                 MenuScroller.setScrollerFor(numberMenu);
                 parentMenu.add(numberMenu);
@@ -4983,16 +5205,16 @@ private Ngrams ngrams;
                 }
             }
 
-			for(final Tag tagObj:tags) {
+            for (final Tag tagObj : tags) {
                 final JButton btn = new JButton(tagObj.name);
                 btn.setToolTipText(tagObj.tooltip);
                 final JMenuItem menu = new JMenuItem(tagObj.name);
                 menu.setToolTipText(tagObj.tooltip);
 
-				ActionListener actionListener;
-				if((category.length() > 0 && category.equals(tagObj.category)) || (searchTag.length() > 0 && (regex ? tagObj.name.matches(searchTag): tagObj.name.contains(searchTag)))) {
-				    if(type.equals("button")) {
-                        if(!isNativeTheme && !isDarkTheme) {
+                ActionListener actionListener;
+                if ((category.length() > 0 && category.equals(tagObj.category)) || (searchTag.length() > 0 && (regex ? tagObj.name.matches(searchTag) : tagObj.name.contains(searchTag)))) {
+                    if (type.equals("button")) {
+                        if (!isNativeTheme && !isDarkTheme) {
                             btn.setBackground(Color.decode("#005a70"));
                             btn.setForeground(Color.white);
                         }
@@ -5001,7 +5223,7 @@ private Ngrams ngrams;
 
                     actionListener = e -> {
                         String selectedText = null;
-                        if(type.equals("button")) {
+                        if (type.equals("button")) {
                             selectedText = inputArea.getSelectedText();
                             if (selectedText == null) {
                                 selectedText = "";
@@ -5010,10 +5232,10 @@ private Ngrams ngrams;
                         String[] tagStartEnd = generateTagStartEnd(tagObj);
                         String tagStart = tagStartEnd[0];
                         String tagEnd = tagStartEnd[1];
-                        if(type.equals("button")) {
+                        if (type.equals("button")) {
                             inputArea.replaceSelection(tagStart + selectedText + tagEnd);
                             Highlighter.Highlight[] highlights = inputArea.getHighlighter().getHighlights();
-                            if(highlights.length > 0) {
+                            if (highlights.length > 0) {
                                 for (Highlighter.Highlight highlight : highlights) {
                                     inputArea.select(highlight.getStartOffset(), highlight.getEndOffset());
                                     selectedText = inputArea.getSelectedText();
@@ -5027,16 +5249,16 @@ private Ngrams ngrams;
                                 }
                             }
                         } else {
-                            if(invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST || invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST || invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_INTRUDER_PAYLOAD_POSITIONS) {
+                            if (invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST || invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST || invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_INTRUDER_PAYLOAD_POSITIONS) {
                                 int[] bounds = invocation.getSelectionBounds();
                                 byte[] message = invocation.getSelectedMessages()[0].getRequest();
                                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
                                 try {
                                     outputStream.write(Arrays.copyOfRange(message, 0, bounds[0]));
                                     outputStream.write(helpers.stringToBytes(tagStart));
-                                    outputStream.write(Arrays.copyOfRange(message,bounds[0], bounds[1]));
+                                    outputStream.write(Arrays.copyOfRange(message, bounds[0], bounds[1]));
                                     outputStream.write(helpers.stringToBytes(tagEnd));
-                                    outputStream.write(Arrays.copyOfRange(message, bounds[1],message.length));
+                                    outputStream.write(Arrays.copyOfRange(message, bounds[1], message.length));
                                     outputStream.flush();
                                     invocation.getSelectedMessages()[0].setRequest(outputStream.toByteArray());
                                 } catch (IOException e1) {
@@ -5045,22 +5267,22 @@ private Ngrams ngrams;
                             }
                         }
                         tagCounter++;
-                        if(type.equals("button")) {
+                        if (type.equals("button")) {
                             outputArea.setText(hv.convert(inputArea.getText()));
                             outputArea.selectAll();
                         }
                     };
 
-                    if(type.equals("button")) {
+                    if (type.equals("button")) {
                         btn.addActionListener(actionListener);
                         panel.add(btn);
                     } else {
                         menu.addActionListener(actionListener);
-                        if(tagCount > 40) {
-                            for(int i=0;i<parentMenu.getItemCount();i++) {
-                                if(parentMenu.getItem(i).getText().equals("0-9") && Character.isDigit(tagObj.name.charAt(0))) {
+                        if (tagCount > 40) {
+                            for (int i = 0; i < parentMenu.getItemCount(); i++) {
+                                if (parentMenu.getItem(i).getText().equals("0-9") && Character.isDigit(tagObj.name.charAt(0))) {
                                     parentMenu.getItem(i).add(menu);
-                                } else if(tagObj.name.toLowerCase().startsWith(parentMenu.getItem(i).getText())) {
+                                } else if (tagObj.name.toLowerCase().startsWith(parentMenu.getItem(i).getText())) {
                                     parentMenu.getItem(i).add(menu);
                                 }
                             }
@@ -5068,10 +5290,10 @@ private Ngrams ngrams;
                             parentMenu.add(menu);
                         }
                     }
-				}
-			}
-			return scrollFrame;
-		}
-	}
+                }
+            }
+            return scrollFrame;
+        }
+    }
 
 }

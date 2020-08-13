@@ -1,4 +1,5 @@
 package burp;
+
 import javax.swing.*;
 import javax.swing.plaf.metal.MetalIconFactory;
 import java.awt.*;
@@ -6,6 +7,7 @@ import java.awt.event.*;
 
 public class JTabbedPaneClosable extends JTabbedPane {
     public boolean clickedDelete = false;
+
     public JTabbedPaneClosable() {
         super();
     }
@@ -14,7 +16,7 @@ public class JTabbedPaneClosable extends JTabbedPane {
     public void addTab(String title, Icon icon, Component component, String tip) {
         super.addTab(title, icon, component, tip);
         int count = this.getTabCount() - 1;
-        if(!title.equals("...")) {
+        if (!title.equals("...")) {
             setTabComponentAt(count, new CloseButtonTab(component, title, icon));
         }
     }
@@ -66,7 +68,7 @@ public class JTabbedPaneClosable extends JTabbedPane {
                     if (e.getClickCount() == 2) {
                         textField.setEditable(true);
                     }
-                    if(e.getClickCount() == 1) {
+                    if (e.getClickCount() == 1) {
                         JTabbedPaneClosable tabbedPane = (JTabbedPaneClosable) textField.getParent().getParent().getParent();
                         tabbedPane.setSelectedIndex(tabbedPane.indexOfComponent(tab));
                     }
@@ -91,17 +93,17 @@ public class JTabbedPaneClosable extends JTabbedPane {
             add(button, c);
         }
     }
-    public class CloseListener implements MouseListener
-    {
+
+    public class CloseListener implements MouseListener {
         private Component tab;
 
-        public CloseListener(Component tab){
-            this.tab=tab;
+        public CloseListener(Component tab) {
+            this.tab = tab;
         }
 
         @Override
         public void mouseClicked(MouseEvent e) {
-            if(e.getSource() instanceof JButton){
+            if (e.getSource() instanceof JButton) {
                 JButton clickedButton = (JButton) e.getSource();
                 JTabbedPaneClosable tabbedPane = (JTabbedPaneClosable) clickedButton.getParent().getParent().getParent();
                 clickedDelete = true;
@@ -110,21 +112,23 @@ public class JTabbedPaneClosable extends JTabbedPane {
         }
 
         @Override
-        public void mousePressed(MouseEvent e) {}
+        public void mousePressed(MouseEvent e) {
+        }
 
         @Override
-        public void mouseReleased(MouseEvent e) {}
+        public void mouseReleased(MouseEvent e) {
+        }
 
         @Override
         public void mouseEntered(MouseEvent e) {
-            if(e.getSource() instanceof JButton){
+            if (e.getSource() instanceof JButton) {
                 JButton clickedButton = (JButton) e.getSource();
             }
         }
 
         @Override
         public void mouseExited(MouseEvent e) {
-            if(e.getSource() instanceof JButton){
+            if (e.getSource() instanceof JButton) {
                 JButton clickedButton = (JButton) e.getSource();
             }
         }

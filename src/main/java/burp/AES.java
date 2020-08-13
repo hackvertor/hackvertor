@@ -17,7 +17,7 @@ public class AES {
     public static void setKey(String myKey) throws NoSuchAlgorithmException, UnsupportedEncodingException, IllegalArgumentException {
         MessageDigest sha = null;
         key = myKey.getBytes("UTF-8");
-        if(key.length % 16 != 0) {
+        if (key.length % 16 != 0) {
             throw new IllegalArgumentException("Invalid key length");
         }
         secretKey = new SecretKeySpec(key, "AES");
@@ -26,11 +26,11 @@ public class AES {
     public static String encrypt(String strToEncrypt, String secret, String transformations, String iv) throws Exception {
         setKey(secret);
         IvParameterSpec ivSpec = null;
-        if(iv.length() > 0 ) {
+        if (iv.length() > 0) {
             ivSpec = new IvParameterSpec(iv.getBytes("UTF-8"));
         }
         Cipher cipher = Cipher.getInstance(transformations);
-        if(iv.length() > 0) {
+        if (iv.length() > 0) {
             cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivSpec);
         } else {
             cipher.init(Cipher.ENCRYPT_MODE, secretKey);
@@ -41,11 +41,11 @@ public class AES {
     public static String decrypt(String strToDecrypt, String secret, String transformations, String iv) throws Exception {
         setKey(secret);
         IvParameterSpec ivSpec = null;
-        if(iv.length() > 0 ) {
+        if (iv.length() > 0) {
             ivSpec = new IvParameterSpec(iv.getBytes("UTF-8"));
         }
         Cipher cipher = Cipher.getInstance(transformations);
-        if(iv.length() > 0) {
+        if (iv.length() > 0) {
             cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivSpec);
         } else {
             cipher.init(Cipher.ENCRYPT_MODE, secretKey);
