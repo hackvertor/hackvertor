@@ -53,6 +53,7 @@ import org.bouncycastle.jcajce.provider.digest.Skein;
 import org.bouncycastle.util.encoders.Hex;
 import org.brotli.dec.BrotliInputStream;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.python.core.PyException;
 import org.python.core.PyObject;
@@ -214,6 +215,7 @@ private Ngrams ngrams;
             logoLabel = new JLabel();
         }
         final JTextArea hexView = new JTextArea();
+        hexView.setFont(new Font("monospaced", Font.PLAIN, 12));
         hexView.setRows(0);
         hexView.setOpaque(true);
         hexView.setEditable(false);
@@ -230,6 +232,7 @@ private Ngrams ngrams;
         JPanel panel = new JPanel(new GridBagLayout());
         hv.setPanel(panel);
         final JTextArea inputArea = new JTextArea();
+        inputArea.setFont(new Font("monospaced", Font.PLAIN, 12));
         hv.setInputArea(inputArea);
         inputArea.setLineWrap(true);
         inputArea.setRows(0);
@@ -286,6 +289,7 @@ private Ngrams ngrams;
             inputLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
         }
         final JTextArea outputArea = new JTextArea();
+        outputArea.setFont(new Font("monospaced", Font.PLAIN, 12));
         hv.setOutputArea(outputArea);
         DocumentListener documentListener = new DocumentListener() {
             public void changedUpdate(DocumentEvent documentEvent) {
@@ -621,7 +625,7 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v1.5.2");
+	            	stdout.println("Hackvertor v1.5.3");
                     loadCustomTags();
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor(true);
@@ -763,7 +767,7 @@ private Ngrams ngrams;
                         }
                     });
                     hvMenuBar.add(fixContentLengthMenu);
-                    JMenuItem createCustomTagsMenu = new JMenuItem("Create custom tags");
+                    JMenuItem createCustomTagsMenu = new JMenuItem("Create custom tag");
                     createCustomTagsMenu.addActionListener(new ActionListener() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
@@ -1126,11 +1130,11 @@ private Ngrams ngrams;
         JPanel listTagsPanel = new JPanel();
         JFrame listTagsWindow = new JFrame("List custom tags");
         listTagsWindow.setResizable(false);
-        listTagsWindow.setPreferredSize(new Dimension(500, 100));
+        listTagsWindow.setPreferredSize(new Dimension(500, 150));
         JLabel tagLabel = new JLabel("Tag");
-        tagLabel.setPreferredSize(new Dimension(100, 25));
+        tagLabel.setPreferredSize(new Dimension(50, 25));
         JComboBox tagCombo = new JComboBox();
-        tagCombo.setPreferredSize(new Dimension(100, 25));
+        tagCombo.setPreferredSize(new Dimension(200, 25));
         listTagsPanel.add(tagLabel);
         listTagsPanel.add(tagCombo);
         for(int i=0;i<customTags.length();i++) {
@@ -1148,24 +1152,55 @@ private Ngrams ngrams;
             }
         });
         JButton deleteButton = new JButton("Delete tag");
-        deleteButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if(tagCombo.getSelectedIndex() == -1) {
-                    return;
-                }
-                int input = JOptionPane.showConfirmDialog(null, "Are you sure you want to delete this tag?");
-                if(input != 0) {
-                    return;
-                }
-                for(int i=0;i<customTags.length();i++) {
-                    JSONObject customTag = (JSONObject) customTags.get(i);
-                    if(tagCombo.getSelectedItem().toString().equals(customTag.getString("tagName"))) {
-                        customTags.remove(i);
-                        tagCombo.removeItemAt(tagCombo.getSelectedIndex());
+        JButton loadButton = new JButton("Load tags from clipboard");
+        JButton exportButton = new JButton("Export all my tags to clipboard");
+        exportButton.addActionListener(e -> {
+            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+            StringSelection customTagsJSON = new StringSelection(customTags.toString());
+            clipboard.setContents(customTagsJSON, null);
+        });
+        loadButton.addActionListener(e -> {
+            int input = JOptionPane.showConfirmDialog(null, "Are you sure you sure you want to load all tags from the clipboard? This will replace your existing tags");
+            if(input != 0) {
+                return;
+            }
+            try {
+                String tagsJSON = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
+                if(tagsJSON != null && tagsJSON.length() > 0) {
+                    try {
+                        JSONArray tags = new JSONArray(tagsJSON);
+                        customTags = tags;
+                        alert("All your tags have been replaced from the clipboard");
                         saveCustomTags();
-                        break;
+                        listTagsWindow.dispose();
+                        showListTagsDialog();
+                    } catch(JSONException ex){
+                        alert("Invalid JSON");
                     }
+                }
+            } catch (UnsupportedFlavorException unsupportedFlavorException) {
+                unsupportedFlavorException.printStackTrace();
+                alert("Invalid JSON");
+            } catch (IOException ioException) {
+                ioException.printStackTrace();
+                alert("Invalid JSON");
+            }
+        });
+        deleteButton.addActionListener(e -> {
+            if(tagCombo.getSelectedIndex() == -1) {
+                return;
+            }
+            int input = JOptionPane.showConfirmDialog(null, "Are you sure you want to delete this tag?");
+            if(input != 0) {
+                return;
+            }
+            for(int i=0;i<customTags.length();i++) {
+                JSONObject customTag = (JSONObject) customTags.get(i);
+                if(tagCombo.getSelectedItem().toString().equals(customTag.getString("tagName"))) {
+                    customTags.remove(i);
+                    tagCombo.removeItemAt(tagCombo.getSelectedIndex());
+                    saveCustomTags();
+                    break;
                 }
             }
         });
@@ -1174,9 +1209,15 @@ private Ngrams ngrams;
             deleteButton.setForeground(Color.white);
             editButton.setBackground(Color.decode("#005a70"));
             editButton.setForeground(Color.white);
+            exportButton.setBackground(Color.decode("#005a70"));
+            exportButton.setForeground(Color.white);
+            loadButton.setBackground(Color.decode("#005a70"));
+            loadButton.setForeground(Color.white);
         }
         listTagsPanel.add(editButton);
         listTagsPanel.add(deleteButton);
+        listTagsPanel.add(loadButton);
+        listTagsPanel.add(exportButton);
         listTagsWindow.add(listTagsPanel);
         listTagsWindow.pack();
         listTagsWindow.setLocationRelativeTo(null);
@@ -1185,7 +1226,12 @@ private Ngrams ngrams;
     public void loadCustomTags() {
         String json = callbacks.loadExtensionSetting("customTags");
         if(json != null && json.length() > 0) {
-            customTags = new JSONArray(json);
+            try {
+                customTags = new JSONArray(json);
+            } catch(JSONException e) {
+                alert("Failed to load custom tags");
+                customTags = new JSONArray();
+            }
         } else {
             customTags = new JSONArray();
         }
@@ -1497,6 +1543,7 @@ private Ngrams ngrams;
         });
         submenu.add(autodecodeConvert);
         submenu.addSeparator();
+        loadCustomTags();
         String[] categories = hv.getCategories();
         for(int i=0;i<categories.length;i++) {
             JMenu categoryMenu = new JMenu(categories[i]);
@@ -2117,8 +2164,8 @@ private Ngrams ngrams;
 			tags.add(new Tag("XSS","uppercase_script",true,"uppercase_script(String str)"));
 			tags.add(new Tag("XSS","template_eval",true,"template_eval(String str)"));
             tags.add(new Tag("XSS","throw_eval",true,"throw_eval(String str)"));
-            tags.add(new Tag("Variables", "set_var",true, "Special tag that lets you store the results of a conversion. Change var to your own variable name."));
-            tags.add(new Tag("Variables", "get_var",false, "Special tag that lets you get a previously set variable. Change var to your own variable name."));
+            tags.add(new Tag("Variables", "set_variable1",true, "Special tag that lets you store the results of a conversion. Change var to your own variable name."));
+            tags.add(new Tag("Variables", "get_variable1",false, "Special tag that lets you get a previously set variable. Change var to your own variable name."));
             tag = new Tag("Loops","loop_for",true,"loop_for(String input, int start, int end, int increment, String i)//Does a for loop. Use a Hackvertor variable inside the tags to retrieve the position in the loop.");
             tag.argument1 = new TagArgument("int", "0");
             tag.argument2 = new TagArgument("int", "10");
@@ -4001,7 +4048,13 @@ private Ngrams ngrams;
             try {
                 PythonInterpreter pythonInterpreter = new PythonInterpreter();
                 pythonInterpreter.set("input", input);
-
+                for (Map.Entry<String, String> entry : tagVariables.entrySet()) {
+                    String name = entry.getKey();
+                    Object value = entry.getValue();
+                    if(name.length() > 0) {
+                        pythonInterpreter.set(name, value);
+                    }
+                }
                 if(customTagOptions != null) {
                     JSONObject customTag = (JSONObject) customTagOptions.get("customTag");
                     int numberOfArgs = customTag.getInt("numberOfArgs");
@@ -4047,6 +4100,13 @@ private Ngrams ngrams;
             ScriptEngineManager manager = new ScriptEngineManager();
             ScriptEngine engine = manager.getEngineByName("JavaScript");
             engine.put("input", input);
+            for (Map.Entry<String, String> entry : tagVariables.entrySet()) {
+                String name = entry.getKey();
+                Object value = entry.getValue();
+                if(name.length() > 0) {
+                    engine.put(name, value);
+                }
+            }
             if(customTagOptions != null) {
                 JSONObject customTag = (JSONObject) customTagOptions.get("customTag");
                 int numberOfArgs = customTag.getInt("numberOfArgs");
