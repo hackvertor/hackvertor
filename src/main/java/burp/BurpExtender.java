@@ -2074,6 +2074,10 @@ private Ngrams ngrams;
 			tag = new Tag("String","repeat",true,"repeat(String str, int amount)");
 			tag.argument1 = new TagArgument("int","100");
 			tags.add(tag);
+            tag = new Tag("String","substring",true,"substring(String str, int start, int end)");
+            tag.argument1 = new TagArgument("int","0");
+            tag.argument2 = new TagArgument("int","100");
+            tags.add(tag);
 			tag = new Tag("String","split_join",true,"split_join(String str, String splitChar, String joinChar)");
 			tag.argument1 = new TagArgument("string","split char");
 			tag.argument2 = new TagArgument("string","join char");
@@ -3557,6 +3561,13 @@ private Ngrams ngrams;
 			}
 			return output;
 		}
+		String substring(String str, int start, int end) {
+            try {
+                return str.substring(start, end);
+            } catch (StringIndexOutOfBoundsException e) {
+                return "Invalid index:"+e;
+            }
+        }
 		String repeat(String str, int amount) {
 			String output = "";
 			if(amount > 0 && amount < 10000) {
@@ -4461,6 +4472,9 @@ private Ngrams ngrams;
                     break;
                 case "repeat":
                     output = this.repeat(output, this.getInt(arguments, 0));
+                    break;
+                case "substring":
+                    output = this.substring(output, this.getInt(arguments, 0), this.getInt(arguments, 1));
                     break;
                 case "split_join":
                     output = this.split_join(output, this.getString(arguments, 0), this.getString(arguments, 1));

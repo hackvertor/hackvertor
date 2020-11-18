@@ -6,7 +6,7 @@
     </artifacts-to-build>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7757c1c9-85a7-4326-a693-b026dce334d8" name="Default" comment="Added monospaced font on input/output/hex">
+    <list default="true" id="7757c1c9-85a7-4326-a693-b026dce334d8" name="Default" comment="Added report bug/request feature menu">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/burp/BurpExtender.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/burp/BurpExtender.java" afterDir="false" />
     </list>
@@ -403,7 +403,14 @@
       <option name="project" value="LOCAL" />
       <updated>1605727262751</updated>
     </task>
-    <option name="localTasksCounter" value="43" />
+    <task id="LOCAL-00043" summary="Added report bug/request feature menu">
+      <created>1605727621556</created>
+      <option name="number" value="00043" />
+      <option name="presentableId" value="LOCAL-00043" />
+      <option name="project" value="LOCAL" />
+      <updated>1605727621556</updated>
+    </task>
+    <option name="localTasksCounter" value="44" />
     <servers />
   </component>
   <component name="Vcs.Log.History.Properties">
@@ -417,7 +424,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Upgraded vulnerable Apache commons compress. Added JWT none algo. Fixed tag menu to be sorted numerically and alpha and added scrollbars. Looked for existing HV tags in clipboard before deciding to decode automatically." />
     <MESSAGE value="Added MenuScroller" />
     <MESSAGE value="Created MessageEditor tab. Fixed bug where autodecode_no_decrypt would decrypt rotN. Fixed bug where global instance of Hackvertor would interfere with other instances. Fixed payload processor bug." />
     <MESSAGE value="Added the ability to execute Python/JavaScript from tags. Disabled by default for obvious reasons." />
@@ -442,14 +448,15 @@
     <MESSAGE value="Tried to make variables clearer" />
     <MESSAGE value="Fixed AES decryption" />
     <MESSAGE value="Added monospaced font on input/output/hex" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added monospaced font on input/output/hex" />
+    <MESSAGE value="Added report bug/request feature menu" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added report bug/request feature menu" />
   </component>
   <component name="WindowStateProjectService">
-    <state x="661" y="308" key="CommitChangelistDialog2" timestamp="1605727262611">
+    <state x="661" y="308" key="CommitChangelistDialog2" timestamp="1605727621422">
       <screen x="0" y="23" width="2560" height="1417" />
     </state>
     <state x="661" y="298" key="CommitChangelistDialog2/0.23.2560.1366@0.23.2560.1366" timestamp="1597269021627" />
-    <state x="661" y="308" key="CommitChangelistDialog2/0.23.2560.1417@0.23.2560.1417" timestamp="1605727262611" />
+    <state x="661" y="308" key="CommitChangelistDialog2/0.23.2560.1417@0.23.2560.1417" timestamp="1605727621422" />
     <state x="404" y="290" width="1360" height="865" key="DiffContextDialog" timestamp="1597334353135">
       <screen x="0" y="23" width="2560" height="1366" />
     </state>
@@ -458,11 +465,11 @@
       <screen x="0" y="23" width="2560" height="1366" />
     </state>
     <state x="572" y="304" key="SettingsEditor/0.23.2560.1366@0.23.2560.1366" timestamp="1600079599700" />
-    <state x="684" y="478" key="Vcs.Push.Dialog.v2" timestamp="1605727264351">
+    <state x="684" y="478" key="Vcs.Push.Dialog.v2" timestamp="1605727623059">
       <screen x="0" y="23" width="2560" height="1417" />
     </state>
     <state x="684" y="462" key="Vcs.Push.Dialog.v2/0.23.2560.1366@0.23.2560.1366" timestamp="1597269022982" />
-    <state x="684" y="478" key="Vcs.Push.Dialog.v2/0.23.2560.1417@0.23.2560.1417" timestamp="1605727264351" />
+    <state x="684" y="478" key="Vcs.Push.Dialog.v2/0.23.2560.1417@0.23.2560.1417" timestamp="1605727623059" />
   </component>
   <component name="debuggerHistoryManager">
     <expressions id="evaluateExpression">
