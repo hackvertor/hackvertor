@@ -7,9 +7,7 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.*;
 import java.io.*;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
+import java.net.*;
 import java.nio.charset.Charset;
 import java.security.*;
 import java.text.SimpleDateFormat;
@@ -780,6 +778,18 @@ private Ngrams ngrams;
                     });
                     hvMenuBar.add(createCustomTagsMenu);
                     hvMenuBar.add(listCustomTagsMenu);
+                    JMenuItem reportBugMenu = new JMenuItem("Report bug/request feature");
+                    reportBugMenu.addActionListener(e -> {
+                        if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                            try {
+                                Desktop.getDesktop().browse(new URI("https://github.com/hackvertor/hackvertor/issues/new"));
+                            } catch (IOException ioException) {
+                            } catch (URISyntaxException uriSyntaxException) {
+
+                            }
+                        }
+                    });
+                    hvMenuBar.add(reportBugMenu);
                     burpMenuBar.add(hvMenuBar);
                     callbacks.registerMessageEditorTabFactory(BurpExtender.this);
 	            }
