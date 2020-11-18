@@ -215,7 +215,7 @@ private Ngrams ngrams;
             logoLabel = new JLabel();
         }
         final JTextArea hexView = new JTextArea();
-        hexView.setFont(new Font("monospaced", Font.PLAIN, 12));
+        hexView.setFont(new Font("Courier New", Font.PLAIN, 12));
         hexView.setRows(0);
         hexView.setOpaque(true);
         hexView.setEditable(false);
@@ -232,7 +232,7 @@ private Ngrams ngrams;
         JPanel panel = new JPanel(new GridBagLayout());
         hv.setPanel(panel);
         final JTextArea inputArea = new JTextArea();
-        inputArea.setFont(new Font("monospaced", Font.PLAIN, 12));
+        inputArea.setFont(new Font("Courier New", Font.PLAIN, 12));
         hv.setInputArea(inputArea);
         inputArea.setLineWrap(true);
         inputArea.setRows(0);
@@ -289,7 +289,7 @@ private Ngrams ngrams;
             inputLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
         }
         final JTextArea outputArea = new JTextArea();
-        outputArea.setFont(new Font("monospaced", Font.PLAIN, 12));
+        outputArea.setFont(new Font("Courier New", Font.PLAIN, 12));
         hv.setOutputArea(outputArea);
         DocumentListener documentListener = new DocumentListener() {
             public void changedUpdate(DocumentEvent documentEvent) {
@@ -565,9 +565,6 @@ private Ngrams ngrams;
         c.fill = BOTH;
         c.weightx = 1.0;
         panel.add(hexScroll,c);
-        callbacks.customizeUiComponent(inputArea);
-        callbacks.customizeUiComponent(outputArea);
-        callbacks.customizeUiComponent(panel);
         return hv;
     }
     private void readClipboardAndDecode(Hackvertor hv) {
