@@ -1,0 +1,155 @@
+/**
+* This file is a largely adapted version of the HTML parser produced by Brian Goetz, Quiotix
+* and is modified and redistributed under the GNU General Public License, version 2,
+* as published by the Free Software Foundation.
+*/
+
+options {
+  IGNORE_CASE = true;
+  STATIC = false;
+  DEBUG_TOKEN_MANAGER = false;
+}
+
+PARSER_BEGIN(HackvertorParser)
+package burp.parser;
+
+import java.io.StringReader;
+import java.util.ArrayList;import java.util.List;
+
+public class HackvertorParser {
+
+    private static String getTokenText(Token first, Token cur) {
+    Token t;
+    StringBuffer sb = new StringBuffer();
+
+    for (t=first; t != cur.next; t = t.next) {
+      if (t.specialToken != null) {
+        Token tt=t.specialToken;
+        while (tt.specialToken != null)
+          tt = tt.specialToken;
+        for (; tt != null; tt = tt.next)
+          sb.append(tt.image);
+      };
+      sb.append(t.image);
+    };
+    return sb.toString();
+    }
+
+    public static void parse(String string) throws ParseException {
+        HackvertorParser parser = new HackvertorParser(new StringReader(string));
+        List<Element> elementList = parser.Input();
+
+        System.out.println(elementList);
+    }
+}
+
+PARSER_END(HackvertorParser)
+
+SKIP:  { " " | "=\r" | "=\r\n" }
+<*> TOKEN [IGNORE_CASE]: {
+    <#IDENTIFIER:   (["0"-"9", "a"-"z", "A"-"Z","_"])+ >
+    | <#QUOTED_STRING: ( "'" ( ~["'"] )* "'" ) | ( "\"" ( ~["\""] )* "\"" ) >
+    | <#LITERAL: (["0"-"9", "a"-"z", "A"-"Z", "-", "+", "."])+>
+}
+
+<DEFAULT> TOKEN : {
+    <OPEN_TAG_START: "<@"     > : StartTag
+  | <END_TAG_START:  "<@/"    > : StartTag
+  | <TEXT: ("<" ~["@"] | ~["<"])+             >
+}
+
+<StartTag> TOKEN: {
+    <FUNCTION_NAME: <IDENTIFIER> > : InsideTag
+  | <ST_ERROR: ~[] > : DEFAULT
+}
+
+<InsideTag> TOKEN : {
+    <ARGS_START: "("> : Args
+    | <TAG_END: ">" > : DEFAULT
+}
+
+<Args> TOKEN : {
+    <QUOTED_STRING_VAL: <QUOTED_STRING>>
+    | <LITERAL_VAL: <LITERAL> >
+    | <COMMA: ",">
+    | <ARGS_END: ")"> : InsideTag
+}
+
+<*> TOKEN : { <UNKNOWN: ~[]> }
+
+List<Element> Input() :
+{
+    List<Element> s = new ArrayList<Element>();
+    Element e;
+}
+{
+    (
+      e = Element()
+      { s.add(e); }
+    )*<EOF>
+
+    { return s; }
+}
+
+Element Element() :
+{
+ Element e;
+ Token text;
+}
+{
+    LOOKAHEAD(2)
+    e = StartTag() {return e;}
+    | e = CloseTag() {return e;}
+    | <OPEN_TAG_START> text=<ST_ERROR> { return new Element.TextElement("<@" + text.image);}
+    | text = <TEXT> { return new Element.TextElement(text.image);}
+}
+
+Element StartTag() :
+{
+    ArrayList<String> args = new ArrayList<String>();
+    Token tagName;
+    String arg;
+    Token firstToken = getToken(1);
+}
+{
+    try{
+        <OPEN_TAG_START> tagName=<FUNCTION_NAME>
+        [
+            <ARGS_START>
+                arg = Argument() {args.add(arg);}
+                (<COMMA> arg = Argument() {args.add(arg);})*
+            <ARGS_END>
+        ]
+        <TAG_END>
+        {return new Element.StartTag(tagName.image, args);}
+    }catch(ParseException e){
+        token_source.SwitchTo(DEFAULT);
+        String text = getTokenText(firstToken, getNextToken());
+        return new Element.TextElement(text);
+    }
+}
+
+String Argument() :
+{
+ Token t;
+}
+{
+    t = <QUOTED_STRING_VAL> {return t.image.substring(1, t.image.length() - 1);}
+    | t = <LITERAL_VAL> {return t.image;}
+}
+
+Element CloseTag() :
+{
+    Token t;
+    Token firstToken = getToken(1);
+}
+{
+    try{
+        <END_TAG_START> t=<FUNCTION_NAME> <TAG_END>
+        {return new Element.EndTag(t.image);}
+    }catch(ParseException e){
+        token_source.SwitchTo(DEFAULT);
+        String text = getTokenText(firstToken, getNextToken());
+        return new Element.TextElement(text);
+    }
+}
