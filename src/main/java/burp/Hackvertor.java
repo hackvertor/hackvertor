@@ -200,6 +200,10 @@ public class Hackvertor {
         tag = new Tag(Tag.Category.String, "repeat", true, "repeat(String str, int amount)");
         tag.argument1 = new TagArgument("int", "100");
         tags.add(tag);
+        tag = new Tag(Tag.Category.String, "substring", true, "substring(String str, int start, int end)");
+        tag.argument1 = new TagArgument("int", "0");
+        tag.argument2 = new TagArgument("int", "100");
+        tags.add(tag);
         tag = new Tag(Tag.Category.String, "split_join", true, "split_join(String str, String splitChar, String joinChar)");
         tag.argument1 = new TagArgument("string", "split char");
         tag.argument2 = new TagArgument("string", "join char");

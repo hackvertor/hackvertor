@@ -45,10 +45,10 @@ public class AES {
             ivSpec = new IvParameterSpec(iv.getBytes("UTF-8"));
         }
         Cipher cipher = Cipher.getInstance(transformations);
-        if (iv.length() > 0) {
-            cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivSpec);
+        if(iv.length() > 0) {
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec);
         } else {
-            cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+            cipher.init(Cipher.DECRYPT_MODE, secretKey);
         }
         return new String(cipher.doFinal(Base64.getDecoder().decode(strToDecrypt)));
     }

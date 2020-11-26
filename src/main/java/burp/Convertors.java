@@ -389,6 +389,9 @@ public class Convertors {
             case "repeat":
                 output = repeat(output, getInt(arguments, 0));
                 break;
+            case "substring":
+                output = substring(output, getInt(arguments, 0), getInt(arguments, 1));
+                break;
             case "split_join":
                 output = split_join(output, getString(arguments, 0), getString(arguments, 1));
                 break;
@@ -2341,6 +2344,14 @@ public class Convertors {
             stderr.println(e.getMessage());
         }
         return output;
+    }
+
+    static String substring(String str, int start, int end) {
+        try {
+            return str.substring(start, end);
+        } catch (StringIndexOutOfBoundsException e) {
+            return "Invalid index:"+e;
+        }
     }
 
     static String repeat(String str, int amount) {

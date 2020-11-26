@@ -16,6 +16,12 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.*;
+import java.io.*;
+import java.net.*;
+import java.nio.charset.Charset;
+import java.security.*;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -191,8 +197,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 try {
-                    stdout.println("Hackvertor v1.5.3");
                     hackvertor = new Hackvertor();
+	            	stdout.println("Hackvertor v1.5.4");
                     loadCustomTags();
                     registerPayloadProcessors();
                     extensionPanel = new ExtensionPanel(hackvertor);
@@ -300,6 +306,18 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                     });
                     hvMenuBar.add(createCustomTagsMenu);
                     hvMenuBar.add(listCustomTagsMenu);
+                    JMenuItem reportBugMenu = new JMenuItem("Report bug/request feature");
+                    reportBugMenu.addActionListener(e -> {
+                        if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                            try {
+                                Desktop.getDesktop().browse(new URI("https://github.com/hackvertor/hackvertor/issues/new"));
+                            } catch (IOException ioException) {
+                            } catch (URISyntaxException uriSyntaxException) {
+
+                            }
+                        }
+                    });
+                    hvMenuBar.add(reportBugMenu);
                     burpMenuBar.add(hvMenuBar);
                     callbacks.registerMessageEditorTabFactory(BurpExtender.this);
                 }catch (Exception e){
