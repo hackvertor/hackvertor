@@ -110,7 +110,7 @@ public class Convertors {
         return output;
     }
 
-    public static String callTag(HashMap<String, String> variableMap, JSONArray customTags, String tag, String output, ArrayList<String> arguments) {
+    public static String callTag(HashMap<String, String> variableMap, JSONArray customTags, String tag, String output, ArrayList<String> arguments) throws ParseException {
         switch (tag) {
             default:
                 if (tag.startsWith("_")) {
@@ -169,7 +169,11 @@ public class Convertors {
                     String varname = tag.replace("get_","");
                     return variableMap.getOrDefault(varname, StringUtils.isEmpty(output) ? "UNDEFINED" : output);
                 } else {
-                    return charset_convert(output, "UTF-8", tag);
+                    try {
+                        return charset_convert(output, "UTF-8", tag);
+                    } catch (UnsupportedEncodingException e) {
+                        throw new ParseException("Unsupported Tag \"" + tag + "\"");
+                    }
                 }
                 return output;
             case "set":
@@ -181,8 +185,13 @@ public class Convertors {
             case "get_var":
             case "get_variable":
                 return variableMap.getOrDefault(getString(arguments,0), StringUtils.isEmpty(output) ? "UNDEFINED" : output);
-            case "charset_convert":
-                return charset_convert(output, getString(arguments, 0), getString(arguments, 1));
+            case "charset_convert": {
+                try {
+                    return charset_convert(output, getString(arguments, 0), getString(arguments, 1));
+                } catch (UnsupportedEncodingException e) {
+                    throw new ParseException("Unsupported encoding \"" + e.getCause().getMessage() + "\"");
+                }
+            }
             case "utf7":
                 return utf7(output, getString(arguments, 0));
             case "brotli_decompress":
@@ -747,14 +756,9 @@ public class Convertors {
         }
     }
 
-    static String charset_convert(String input, String from, String to) {
+    static String charset_convert(String input, String from, String to) throws UnsupportedEncodingException {
         byte[] inputBytes = input.getBytes();
-        byte[] output = new byte[0];
-        try {
-            output = new String(inputBytes, from).getBytes(to);
-        } catch (UnsupportedEncodingException e) {
-            return e.toString();
-        }
+        byte[] output = new String(inputBytes, from).getBytes(to);
         return helpers.bytesToString(output);
     }
 

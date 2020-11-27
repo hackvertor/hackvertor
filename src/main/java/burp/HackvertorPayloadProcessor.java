@@ -1,5 +1,7 @@
 package burp;
 
+import burp.parser.ParseException;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -18,7 +20,13 @@ public class HackvertorPayloadProcessor implements IIntruderPayloadProcessor {
 
     public byte[] processPayload(byte[] currentPayload, byte[] originalPayload, byte[] baseValue) {
         String input = helpers.bytesToString(currentPayload);
-        byte[] output = helpers.stringToBytes(Convertors.callTag(new HashMap<>(), hackvertor.getCustomTags(), this.tag, input, new ArrayList<String>()));
+        String tagOutput;
+        try {
+            tagOutput = Convertors.callTag(new HashMap<>(), hackvertor.getCustomTags(), this.tag, input, new ArrayList<String>());
+        } catch (ParseException e) {
+            return null;
+        }
+        byte[] output = helpers.stringToBytes(tagOutput);
         return output;
     }
 

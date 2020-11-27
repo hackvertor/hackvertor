@@ -48,7 +48,7 @@ PARSER_END(HackvertorParser)
 
 SKIP:  { " " | "=\r" | "=\r\n" }
 <*> TOKEN [IGNORE_CASE]: {
-    <#IDENTIFIER:   (["0"-"9", "a"-"z", "A"-"Z","_"])+ >
+    <#IDENTIFIER:   (["0"-"9", "a"-"z", "A"-"Z","_", "-"])+ >
     | <#QUOTED_STRING: ( "'" ( ~["'"] )* "'" ) | ( "\"" ( ~["\""] )* "\"" ) >
     | <#LITERAL: (["0"-"9", "a"-"z", "A"-"Z", "-", "+", "."])+>
     | <#WHITESPACE: ( " " | "\t" ) >
