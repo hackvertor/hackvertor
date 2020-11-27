@@ -53,6 +53,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -166,7 +167,7 @@ public class Convertors {
                     return "";
                 }else if(tag.startsWith("get_")){ //Backwards compatibility with previous get_VARNAME tag format
                     String varname = tag.replace("get_","");
-                    return variableMap.getOrDefault(varname, "UNDEFINED");
+                    return variableMap.getOrDefault(varname, StringUtils.isEmpty(output) ? "UNDEFINED" : output);
                 } else {
                     return charset_convert(output, "UTF-8", tag);
                 }
@@ -179,7 +180,7 @@ public class Convertors {
             case "get":
             case "get_var":
             case "get_variable":
-                return variableMap.getOrDefault(getString(arguments,0), "UNDEFINED");
+                return variableMap.getOrDefault(getString(arguments,0), StringUtils.isEmpty(output) ? "UNDEFINED" : output);
             case "charset_convert":
                 return charset_convert(output, getString(arguments, 0), getString(arguments, 1));
             case "utf7":
@@ -620,7 +621,14 @@ public class Convertors {
                                   String textBuffer,
                                   Stack<Element.StartTag> stack,
                                   Queue<Element> elements) throws ParseException{
-        if(elements.size() == 0) return textBuffer;
+        if(elements.size() == 0) {
+            if(stack.size() > 0){
+                String error = String.format("Unclosed tag%s - %s",stack.size()>1?"s":"",
+                        stack.stream().map(Element.StartTag::getIdentifier).collect(Collectors.joining()));
+                throw new ParseException(error);
+            }
+            return textBuffer;
+        }
 
         //Take the first item from the queue.
         Element element = elements.remove();
