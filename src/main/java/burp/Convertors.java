@@ -643,13 +643,13 @@ public class Convertors {
             textBuffer+= convert(variables, customTags, "", stack, elements);
         }else if(element instanceof Element.EndTag){ //End of a conversion. Convert and update textbuffer.
             Element.StartTag startTag;
+            Element.EndTag endTag = (Element.EndTag) element;
             try {
                 startTag = stack.pop();
             }catch (EmptyStackException e){
                 e.printStackTrace();
-                throw e;
+                throw new ParseException(String.format("Found closing tag \"%s\" without matching open tag.", endTag.getIdentifier()));
             }
-            Element.EndTag endTag = (Element.EndTag) element;
             if(!startTag.getIdentifier().equalsIgnoreCase(endTag.getIdentifier())){ //Check stack matches end tag.
                 throw new ParseException(String.format("Mismatched opening and closing tags, %s and %s.",
                         startTag.getIdentifier(), endTag.getIdentifier()));
