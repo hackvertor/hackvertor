@@ -391,7 +391,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 changes[0]++;
             }
         });
-        JComboBox languageCombo = new JComboBox();
+        JComboBox<String> languageCombo = new JComboBox<String>();
         languageCombo.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -427,7 +427,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         createTagPanel.add(languageCombo);
         JLabel argument1Label = new JLabel("Argument1");
         argument1Label.setPreferredSize(new Dimension(100, 25));
-        JComboBox argument1Combo = new JComboBox();
+        JComboBox<String> argument1Combo = new JComboBox<String>();
         argument1Combo.addItem("None");
         argument1Combo.addItem("String");
         argument1Combo.addItem("Number");
@@ -464,7 +464,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         JLabel argument2NameLabel = new JLabel("Param Name");
         JLabel argument2Label = new JLabel("Argument2");
         argument2Label.setPreferredSize(new Dimension(100, 25));
-        JComboBox argument2Combo = new JComboBox();
+        JComboBox<String> argument2Combo = new JComboBox<String>();
         argument2Combo.addItem("None");
         argument2Combo.addItem("String");
         argument2Combo.addItem("Number");

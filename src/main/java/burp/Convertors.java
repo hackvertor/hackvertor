@@ -1,5 +1,8 @@
 package burp;
 
+import burp.parser.Element;
+import burp.parser.HackvertorParser;
+import burp.parser.ParseException;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
@@ -38,6 +41,7 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
+import javax.swing.*;
 import java.io.*;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -150,633 +154,499 @@ public class Convertors {
                             String language = customTag.getString("language").toLowerCase();
                             String code = customTag.getString("code");
                             if (language.equals("javascript")) {
-                                output = javascript(variableMap, output, code, eKey, customTagOptions);
+                                return javascript(variableMap, output, code, eKey, customTagOptions);
                             } else {
-                                output = python(variableMap, output, code, eKey, customTagOptions);
+                                return python(variableMap, output, code, eKey, customTagOptions);
                             }
-                            break;
                         }
                     }
+                }else if(tag.startsWith("set_")){ //Backwards compatibility with previous set_VARNAME tag format
+                    String varname = tag.replace("set_","");
+                    variableMap.put(varname, output);
+                    return "";
+                }else if(tag.startsWith("get_")){ //Backwards compatibility with previous get_VARNAME tag format
+                    String varname = tag.replace("get_","");
+                    return variableMap.getOrDefault(varname, "UNDEFINED");
                 } else {
-                    output = charset_convert(output, "UTF-8", tag);
+                    return charset_convert(output, "UTF-8", tag);
                 }
-                break;
+                return output;
+            case "set":
+            case "set_var":
+            case "set_variable":
+                variableMap.put(getString(arguments, 0), output);
+                return "";
+            case "get":
+            case "get_var":
+            case "get_variable":
+                return variableMap.getOrDefault(getString(arguments,0), "UNDEFINED");
             case "charset_convert":
-                output = charset_convert(output, getString(arguments, 0), getString(arguments, 1));
-                break;
+                return charset_convert(output, getString(arguments, 0), getString(arguments, 1));
             case "utf7":
-                output = utf7(output, getString(arguments, 0));
-                break;
+                return utf7(output, getString(arguments, 0));
             case "brotli_decompress":
-                output = brotli_decompress(output);
-                break;
+                return brotli_decompress(output);
             case "gzip_compress":
-                output = gzip_compress(output);
-                break;
+                return gzip_compress(output);
             case "gzip_decompress":
-                output = gzip_decompress(output);
-                break;
+                return gzip_decompress(output);
             case "bzip2_compress":
-                output = bzip2_compress(output);
-                break;
+                return bzip2_compress(output);
             case "bzip2_decompress":
-                output = bzip2_decompress(output);
-                break;
+                return bzip2_decompress(output);
             case "deflate_compress":
-                output = deflate_compress(output);
-                break;
+                return deflate_compress(output);
             case "deflate_decompress":
-                output = deflate_decompress(output);
-                break;
+                return deflate_decompress(output);
             case "timestamp":
-                output = timestamp();
-                break;
+                return timestamp();
             case "date":
-                output = date(getString(arguments, 0));
-                break;
+                return date(getString(arguments, 0));
             case "html_entities":
-                output = html_entities(output);
-                break;
+                return html_entities(output);
             case "d_html_entities":
-                output = decode_html_entities(output);
-                break;
+                return decode_html_entities(output);
             case "html5_entities":
-                output = html5_entities(output);
-                break;
+                return html5_entities(output);
             case "hex":
-                output = hex(output, getString(arguments, 0));
-                break;
+                return hex(output, getString(arguments, 0));
             case "hex_entities":
-                output = hex_entities(output);
-                break;
+                return hex_entities(output);
             case "hex_escapes":
-                output = hex_escapes(output);
-                break;
+                return hex_escapes(output);
             case "octal_escapes":
-                output = octal_escapes(output);
-                break;
+                return octal_escapes(output);
             case "php_non_alpha":
-                output = php_non_alpha(output);
-                break;
+                return php_non_alpha(output);
             case "php_chr":
-                output = php_chr(output);
-                break;
+                return php_chr(output);
             case "sql_hex":
-                output = sql_hex(output);
-                break;
+                return sql_hex(output);
             case "rotN":
-                output = rotN(output, getInt(arguments, 0));
-                break;
+                return rotN(output, getInt(arguments, 0));
             case "aes_encrypt":
-                output = aes_encrypt(output, getString(arguments, 0), getString(arguments, 1), getString(arguments, 2));
-                break;
+                return aes_encrypt(output, getString(arguments, 0), getString(arguments, 1), getString(arguments, 2));
             case "aes_decrypt":
-                output = aes_decrypt(output, getString(arguments, 0), getString(arguments, 1), getString(arguments, 2));
-                break;
+                return aes_decrypt(output, getString(arguments, 0), getString(arguments, 1), getString(arguments, 2));
             case "rotN_bruteforce":
-                output = rotN_bruteforce(output);
-                break;
+                return rotN_bruteforce(output);
             case "xor":
-                output = xor(output, getString(arguments, 0));
-                break;
+                return xor(output, getString(arguments, 0));
             case "xor_decrypt":
-                output = xor_decrypt(output, getInt(arguments, 0), false);
-                break;
+                return xor_decrypt(output, getInt(arguments, 0), false);
             case "xor_getkey":
-                output = xor_getkey(output);
-                break;
+                return xor_getkey(output);
             case "affine_encrypt":
-                output = affine_encrypt(output, getInt(arguments, 0), getInt(arguments, 1));
-                break;
+                return affine_encrypt(output, getInt(arguments, 0), getInt(arguments, 1));
             case "affine_decrypt":
-                output = affine_decrypt(output, getInt(arguments, 0), getInt(arguments, 1));
-                break;
+                return affine_decrypt(output, getInt(arguments, 0), getInt(arguments, 1));
             case "atbash_encrypt":
-                output = atbash_encrypt(output);
-                break;
+                return atbash_encrypt(output);
             case "atbash_decrypt":
-                output = atbash_decrypt(output);
-                break;
+                return atbash_decrypt(output);
             case "rail_fence_encrypt":
-                output = rail_fence_encrypt(output, getInt(arguments, 0));
-                break;
+                return rail_fence_encrypt(output, getInt(arguments, 0));
             case "rail_fence_decrypt":
-                output = rail_fence_decrypt(output, getInt(arguments, 0));
-                break;
+                return rail_fence_decrypt(output, getInt(arguments, 0));
             case "substitution_encrypt":
-                output = substitution_encrypt(output, getString(arguments, 0));
-                break;
+                return substitution_encrypt(output, getString(arguments, 0));
             case "substitution_decrypt":
-                output = substitution_decrypt(output, getString(arguments, 0));
-                break;
+                return substitution_decrypt(output, getString(arguments, 0));
             case "jwt":
-                output = jwt(output, getString(arguments, 0), getString(arguments, 1));
-                break;
+                return jwt(output, getString(arguments, 0), getString(arguments, 1));
             case "auto_decode":
-                output = auto_decode(output);
-                break;
+                return auto_decode(output);
             case "auto_decode_no_decrypt":
-                output = auto_decode_no_decrypt(output);
-                break;
+                return auto_decode_no_decrypt(output);
             case "d_octal_escapes":
-                output = decode_octal_escapes(output);
-                break;
+                return decode_octal_escapes(output);
             case "css_escapes":
-                output = css_escapes(output);
-                break;
+                return css_escapes(output);
             case "css_escapes6":
-                output = css_escapes6(output);
-                break;
+                return css_escapes6(output);
             case "dec_entities":
-                output = dec_entities(output);
-                break;
+                return dec_entities(output);
             case "unicode_escapes":
-                output = unicode_escapes(output);
-                break;
+                return unicode_escapes(output);
             case "d_unicode_escapes":
-                output = decode_js_string(output);
-                break;
+                return decode_js_string(output);
             case "d_jwt_get_payload":
-                output = d_jwt_get_payload(output);
-                break;
+                return d_jwt_get_payload(output);
             case "d_jwt_get_header":
-                output = d_jwt_get_header(output);
-                break;
+                return d_jwt_get_header(output);
             case "d_jwt_verify":
-                output = d_jwt_verify(output, getString(arguments, 0));
-                break;
+                return d_jwt_verify(output, getString(arguments, 0));
             case "d_js_string":
-                output = decode_js_string(output);
-                break;
+                return decode_js_string(output);
             case "d_html5_entities":
-                output = decode_html5_entities(output);
-                break;
+                return decode_html5_entities(output);
             case "base32":
-                output = base32_encode(output);
-                break;
+                return base32_encode(output);
             case "d_base32":
-                output = decode_base32(output);
-                break;
+                return decode_base32(output);
             case "base64":
-                output = base64Encode(output);
-                break;
+                return base64Encode(output);
             case "d_base64":
-                output = decode_base64(output);
-                break;
+                return decode_base64(output);
             case "base64url":
-                output = base64urlEncode(output);
-                break;
+                return base64urlEncode(output);
             case "d_base64url":
-                output = decode_base64url(output);
-                break;
+                return decode_base64url(output);
             case "burp_urlencode":
-                output = burp_urlencode(output);
-                break;
+                return burp_urlencode(output);
             case "urlencode":
-                output = urlencode(output);
-                break;
+                return urlencode(output);
             case "urlencode_not_plus":
-                output = urlencode_not_plus(output);
-                break;
+                return urlencode_not_plus(output);
             case "urlencode_all":
-                output = urlencode_all(output);
-                break;
+                return urlencode_all(output);
             case "d_burp_url":
-                output = burp_decode_url(output);
-                break;
+                return burp_decode_url(output);
             case "d_url":
-                output = decode_url(output);
-                break;
+                return decode_url(output);
             case "d_css_escapes":
-                output = decode_css_escapes(output);
-                break;
+                return decode_css_escapes(output);
             case "uppercase":
-                output = uppercase(output);
-                break;
+                return uppercase(output);
             case "lowercase":
-                output = lowercase(output);
-                break;
+                return lowercase(output);
             case "unique":
-                output = unique(output);
-                break;
+                return unique(output);
             case "capitalise":
-                output = capitalise(output);
-                break;
+                return capitalise(output);
             case "uncapitalise":
-                output = uncapitalise(output);
-                break;
+                return uncapitalise(output);
             case "from_charcode":
-                output = from_charcode(output);
-                break;
+                return from_charcode(output);
             case "to_charcode":
-                output = to_charcode(output);
-                break;
+                return to_charcode(output);
             case "reverse":
-                output = reverse(output);
-                break;
+                return reverse(output);
             case "length":
-                output = len(output);
-                break;
+                return len(output);
             case "find":
-                output = find(output, getString(arguments, 0));
-                break;
+                return find(output, getString(arguments, 0));
             case "replace":
-                output = replace(output, getString(arguments, 0), getString(arguments, 1));
-                break;
+                return replace(output, getString(arguments, 0), getString(arguments, 1));
             case "regex_replace":
-                output = regex_replace(output, getString(arguments, 0), getString(arguments, 1));
-                break;
+                return regex_replace(output, getString(arguments, 0), getString(arguments, 1));
             case "repeat":
-                output = repeat(output, getInt(arguments, 0));
-                break;
+                return repeat(output, getInt(arguments, 0));
             case "substring":
-                output = substring(output, getInt(arguments, 0), getInt(arguments, 1));
-                break;
+                return substring(output, getInt(arguments, 0), getInt(arguments, 1));
             case "split_join":
-                output = split_join(output, getString(arguments, 0), getString(arguments, 1));
-                break;
+                return split_join(output, getString(arguments, 0), getString(arguments, 1));
             case "is_like_english":
-                output = Double.toString(is_like_english(output));
-                break;
+                return Double.toString(is_like_english(output));
             case "index_of_coincidence":
-                output = Double.toString(index_of_coincidence(output));
-                break;
+                return Double.toString(index_of_coincidence(output));
             case "guess_key_length":
-                output = Integer.toString(guess_key_length(output));
-                break;
+                return Integer.toString(guess_key_length(output));
             case "chunked_dec2hex":
-                output = chunked_dec2hex(output);
-                break;
+                return chunked_dec2hex(output);
             case "dec2hex":
-                output = dec2hex(output, getString(arguments, 0));
-                break;
+                return dec2hex(output, getString(arguments, 0));
             case "dec2oct":
-                output = dec2oct(output, getString(arguments, 0));
-                break;
+                return dec2oct(output, getString(arguments, 0));
             case "dec2bin":
-                output = dec2bin(output, getString(arguments, 0));
-                break;
+                return dec2bin(output, getString(arguments, 0));
             case "hex2dec":
-                output = hex2dec(output, getString(arguments, 0));
-                break;
+                return hex2dec(output, getString(arguments, 0));
             case "oct2dec":
-                output = oct2dec(output, getString(arguments, 0));
-                break;
+                return oct2dec(output, getString(arguments, 0));
             case "bin2dec":
-                output = bin2dec(output, getString(arguments, 0));
-                break;
+                return bin2dec(output, getString(arguments, 0));
             case "ascii2bin":
-                output = ascii2bin(output);
-                break;
+                return ascii2bin(output);
             case "bin2ascii":
-                output = bin2ascii(output);
-                break;
+                return bin2ascii(output);
             case "hex2ascii":
-                output = hex2ascii(output);
-                break;
+                return hex2ascii(output);
             case "ascii2hex":
-                output = ascii2hex(output, getString(arguments, 0));
-                break;
+                return ascii2hex(output, getString(arguments, 0));
             case "ascii2reverse_hex":
-                output = ascii2reverse_hex(output, getString(arguments, 0));
-                break;
+                return ascii2reverse_hex(output, getString(arguments, 0));
             case "hmac_md5":
-                output = hmacmd5(output, getString(arguments, 0));
-                break;
+                return hmacmd5(output, getString(arguments, 0));
             case "hmac_sha1":
-                output = hmacsha1(output, getString(arguments, 0));
-                break;
+                return hmacsha1(output, getString(arguments, 0));
             case "hmac_sha224":
-                output = hmacsha224(output, getString(arguments, 0));
-                break;
+                return hmacsha224(output, getString(arguments, 0));
             case "hmac_sha256":
-                output = hmacsha256(output, getString(arguments, 0));
-                break;
+                return hmacsha256(output, getString(arguments, 0));
             case "hmac_sha384":
-                output = hmacsha384(output, getString(arguments, 0));
-                break;
+                return hmacsha384(output, getString(arguments, 0));
             case "hmac_sha512":
-                output = hmacsha512(output, getString(arguments, 0));
-                break;
+                return hmacsha512(output, getString(arguments, 0));
             case "sha1":
-                output = sha1(output);
-                break;
+                return sha1(output);
             case "sha224":
-                output = sha224(output);
-                break;
+                return sha224(output);
             case "sha256":
-                output = sha256(output);
-                break;
+                return sha256(output);
             case "sha384":
-                output = sha384(output);
-                break;
+                return sha384(output);
             case "sha512":
-                output = sha512(output);
-                break;
+                return sha512(output);
             case "sha3":
-                output = sha3(output);
-                break;
+                return sha3(output);
             case "sha3_224":
-                output = sha3_224(output);
-                break;
+                return sha3_224(output);
             case "sha3_256":
-                output = sha3_256(output);
-                break;
+                return sha3_256(output);
             case "sha3_384":
-                output = sha3_384(output);
-                break;
+                return sha3_384(output);
             case "sha3_512":
-                output = sha3_512(output);
-                break;
+                return sha3_512(output);
             case "skein_256_128":
-                output = skein_256_128(output);
-                break;
+                return skein_256_128(output);
             case "skein_256_160":
-                output = skein_256_160(output);
-                break;
+                return skein_256_160(output);
             case "skein_256_224":
-                output = skein_256_224(output);
-                break;
+                return skein_256_224(output);
             case "skein_256_256":
-                output = skein_256_256(output);
-                break;
+                return skein_256_256(output);
             case "skein_512_128":
-                output = skein_512_128(output);
-                break;
+                return skein_512_128(output);
             case "skein_512_160":
-                output = skein_512_160(output);
-                break;
+                return skein_512_160(output);
             case "skein_512_224":
-                output = skein_512_224(output);
-                break;
+                return skein_512_224(output);
             case "skein_512_256":
-                output = skein_512_256(output);
-                break;
+                return skein_512_256(output);
             case "skein_512_384":
-                output = skein_512_384(output);
-                break;
+                return skein_512_384(output);
             case "skein_512_512":
-                output = skein_512_512(output);
-                break;
+                return skein_512_512(output);
             case "skein_1024_384":
-                output = skein_1024_384(output);
-                break;
+                return skein_1024_384(output);
             case "skein_1024_512":
-                output = skein_1024_512(output);
-                break;
+                return skein_1024_512(output);
             case "skein_1024_1024":
-                output = skein_1024_1024(output);
-                break;
+                return skein_1024_1024(output);
             case "sm3":
-                output = sm3(output);
-                break;
+                return sm3(output);
             case "tiger":
-                output = tiger(output);
-                break;
+                return tiger(output);
             case "md2":
-                output = md2(output);
-                break;
+                return md2(output);
             case "md4":
-                output = md4(output);
-                break;
+                return md4(output);
             case "md5":
-                output = md5(output);
-                break;
+                return md5(output);
             case "gost3411":
-                output = gost3411(output);
-                break;
+                return gost3411(output);
             case "ripemd128":
-                output = ripemd128(output);
-                break;
+                return ripemd128(output);
             case "ripemd160":
-                output = ripemd160(output);
-                break;
+                return ripemd160(output);
             case "ripemd256":
-                output = ripemd256(output);
-                break;
+                return ripemd256(output);
             case "ripemd320":
-                output = ripemd320(output);
-                break;
+                return ripemd320(output);
             case "whirlpool":
-                output = whirlpool(output);
-                break;
+                return whirlpool(output);
             case "random":
-                output = random(output, getInt(arguments, 0));
-                break;
+                return random(output, getInt(arguments, 0));
             case "random_num":
-                output = random_num(getInt(arguments, 0));
-                break;
+                return random_num(getInt(arguments, 0));
             case "random_unicode":
-                output = random_unicode(getInt(arguments, 0), getInt(arguments, 1), getInt(arguments, 2));
-                break;
+                return random_unicode(getInt(arguments, 0), getInt(arguments, 1), getInt(arguments, 2));
             case "range":
-                output = range(output, getInt(arguments, 0), getInt(arguments, 1), getInt(arguments, 2));
-                break;
+                return range(output, getInt(arguments, 0), getInt(arguments, 1), getInt(arguments, 2));
             case "total":
-                output = total(output);
-                break;
+                return total(output);
             case "arithmetic":
-                output = arithmetic(output, getInt(arguments, 0), getString(arguments, 1), getString(arguments, 2));
-                break;
+                return arithmetic(output, getInt(arguments, 0), getString(arguments, 1), getString(arguments, 2));
             case "convert_base":
-                output = convert_base(output, getString(arguments, 0), getInt(arguments, 1), getInt(arguments, 2));
-                break;
+                return convert_base(output, getString(arguments, 0), getInt(arguments, 1), getInt(arguments, 2));
             case "zeropad":
-                output = zeropad(output, getString(arguments, 0), getInt(arguments, 1));
-                break;
+                return zeropad(output, getString(arguments, 0), getInt(arguments, 1));
             case "behavior":
-                output = behavior(output);
-                break;
+                return behavior(output);
             case "css_expression":
-                output = css_expression(output);
-                break;
+                return css_expression(output);
             case "datasrc":
-                output = datasrc(output);
-                break;
+                return datasrc(output);
             case "eval_fromcharcode":
-                output = eval_fromcharcode(output);
-                break;
+                return eval_fromcharcode(output);
             case "iframe_data_url":
-                output = iframe_data_url(output);
-                break;
+                return iframe_data_url(output);
             case "script_data":
-                output = script_data(output);
-                break;
+                return script_data(output);
             case "uppercase_script":
-                output = uppercase_script(output);
-                break;
+                return uppercase_script(output);
             case "iframe_src_doc":
-                output = iframe_src_doc(output);
-                break;
+                return iframe_src_doc(output);
             case "template_eval":
-                output = template_eval(output);
-                break;
+                return template_eval(output);
             case "throw_eval":
-                output = throw_eval(output);
-                break;
+                return throw_eval(output);
             case "python":
-                output = python(variableMap, output, getString(arguments, 0), getString(arguments, 1), null);
-                break;
+                return python(variableMap, output, getString(arguments, 0), getString(arguments, 1), null);
             case "javascript":
-                output = javascript(variableMap, output, getString(arguments, 0), getString(arguments, 1), null);
-                break;
+                return javascript(variableMap, output, getString(arguments, 0), getString(arguments, 1), null);
             case "loop_for":
-                output = loop_for(variableMap, customTags, output, getInt(arguments, 0), getInt(arguments, 1), getInt(arguments, 2), getString(arguments, 3));
-                break;
+                return loop_for(variableMap, customTags, output, getInt(arguments, 0), getInt(arguments, 1), getInt(arguments, 2), getString(arguments, 3));
             case "loop_letters_lower":
-                output = loop_letters_lower(variableMap, customTags, output, getString(arguments, 0));
-                break;
+                return loop_letters_lower(variableMap, customTags, output, getString(arguments, 0));
             case "loop_letters_upper":
-                output = loop_letters_upper(variableMap, customTags, output, getString(arguments, 0));
-                break;
+                return loop_letters_upper(variableMap, customTags, output, getString(arguments, 0));
             case "loop_numbers":
-                output = loop_letters_numbers(variableMap, customTags, output, getString(arguments, 0));
-                break;
+                return loop_letters_numbers(variableMap, customTags, output, getString(arguments, 0));
         }
-        return output;
     }
 
-    public static String convertNoInputTags(HashMap<String, String> variableMap, JSONArray customTags, String input) {
-        java.util.List<String> allMatches = new ArrayList<>();
-        Matcher m = Pattern.compile("<@([\\w\\d\\-]+(_\\d*)?)((?:[(](?:,?" + argumentsRegex + ")*[)])?) />").matcher(input);
-        while (m.find()) {
-            allMatches.add(m.group(1));
-        }
-        for (String tagNameWithID : allMatches) {
-            String arguments = "";
-            String tagName = tagNameWithID.replaceAll("_\\d+$", "");
-            m = Pattern.compile("<@" + tagNameWithID + "((?:[(](?:,?" + argumentsRegex + ")*[)])?) />").matcher(input);
-            if (m.find()) {
-                arguments = m.group(1);
-            }
-            String result;
-            if (tagName.startsWith("get_")) {
-                result = variableMap.getOrDefault(tagName,"");
-            } else {
-                result = callTag(variableMap, customTags, tagName, "", parseArguments(arguments));
-            }
-            input = input.replaceAll("<@" + tagNameWithID + "(?:[(](?:,?" + argumentsRegex + ")*[)])? />", result.replace("\\", "\\\\").replace("$", "\\$"));
-        }
-        return input;
-    }
+//    public static String convertNoInputTags(HashMap<String, String> variableMap, JSONArray customTags, String input) {
+//        java.util.List<String> allMatches = new ArrayList<>();
+//        Matcher m = Pattern.compile("<@([\\w\\d\\-]+(_\\d*)?)((?:[(](?:,?" + argumentsRegex + ")*[)])?) />").matcher(input);
+//        while (m.find()) {
+//            allMatches.add(m.group(1));
+//        }
+//        for (String tagNameWithID : allMatches) {
+//            String arguments = "";
+//            String tagName = tagNameWithID.replaceAll("_\\d+$", "");
+//            m = Pattern.compile("<@" + tagNameWithID + "((?:[(](?:,?" + argumentsRegex + ")*[)])?) />").matcher(input);
+//            if (m.find()) {
+//                arguments = m.group(1);
+//            }
+//            String result;
+//            if (tagName.startsWith("get_")) {
+//                result = variableMap.getOrDefault(tagName,"");
+//            } else {
+//                result = callTag(variableMap, customTags, tagName, "", parseArguments(arguments));
+//            }
+//            input = input.replaceAll("<@" + tagNameWithID + "(?:[(](?:,?" + argumentsRegex + ")*[)])? />", result.replace("\\", "\\\\").replace("$", "\\$"));
+//        }
+//        return input;
+//    }
 
     public static String[] generateTagStartEnd(Tag tagObj) {
-        String tagStart;
-        String tagEnd;
-        int tagNo = (new Random().nextInt(10000));
-        tagStart = "<@" + tagObj.name + "_" + tagNo;
-        if (tagObj.argument1 != null) {
-            tagStart += "(";
-        }
-        if (tagObj.argument1 != null) {
-            if (tagObj.argument1.type.equals("int")) {
-                tagStart += tagObj.argument1.value;
-            } else if (tagObj.argument1.type.equals("string")) {
-                tagStart += "\"" + tagObj.argument1.value + "\"";
-            }
-        }
-        if (tagObj.argument2 != null) {
-            tagStart += ",";
-            if (tagObj.argument2.type.equals("int")) {
-                tagStart += tagObj.argument2.value;
-            } else if (tagObj.argument2.type.equals("string")) {
-                tagStart += "\"" + tagObj.argument2.value + "\"";
-            }
-        }
-        if (tagObj.argument3 != null) {
-            tagStart += ",";
-            if (tagObj.argument3.type.equals("int")) {
-                tagStart += tagObj.argument3.value;
-            } else if (tagObj.argument3.type.equals("string")) {
-                tagStart += "\"" + tagObj.argument3.value + "\"";
-            }
-        }
-        if (tagObj.argument4 != null) {
-            tagStart += ",";
-            if (tagObj.argument4.type.equals("int")) {
-                tagStart += tagObj.argument4.value;
-            } else if (tagObj.argument4.type.equals("string")) {
-                tagStart += "\"" + tagObj.argument4.value + "\"";
-            }
-        }
-        if (tagObj.argument1 != null) {
-            tagStart += ")";
-        }
+        String[] tag = new String[2];
+        ArrayList<String> args = new ArrayList<>();
+        if(tagObj.argument1 != null) args.add(tagObj.argument1.value);
+        if(tagObj.argument2 != null) args.add(tagObj.argument2.value);
+        if(tagObj.argument3 != null) args.add(tagObj.argument3.value);
+        if(tagObj.argument4 != null) args.add(tagObj.argument4.value);
+
         if (tagObj.hasInput) {
-            tagStart += ">";
-            tagEnd = "<@/" + tagObj.name + "_" + tagNo + ">";
+            tag[0] = new Element.StartTag(tagObj.name, args).toString();
+            tag[1] = new Element.EndTag(tagObj.name).toString();
         } else {
-            tagStart += " />";
-            tagEnd = "";
+            tag[0] = new Element.SelfClosingTag(tagObj.name, args).toString();
+            tag[1] = "";
         }
-        return new String[]{tagStart, tagEnd};
+        return tag;
     }
 
-    public static ArrayList<String> parseArguments(String arguments) {
-        if (arguments.length() == 0) {
-            return new ArrayList<>();
+//    public static ArrayList<String> parseArguments(String arguments) {
+//        if (arguments.length() == 0) {
+//            return new ArrayList<>();
+//        }
+//        arguments = arguments.substring(1, arguments.length() - 1);
+//        String argument1;
+//        String argument2;
+//        String argument3;
+//        String argument4;
+//        ArrayList<String> convertedArgs = new ArrayList<>();
+//        String regex = "(" + argumentsRegex + ")(," + argumentsRegex + ")?(," + argumentsRegex + ")?(," + argumentsRegex + ")?";
+//        Matcher m = Pattern.compile(regex).matcher(arguments);
+//        if (m.find()) {
+//            argument1 = m.group(1);
+//            argument2 = m.group(2);
+//            argument3 = m.group(3);
+//            argument4 = m.group(4);
+//            if (argument1 != null) {
+//                String chr = "" + argument1.charAt(0);
+//                if (chr.equals("'") || chr.equals("\"")) {
+//                    argument1 = argument1.substring(1, argument1.length() - 1);
+//                    argument1 = argument1.replace("\\'", "'").replace("\\\"", "\"");
+//                    convertedArgs.add(decode_js_string(argument1));
+//                } else {
+//                    convertedArgs.add(argument1);
+//                }
+//            }
+//            if (argument2 != null) {
+//                argument2 = argument2.substring(1);
+//                String chr = "" + argument2.charAt(0);
+//                if (chr.equals("'") || chr.equals("\"")) {
+//                    argument2 = argument2.substring(1, argument2.length() - 1);
+//                    argument2 = argument2.replace("\\'", "'").replace("\\\"", "\"");
+//                    convertedArgs.add(decode_js_string(argument2));
+//                } else {
+//                    convertedArgs.add(argument2);
+//                }
+//            }
+//            if (argument3 != null) {
+//                argument3 = argument3.substring(1);
+//                String chr = "" + argument3.charAt(0);
+//                if (chr.equals("'") || chr.equals("\"")) {
+//                    argument3 = argument3.substring(1, argument3.length() - 1);
+//                    argument3 = argument3.replace("\\'", "'").replace("\\\"", "\"");
+//                    convertedArgs.add(decode_js_string(argument3));
+//                } else {
+//                    convertedArgs.add(argument3);
+//                }
+//            }
+//            if (argument4 != null) {
+//                argument4 = argument4.substring(1);
+//                String chr = "" + argument4.charAt(0);
+//                if (chr.equals("'") || chr.equals("\"")) {
+//                    argument4 = argument4.substring(1, argument4.length() - 1);
+//                    argument4 = argument4.replace("\\'", "'").replace("\\\"", "\"");
+//                    convertedArgs.add(decode_js_string(argument4));
+//                } else {
+//                    convertedArgs.add(argument4);
+//                }
+//            }
+//        }
+//        return convertedArgs;
+//    }
+
+    public static String newConvert(HashMap<String, String> variables, JSONArray customTags, String input){
+        Queue<Element> tagElements;
+        try {
+            tagElements = HackvertorParser.parse(input);
+            return convert(variables, customTags, "", new Stack<>(), tagElements);
+        }catch (Exception e){
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            return String.format("Error: %s\n%s", e.getMessage(), sw);
         }
-        arguments = arguments.substring(1, arguments.length() - 1);
-        String argument1;
-        String argument2;
-        String argument3;
-        String argument4;
-        ArrayList<String> convertedArgs = new ArrayList<>();
-        String regex = "(" + argumentsRegex + ")(," + argumentsRegex + ")?(," + argumentsRegex + ")?(," + argumentsRegex + ")?";
-        Matcher m = Pattern.compile(regex).matcher(arguments);
-        if (m.find()) {
-            argument1 = m.group(1);
-            argument2 = m.group(2);
-            argument3 = m.group(3);
-            argument4 = m.group(4);
-            if (argument1 != null) {
-                String chr = "" + argument1.charAt(0);
-                if (chr.equals("'") || chr.equals("\"")) {
-                    argument1 = argument1.substring(1, argument1.length() - 1);
-                    argument1 = argument1.replace("\\'", "'").replace("\\\"", "\"");
-                    convertedArgs.add(decode_js_string(argument1));
-                } else {
-                    convertedArgs.add(argument1);
-                }
-            }
-            if (argument2 != null) {
-                argument2 = argument2.substring(1);
-                String chr = "" + argument2.charAt(0);
-                if (chr.equals("'") || chr.equals("\"")) {
-                    argument2 = argument2.substring(1, argument2.length() - 1);
-                    argument2 = argument2.replace("\\'", "'").replace("\\\"", "\"");
-                    convertedArgs.add(decode_js_string(argument2));
-                } else {
-                    convertedArgs.add(argument2);
-                }
-            }
-            if (argument3 != null) {
-                argument3 = argument3.substring(1);
-                String chr = "" + argument3.charAt(0);
-                if (chr.equals("'") || chr.equals("\"")) {
-                    argument3 = argument3.substring(1, argument3.length() - 1);
-                    argument3 = argument3.replace("\\'", "'").replace("\\\"", "\"");
-                    convertedArgs.add(decode_js_string(argument3));
-                } else {
-                    convertedArgs.add(argument3);
-                }
-            }
-            if (argument4 != null) {
-                argument4 = argument4.substring(1);
-                String chr = "" + argument4.charAt(0);
-                if (chr.equals("'") || chr.equals("\"")) {
-                    argument4 = argument4.substring(1, argument4.length() - 1);
-                    argument4 = argument4.replace("\\'", "'").replace("\\\"", "\"");
-                    convertedArgs.add(decode_js_string(argument4));
-                } else {
-                    convertedArgs.add(argument4);
-                }
-            }
-        }
-        return convertedArgs;
     }
 
-    public static String convert(JSONArray customTags, String input){
+    private static String convert(HashMap<String, String> variables,
+                                  JSONArray customTags,
+                                  String textBuffer,
+                                  Stack<Element.StartTag> stack,
+                                  Queue<Element> elements) throws ParseException{
+        if(elements.size() == 0) return textBuffer;
+
+        //Take the first item from the queue.
+        Element element = elements.remove();
+        if(element instanceof Element.TextElement){ //Text element, add it to our textBuffer
+            textBuffer+= ((Element.TextElement) element).getContent();
+        }else if(element instanceof Element.SelfClosingTag){ //Self closing tag. Just add its textBuffer to textbuffer.
+            Element.SelfClosingTag selfClosingTag = (Element.SelfClosingTag) element;
+            String tagOutput = callTag(variables, customTags, selfClosingTag.getIdentifier(), "", selfClosingTag.getArguments());
+            textBuffer+= tagOutput;
+        }else if(element instanceof Element.StartTag){ //Start of a conversion.
+            stack.push((Element.StartTag) element);
+            textBuffer+= convert(variables, customTags, "", stack, elements);
+        }else if(element instanceof Element.EndTag){ //End of a conversion. Convert and update textbuffer.
+            Element.StartTag startTag = stack.pop();
+            Element.EndTag endTag = (Element.EndTag) element;
+            if(!startTag.getIdentifier().equalsIgnoreCase(endTag.getIdentifier())){ //Check stack matches end tag.
+                throw new ParseException(String.format("Mismatched opening and closing tags, %s and %s.",
+                        startTag.getIdentifier(), endTag.getIdentifier()));
+            }
+            return callTag(variables, customTags, startTag.getIdentifier(), textBuffer, startTag.getArguments());
+        }
+
+        return convert(variables, customTags, textBuffer, stack, elements);
+    }
+
+    /*public static String convert(JSONArray customTags, String input){
         return convert(new HashMap<>(), customTags, input);
     }
 
@@ -852,7 +722,7 @@ public class Convertors {
             output = output.replaceAll("<@" + tagNameWithID + "(?:[(](?:,?" + argumentsRegex + ")*[)])?>[\\d\\D]*?<@/" + tagNameWithID + ">", result.replace("\\", "\\\\").replace("$", "\\$"));
         }
         return output;
-    }
+    }*/
 
     static String convertCharset(String input, String to) {
         String output = "";
@@ -2302,10 +2172,9 @@ public class Convertors {
         MessageDigest digest = null;
         try {
             digest = MessageDigest.getInstance("WHIRLPOOL", "BC");
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (NoSuchProviderException e) {
-            e.printStackTrace();
+        } catch (NoSuchAlgorithmException | NoSuchProviderException e) {
+            e.printStackTrace(); //Unlikely to happen
+            return "";
         }
         byte[] result = digest.digest(message.getBytes());
         return new String(Hex.encode(result));
@@ -2466,21 +2335,21 @@ public class Convertors {
             if (Pattern.compile("^\\x1f\\x8b\\x08").matcher(str).find()) {
                 str = gzip_decompress(str);
                 matched = true;
-                encodingOpeningTags = encodingOpeningTags + "<@gzip_compress_" + tagNo + ">";
-                encodingClosingTags = "<@/gzip_compress_" + tagNo + ">" + encodingClosingTags;
+                encodingOpeningTags += "<@gzip_compress>";
+                encodingClosingTags = "<@/gzip_compress>" + encodingClosingTags;
             }
             if (Pattern.compile("[01]{4,}\\s+[01]{4,}").matcher(str).find()) {
                 str = bin2ascii(str);
                 matched = true;
-                encodingOpeningTags = encodingOpeningTags + "<@ascii2bin_" + tagNo + ">";
-                encodingClosingTags = "<@/ascii2bin_" + tagNo + ">" + encodingClosingTags;
+                encodingOpeningTags += "<@ascii2bin>";
+                encodingClosingTags = "<@/ascii2bin>" + encodingClosingTags;
             }
             if (Pattern.compile("(?:[0-9a-fA-F]{2}[\\s,\\-]?){3,}").matcher(str).find()) {
                 test = hex2ascii(str);
                 if (Pattern.compile("^[\\x09-\\x7f]+$", Pattern.CASE_INSENSITIVE).matcher(test).find()) {
                     str = test;
-                    encodingOpeningTags = encodingOpeningTags + "<@ascii2hex_" + tagNo + "(\" \")>";
-                    encodingClosingTags = "<@/ascii2hex_" + tagNo + ">" + encodingClosingTags;
+                    encodingOpeningTags += "<@ascii2hex(\" \")>";
+                    encodingClosingTags = "<@/ascii2hex>" + encodingClosingTags;
                     repeat++;
                     continue;
                 }
@@ -2488,22 +2357,22 @@ public class Convertors {
             if (Pattern.compile("^[0-9a-fA-F]+$").matcher(str).find() && str.length() % 2 == 0) {
                 str = hex2ascii(str);
                 matched = true;
-                encodingOpeningTags = encodingOpeningTags + "<@ascii2hex_" + tagNo + "(\"\")>";
-                encodingClosingTags = "<@/ascii2hex_" + tagNo + ">" + encodingClosingTags;
+                encodingOpeningTags += "<@ascii2hex(\"\")>";
+                encodingClosingTags = "<@/ascii2hex>" + encodingClosingTags;
             }
             if (!Pattern.compile("[^\\d,\\s]").matcher(str).find() && Pattern.compile("\\d+[,\\s]+").matcher(str).find()) {
                 str = from_charcode(str);
                 matched = true;
-                encodingOpeningTags = encodingOpeningTags + "<@to_charcode_" + tagNo + ">";
-                encodingClosingTags = "<@/to_charcode_" + tagNo + ">" + encodingClosingTags;
+                encodingOpeningTags += "<@to_charcode>";
+                encodingClosingTags = "<@/to_charcode>" + encodingClosingTags;
             }
             if (Pattern.compile("(?:\\\\[0]{0,4}[0-9a-fA-F]{2}[\\s,\\-]?){3,}").matcher(str).find()) {
                 test = decode_css_escapes(str);
                 if (Pattern.compile("^[\\x09-\\x7f]+$", Pattern.CASE_INSENSITIVE).matcher(test).find()) {
                     str = test;
                     matched = true;
-                    encodingOpeningTags = encodingOpeningTags + "<@css_escapes_" + tagNo + ">";
-                    encodingClosingTags = "<@/css_escapes_" + tagNo + ">" + encodingClosingTags;
+                    encodingOpeningTags += "<@css_escapes>";
+                    encodingClosingTags = "<@/css_escapes>" + encodingClosingTags;
                 }
             }
             if (Pattern.compile("\\\\x[0-9a-f]{2}", Pattern.CASE_INSENSITIVE).matcher(str).find()) {
@@ -2511,8 +2380,8 @@ public class Convertors {
                 if (Pattern.compile("^[\\x09-\\x7f]+$", Pattern.CASE_INSENSITIVE).matcher(test).find()) {
                     str = test;
                     matched = true;
-                    encodingOpeningTags = encodingOpeningTags + "<@hex_escapes_" + tagNo + ">";
-                    encodingClosingTags = "<@/hex_escapes_" + tagNo + ">" + encodingClosingTags;
+                    encodingOpeningTags += "<@hex_escapes>";
+                    encodingClosingTags = "<@/hex_escapes>" + encodingClosingTags;
                 }
             }
             if (Pattern.compile("\\\\[0-9]{1,3}").matcher(str).find()) {
@@ -2520,8 +2389,8 @@ public class Convertors {
                 if (Pattern.compile("^[\\x09-\\x7f]+$", Pattern.CASE_INSENSITIVE).matcher(test).find()) {
                     str = test;
                     matched = true;
-                    encodingOpeningTags = encodingOpeningTags + "<@octal_escapes_" + tagNo + ">";
-                    encodingClosingTags = "<@/octal_escapes_" + tagNo + ">" + encodingClosingTags;
+                    encodingOpeningTags += "<@octal_escapes>";
+                    encodingClosingTags = "<@/octal_escapes>" + encodingClosingTags;
                 }
             }
             if (Pattern.compile("\\\\u[0-9a-f]{4}", Pattern.CASE_INSENSITIVE).matcher(str).find()) {
@@ -2529,23 +2398,23 @@ public class Convertors {
                 if (Pattern.compile("^[\\x09-\\x7f]+$", Pattern.CASE_INSENSITIVE).matcher(test).find()) {
                     str = test;
                     matched = true;
-                    encodingOpeningTags = encodingOpeningTags + "<@unicode_escapes_" + tagNo + ">";
-                    encodingClosingTags = "<@/unicode_escapes_" + tagNo + ">" + encodingClosingTags;
+                    encodingOpeningTags += "<@unicode_escapes>";
+                    encodingClosingTags = "<@/unicode_escapes>" + encodingClosingTags;
                 }
             }
             if (Pattern.compile("&[a-zA-Z]+;", Pattern.CASE_INSENSITIVE).matcher(str).find()) {
                 str = decode_html5_entities(str);
                 matched = true;
                 tag = "htmlentities";
-                encodingOpeningTags = encodingOpeningTags + "<@html_entities_" + tagNo + ">";
-                encodingClosingTags = "<@/html_entities_" + tagNo + ">" + encodingClosingTags;
+                encodingOpeningTags += "<@html_entities>";
+                encodingClosingTags = "<@/html_entities>" + encodingClosingTags;
             }
             if (Pattern.compile("&#x?[0-9a-f]+;?", Pattern.CASE_INSENSITIVE).matcher(str).find()) {
                 str = decode_html5_entities(str);
                 matched = true;
                 tag = "htmlentities";
-                encodingOpeningTags = encodingOpeningTags + "<@hex_entities_" + tagNo + ">";
-                encodingClosingTags = "<@/hex_entities_" + tagNo + ">" + encodingClosingTags;
+                encodingOpeningTags += "<@hex_entities>";
+                encodingClosingTags = "<@/hex_entities>" + encodingClosingTags;
             }
             if (Pattern.compile("%[0-9a-f]{2}", Pattern.CASE_INSENSITIVE).matcher(str).find()) {
                 boolean plus = false;
@@ -2556,12 +2425,12 @@ public class Convertors {
                 matched = true;
                 if (plus) {
                     tag = "urldecode";
-                    encodingOpeningTags = encodingOpeningTags + "<@urlencode_" + tagNo + ">";
-                    encodingClosingTags = "<@/urlencode_" + tagNo + ">" + encodingClosingTags;
+                    encodingOpeningTags += "<@urlencode>";
+                    encodingClosingTags = "<@/urlencode>" + encodingClosingTags;
                 } else {
                     tag = "urlencode_not_plus";
-                    encodingOpeningTags = encodingOpeningTags + "<@urlencode_not_plus_" + tagNo + ">";
-                    encodingClosingTags = "<@/urlencode_not_plus_" + tagNo + ">" + encodingClosingTags;
+                    encodingOpeningTags += "<@urlencode_not_plus>";
+                    encodingClosingTags = "<@/urlencode_not_plus>" + encodingClosingTags;
                 }
             }
             if (Pattern.compile("^[a-zA-Z0-9\\-_.]+$", Pattern.CASE_INSENSITIVE).matcher(str).find()) {
@@ -2576,8 +2445,8 @@ public class Convertors {
                     str = test;
                     matched = true;
                     tag = "base64";
-                    encodingOpeningTags = encodingOpeningTags + "<@base64_" + tagNo + ">";
-                    encodingClosingTags = "<@/base64_" + tagNo + ">" + encodingClosingTags;
+                    encodingOpeningTags += "<@base64>";
+                    encodingClosingTags = "<@/base64>" + encodingClosingTags;
                 }
             }
 
@@ -2587,8 +2456,8 @@ public class Convertors {
                     str = test;
                     matched = true;
                     tag = "base32";
-                    encodingOpeningTags = encodingOpeningTags + "<@base32_" + tagNo + ">";
-                    encodingClosingTags = "<@/base32_" + tagNo + ">" + encodingClosingTags;
+                    encodingOpeningTags += "<@base32>";
+                    encodingClosingTags = "<@/base32>" + encodingClosingTags;
                 }
             }
             if (decrypt) {
@@ -2617,8 +2486,8 @@ public class Convertors {
                                 break;
                             }
                         }
-                        encodingOpeningTags = encodingOpeningTags + "<@rotN_" + tagNo + "(" + n + ")>";
-                        encodingClosingTags = "<@/rotN_" + tagNo + ">" + encodingClosingTags;
+                        encodingOpeningTags += "<@rotN(" + n + ")>";
+                        encodingClosingTags = "<@/rotN>" + encodingClosingTags;
                     }
                 }
                 if (Pattern.compile("(?:[a-z]+[\\s,-]){2,}").matcher(str).find()) {
@@ -2645,8 +2514,8 @@ public class Convertors {
                         str = affine_decrypt(str, key1, key2);
                         matched = true;
                         tag = "affine";
-                        encodingOpeningTags = encodingOpeningTags + "<@affine_encrypt_" + tagNo + "(" + key1 + "," + key2 + ")>";
-                        encodingClosingTags = "<@/affine_encrypt_" + tagNo + ">" + encodingClosingTags;
+                        encodingOpeningTags += "<@affine_encrypt(" + key1 + "," + key2 + ")>";
+                        encodingClosingTags = "<@/affine_encrypt>" + encodingClosingTags;
                     }
                 }
 
@@ -2656,8 +2525,8 @@ public class Convertors {
                         str = plaintext;
                         matched = true;
                         tag = "atbash";
-                        encodingOpeningTags = encodingOpeningTags + "<@atbash_encrypt_" + tagNo + ">";
-                        encodingClosingTags = "<@/atbash_encrypt_" + tagNo + ">" + encodingClosingTags;
+                        encodingOpeningTags += "<@atbash_encrypt>";
+                        encodingClosingTags = "<@/atbash_encrypt>" + encodingClosingTags;
                     }
                 }
                 if (Pattern.compile("^[a-z]{10,}$").matcher(str).find()) {
@@ -2679,8 +2548,8 @@ public class Convertors {
                         str = rail_fence_decrypt(str, n);
                         matched = true;
                         tag = "rail_fence";
-                        encodingOpeningTags = encodingOpeningTags + "<@rail_fence_encrypt_" + tagNo + "(" + n + ")>";
-                        encodingClosingTags = "<@/rail_fence_encrypt_" + tagNo + ">" + encodingClosingTags;
+                        encodingOpeningTags += "<@rail_fence_encrypt(" + n + ")>";
+                        encodingClosingTags = "<@/rail_fence_encrypt>" + encodingClosingTags;
                     }
                 }
 
@@ -2695,8 +2564,8 @@ public class Convertors {
                         str = test;
                         matched = true;
                         tag = "xor";
-                        encodingOpeningTags = encodingOpeningTags + "<@xor_" + tagNo + "(\"" + key + "\")>";
-                        encodingClosingTags = "<@/xor_" + tagNo + ">" + encodingClosingTags;
+                        encodingOpeningTags += "<@xor(\"" + key + "\")>";
+                        encodingClosingTags = "<@/xor>" + encodingClosingTags;
                     }
                 }
             }
@@ -2954,17 +2823,13 @@ public class Convertors {
                 engine.eval(code);
             }
             return engine.get("output").toString();
-        } catch (ScriptException e) {
+        } catch (ScriptException | IllegalArgumentException e) {
             return "Invalid JavaScript:" + e.toString();
         } catch (FileNotFoundException e) {
             return "Unable to find JavaScript file:" + e.toString();
         } catch (NullPointerException e) {
             return "Unable to get output. Make sure you have defined an output variable:" + e.toString();
-        } catch (IllegalArgumentException e) {
-            return "Invalid JavaScript:" + e.toString();
-        } catch (AssertionError e) {
-            return "Unable to parse JavaScript:" + e.toString();
-        } catch (Exception e) {
+        } catch (AssertionError | Exception e) {
             return "Unable to parse JavaScript:" + e.toString();
         }
     }
@@ -2973,7 +2838,7 @@ public class Convertors {
         String output = "";
         for (int i = start; i < end; i += increment) {
             variableMap.put(variable, Integer.toString(i));
-            output += convert(variableMap, customTags, input);
+            output += newConvert(variableMap, customTags, input);
         }
         return output;
     }
@@ -2982,7 +2847,7 @@ public class Convertors {
         String output = "";
         for (char letter = 'a'; letter <= 'z'; letter++) {
             variableMap.put(variable, Character.toString(letter));
-            output += convert(variableMap, customTags, input);
+            output += newConvert(variableMap, customTags, input);;
         }
         return output;
     }
@@ -2991,7 +2856,7 @@ public class Convertors {
         String output = "";
         for (char letter = 'A'; letter <= 'Z'; letter++) {
             variableMap.put(variable, Character.toString(letter));
-            output += convert(variableMap, customTags, input);
+            output += newConvert(variableMap, customTags, input);
         }
         return output;
     }
@@ -3000,7 +2865,7 @@ public class Convertors {
         String output = "";
         for (char num = '0'; num <= '9'; num++) {
             variableMap.put(variable, Character.toString(num));
-            output += convert(variableMap, customTags, input);
+            output += newConvert(variableMap, customTags, input);
         }
         return output;
     }

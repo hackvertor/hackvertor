@@ -17,29 +17,35 @@ public interface HackvertorParserConstants {
   /** RegularExpression Id. */
   int LITERAL = 6;
   /** RegularExpression Id. */
-  int OPEN_TAG_START = 7;
+  int WHITESPACE = 7;
   /** RegularExpression Id. */
-  int END_TAG_START = 8;
+  int OPEN_TAG_START = 8;
   /** RegularExpression Id. */
-  int TEXT = 9;
+  int END_TAG_START = 9;
   /** RegularExpression Id. */
-  int FUNCTION_NAME = 10;
+  int TEXT = 10;
   /** RegularExpression Id. */
-  int ST_ERROR = 11;
+  int FUNCTION_NAME = 11;
   /** RegularExpression Id. */
-  int ARGS_START = 12;
+  int ST_ERROR = 12;
   /** RegularExpression Id. */
-  int TAG_END = 13;
+  int ARGS_START = 14;
   /** RegularExpression Id. */
-  int QUOTED_STRING_VAL = 14;
+  int SELF_CLOSE_TAG_END = 15;
   /** RegularExpression Id. */
-  int LITERAL_VAL = 15;
+  int SELF_CLOSE_TAG_END_AT = 16;
   /** RegularExpression Id. */
-  int COMMA = 16;
+  int TAG_END = 17;
   /** RegularExpression Id. */
-  int ARGS_END = 17;
+  int QUOTED_STRING_VAL = 18;
   /** RegularExpression Id. */
-  int UNKNOWN = 18;
+  int LITERAL_VAL = 19;
+  /** RegularExpression Id. */
+  int COMMA = 20;
+  /** RegularExpression Id. */
+  int ARGS_END = 21;
+  /** RegularExpression Id. */
+  int UNKNOWN = 22;
 
   /** Lexical state. */
   int DEFAULT = 0;
@@ -59,12 +65,16 @@ public interface HackvertorParserConstants {
     "<IDENTIFIER>",
     "<QUOTED_STRING>",
     "<LITERAL>",
+    "<WHITESPACE>",
     "\"<@\"",
     "\"<@/\"",
     "<TEXT>",
     "<FUNCTION_NAME>",
     "<ST_ERROR>",
+    "<token of kind 13>",
     "\"(\"",
+    "\"/>\"",
+    "\"@/>\"",
     "\">\"",
     "<QUOTED_STRING_VAL>",
     "<LITERAL_VAL>",

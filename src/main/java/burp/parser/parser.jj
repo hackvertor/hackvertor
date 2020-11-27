@@ -14,7 +14,8 @@ PARSER_BEGIN(HackvertorParser)
 package burp.parser;
 
 import java.io.StringReader;
-import java.util.ArrayList;import java.util.List;
+import java.util.LinkedList;
+import java.util.ArrayList;
 
 public class HackvertorParser {
 
@@ -35,11 +36,11 @@ public class HackvertorParser {
     return sb.toString();
     }
 
-    public static void parse(String string) throws ParseException {
+    public static LinkedList<Element> parse(String string) throws ParseException {
         HackvertorParser parser = new HackvertorParser(new StringReader(string));
-        List<Element> elementList = parser.Input();
+        LinkedList<Element> elementList = parser.Input();
 
-        System.out.println(elementList);
+        return elementList;
     }
 }
 
@@ -50,6 +51,7 @@ SKIP:  { " " | "=\r" | "=\r\n" }
     <#IDENTIFIER:   (["0"-"9", "a"-"z", "A"-"Z","_"])+ >
     | <#QUOTED_STRING: ( "'" ( ~["'"] )* "'" ) | ( "\"" ( ~["\""] )* "\"" ) >
     | <#LITERAL: (["0"-"9", "a"-"z", "A"-"Z", "-", "+", "."])+>
+    | <#WHITESPACE: ( " " | "\t" | "\n" | "\r" ) >
 }
 
 <DEFAULT> TOKEN : {
@@ -63,8 +65,15 @@ SKIP:  { " " | "=\r" | "=\r\n" }
   | <ST_ERROR: ~[] > : DEFAULT
 }
 
+<InsideTag> SPECIAL_TOKEN :
+{
+  < (<WHITESPACE>)+ >
+}
+
 <InsideTag> TOKEN : {
     <ARGS_START: "("> : Args
+    | <SELF_CLOSE_TAG_END: "/>"> : DEFAULT
+    | <SELF_CLOSE_TAG_END_AT: "@/>"> : DEFAULT
     | <TAG_END: ">" > : DEFAULT
 }
 
@@ -77,9 +86,9 @@ SKIP:  { " " | "=\r" | "=\r\n" }
 
 <*> TOKEN : { <UNKNOWN: ~[]> }
 
-List<Element> Input() :
+LinkedList<Element> Input() :
 {
-    List<Element> s = new ArrayList<Element>();
+    LinkedList<Element> s = new LinkedList<Element>();
     Element e;
 }
 {
@@ -120,8 +129,10 @@ Element StartTag() :
                 (<COMMA> arg = Argument() {args.add(arg);})*
             <ARGS_END>
         ]
-        <TAG_END>
-        {return new Element.StartTag(tagName.image, args);}
+        (
+        <TAG_END> {return new Element.StartTag(tagName.image, args);}
+        | (<SELF_CLOSE_TAG_END>|<SELF_CLOSE_TAG_END_AT>) {return new Element.SelfClosingTag(tagName.image, args);}
+        )
     }catch(ParseException e){
         token_source.SwitchTo(DEFAULT);
         String text = getTokenText(firstToken, getNextToken());

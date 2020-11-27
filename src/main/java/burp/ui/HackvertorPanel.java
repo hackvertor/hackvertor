@@ -3,6 +3,10 @@ package burp.ui;
 import burp.Hackvertor;
 import burp.Tag;
 import burp.Utils;
+import burp.parser.Element;
+import burp.parser.HackvertorParser;
+import burp.parser.ParseException;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.swing.*;
 import javax.swing.event.*;
@@ -16,6 +20,9 @@ import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.*;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.stream.Collectors;
 
 import static burp.BurpExtender.*;
 import static burp.Convertors.*;
@@ -285,7 +292,15 @@ public class HackvertorPanel extends JPanel {
         clearTagsButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 String input = inputArea.getText();
-                input = input.replaceAll("<@/?[\\w\\-]+(?:[(](?:,?" + argumentsRegex + ")*[)])?(?:\\s/)?>", "");
+                try {
+                    input = HackvertorParser.parse(input).stream()
+                            .filter(element -> element instanceof Element.TextElement)
+                            .map(element -> ((Element.TextElement) element).getContent())
+                            .collect(Collectors.joining());
+                }catch (ParseException ex){
+                    //TODO Better error handling.
+                    ex.printStackTrace();
+                }
                 inputArea.setText(input);
                 inputArea.requestFocus();
             }
@@ -313,12 +328,42 @@ public class HackvertorPanel extends JPanel {
             public void actionPerformed(ActionEvent e) {
                 outputArea.setText("");
                 String input = inputArea.getText();
+                String clipboard = "";
                 try {
-                    input = input.replaceAll("((?:<@?[\\w\\-]+_\\d+(?:[(](?:,?" + argumentsRegex + ")*[)])?>)+)[\\s\\S]*?(?:<@/)", "$1" + Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor).toString() + "<@/");
-                    inputArea.setText(input);
-                } catch (Exception ex) {
-                    ex.printStackTrace();
+                    clipboard = Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor).toString();
+                } catch (UnsupportedFlavorException | IOException unsupportedFlavorException) {
+                    unsupportedFlavorException.printStackTrace();
                 }
+
+                if(StringUtils.isEmpty(clipboard)) return;
+
+                LinkedList<Element> inputElements;
+                try {
+                    //TODO Cleanup
+                    inputElements = HackvertorParser.parse(input);
+                    for (int i = 0; i < inputElements.size(); i++) {
+                        Element curr = inputElements.get(i);
+                        Element next = i != inputElements.size() - 1 ? inputElements.get(i+1) : null;
+                        Element secondNext = i != inputElements.size() - 2 ? inputElements.get(i+2) : null;
+                        if(curr instanceof Element.StartTag){
+                            if(next instanceof Element.EndTag
+                                && ((Element.StartTag) curr).getIdentifier()
+                                    .equalsIgnoreCase(((Element.EndTag) next).getIdentifier())) {
+                                inputElements.add(i + 1, new Element.TextElement(clipboard));
+                            }else if(next instanceof Element.TextElement && secondNext instanceof Element.EndTag){
+                                if(((Element.StartTag) curr).getIdentifier()
+                                        .equalsIgnoreCase(((Element.EndTag) secondNext).getIdentifier())){
+                                    ((Element.TextElement) next).setContent(clipboard);
+                                }
+                            }
+                        }
+                    }
+                }catch (ParseException ex){
+                    //TODO Better error handling.
+                    ex.printStackTrace();
+                    return;
+                }
+                inputArea.setText(Utils.elementSequenceToString(inputElements));
             }
         });
         if (!isNativeTheme && !isDarkTheme) {
@@ -445,7 +490,7 @@ public class HackvertorPanel extends JPanel {
                 } else {
                     code = "<@auto_decode_no_decrypt_1>" + data + "<@/auto_decode_no_decrypt_1>";
                 }
-                String converted = convert(hackvertor.getCustomTags(), code);
+                String converted = newConvert(new HashMap<>(), hackvertor.getCustomTags(), code);
                 if (!data.equals(converted)) {
                     inputArea.setText(code);
                 }

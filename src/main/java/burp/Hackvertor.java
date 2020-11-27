@@ -343,7 +343,7 @@ public class Hackvertor {
     }
 
     public String convert(String message){
-        return Convertors.convert(customTags, message);
+        return Convertors.newConvert(new HashMap<>(), customTags, message);
     }
 
     public ArrayList<Tag> getTags() {

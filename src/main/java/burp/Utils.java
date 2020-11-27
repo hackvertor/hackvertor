@@ -1,15 +1,19 @@
 package burp;
 
+import burp.parser.Element;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.swing.*;
 import javax.swing.text.Highlighter;
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static burp.BurpExtender.*;
 
@@ -31,31 +35,34 @@ public class Utils {
                 }
                 btn.putClientProperty("tag", tagObj);
 
-                actionListener = e -> {
-                    String selectedText = inputArea.getSelectedText();
-                    if (selectedText == null) {
-                        selectedText = "";
-                    }
-                    String[] tagStartEnd = Convertors.generateTagStartEnd(tagObj);
-                    String tagStart = tagStartEnd[0];
-                    String tagEnd = tagStartEnd[1];
-                    inputArea.replaceSelection(tagStart + selectedText + tagEnd);
-                    Highlighter.Highlight[] highlights = inputArea.getHighlighter().getHighlights();
-                    if (highlights.length > 0) {
-                        for (Highlighter.Highlight highlight : highlights) {
-                            inputArea.select(highlight.getStartOffset(), highlight.getEndOffset());
-                            selectedText = inputArea.getSelectedText();
-                            if (selectedText != null) {
-                                tagStartEnd = Convertors.generateTagStartEnd(tagObj);
-                                tagStart = tagStartEnd[0];
-                                tagEnd = tagStartEnd[1];
-                                inputArea.replaceSelection(tagStart + selectedText + tagEnd);
+                actionListener = new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        String selectedText = inputArea.getSelectedText();
+                        if (selectedText == null) {
+                            selectedText = "";
+                        }
+                        String[] tagStartEnd = Convertors.generateTagStartEnd(tagObj);
+                        String tagStart = tagStartEnd[0];
+                        String tagEnd = tagStartEnd[1];
+                        inputArea.replaceSelection(tagStart + selectedText + tagEnd);
+                        Highlighter.Highlight[] highlights = inputArea.getHighlighter().getHighlights();
+                        if (highlights.length > 0) {
+                            for (Highlighter.Highlight highlight : highlights) {
+                                inputArea.select(highlight.getStartOffset(), highlight.getEndOffset());
+                                selectedText = inputArea.getSelectedText();
+                                if (selectedText != null) {
+                                    tagStartEnd = Convertors.generateTagStartEnd(tagObj);
+                                    tagStart = tagStartEnd[0];
+                                    tagEnd = tagStartEnd[1];
+                                    inputArea.replaceSelection(tagStart + selectedText + tagEnd);
+                                }
                             }
                         }
-                    }
-                    //TODO Auto convert input
+                        //TODO Auto convert input
 //                    outputArea.setText(convert(inputArea.getText()));
 //                    outputArea.selectAll();
+                    }
                 };
 
                 btn.addActionListener(actionListener);
@@ -63,6 +70,10 @@ public class Utils {
             }
         }
         return scrollFrame;
+    }
+
+    public static String elementSequenceToString(List<Element> elements){
+        return elements.stream().map(Objects::toString).collect(Collectors.joining());
     }
 
     public static JMenu createTagMenuForCategory(List<Tag> tags, Tag.Category category, final IContextMenuInvocation invocation, String searchTag, Boolean regex) {
