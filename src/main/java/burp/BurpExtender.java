@@ -569,7 +569,7 @@ private Ngrams ngrams;
         try {
             String data = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
             String inputValue = hv.getInput();
-            if(inputValue.length() == 0 && !data.contains(tagCodeExecutionKey)) {
+            if(inputValue.length() == 0 && !data.contains(tagCodeExecutionKey) && data.length() < 10000) {
                 String code;
                 if(data.contains("<@/")) {
                    code = data;
