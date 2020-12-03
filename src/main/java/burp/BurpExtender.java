@@ -82,8 +82,8 @@ private PrintWriter stdout;
 private Hackvertor hv;
 private Hackvertor hvInRequest;
 private JSONArray customTags = new JSONArray();
-private List<String> NATIVE_LOOK_AND_FEELS = Arrays.asList("GTK","Windows","Aqua");
-private List<String> DARK_THEMES = Arrays.asList("Darcula");
+private List<String> NATIVE_LOOK_AND_FEELS = Arrays.asList("GTK","Windows","Aqua","FlatLaf - Burp Light");
+private List<String> DARK_THEMES = Arrays.asList("Darcula","FlatLaf - Burp Dark");
   /**
    * Native theme will not have the same color scheme as the default Nimbus L&F.
    * The native theme on Windows does not allow the override of button background color.
@@ -794,7 +794,7 @@ private Ngrams ngrams;
                     callbacks.registerMessageEditorTabFactory(BurpExtender.this);
 	            }
 	        });
-        //callbacks.printOutput("Look And Feel: "+UIManager.getLookAndFeel().getID()); //For debug purpose
+        callbacks.printOutput("Look And Feel: "+UIManager.getLookAndFeel().getID()); //For debug purpose
         isNativeTheme = NATIVE_LOOK_AND_FEELS.contains(UIManager.getLookAndFeel().getID());
         isDarkTheme = DARK_THEMES.contains(UIManager.getLookAndFeel().getID());
 	}
