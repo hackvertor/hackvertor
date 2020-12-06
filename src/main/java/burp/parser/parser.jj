@@ -46,7 +46,7 @@ public class HackvertorParser {
 
 PARSER_END(HackvertorParser)
 
-SKIP:  { " " | "=\r" | "=\r\n" }
+<*> SKIP:  { " " | "=\r" | "=\r\n" }
 <*> TOKEN [IGNORE_CASE]: {
     <#IDENTIFIER:   (["0"-"9", "a"-"z", "A"-"Z","_", "-"])+ >
     | <#QUOTED_STRING: ( "'" ( ~["'"] )* "'" ) | ( "\"" ( ~["\""] )* "\"" ) >
@@ -57,7 +57,7 @@ SKIP:  { " " | "=\r" | "=\r\n" }
 <DEFAULT> TOKEN : {
     <OPEN_TAG_START: "<@"     > : StartTag
   | <END_TAG_START:  "<@/"    > : StartTag
-  | <TEXT: ("<" ~["@"] | ~["<"])+             >
+  | <TEXT: ("<" ~["@"] | ~["<"])+ >
 }
 
 <StartTag> TOKEN: {
@@ -65,10 +65,10 @@ SKIP:  { " " | "=\r" | "=\r\n" }
   | <ST_ERROR: ~[] > : DEFAULT
 }
 
-<InsideTag> SPECIAL_TOKEN :
-{
-  < (<WHITESPACE>)+ >
-}
+//<InsideTag> SPECIAL_TOKEN :
+//{
+//  < (<WHITESPACE>)+ >
+//}
 
 <InsideTag> TOKEN : {
     <ARGS_START: "("> : Args
@@ -125,8 +125,10 @@ Element StartTag() :
         <OPEN_TAG_START> tagName=<FUNCTION_NAME>
         [
             <ARGS_START>
-                arg = Argument() {args.add(arg);}
-                (<COMMA> arg = Argument() {args.add(arg);})*
+                [
+                    arg = Argument() {args.add(arg);}
+                    (<COMMA> arg = Argument() {args.add(arg);})*
+                ]
             <ARGS_END>
         ]
         (

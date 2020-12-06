@@ -97,28 +97,37 @@ s.add(e);
       switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
       case ARGS_START:{
         jj_consume_token(ARGS_START);
-        arg = Argument();
-args.add(arg);
-        label_2:
-        while (true) {
-          switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
-          case COMMA:{
-            ;
-            break;
-            }
-          default:
-            jj_la1[2] = jj_gen;
-            break label_2;
-          }
-          jj_consume_token(COMMA);
+        switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
+        case QUOTED_STRING_VAL:
+        case LITERAL_VAL:{
           arg = Argument();
 args.add(arg);
+          label_2:
+          while (true) {
+            switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
+            case COMMA:{
+              ;
+              break;
+              }
+            default:
+              jj_la1[2] = jj_gen;
+              break label_2;
+            }
+            jj_consume_token(COMMA);
+            arg = Argument();
+args.add(arg);
+          }
+          break;
+          }
+        default:
+          jj_la1[3] = jj_gen;
+          ;
         }
         jj_consume_token(ARGS_END);
         break;
         }
       default:
-        jj_la1[3] = jj_gen;
+        jj_la1[4] = jj_gen;
         ;
       }
       switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
@@ -139,7 +148,7 @@ args.add(arg);
           break;
           }
         default:
-          jj_la1[4] = jj_gen;
+          jj_la1[5] = jj_gen;
           jj_consume_token(-1);
           throw new ParseException();
         }
@@ -147,7 +156,7 @@ args.add(arg);
         break;
         }
       default:
-        jj_la1[5] = jj_gen;
+        jj_la1[6] = jj_gen;
         jj_consume_token(-1);
         throw new ParseException();
       }
@@ -172,7 +181,7 @@ token_source.SwitchTo(DEFAULT);
       break;
       }
     default:
-      jj_la1[6] = jj_gen;
+      jj_la1[7] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -226,13 +235,13 @@ token_source.SwitchTo(DEFAULT);
   private Token jj_scanpos, jj_lastpos;
   private int jj_la;
   private int jj_gen;
-  final private int[] jj_la1 = new int[7];
+  final private int[] jj_la1 = new int[8];
   static private int[] jj_la1_0;
   static {
 	   jj_la1_init_0();
 	}
 	private static void jj_la1_init_0() {
-	   jj_la1_0 = new int[] {0x700,0x700,0x100000,0x4000,0x18000,0x38000,0xc0000,};
+	   jj_la1_0 = new int[] {0x700,0x700,0x80000,0x60000,0x2000,0xc000,0x1c000,0x60000,};
 	}
   final private JJCalls[] jj_2_rtns = new JJCalls[1];
   private boolean jj_rescan = false;
@@ -249,7 +258,7 @@ token_source.SwitchTo(DEFAULT);
 	 token = new Token();
 	 jj_ntk = -1;
 	 jj_gen = 0;
-	 for (int i = 0; i < 7; i++) jj_la1[i] = -1;
+	 for (int i = 0; i < 8; i++) jj_la1[i] = -1;
 	 for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
@@ -264,7 +273,7 @@ token_source.SwitchTo(DEFAULT);
 	 token = new Token();
 	 jj_ntk = -1;
 	 jj_gen = 0;
-	 for (int i = 0; i < 7; i++) jj_la1[i] = -1;
+	 for (int i = 0; i < 8; i++) jj_la1[i] = -1;
 	 for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
@@ -275,7 +284,7 @@ token_source.SwitchTo(DEFAULT);
 	 token = new Token();
 	 jj_ntk = -1;
 	 jj_gen = 0;
-	 for (int i = 0; i < 7; i++) jj_la1[i] = -1;
+	 for (int i = 0; i < 8; i++) jj_la1[i] = -1;
 	 for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
@@ -294,7 +303,7 @@ token_source.SwitchTo(DEFAULT);
 	 token = new Token();
 	 jj_ntk = -1;
 	 jj_gen = 0;
-	 for (int i = 0; i < 7; i++) jj_la1[i] = -1;
+	 for (int i = 0; i < 8; i++) jj_la1[i] = -1;
 	 for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
@@ -304,7 +313,7 @@ token_source.SwitchTo(DEFAULT);
 	 token = new Token();
 	 jj_ntk = -1;
 	 jj_gen = 0;
-	 for (int i = 0; i < 7; i++) jj_la1[i] = -1;
+	 for (int i = 0; i < 8; i++) jj_la1[i] = -1;
 	 for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
@@ -314,7 +323,7 @@ token_source.SwitchTo(DEFAULT);
 	 token = new Token();
 	 jj_ntk = -1;
 	 jj_gen = 0;
-	 for (int i = 0; i < 7; i++) jj_la1[i] = -1;
+	 for (int i = 0; i < 8; i++) jj_la1[i] = -1;
 	 for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
@@ -440,12 +449,12 @@ token_source.SwitchTo(DEFAULT);
   /** Generate ParseException. */
   public ParseException generateParseException() {
 	 jj_expentries.clear();
-	 boolean[] la1tokens = new boolean[23];
+	 boolean[] la1tokens = new boolean[22];
 	 if (jj_kind >= 0) {
 	   la1tokens[jj_kind] = true;
 	   jj_kind = -1;
 	 }
-	 for (int i = 0; i < 7; i++) {
+	 for (int i = 0; i < 8; i++) {
 	   if (jj_la1[i] == jj_gen) {
 		 for (int j = 0; j < 32; j++) {
 		   if ((jj_la1_0[i] & (1<<j)) != 0) {
@@ -454,7 +463,7 @@ token_source.SwitchTo(DEFAULT);
 		 }
 	   }
 	 }
-	 for (int i = 0; i < 23; i++) {
+	 for (int i = 0; i < 22; i++) {
 	   if (la1tokens[i]) {
 		 jj_expentry = new int[1];
 		 jj_expentry[0] = i;

@@ -29,32 +29,32 @@ public interface HackvertorParserConstants {
   /** RegularExpression Id. */
   int ST_ERROR = 12;
   /** RegularExpression Id. */
-  int ARGS_START = 14;
+  int ARGS_START = 13;
   /** RegularExpression Id. */
-  int SELF_CLOSE_TAG_END = 15;
+  int SELF_CLOSE_TAG_END = 14;
   /** RegularExpression Id. */
-  int SELF_CLOSE_TAG_END_AT = 16;
+  int SELF_CLOSE_TAG_END_AT = 15;
   /** RegularExpression Id. */
-  int TAG_END = 17;
+  int TAG_END = 16;
   /** RegularExpression Id. */
-  int QUOTED_STRING_VAL = 18;
+  int QUOTED_STRING_VAL = 17;
   /** RegularExpression Id. */
-  int LITERAL_VAL = 19;
+  int LITERAL_VAL = 18;
   /** RegularExpression Id. */
-  int COMMA = 20;
+  int COMMA = 19;
   /** RegularExpression Id. */
-  int ARGS_END = 21;
+  int ARGS_END = 20;
   /** RegularExpression Id. */
-  int UNKNOWN = 22;
+  int UNKNOWN = 21;
 
   /** Lexical state. */
-  int DEFAULT = 0;
+  int Args = 0;
   /** Lexical state. */
-  int Args = 1;
+  int InsideTag = 1;
   /** Lexical state. */
-  int InsideTag = 2;
+  int StartTag = 2;
   /** Lexical state. */
-  int StartTag = 3;
+  int DEFAULT = 3;
 
   /** Literal token values. */
   String[] tokenImage = {
@@ -71,7 +71,6 @@ public interface HackvertorParserConstants {
     "<TEXT>",
     "<FUNCTION_NAME>",
     "<ST_ERROR>",
-    "<token of kind 13>",
     "\"(\"",
     "\"/>\"",
     "\"@/>\"",
