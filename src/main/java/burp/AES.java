@@ -46,9 +46,9 @@ public class AES {
         }
         Cipher cipher = Cipher.getInstance(transformations);
         if(iv.length() > 0) {
-            cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivSpec);
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec);
         } else {
-            cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+            cipher.init(Cipher.DECRYPT_MODE, secretKey);
         }
         return new String(cipher.doFinal(Base64.getDecoder().decode(strToDecrypt)));
     }

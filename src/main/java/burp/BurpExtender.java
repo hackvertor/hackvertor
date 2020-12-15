@@ -7,9 +7,7 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.*;
 import java.io.*;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
+import java.net.*;
 import java.nio.charset.Charset;
 import java.security.*;
 import java.text.SimpleDateFormat;
@@ -84,8 +82,8 @@ private PrintWriter stdout;
 private Hackvertor hv;
 private Hackvertor hvInRequest;
 private JSONArray customTags = new JSONArray();
-private List<String> NATIVE_LOOK_AND_FEELS = Arrays.asList("GTK","Windows","Aqua");
-private List<String> DARK_THEMES = Arrays.asList("Darcula");
+private List<String> NATIVE_LOOK_AND_FEELS = Arrays.asList("GTK","Windows","Aqua","FlatLaf - Burp Light");
+private List<String> DARK_THEMES = Arrays.asList("Darcula","FlatLaf - Burp Dark");
   /**
    * Native theme will not have the same color scheme as the default Nimbus L&F.
    * The native theme on Windows does not allow the override of button background color.
@@ -215,7 +213,7 @@ private Ngrams ngrams;
             logoLabel = new JLabel();
         }
         final JTextArea hexView = new JTextArea();
-        hexView.setFont(new Font("monospaced", Font.PLAIN, 12));
+        hexView.setFont(new Font("Courier New", Font.PLAIN, 12));
         hexView.setRows(0);
         hexView.setOpaque(true);
         hexView.setEditable(false);
@@ -232,7 +230,7 @@ private Ngrams ngrams;
         JPanel panel = new JPanel(new GridBagLayout());
         hv.setPanel(panel);
         final JTextArea inputArea = new JTextArea();
-        inputArea.setFont(new Font("monospaced", Font.PLAIN, 12));
+        inputArea.setFont(new Font("Courier New", Font.PLAIN, 12));
         hv.setInputArea(inputArea);
         inputArea.setLineWrap(true);
         inputArea.setRows(0);
@@ -289,7 +287,7 @@ private Ngrams ngrams;
             inputLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
         }
         final JTextArea outputArea = new JTextArea();
-        outputArea.setFont(new Font("monospaced", Font.PLAIN, 12));
+        outputArea.setFont(new Font("Courier New", Font.PLAIN, 12));
         hv.setOutputArea(outputArea);
         DocumentListener documentListener = new DocumentListener() {
             public void changedUpdate(DocumentEvent documentEvent) {
@@ -565,16 +563,13 @@ private Ngrams ngrams;
         c.fill = BOTH;
         c.weightx = 1.0;
         panel.add(hexScroll,c);
-        callbacks.customizeUiComponent(inputArea);
-        callbacks.customizeUiComponent(outputArea);
-        callbacks.customizeUiComponent(panel);
         return hv;
     }
     private void readClipboardAndDecode(Hackvertor hv) {
         try {
             String data = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
             String inputValue = hv.getInput();
-            if(inputValue.length() == 0 && !data.contains(tagCodeExecutionKey)) {
+            if(inputValue.length() == 0 && !data.contains(tagCodeExecutionKey) && data.length() < 10000) {
                 String code;
                 if(data.contains("<@/")) {
                    code = data;
@@ -625,7 +620,7 @@ private Ngrams ngrams;
 	        {
 	            public void run()
 	            {	   
-	            	stdout.println("Hackvertor v1.5.3");
+	            	stdout.println("Hackvertor v1.5.4");
                     loadCustomTags();
 	            	inputTabs = new JTabbedPaneClosable();
 	            	final Hackvertor mainHV = generateHackvertor(true);
@@ -783,11 +778,23 @@ private Ngrams ngrams;
                     });
                     hvMenuBar.add(createCustomTagsMenu);
                     hvMenuBar.add(listCustomTagsMenu);
+                    JMenuItem reportBugMenu = new JMenuItem("Report bug/request feature");
+                    reportBugMenu.addActionListener(e -> {
+                        if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                            try {
+                                Desktop.getDesktop().browse(new URI("https://github.com/hackvertor/hackvertor/issues/new"));
+                            } catch (IOException ioException) {
+                            } catch (URISyntaxException uriSyntaxException) {
+
+                            }
+                        }
+                    });
+                    hvMenuBar.add(reportBugMenu);
                     burpMenuBar.add(hvMenuBar);
                     callbacks.registerMessageEditorTabFactory(BurpExtender.this);
 	            }
 	        });
-        //callbacks.printOutput("Look And Feel: "+UIManager.getLookAndFeel().getID()); //For debug purpose
+        callbacks.printOutput("Look And Feel: "+UIManager.getLookAndFeel().getID()); //For debug purpose
         isNativeTheme = NATIVE_LOOK_AND_FEELS.contains(UIManager.getLookAndFeel().getID());
         isDarkTheme = DARK_THEMES.contains(UIManager.getLookAndFeel().getID());
 	}
@@ -2067,6 +2074,10 @@ private Ngrams ngrams;
 			tag = new Tag("String","repeat",true,"repeat(String str, int amount)");
 			tag.argument1 = new TagArgument("int","100");
 			tags.add(tag);
+            tag = new Tag("String","substring",true,"substring(String str, int start, int end)");
+            tag.argument1 = new TagArgument("int","0");
+            tag.argument2 = new TagArgument("int","100");
+            tags.add(tag);
 			tag = new Tag("String","split_join",true,"split_join(String str, String splitChar, String joinChar)");
 			tag.argument1 = new TagArgument("string","split char");
 			tag.argument2 = new TagArgument("string","join char");
@@ -3550,6 +3561,13 @@ private Ngrams ngrams;
 			}
 			return output;
 		}
+		String substring(String str, int start, int end) {
+            try {
+                return str.substring(start, end);
+            } catch (StringIndexOutOfBoundsException e) {
+                return "Invalid index:"+e;
+            }
+        }
 		String repeat(String str, int amount) {
 			String output = "";
 			if(amount > 0 && amount < 10000) {
@@ -4454,6 +4472,9 @@ private Ngrams ngrams;
                     break;
                 case "repeat":
                     output = this.repeat(output, this.getInt(arguments, 0));
+                    break;
+                case "substring":
+                    output = this.substring(output, this.getInt(arguments, 0), this.getInt(arguments, 1));
                     break;
                 case "split_join":
                     output = this.split_join(output, this.getString(arguments, 0), this.getString(arguments, 1));
