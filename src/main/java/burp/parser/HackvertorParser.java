@@ -36,282 +36,262 @@ public class HackvertorParser implements HackvertorParserConstants {
         return elementList;
     }
 
-  final public LinkedList<Element> Input() throws ParseException {    try {
-LinkedList<Element> s = new LinkedList<Element>();
+  final public LinkedList<Element> Input() throws ParseException {LinkedList<Element> s = new LinkedList<Element>();
     LinkedList<Element> e;
-      label_1:
-      while (true) {
-        switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
-        case TAG_START:
-        case ENDTAG_START:
-        case TEXT:
-        case LESSTHAN:
-        case ST_ERR:
-        case SELF_CLOSE_TAG_END:
-        case TAG_END:
-        case IT_ERR:
-        case QUOTED_STRING_VAL:
-        case LITERAL_VAL:
-        case COMMA:
-        case ARGS_END:
-        case ARG_ERR:{
-          ;
-          break;
-          }
-        default:
-          jj_la1[0] = jj_gen;
-          break label_1;
+    label_1:
+    while (true) {
+      switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
+      case TAG_START:
+      case ENDTAG_START:
+      case TEXT:
+      case LESSTHAN:
+      case ST_ERR:
+      case SELF_CLOSE_TAG_END:
+      case TAG_END:
+      case IT_ERR:
+      case QUOTED_STRING_VAL:
+      case LITERAL_VAL:
+      case COMMA:
+      case ARGS_END:
+      case ARG_ERR:{
+        ;
+        break;
         }
-        e = ElementSequence();
-s.addAll(e);
+      default:
+        jj_la1[0] = jj_gen;
+        break label_1;
       }
-      jj_consume_token(0);
+      e = ElementSequence();
+s.addAll(e);
+    }
+    jj_consume_token(0);
 {if ("" != null) return s;}
     throw new Error("Missing return statement in function");
-    } finally {
-      trace_return("Input");
-    }
 }
 
-  final public LinkedList<Element> ElementSequence() throws ParseException {    try {
-LinkedList<Element> elements = new LinkedList<Element>();
+  final public LinkedList<Element> ElementSequence() throws ParseException {LinkedList<Element> elements = new LinkedList<Element>();
  Element e;
  Token text;
  Token firstToken = getToken(1);
-      try {
-        switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
-        case TAG_START:{
-          elements = StartTag();
+    try {
+      switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
+      case TAG_START:{
+        elements = StartTag();
 {if ("" != null) return elements;}
-          break;
-          }
-        case ENDTAG_START:{
-          elements = CloseTag();
+        break;
+        }
+      case ENDTAG_START:{
+        elements = CloseTag();
 {if ("" != null) return elements;}
-          break;
-          }
-        case LESSTHAN:{
-          jj_consume_token(LESSTHAN);
+        break;
+        }
+      case LESSTHAN:{
+        jj_consume_token(LESSTHAN);
 elements.add(new Element.TextElement("<")); {if ("" != null) return elements;}
+        break;
+        }
+      case TEXT:
+      case ST_ERR:
+      case SELF_CLOSE_TAG_END:
+      case TAG_END:
+      case IT_ERR:
+      case QUOTED_STRING_VAL:
+      case LITERAL_VAL:
+      case COMMA:
+      case ARGS_END:
+      case ARG_ERR:{
+        switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
+        case TEXT:{
+          text = jj_consume_token(TEXT);
           break;
           }
-        case TEXT:
-        case ST_ERR:
-        case SELF_CLOSE_TAG_END:
-        case TAG_END:
-        case IT_ERR:
-        case QUOTED_STRING_VAL:
-        case LITERAL_VAL:
-        case COMMA:
-        case ARGS_END:
-        case ARG_ERR:{
-          switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
-          case TEXT:{
-            text = jj_consume_token(TEXT);
-            break;
-            }
-          case ST_ERR:{
-            text = jj_consume_token(ST_ERR);
-            break;
-            }
-          case IT_ERR:{
-            text = jj_consume_token(IT_ERR);
-            break;
-            }
-          case ARG_ERR:{
-            text = jj_consume_token(ARG_ERR);
-            break;
-            }
-          case QUOTED_STRING_VAL:{
-            text = jj_consume_token(QUOTED_STRING_VAL);
-            break;
-            }
-          case LITERAL_VAL:{
-            text = jj_consume_token(LITERAL_VAL);
-            break;
-            }
-          case COMMA:{
-            text = jj_consume_token(COMMA);
-            break;
-            }
-          case ARGS_END:{
-            text = jj_consume_token(ARGS_END);
-            break;
-            }
-          case TAG_END:{
-            text = jj_consume_token(TAG_END);
-            break;
-            }
-          case SELF_CLOSE_TAG_END:{
-            text = jj_consume_token(SELF_CLOSE_TAG_END);
-            break;
-            }
-          default:
-            jj_la1[1] = jj_gen;
-            jj_consume_token(-1);
-            throw new ParseException();
+        case ST_ERR:{
+          text = jj_consume_token(ST_ERR);
+          break;
           }
-elements.add(new Element.TextElement(text.image)); {if ("" != null) return elements;}
+        case IT_ERR:{
+          text = jj_consume_token(IT_ERR);
+          break;
+          }
+        case ARG_ERR:{
+          text = jj_consume_token(ARG_ERR);
+          break;
+          }
+        case QUOTED_STRING_VAL:{
+          text = jj_consume_token(QUOTED_STRING_VAL);
+          break;
+          }
+        case LITERAL_VAL:{
+          text = jj_consume_token(LITERAL_VAL);
+          break;
+          }
+        case COMMA:{
+          text = jj_consume_token(COMMA);
+          break;
+          }
+        case ARGS_END:{
+          text = jj_consume_token(ARGS_END);
+          break;
+          }
+        case TAG_END:{
+          text = jj_consume_token(TAG_END);
+          break;
+          }
+        case SELF_CLOSE_TAG_END:{
+          text = jj_consume_token(SELF_CLOSE_TAG_END);
           break;
           }
         default:
-          jj_la1[2] = jj_gen;
+          jj_la1[1] = jj_gen;
           jj_consume_token(-1);
           throw new ParseException();
         }
-      } catch (ParseException ex) {
+elements.add(new Element.TextElement(text.image)); {if ("" != null) return elements;}
+        break;
+        }
+      default:
+        jj_la1[2] = jj_gen;
+        jj_consume_token(-1);
+        throw new ParseException();
+      }
+    } catch (ParseException ex) {
 //Catch any unexpected inputs including EOF and try to recover
         token_source.SwitchTo(DEFAULT);
         elements.addFirst(new Element.TextElement(getTokenText(firstToken, getToken(0))));
         elements.addAll(ElementSequence());
         {if ("" != null) return elements;}
-      }
-    throw new Error("Missing return statement in function");
-    } finally {
-      trace_return("ElementSequence");
     }
+    throw new Error("Missing return statement in function");
 }
 
-  final public LinkedList<Element> StartTag() throws ParseException {    try {
-LinkedList<Element> elements = new LinkedList<Element>();
+  final public LinkedList<Element> StartTag() throws ParseException {LinkedList<Element> elements = new LinkedList<Element>();
     ArrayList<String> args = new ArrayList<String>();
     Token t;
     Token identifier = null;
     String arg;
     Token firstToken = getToken(1);
-      try {
-        t = jj_consume_token(TAG_START);
-        identifier = jj_consume_token(FUNCTION_NAME);
+    try {
+      t = jj_consume_token(TAG_START);
+      identifier = jj_consume_token(FUNCTION_NAME);
+      switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
+      case ARGS_START:{
+        jj_consume_token(ARGS_START);
         switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
-        case ARGS_START:{
-          jj_consume_token(ARGS_START);
-          switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
-          case QUOTED_STRING_VAL:
-          case LITERAL_VAL:{
+        case QUOTED_STRING_VAL:
+        case LITERAL_VAL:{
+          arg = Argument();
+args.add(arg);
+          label_2:
+          while (true) {
+            switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
+            case COMMA:{
+              ;
+              break;
+              }
+            default:
+              jj_la1[3] = jj_gen;
+              break label_2;
+            }
+            jj_consume_token(COMMA);
             arg = Argument();
 args.add(arg);
-            label_2:
-            while (true) {
-              switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
-              case COMMA:{
-                ;
-                break;
-                }
-              default:
-                jj_la1[3] = jj_gen;
-                break label_2;
-              }
-              jj_consume_token(COMMA);
-              arg = Argument();
-args.add(arg);
-            }
-            break;
-            }
-          default:
-            jj_la1[4] = jj_gen;
-            ;
           }
-          jj_consume_token(ARGS_END);
           break;
           }
         default:
-          jj_la1[5] = jj_gen;
+          jj_la1[4] = jj_gen;
           ;
         }
-        switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
-        case TAG_END:{
-          jj_consume_token(TAG_END);
-elements.add(new Element.StartTag(identifier.image, args)); {if ("" != null) return elements;}
-          break;
-          }
-        case SELF_CLOSE_TAG_END:
-        case SELF_CLOSE_TAG_END_AT:{
-          switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
-          case SELF_CLOSE_TAG_END:{
-            jj_consume_token(SELF_CLOSE_TAG_END);
-            break;
-            }
-          case SELF_CLOSE_TAG_END_AT:{
-            jj_consume_token(SELF_CLOSE_TAG_END_AT);
-            break;
-            }
-          default:
-            jj_la1[6] = jj_gen;
-            jj_consume_token(-1);
-            throw new ParseException();
-          }
-elements.add(new Element.SelfClosingTag(identifier.image, args)); {if ("" != null) return elements;}
-          break;
-          }
-        default:
-          jj_la1[7] = jj_gen;
-          jj_consume_token(-1);
-          throw new ParseException();
-        }
-      } catch (ParseException e) {
-//        System.out.println("Failed Start tag. Treating as text");
-        elements.addFirst(new Element.TextElement(getTokenText(firstToken, getToken(0))));
-      }
-      if (jj_2_1(2)) {
-        rest = ElementSequence();
-      } else {
-        ;
-      }
-if(rest != null) elements.addAll(rest); {if ("" != null) return elements;}
-    throw new Error("Missing return statement in function");
-    } finally {
-      trace_return("StartTag");
-    }
-}
-
-  final public String Argument() throws ParseException {    try {
-Token t;
-      switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
-      case QUOTED_STRING_VAL:{
-        t = jj_consume_token(QUOTED_STRING_VAL);
-{if ("" != null) return t.image.substring(1, t.image.length() - 1);}
-        break;
-        }
-      case LITERAL_VAL:{
-        t = jj_consume_token(LITERAL_VAL);
-{if ("" != null) return t.image;}
+        jj_consume_token(ARGS_END);
         break;
         }
       default:
-        jj_la1[8] = jj_gen;
+        jj_la1[5] = jj_gen;
+        ;
+      }
+      switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
+      case TAG_END:{
+        jj_consume_token(TAG_END);
+elements.add(new Element.StartTag(identifier.image, args)); {if ("" != null) return elements;}
+        break;
+        }
+      case SELF_CLOSE_TAG_END:
+      case SELF_CLOSE_TAG_END_AT:{
+        switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
+        case SELF_CLOSE_TAG_END:{
+          jj_consume_token(SELF_CLOSE_TAG_END);
+          break;
+          }
+        case SELF_CLOSE_TAG_END_AT:{
+          jj_consume_token(SELF_CLOSE_TAG_END_AT);
+          break;
+          }
+        default:
+          jj_la1[6] = jj_gen;
+          jj_consume_token(-1);
+          throw new ParseException();
+        }
+elements.add(new Element.SelfClosingTag(identifier.image, args)); {if ("" != null) return elements;}
+        break;
+        }
+      default:
+        jj_la1[7] = jj_gen;
         jj_consume_token(-1);
         throw new ParseException();
       }
-    throw new Error("Missing return statement in function");
-    } finally {
-      trace_return("Argument");
+    } catch (ParseException e) {
+//        System.out.println("Failed Start tag. Treating as text");
+        elements.addFirst(new Element.TextElement(getTokenText(firstToken, getToken(0))));
     }
+    if (jj_2_1(2)) {
+      rest = ElementSequence();
+    } else {
+      ;
+    }
+if(rest != null) elements.addAll(rest); {if ("" != null) return elements;}
+    throw new Error("Missing return statement in function");
 }
 
-  final public LinkedList<Element> CloseTag() throws ParseException {    try {
-LinkedList<Element> elements = new LinkedList<Element>();
+  final public String Argument() throws ParseException {Token t;
+    switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
+    case QUOTED_STRING_VAL:{
+      t = jj_consume_token(QUOTED_STRING_VAL);
+{if ("" != null) return t.image.substring(1, t.image.length() - 1);}
+      break;
+      }
+    case LITERAL_VAL:{
+      t = jj_consume_token(LITERAL_VAL);
+{if ("" != null) return t.image;}
+      break;
+      }
+    default:
+      jj_la1[8] = jj_gen;
+      jj_consume_token(-1);
+      throw new ParseException();
+    }
+    throw new Error("Missing return statement in function");
+}
+
+  final public LinkedList<Element> CloseTag() throws ParseException {LinkedList<Element> elements = new LinkedList<Element>();
     LinkedList<Element> rest = null;
     Token t;
     Token firstToken = getToken(1);
-      try {
-        jj_consume_token(ENDTAG_START);
-        t = jj_consume_token(FUNCTION_NAME);
-        jj_consume_token(TAG_END);
+    try {
+      jj_consume_token(ENDTAG_START);
+      t = jj_consume_token(FUNCTION_NAME);
+      jj_consume_token(TAG_END);
 elements.add(new Element.EndTag(t.image)); {if ("" != null) return elements;}
-      } catch (ParseException e) {
+    } catch (ParseException e) {
 //        System.out.println("Failed End tag. Treating as text");
         elements.addFirst(new Element.TextElement(getTokenText(firstToken, getToken(0))));
-      }
-      if (jj_2_2(2)) {
-        rest = ElementSequence();
-      } else {
-        ;
-      }
+    }
+    if (jj_2_2(2)) {
+      rest = ElementSequence();
+    } else {
+      ;
+    }
 if(rest != null) elements.addAll(rest); {if ("" != null) return elements;}
     throw new Error("Missing return statement in function");
-    } finally {
-      trace_return("CloseTag");
-    }
 }
 
   private boolean jj_2_1(int xla)
@@ -385,10 +365,9 @@ if(rest != null) elements.addAll(rest); {if ("" != null) return elements;}
 
   private boolean jj_3R_8()
  {
-    if (!jj_rescan) trace_call("StartTag(LOOKING AHEAD...)");
-    if (jj_scan_token(TAG_START)) { if (!jj_rescan) trace_return("StartTag(LOOKAHEAD FAILED)"); return true; }
-    if (jj_scan_token(FUNCTION_NAME)) { if (!jj_rescan) trace_return("StartTag(LOOKAHEAD FAILED)"); return true; }
-    { if (!jj_rescan) trace_return("StartTag(LOOKAHEAD SUCCEEDED)"); return false; }
+    if (jj_scan_token(TAG_START)) return true;
+    if (jj_scan_token(FUNCTION_NAME)) return true;
+    return false;
   }
 
   private boolean jj_3_1()
@@ -405,7 +384,6 @@ if(rest != null) elements.addAll(rest); {if ("" != null) return elements;}
 
   private boolean jj_3R_3()
  {
-    if (!jj_rescan) trace_call("ElementSequence(LOOKING AHEAD...)");
     Token xsp;
     xsp = jj_scanpos;
     if (jj_3R_4()) {
@@ -414,19 +392,18 @@ if(rest != null) elements.addAll(rest); {if ("" != null) return elements;}
     jj_scanpos = xsp;
     if (jj_3R_6()) {
     jj_scanpos = xsp;
-    if (jj_3R_7()) { if (!jj_rescan) trace_return("ElementSequence(LOOKAHEAD FAILED)"); return true; }
+    if (jj_3R_7()) return true;
     }
     }
     }
-    { if (!jj_rescan) trace_return("ElementSequence(LOOKAHEAD SUCCEEDED)"); return false; }
+    return false;
   }
 
   private boolean jj_3R_9()
  {
-    if (!jj_rescan) trace_call("CloseTag(LOOKING AHEAD...)");
-    if (jj_scan_token(ENDTAG_START)) { if (!jj_rescan) trace_return("CloseTag(LOOKAHEAD FAILED)"); return true; }
-    if (jj_scan_token(FUNCTION_NAME)) { if (!jj_rescan) trace_return("CloseTag(LOOKAHEAD FAILED)"); return true; }
-    { if (!jj_rescan) trace_return("CloseTag(LOOKAHEAD SUCCEEDED)"); return false; }
+    if (jj_scan_token(ENDTAG_START)) return true;
+    if (jj_scan_token(FUNCTION_NAME)) return true;
+    return false;
   }
 
   /** Generated Token Manager. */
@@ -452,9 +429,6 @@ if(rest != null) elements.addAll(rest); {if ("" != null) return elements;}
   private boolean jj_rescan = false;
   private int jj_gc = 0;
 
-  {
-      enable_tracing();
-  }
   /** Constructor with InputStream. */
   public HackvertorParser(java.io.InputStream stream) {
 	  this(stream, null);
@@ -552,7 +526,6 @@ if(rest != null) elements.addAll(rest); {if ("" != null) return elements;}
 		   }
 		 }
 	   }
-	   trace_token(token, "");
 	   return token;
 	 }
 	 token = oldToken;
@@ -578,8 +551,6 @@ if(rest != null) elements.addAll(rest); {if ("" != null) return elements;}
 	   int i = 0; Token tok = token;
 	   while (tok != null && tok != jj_scanpos) { i++; tok = tok.next; }
 	   if (tok != null) jj_add_error_token(kind, i);
-	 } else {
-	   trace_scan(jj_scanpos, kind);
 	 }
 	 if (jj_scanpos.kind != kind) return true;
 	 if (jj_la == 0 && jj_scanpos == jj_lastpos) throw jj_ls;
@@ -593,7 +564,6 @@ if(rest != null) elements.addAll(rest); {if ("" != null) return elements;}
 	 else token = token.next = token_source.getNextToken();
 	 jj_ntk = -1;
 	 jj_gen++;
-	   trace_token(token, " (in getNextToken)");
 	 return token;
   }
 
@@ -700,52 +670,12 @@ if(rest != null) elements.addAll(rest); {if ("" != null) return elements;}
 	 return trace_enabled;
   }
 
-/** Enable tracing. */
+  /** Enable tracing. */
   final public void enable_tracing() {
-	 trace_enabled = true;
   }
 
-/** Disable tracing. */
+  /** Disable tracing. */
   final public void disable_tracing() {
-	 trace_enabled = false;
-  }
-
-  protected void trace_call(String s) {
-	 if (trace_enabled) {
-	   for (int i = 0; i < trace_indent; i++) { System.out.print(" "); }
-	   System.out.println("Call:	" + s);
-	 }
-	 trace_indent = trace_indent + 2;
-  }
-
-  protected void trace_return(String s) {
-	 trace_indent = trace_indent - 2;
-	 if (trace_enabled) {
-	   for (int i = 0; i < trace_indent; i++) { System.out.print(" "); }
-	   System.out.println("Return: " + s);
-	 }
-  }
-
-  protected void trace_token(Token t, String where) {
-	 if (trace_enabled) {
-	   for (int i = 0; i < trace_indent; i++) { System.out.print(" "); }
-	   System.out.print("Consumed token: <" + tokenImage[t.kind]);
-	   if (t.kind != 0 && !tokenImage[t.kind].equals("\"" + t.image + "\"")) {
-		 System.out.print(": \"" + TokenMgrError.addEscapes(t.image) + "\"");
-	   }
-	   System.out.println(" at line " + t.beginLine + " column " + t.beginColumn + ">" + where);
-	 }
-  }
-
-  protected void trace_scan(Token t1, int t2) {
-	 if (trace_enabled) {
-	   for (int i = 0; i < trace_indent; i++) { System.out.print(" "); }
-	   System.out.print("Visited token: <" + tokenImage[t1.kind]);
-	   if (t1.kind != 0 && !tokenImage[t1.kind].equals("\"" + t1.image + "\"")) {
-		 System.out.print(": \"" + TokenMgrError.addEscapes(t1.image) + "\"");
-	   }
-	   System.out.println(" at line " + t1.beginLine + " column " + t1.beginColumn + ">; Expected token: <" + tokenImage[t2] + ">");
-	 }
   }
 
   private void jj_rescan_token() {
