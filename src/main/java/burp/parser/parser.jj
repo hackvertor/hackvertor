@@ -142,6 +142,7 @@ LinkedList<Element> StartTag() :
 {
     LinkedList<Element> elements = new LinkedList<Element>();
     ArrayList<String> args = new ArrayList<String>();
+    LinkedList<Element> rest = null;
     Token t;
     Token identifier = null;
     String arg;

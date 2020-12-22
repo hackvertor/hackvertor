@@ -166,6 +166,7 @@ elements.add(new Element.TextElement(text.image)); {if ("" != null) return eleme
 
   final public LinkedList<Element> StartTag() throws ParseException {LinkedList<Element> elements = new LinkedList<Element>();
     ArrayList<String> args = new ArrayList<String>();
+    LinkedList<Element> rest = null;
     Token t;
     Token identifier = null;
     String arg;
@@ -351,15 +352,15 @@ if(rest != null) elements.addAll(rest); {if ("" != null) return elements;}
     return false;
   }
 
-  private boolean jj_3R_5()
- {
-    if (jj_3R_9()) return true;
-    return false;
-  }
-
   private boolean jj_3_2()
  {
     if (jj_3R_3()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_5()
+ {
+    if (jj_3R_9()) return true;
     return false;
   }
 
