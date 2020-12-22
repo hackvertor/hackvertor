@@ -29,10 +29,6 @@ public class HackvertorParser implements HackvertorParserConstants {
         HackvertorParser parser = new HackvertorParser(new StringReader(string));
         LinkedList<Element> elementList = parser.Input();
 
-        for (Element e : elementList) {
-            System.out.println(e.getClass() + " : " + e);
-        }
-
         return elementList;
     }
 
@@ -346,15 +342,15 @@ if(rest != null) elements.addAll(rest); {if ("" != null) return elements;}
     return false;
   }
 
-  private boolean jj_3R_6()
- {
-    if (jj_scan_token(LESSTHAN)) return true;
-    return false;
-  }
-
   private boolean jj_3_2()
  {
     if (jj_3R_3()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_6()
+ {
+    if (jj_scan_token(LESSTHAN)) return true;
     return false;
   }
 

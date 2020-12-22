@@ -38,10 +38,6 @@ public class HackvertorParser {
         HackvertorParser parser = new HackvertorParser(new StringReader(string));
         LinkedList<Element> elementList = parser.Input();
 
-        for (Element e : elementList) {
-            System.out.println(e.getClass() + " : " + e);
-        }
-
         return elementList;
     }
 }
