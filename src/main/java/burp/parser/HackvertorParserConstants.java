@@ -19,33 +19,39 @@ public interface HackvertorParserConstants {
   /** RegularExpression Id. */
   int WHITESPACE = 7;
   /** RegularExpression Id. */
-  int OPEN_TAG_START = 8;
+  int TAG_START = 8;
   /** RegularExpression Id. */
-  int END_TAG_START = 9;
+  int ENDTAG_START = 9;
   /** RegularExpression Id. */
   int TEXT = 10;
   /** RegularExpression Id. */
-  int FUNCTION_NAME = 11;
+  int LESSTHAN = 11;
   /** RegularExpression Id. */
-  int ST_ERROR = 12;
+  int FUNCTION_NAME = 12;
   /** RegularExpression Id. */
-  int ARGS_START = 13;
+  int ST_ERR = 13;
   /** RegularExpression Id. */
-  int SELF_CLOSE_TAG_END = 14;
+  int ARGS_START = 14;
   /** RegularExpression Id. */
-  int SELF_CLOSE_TAG_END_AT = 15;
+  int SELF_CLOSE_TAG_END = 15;
   /** RegularExpression Id. */
-  int TAG_END = 16;
+  int SELF_CLOSE_TAG_END_AT = 16;
   /** RegularExpression Id. */
-  int QUOTED_STRING_VAL = 17;
+  int TAG_END = 17;
   /** RegularExpression Id. */
-  int LITERAL_VAL = 18;
+  int IT_ERR = 18;
   /** RegularExpression Id. */
-  int COMMA = 19;
+  int QUOTED_STRING_VAL = 19;
   /** RegularExpression Id. */
-  int ARGS_END = 20;
+  int LITERAL_VAL = 20;
   /** RegularExpression Id. */
-  int UNKNOWN = 21;
+  int COMMA = 21;
+  /** RegularExpression Id. */
+  int ARGS_END = 22;
+  /** RegularExpression Id. */
+  int ARG_ERR = 23;
+  /** RegularExpression Id. */
+  int UNKNOWN = 24;
 
   /** Lexical state. */
   int Args = 0;
@@ -69,16 +75,19 @@ public interface HackvertorParserConstants {
     "\"<@\"",
     "\"<@/\"",
     "<TEXT>",
+    "\"<\"",
     "<FUNCTION_NAME>",
-    "<ST_ERROR>",
+    "<ST_ERR>",
     "\"(\"",
     "\"/>\"",
     "\"@/>\"",
     "\">\"",
+    "<IT_ERR>",
     "<QUOTED_STRING_VAL>",
     "<LITERAL_VAL>",
     "\",\"",
     "\")\"",
+    "<ARG_ERR>",
     "<UNKNOWN>",
   };
 

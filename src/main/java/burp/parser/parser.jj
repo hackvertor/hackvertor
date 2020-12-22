@@ -1,7 +1,5 @@
 /**
-* This file is a largely adapted version of the HTML parser produced by Brian Goetz, Quiotix
-* and is modified and redistributed under the GNU General Public License, version 2,
-* as published by the Free Software Foundation.
+*
 */
 
 options {
@@ -40,11 +38,22 @@ public class HackvertorParser {
         HackvertorParser parser = new HackvertorParser(new StringReader(string));
         LinkedList<Element> elementList = parser.Input();
 
+        for (Element e : elementList) {
+            System.out.println(e.getClass() + " : " + e);
+        }
+
         return elementList;
     }
 }
 
 PARSER_END(HackvertorParser)
+
+TOKEN_MGR_DECLS : {
+  // required by SetState
+  void backup(int n) {
+    input_stream.backup(n);
+  }
+}
 
 <*> SKIP:  { " " | "=\r" | "=\r\n" }
 <*> TOKEN [IGNORE_CASE]: {
@@ -54,15 +63,19 @@ PARSER_END(HackvertorParser)
     | <#WHITESPACE: ( " " | "\t" ) >
 }
 
-<DEFAULT> TOKEN : {
-    <OPEN_TAG_START: "<@"     > : StartTag
-  | <END_TAG_START:  "<@/"    > : StartTag
-  | <TEXT: ("<" ~["@"] | ~["<"])+ >
+<*> TOKEN : {
+    <TAG_START: "<@" >: StartTag
+  | <ENDTAG_START: "<@/" >: StartTag
+}
+
+<DEFAULT> TOKEN: {
+  <TEXT: (~["<"])+> //Anything excluding <
+  | <LESSTHAN: "<">
 }
 
 <StartTag> TOKEN: {
     <FUNCTION_NAME: <IDENTIFIER> > : InsideTag
-  | <ST_ERROR: ~[] > : DEFAULT
+    | <ST_ERR: ~[]> : DEFAULT
 }
 
 //<InsideTag> SPECIAL_TOKEN :
@@ -75,6 +88,7 @@ PARSER_END(HackvertorParser)
     | <SELF_CLOSE_TAG_END: "/>"> : DEFAULT
     | <SELF_CLOSE_TAG_END_AT: "@/>"> : DEFAULT
     | <TAG_END: ">" > : DEFAULT
+    | <IT_ERR: ~[]> : DEFAULT
 }
 
 <Args> TOKEN : {
@@ -82,6 +96,7 @@ PARSER_END(HackvertorParser)
     | <LITERAL_VAL: <LITERAL> >
     | <COMMA: ",">
     | <ARGS_END: ")"> : InsideTag
+    | <ARG_ERR: ~[]> : DEFAULT
 }
 
 <*> TOKEN : { <UNKNOWN: ~[]> }
@@ -89,57 +104,68 @@ PARSER_END(HackvertorParser)
 LinkedList<Element> Input() :
 {
     LinkedList<Element> s = new LinkedList<Element>();
-    Element e;
+    LinkedList<Element> e;
 }
 {
     (
-      e = Element()
-      { s.add(e); }
+      e = ElementSequence() { s.addAll(e); }
     )*<EOF>
 
     { return s; }
 }
 
-Element Element() :
+LinkedList<Element> ElementSequence() :
 {
+ LinkedList<Element> elements = new LinkedList<Element>();
+ LinkedList<Element> nested = new LinkedList<Element>();
  Element e;
  Token text;
 }
 {
-    LOOKAHEAD(2)
-    e = StartTag() {return e;}
-    | e = CloseTag() {return e;}
-    | <OPEN_TAG_START> text=<ST_ERROR> { return new Element.TextElement("<@" + text.image);}
-    | text = <TEXT> { return new Element.TextElement(text.image);}
+    try{
+    elements = StartTag() { return elements; }
+    | elements = CloseTag() { return elements; }
+    | <LESSTHAN> { elements.add(new Element.TextElement("<")); return elements;}
+    | (
+         text = <TEXT> | text = <ST_ERR> | text = <IT_ERR> | text = <ARG_ERR> | text = <QUOTED_STRING_VAL>
+        | text = <LITERAL_VAL> | text = <COMMA> | text = <ARGS_END>
+      ) { elements.add(new Element.TextElement(text.image)); return elements; }
+    }catch(ParseException ex){
+        return elements; //Catch Exception for EOF
+    }
 }
 
-Element StartTag() :
+LinkedList<Element> StartTag() :
 {
+    LinkedList<Element> elements = new LinkedList<Element>();
     ArrayList<String> args = new ArrayList<String>();
-    Token tagName;
+    Token t;
+    Token identifier = null;
     String arg;
     Token firstToken = getToken(1);
 }
 {
-    try{
-        <OPEN_TAG_START> tagName=<FUNCTION_NAME>
-        [
+    t=<TAG_START> (identifier = <FUNCTION_NAME> | elements = ElementSequence() { elements.addFirst(new Element.TextElement(getTokenText(firstToken, t))); return elements;})
+    [
+        try{
             <ARGS_START>
                 [
                     arg = Argument() {args.add(arg);}
                     (<COMMA> arg = Argument() {args.add(arg);})*
                 ]
             <ARGS_END>
-        ]
-        (
-        <TAG_END> {return new Element.StartTag(tagName.image, args);}
-        | (<SELF_CLOSE_TAG_END>|<SELF_CLOSE_TAG_END_AT>) {return new Element.SelfClosingTag(tagName.image, args);}
-        )
-    }catch(ParseException e){
-        token_source.SwitchTo(DEFAULT);
-        String text = getTokenText(firstToken, getNextToken());
-        return new Element.TextElement(text);
-    }
+        }catch(ParseException e){
+            token_source.SwitchTo(DEFAULT);
+            elements.addFirst(new Element.TextElement(getTokenText(firstToken, getToken(0))));
+            elements.addAll(ElementSequence());
+            return elements;
+        }
+    ]
+    (
+    <TAG_END> {elements.add(new Element.StartTag(identifier.image, args)); return elements;}
+    | (<SELF_CLOSE_TAG_END>|<SELF_CLOSE_TAG_END_AT>) {elements.add(new Element.SelfClosingTag(identifier.image, args)); return elements;}
+    | {elements.addFirst(new Element.TextElement(getTokenText(firstToken, getToken(0)))); elements.addAll(ElementSequence()); return elements;}
+    )
 }
 
 String Argument() :
@@ -151,18 +177,20 @@ String Argument() :
     | t = <LITERAL_VAL> {return t.image;}
 }
 
-Element CloseTag() :
+LinkedList<Element> CloseTag() :
 {
+    LinkedList<Element> elements = new LinkedList<Element>();
     Token t;
     Token firstToken = getToken(1);
 }
 {
-    try{
-        <END_TAG_START> t=<FUNCTION_NAME> <TAG_END>
-        {return new Element.EndTag(t.image);}
-    }catch(ParseException e){
-        token_source.SwitchTo(DEFAULT);
-        String text = getTokenText(firstToken, getNextToken());
-        return new Element.TextElement(text);
-    }
+    t=<ENDTAG_START> (t=<FUNCTION_NAME> | elements = ElementSequence() { elements.addFirst(new Element.TextElement(getTokenText(firstToken, t))); return elements;})
+    (
+        <TAG_END> { elements.add(new Element.EndTag(t.image)); return elements; }
+    |   {
+            elements.addFirst(new Element.TextElement(getTokenText(firstToken, getToken(0))));
+            elements.addAll(ElementSequence());
+            return elements;
+        }
+    )
 }
