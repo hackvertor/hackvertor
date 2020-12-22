@@ -612,7 +612,11 @@ public class Convertors {
 //        return convertedArgs;
 //    }
 
-    public static String newConvert(HashMap<String, String> variables, JSONArray customTags, String input){
+    /**
+     * Recursive conversion, ensuring tags are properly matched.
+     * Does not treat mismatched tags as text.
+     */
+    public static String convert(HashMap<String, String> variables, JSONArray customTags, String input){
         Queue<Element> tagElements;
         try {
             tagElements = HackvertorParser.parse(input);
@@ -624,6 +628,32 @@ public class Convertors {
         }
     }
 
+    /**
+     * Recursive conversion, treating mismatched tags as text
+     */
+    public static String weakConvert(HashMap<String, String> variables, JSONArray customTags, String input){
+        Queue<Element> tagElements;
+        try {
+            tagElements = HackvertorParser.parse(input);
+            return weakConvert(variables, customTags, "", new Stack<>(), tagElements);
+        }catch (Exception e){
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            return String.format("Error: %s\n%s", e.getMessage(), sw);
+        }
+    }
+
+    /**
+     * Recursive conversion, ensuring tags are properly matched.
+     * Does not treat mismatched tags as text.
+     * @param variables
+     * @param customTags
+     * @param textBuffer
+     * @param stack
+     * @param elements
+     * @return
+     * @throws ParseException
+     */
     private static String convert(HashMap<String, String> variables,
                                   JSONArray customTags,
                                   String textBuffer,
@@ -642,7 +672,7 @@ public class Convertors {
         Element element = elements.remove();
         if(element instanceof Element.TextElement){ //Text element, add it to our textBuffer
             textBuffer+= ((Element.TextElement) element).getContent();
-        }else if(element instanceof Element.SelfClosingTag){ //Self closing tag. Just add its textBuffer to textbuffer.
+        }else if(element instanceof Element.SelfClosingTag){ //Self closing tag. Just add its output to textbuffer.
             Element.SelfClosingTag selfClosingTag = (Element.SelfClosingTag) element;
             String tagOutput = callTag(variables, customTags, selfClosingTag.getIdentifier(), "", selfClosingTag.getArguments());
             textBuffer+= tagOutput;
@@ -665,6 +695,69 @@ public class Convertors {
         }
 
         return convert(variables, customTags, textBuffer, stack, elements);
+    }
+
+    /**
+     *
+     * @param variables
+     * @param customTags
+     * @param textBuffer
+     * @param stack
+     * @param elements
+     * @return
+     * @throws ParseException
+     */
+    private static String weakConvert(HashMap<String, String> variables,
+                                  JSONArray customTags,
+                                  String textBuffer,
+                                  Stack<Element.StartTag> stack,
+                                  Queue<Element> elements) throws ParseException{
+
+        if(elements.size() == 0) {
+            return textBuffer;
+        }
+
+        //Take the first item from the queue.
+        Element element = elements.remove();
+        if(element instanceof Element.TextElement){ //Text element, add it to our textBuffer
+            textBuffer+= ((Element.TextElement) element).getContent();
+        }else if(element instanceof Element.SelfClosingTag){ //Self closing tag. Just add its output to textbuffer.
+            Element.SelfClosingTag selfClosingTag = (Element.SelfClosingTag) element;
+            String tagOutput = callTag(variables, customTags, selfClosingTag.getIdentifier(), "", selfClosingTag.getArguments());
+            textBuffer+= tagOutput;
+        }else if(element instanceof Element.StartTag){ //Start of a conversion.
+            stack.push((Element.StartTag) element);
+            textBuffer+= weakConvert(variables, customTags, "", stack, elements);
+        }else if(element instanceof Element.EndTag){ //End of a conversion. Convert and update textbuffer.
+            Stack<Element.StartTag> siftStack = new Stack<>();
+            try {
+                Element.StartTag startTag = stack.pop();
+                Element.EndTag endTag = (Element.EndTag) element;
+
+                //If we weren't expecting this end tag, e.g. doesn't match the last open tag
+                while (!startTag.getIdentifier().equalsIgnoreCase(endTag.getIdentifier())){
+                    siftStack.push(startTag);
+                    startTag = stack.pop();
+                }
+                //We found a matching start tag!
+                //All the items on the sift stack should be treated as text, so add them to the text buffer.
+                while(!siftStack.empty()){
+                    textBuffer += siftStack.pop().toString();
+                }
+
+                //Now we've matched the tag, convert the textbuffer contents.
+                return callTag(variables, customTags, startTag.getIdentifier(), textBuffer, startTag.getArguments());
+            }catch (EmptyStackException ex){
+                //Looked through the whole stack and didn't find a matching open tag. Must be a rogue close tag instead.
+                //In this case, add items we removed back to the stack, and just treat the close tag as text, and add it to the text buffer.
+                while(!siftStack.empty()){
+                    stack.push(siftStack.pop());
+                }
+                textBuffer += element.toString();
+            }
+        }
+
+        return weakConvert(variables, customTags, textBuffer, stack, elements);
     }
 
     /*public static String convert(JSONArray customTags, String input){
@@ -2854,7 +2947,7 @@ public class Convertors {
         String output = "";
         for (int i = start; i < end; i += increment) {
             variableMap.put(variable, Integer.toString(i));
-            output += newConvert(variableMap, customTags, input);
+            output += convert(variableMap, customTags, input);
         }
         return output;
     }
@@ -2863,7 +2956,7 @@ public class Convertors {
         String output = "";
         for (char letter = 'a'; letter <= 'z'; letter++) {
             variableMap.put(variable, Character.toString(letter));
-            output += newConvert(variableMap, customTags, input);;
+            output += convert(variableMap, customTags, input);;
         }
         return output;
     }
@@ -2872,7 +2965,7 @@ public class Convertors {
         String output = "";
         for (char letter = 'A'; letter <= 'Z'; letter++) {
             variableMap.put(variable, Character.toString(letter));
-            output += newConvert(variableMap, customTags, input);
+            output += convert(variableMap, customTags, input);
         }
         return output;
     }
@@ -2881,7 +2974,7 @@ public class Convertors {
         String output = "";
         for (char num = '0'; num <= '9'; num++) {
             variableMap.put(variable, Character.toString(num));
-            output += newConvert(variableMap, customTags, input);
+            output += convert(variableMap, customTags, input);
         }
         return output;
     }

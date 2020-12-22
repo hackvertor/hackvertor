@@ -1,5 +1,6 @@
 package burp.ui;
 
+import burp.Convertors;
 import burp.Hackvertor;
 import burp.Tag;
 import burp.Utils;
@@ -492,7 +493,7 @@ public class HackvertorPanel extends JPanel {
                 } else {
                     code = "<@auto_decode_no_decrypt_1>" + data + "<@/auto_decode_no_decrypt_1>";
                 }
-                String converted = newConvert(new HashMap<>(), hackvertor.getCustomTags(), code);
+                String converted = Convertors.weakConvert(new HashMap<>(), hackvertor.getCustomTags(), code);
                 if (!data.equals(converted)) {
                     inputArea.setText(code);
                 }

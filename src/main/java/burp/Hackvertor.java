@@ -3,16 +3,10 @@ package burp;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import javax.swing.*;
-import java.awt.*;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.UnsupportedFlavorException;
-import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.*;
 
 import static burp.BurpExtender.*;
-import static burp.Convertors.*;
 
 public class Hackvertor {
     private ArrayList<Tag> tags = new ArrayList<Tag>();
@@ -343,7 +337,7 @@ public class Hackvertor {
     }
 
     public String convert(String message){
-        return Convertors.newConvert(new HashMap<>(), customTags, message);
+        return Convertors.weakConvert(new HashMap<>(), customTags, message);
     }
 
     public ArrayList<Tag> getTags() {
