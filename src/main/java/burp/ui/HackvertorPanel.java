@@ -19,7 +19,6 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.*;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.stream.Collectors;
@@ -137,16 +136,19 @@ public class HackvertorPanel extends JPanel {
             public void changedUpdate(DocumentEvent documentEvent) {
                 updateLen(documentEvent);
                 outputArea.setText(hackvertor.convert(inputArea.getText()));
+                outputArea.setCaretPosition(0);
             }
 
             public void insertUpdate(DocumentEvent documentEvent) {
                 updateLen(documentEvent);
                 outputArea.setText(hackvertor.convert(inputArea.getText()));
+                outputArea.setCaretPosition(0);
             }
 
             public void removeUpdate(DocumentEvent documentEvent) {
                 updateLen(documentEvent);
                 outputArea.setText(hackvertor.convert(inputArea.getText()));
+                outputArea.setCaretPosition(0);
             }
 
             private void updateLen(DocumentEvent documentEvent) {

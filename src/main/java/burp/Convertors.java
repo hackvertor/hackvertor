@@ -41,7 +41,6 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
-import javax.swing.*;
 import java.io.*;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -656,7 +655,6 @@ public class Convertors {
             try {
                 startTag = stack.pop();
             }catch (EmptyStackException e){
-                e.printStackTrace();
                 throw new ParseException(String.format("Found closing tag \"%s\" without matching open tag.", endTag.getIdentifier()));
             }
             if(!startTag.getIdentifier().equalsIgnoreCase(endTag.getIdentifier())){ //Check stack matches end tag.
