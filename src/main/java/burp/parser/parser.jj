@@ -117,9 +117,9 @@ LinkedList<Element> Input() :
 LinkedList<Element> ElementSequence() :
 {
  LinkedList<Element> elements = new LinkedList<Element>();
- LinkedList<Element> nested = new LinkedList<Element>();
  Element e;
  Token text;
+ Token firstToken = getToken(1);
 }
 {
     try{
@@ -128,10 +128,13 @@ LinkedList<Element> ElementSequence() :
     | <LESSTHAN> { elements.add(new Element.TextElement("<")); return elements;}
     | (
          text = <TEXT> | text = <ST_ERR> | text = <IT_ERR> | text = <ARG_ERR> | text = <QUOTED_STRING_VAL>
-        | text = <LITERAL_VAL> | text = <COMMA> | text = <ARGS_END>
+        | text = <LITERAL_VAL> | text = <COMMA> | text = <ARGS_END> | text = <TAG_END> | text = <SELF_CLOSE_TAG_END>
       ) { elements.add(new Element.TextElement(text.image)); return elements; }
-    }catch(ParseException ex){
-        return elements; //Catch Exception for EOF
+    }catch(ParseException ex){ //Catch any unexpected inputs including EOF and try to recover
+        token_source.SwitchTo(DEFAULT);
+        elements.addFirst(new Element.TextElement(getTokenText(firstToken, getToken(0))));
+        elements.addAll(ElementSequence());
+        return elements;
     }
 }
 
@@ -145,27 +148,27 @@ LinkedList<Element> StartTag() :
     Token firstToken = getToken(1);
 }
 {
-    t=<TAG_START> (identifier = <FUNCTION_NAME> | elements = ElementSequence() { elements.addFirst(new Element.TextElement(getTokenText(firstToken, t))); return elements;})
-    [
-        try{
-            <ARGS_START>
-                [
-                    arg = Argument() {args.add(arg);}
-                    (<COMMA> arg = Argument() {args.add(arg);})*
-                ]
-            <ARGS_END>
-        }catch(ParseException e){
-            token_source.SwitchTo(DEFAULT);
-            elements.addFirst(new Element.TextElement(getTokenText(firstToken, getToken(0))));
-            elements.addAll(ElementSequence());
-            return elements;
-        }
-    ]
-    (
-    <TAG_END> {elements.add(new Element.StartTag(identifier.image, args)); return elements;}
-    | (<SELF_CLOSE_TAG_END>|<SELF_CLOSE_TAG_END_AT>) {elements.add(new Element.SelfClosingTag(identifier.image, args)); return elements;}
-    | {elements.addFirst(new Element.TextElement(getTokenText(firstToken, getToken(0)))); elements.addAll(ElementSequence()); return elements;}
-    )
+    try{
+        t=<TAG_START> identifier = <FUNCTION_NAME>
+        [
+
+                <ARGS_START>
+                    [
+                        arg = Argument() {args.add(arg);}
+                        (<COMMA> arg = Argument() {args.add(arg);})*
+                    ]
+                <ARGS_END>
+
+        ]
+        (
+        <TAG_END> {elements.add(new Element.StartTag(identifier.image, args)); return elements;}
+        | (<SELF_CLOSE_TAG_END>|<SELF_CLOSE_TAG_END_AT>) {elements.add(new Element.SelfClosingTag(identifier.image, args)); return elements;}
+        )
+    }catch(ParseException e){
+//        System.out.println("Failed Start tag. Treating as text");
+        elements.addFirst(new Element.TextElement(getTokenText(firstToken, getToken(0))));
+    }
+    [LOOKAHEAD(2) rest = ElementSequence()] { if(rest != null) elements.addAll(rest); return elements; }
 }
 
 String Argument() :
@@ -180,17 +183,16 @@ String Argument() :
 LinkedList<Element> CloseTag() :
 {
     LinkedList<Element> elements = new LinkedList<Element>();
+    LinkedList<Element> rest = null;
     Token t;
     Token firstToken = getToken(1);
 }
 {
-    t=<ENDTAG_START> (t=<FUNCTION_NAME> | elements = ElementSequence() { elements.addFirst(new Element.TextElement(getTokenText(firstToken, t))); return elements;})
-    (
-        <TAG_END> { elements.add(new Element.EndTag(t.image)); return elements; }
-    |   {
-            elements.addFirst(new Element.TextElement(getTokenText(firstToken, getToken(0))));
-            elements.addAll(ElementSequence());
-            return elements;
-        }
-    )
+    try{
+        <ENDTAG_START> t=<FUNCTION_NAME> <TAG_END> { elements.add(new Element.EndTag(t.image)); return elements; }
+    }catch(ParseException e){
+//        System.out.println("Failed End tag. Treating as text");
+        elements.addFirst(new Element.TextElement(getTokenText(firstToken, getToken(0))));
+    }
+    [LOOKAHEAD(2) rest = ElementSequence()] { if(rest != null) elements.addAll(rest); return elements; }
 }
