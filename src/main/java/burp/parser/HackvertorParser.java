@@ -5,6 +5,7 @@ package burp.parser;
 import java.io.StringReader;
 import java.util.LinkedList;
 import java.util.ArrayList;
+import org.unbescape.java.JavaEscape;
 
 public class HackvertorParser implements HackvertorParserConstants {
 
@@ -28,7 +29,9 @@ public class HackvertorParser implements HackvertorParserConstants {
     public static LinkedList<Element> parse(String string) throws ParseException {
         HackvertorParser parser = new HackvertorParser(new StringReader(string));
         LinkedList<Element> elementList = parser.Input();
-
+//        for (Element e : elementList) {
+//            System.out.println(e.getClass() + " - " + e.toString());
+//        }
         return elementList;
     }
 
@@ -253,7 +256,7 @@ if(rest != null) elements.addAll(rest); {if ("" != null) return elements;}
     switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
     case QUOTED_STRING_VAL:{
       t = jj_consume_token(QUOTED_STRING_VAL);
-{if ("" != null) return t.image.substring(1, t.image.length() - 1);}
+{if ("" != null) return JavaEscape.unescapeJava(t.image.substring(1, t.image.length() - 1));}
       break;
       }
     case LITERAL_VAL:{
@@ -342,15 +345,15 @@ if(rest != null) elements.addAll(rest); {if ("" != null) return elements;}
     return false;
   }
 
-  private boolean jj_3_2()
- {
-    if (jj_3R_3()) return true;
-    return false;
-  }
-
   private boolean jj_3R_6()
  {
     if (jj_scan_token(LESSTHAN)) return true;
+    return false;
+  }
+
+  private boolean jj_3_2()
+ {
+    if (jj_3R_3()) return true;
     return false;
   }
 

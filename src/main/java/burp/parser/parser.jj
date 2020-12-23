@@ -14,6 +14,7 @@ package burp.parser;
 import java.io.StringReader;
 import java.util.LinkedList;
 import java.util.ArrayList;
+import org.unbescape.java.JavaEscape;
 
 public class HackvertorParser {
 
@@ -37,7 +38,9 @@ public class HackvertorParser {
     public static LinkedList<Element> parse(String string) throws ParseException {
         HackvertorParser parser = new HackvertorParser(new StringReader(string));
         LinkedList<Element> elementList = parser.Input();
-
+//        for (Element e : elementList) {
+//            System.out.println(e.getClass() + " - " + e.toString());
+//        }
         return elementList;
     }
 }
@@ -54,7 +57,7 @@ TOKEN_MGR_DECLS : {
 <*> SKIP:  { " " | "=\r" | "=\r\n" }
 <*> TOKEN [IGNORE_CASE]: {
     <#IDENTIFIER:   (["0"-"9", "a"-"z", "A"-"Z","_", "-"])+ >
-    | <#QUOTED_STRING: ( "'" ( ~["'"] )* "'" ) | ( "\"" ( ~["\""] )* "\"" ) >
+    | <#QUOTED_STRING: ( "'" ("\\" ~[] | ~["'", "\\"] )* "'" ) | ( "\"" ("\\" ~[] | ~["\"", "\\"] )* "\"" ) >
     | <#LITERAL: (["0"-"9", "a"-"z", "A"-"Z", "-", "+", "."])+>
     | <#WHITESPACE: ( " " | "\t" ) >
 }
@@ -173,7 +176,7 @@ String Argument() :
  Token t;
 }
 {
-    t = <QUOTED_STRING_VAL> {return t.image.substring(1, t.image.length() - 1);}
+    t = <QUOTED_STRING_VAL> {return JavaEscape.unescapeJava(t.image.substring(1, t.image.length() - 1));}
     | t = <LITERAL_VAL> {return t.image;}
 }
 
