@@ -163,7 +163,7 @@ public class Convertors {
                 }else if(tag.startsWith("set_")){ //Backwards compatibility with previous set_VARNAME tag format
                     String varname = tag.replace("set_","");
                     variableMap.put(varname, output);
-                    return "";
+                    return output;
                 }else if(tag.startsWith("get_")){ //Backwards compatibility with previous get_VARNAME tag format
                     String varname = tag.replace("get_","");
                     return variableMap.getOrDefault(varname, StringUtils.isEmpty(output) ? "UNDEFINED" : output);
@@ -179,7 +179,7 @@ public class Convertors {
             case "set_var":
             case "set_variable":
                 variableMap.put(getString(arguments, 0), output);
-                return "";
+                return output;
             case "get":
             case "get_var":
             case "get_variable":
