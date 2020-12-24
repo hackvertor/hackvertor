@@ -514,30 +514,6 @@ public class Convertors {
         }
     }
 
-//    public static String convertNoInputTags(HashMap<String, String> variableMap, JSONArray customTags, String input) {
-//        java.util.List<String> allMatches = new ArrayList<>();
-//        Matcher m = Pattern.compile("<@([\\w\\d\\-]+(_\\d*)?)((?:[(](?:,?" + argumentsRegex + ")*[)])?) />").matcher(input);
-//        while (m.find()) {
-//            allMatches.add(m.group(1));
-//        }
-//        for (String tagNameWithID : allMatches) {
-//            String arguments = "";
-//            String tagName = tagNameWithID.replaceAll("_\\d+$", "");
-//            m = Pattern.compile("<@" + tagNameWithID + "((?:[(](?:,?" + argumentsRegex + ")*[)])?) />").matcher(input);
-//            if (m.find()) {
-//                arguments = m.group(1);
-//            }
-//            String result;
-//            if (tagName.startsWith("get_")) {
-//                result = variableMap.getOrDefault(tagName,"");
-//            } else {
-//                result = callTag(variableMap, customTags, tagName, "", parseArguments(arguments));
-//            }
-//            input = input.replaceAll("<@" + tagNameWithID + "(?:[(](?:,?" + argumentsRegex + ")*[)])? />", result.replace("\\", "\\\\").replace("$", "\\$"));
-//        }
-//        return input;
-//    }
-
     public static String[] generateTagStartEnd(Tag tagObj) {
         String[] tag = new String[2];
         ArrayList<String> args = new ArrayList<>();
@@ -555,70 +531,6 @@ public class Convertors {
         }
         return tag;
     }
-
-//    public static ArrayList<String> parseArguments(String arguments) {
-//        if (arguments.length() == 0) {
-//            return new ArrayList<>();
-//        }
-//        arguments = arguments.substring(1, arguments.length() - 1);
-//        String argument1;
-//        String argument2;
-//        String argument3;
-//        String argument4;
-//        ArrayList<String> convertedArgs = new ArrayList<>();
-//        String regex = "(" + argumentsRegex + ")(," + argumentsRegex + ")?(," + argumentsRegex + ")?(," + argumentsRegex + ")?";
-//        Matcher m = Pattern.compile(regex).matcher(arguments);
-//        if (m.find()) {
-//            argument1 = m.group(1);
-//            argument2 = m.group(2);
-//            argument3 = m.group(3);
-//            argument4 = m.group(4);
-//            if (argument1 != null) {
-//                String chr = "" + argument1.charAt(0);
-//                if (chr.equals("'") || chr.equals("\"")) {
-//                    argument1 = argument1.substring(1, argument1.length() - 1);
-//                    argument1 = argument1.replace("\\'", "'").replace("\\\"", "\"");
-//                    convertedArgs.add(decode_js_string(argument1));
-//                } else {
-//                    convertedArgs.add(argument1);
-//                }
-//            }
-//            if (argument2 != null) {
-//                argument2 = argument2.substring(1);
-//                String chr = "" + argument2.charAt(0);
-//                if (chr.equals("'") || chr.equals("\"")) {
-//                    argument2 = argument2.substring(1, argument2.length() - 1);
-//                    argument2 = argument2.replace("\\'", "'").replace("\\\"", "\"");
-//                    convertedArgs.add(decode_js_string(argument2));
-//                } else {
-//                    convertedArgs.add(argument2);
-//                }
-//            }
-//            if (argument3 != null) {
-//                argument3 = argument3.substring(1);
-//                String chr = "" + argument3.charAt(0);
-//                if (chr.equals("'") || chr.equals("\"")) {
-//                    argument3 = argument3.substring(1, argument3.length() - 1);
-//                    argument3 = argument3.replace("\\'", "'").replace("\\\"", "\"");
-//                    convertedArgs.add(decode_js_string(argument3));
-//                } else {
-//                    convertedArgs.add(argument3);
-//                }
-//            }
-//            if (argument4 != null) {
-//                argument4 = argument4.substring(1);
-//                String chr = "" + argument4.charAt(0);
-//                if (chr.equals("'") || chr.equals("\"")) {
-//                    argument4 = argument4.substring(1, argument4.length() - 1);
-//                    argument4 = argument4.replace("\\'", "'").replace("\\\"", "\"");
-//                    convertedArgs.add(decode_js_string(argument4));
-//                } else {
-//                    convertedArgs.add(argument4);
-//                }
-//            }
-//        }
-//        return convertedArgs;
-//    }
 
     /**
      * Recursive conversion, ensuring tags are properly matched.
@@ -729,9 +641,9 @@ public class Convertors {
 
         //Take the first item from the queue.
         Element element = elements.remove();
-        if(element instanceof Element.TextElement){ //Text element, add it to our textBuffer
+        if(element instanceof Element.TextElement){ //Text element, add it to our stack
             stack.push((element));
-        }else if(element instanceof Element.SelfClosingTag){ //Self closing tag. Just add its output to textbuffer.
+        }else if(element instanceof Element.SelfClosingTag){ //Self closing tag. Add its output as a TextElement to our stack.
             Element.SelfClosingTag selfClosingTag = (Element.SelfClosingTag) element;
             String tagOutput = callTag(variables, customTags, selfClosingTag.getIdentifier(), "", selfClosingTag.getArguments());
             stack.push(new Element.TextElement(tagOutput));
@@ -746,12 +658,12 @@ public class Convertors {
                 Element startTag = stack.pop();
                 Element.EndTag endTag = (Element.EndTag) element;
 
-                //If we weren't expecting this end tag, e.g. doesn't match the last open tag
+                //Look through our stack until we find the matching opening tag, and add interim items to a processing stack
                 while (!(startTag instanceof Element.StartTag) || !((Element.StartTag) startTag).getIdentifier().equalsIgnoreCase(endTag.getIdentifier())){
                     siftStack.push(startTag);
                     startTag = stack.pop();
                 }
-                //We found a matching start tag!
+                //We found the matching start tag!
                 //All the items on the sift stack should be treated as text, so add them to the text buffer.
                 StringBuilder sb = new StringBuilder();
                 while(!siftStack.empty()){
@@ -762,7 +674,7 @@ public class Convertors {
                 return callTag(variables, customTags, ((Element.StartTag) startTag).getIdentifier(), sb.toString(), ((Element.StartTag) startTag).getArguments());
             }catch (EmptyStackException ex){
                 //Looked through the whole stack and didn't find a matching open tag. Must be a rogue close tag instead.
-                //In this case, add items we removed back to the stack, and just treat the close tag as text, and add it to the text buffer.
+                //In this case, add items we removed, and the textual representation of the close tag, back to the stack.
                 while(!siftStack.empty()){
                     stack.push(siftStack.pop());
                 }
@@ -773,83 +685,6 @@ public class Convertors {
         return weakConvert(variables, customTags, stack, elements);
     }
 
-    /*public static String convert(JSONArray customTags, String input){
-        return convert(new HashMap<>(), customTags, input);
-    }
-
-    private static String convert(HashMap<String, String> variableMap, JSONArray customTags, String input) {
-        if (input.contains("<@loop_")) {
-            input = convertLoops(variableMap, customTags, input);
-        }
-        if (input.contains("<@set_")) {
-            input = convertSetVariables(variableMap, customTags, input);
-        }
-        if (input.contains(" />")) {
-            input = convertNoInputTags(variableMap, customTags, input);
-        }
-        String output = input;
-        List<String> allMatches = new ArrayList<>();
-        Matcher m = Pattern.compile("<@/([\\w\\d\\-]+(?:_\\d+)?)>").matcher(input);
-        while (m.find()) {
-            allMatches.add(m.group(1));
-        }
-        for (String tagNameWithID : allMatches) {
-            String code = "";
-            String arguments = "";
-            String tagName = tagNameWithID.replaceAll("_\\d+$", "");
-            m = Pattern.compile("<@" + tagNameWithID + "((?:[(](?:,?" + argumentsRegex + ")*[)])?)>([\\d\\D]*?)<@/" + tagNameWithID + ">").matcher(output);
-            if (m.find()) {
-                arguments = m.group(1);
-                code = m.group(2);
-            }
-            String result = callTag(variableMap, customTags, tagName, code, parseArguments(arguments));
-            output = output.replaceAll("<@" + tagNameWithID + "(?:[(](?:,?" + argumentsRegex + ")*[)])?>[\\d\\D]*?<@/" + tagNameWithID + ">", result.replace("\\", "\\\\").replace("$", "\\$"));
-        }
-        return output;
-    }
-
-    public static String convertSetVariables(HashMap<String, String> variableMap, JSONArray customTags, String input) {
-        String output = input;
-        java.util.List<String> allMatches = new ArrayList<>();
-        Matcher m = Pattern.compile("<@(set_[\\w\\d\\-]+(?:_\\d+)?)>").matcher(input);
-        while (m.find()) {
-            allMatches.add(m.group(1));
-        }
-        for (String tagNameWithID : allMatches) {
-            String code = "";
-            String tagName = tagNameWithID.replaceAll("_\\d+$", "");
-            m = Pattern.compile("<@" + tagNameWithID + ">([\\d\\D]*?)<@/" + tagNameWithID + ">").matcher(output);
-            if (m.find()) {
-                code = m.group(1);
-            }
-            variableMap.put(tagName, convert(variableMap, customTags, code));
-            String result = code.replaceAll("<@/?[\\w\\-]+(?:_\\d+)?(?:[(](?:,?" + argumentsRegex + ")*[)])?(?:\\s/)?>", "");
-            output = output.replaceAll("<@" + tagNameWithID + "(?:[(](?:,?" + argumentsRegex + ")*[)])?>[\\d\\D]*?<@/" + tagNameWithID + ">", result.replace("\\", "\\\\").replace("$", "\\$"));
-        }
-        return output;
-    }
-
-    public static String convertLoops(HashMap<String, String> variableMap, JSONArray customTags, String input) {
-        String output = input;
-        java.util.List<String> allMatches = new ArrayList<>();
-        Matcher m = Pattern.compile("<@(loop_[\\w\\d\\-]+(?:_\\d+)?)((?:[(](?:,?" + argumentsRegex + ")*[)])?)>").matcher(input);
-        while (m.find()) {
-            allMatches.add(m.group(1));
-        }
-        for (String tagNameWithID : allMatches) {
-            String arguments = "";
-            String code = "";
-            String tagName = tagNameWithID.replaceAll("_\\d+$", "");
-            m = Pattern.compile("<@" + tagNameWithID + "((?:[(](?:,?" + argumentsRegex + ")*[)])?)>([\\d\\D]*?)<@/" + tagNameWithID + ">").matcher(output);
-            if (m.find()) {
-                arguments = m.group(1);
-                code = m.group(2);
-            }
-            String result = callTag(variableMap, customTags, tagName, code, parseArguments(arguments));
-            output = output.replaceAll("<@" + tagNameWithID + "(?:[(](?:,?" + argumentsRegex + ")*[)])?>[\\d\\D]*?<@/" + tagNameWithID + ">", result.replace("\\", "\\\\").replace("$", "\\$"));
-        }
-        return output;
-    }*/
 
     static String convertCharset(String input, String to) {
         String output = "";
