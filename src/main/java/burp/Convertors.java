@@ -171,6 +171,14 @@ public class Convertors {
                     try {
                         return charset_convert(output, "UTF-8", tag);
                     } catch (UnsupportedEncodingException e) {
+                        //Not a valid tag. Check for old-style tag with _0 style ids.
+                        if(tag.matches(".*_\\d+$")) {
+                            String tagWithoutID = tag.replaceFirst("_\\d+$", "");
+                            try {
+                                return callTag(variableMap, customTags, tagWithoutID, output, arguments);
+                            } catch (ParseException e1) { }
+                        }
+
                         throw new ParseException("Unsupported Tag \"" + tag + "\"");
                     }
                 }
