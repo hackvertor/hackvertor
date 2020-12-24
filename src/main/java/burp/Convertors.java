@@ -643,7 +643,7 @@ public class Convertors {
         Queue<Element> tagElements;
         try {
             tagElements = HackvertorParser.parse(input);
-            return weakConvert(variables, customTags, "", new Stack<>(), tagElements);
+            return weakConvert(variables, customTags, new Stack<>(), tagElements);
         }catch (Exception e){
             StringWriter sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
@@ -709,7 +709,6 @@ public class Convertors {
      *
      * @param variables
      * @param customTags
-     * @param textBuffer
      * @param stack
      * @param elements
      * @return
@@ -717,55 +716,61 @@ public class Convertors {
      */
     private static String weakConvert(HashMap<String, String> variables,
                                   JSONArray customTags,
-                                  String textBuffer,
-                                  Stack<Element.StartTag> stack,
+                                  Stack<Element> stack,
                                   Queue<Element> elements) throws ParseException{
 
         if(elements.size() == 0) {
-            return textBuffer;
+            StringBuilder sb = new StringBuilder();
+            while(!stack.empty()){
+                sb.insert(0, stack.pop());
+            }
+            return sb.toString();
         }
 
         //Take the first item from the queue.
         Element element = elements.remove();
         if(element instanceof Element.TextElement){ //Text element, add it to our textBuffer
-            textBuffer+= ((Element.TextElement) element).getContent();
+            stack.push((element));
         }else if(element instanceof Element.SelfClosingTag){ //Self closing tag. Just add its output to textbuffer.
             Element.SelfClosingTag selfClosingTag = (Element.SelfClosingTag) element;
             String tagOutput = callTag(variables, customTags, selfClosingTag.getIdentifier(), "", selfClosingTag.getArguments());
-            textBuffer+= tagOutput;
+            stack.push(new Element.TextElement(tagOutput));
         }else if(element instanceof Element.StartTag){ //Start of a conversion.
-            stack.push((Element.StartTag) element);
-            textBuffer+= weakConvert(variables, customTags, "", stack, elements);
+            Stack<Element> newStackContext = new Stack<>();
+            newStackContext.push(element);
+            stack.push(new Element.TextElement(weakConvert(variables, customTags, newStackContext, elements)));
         }else if(element instanceof Element.EndTag){ //End of a conversion. Convert and update textbuffer.
-            Stack<Element.StartTag> siftStack = new Stack<>();
+            Stack<Element> siftStack = new Stack<>();
+
             try {
-                Element.StartTag startTag = stack.pop();
+                Element startTag = stack.pop();
                 Element.EndTag endTag = (Element.EndTag) element;
 
                 //If we weren't expecting this end tag, e.g. doesn't match the last open tag
-                while (!startTag.getIdentifier().equalsIgnoreCase(endTag.getIdentifier())){
+                while (!(startTag instanceof Element.StartTag) || !((Element.StartTag) startTag).getIdentifier().equalsIgnoreCase(endTag.getIdentifier())){
                     siftStack.push(startTag);
                     startTag = stack.pop();
                 }
                 //We found a matching start tag!
                 //All the items on the sift stack should be treated as text, so add them to the text buffer.
+                StringBuilder sb = new StringBuilder();
                 while(!siftStack.empty()){
-                    textBuffer += siftStack.pop().toString();
+                    sb.append(siftStack.pop());
                 }
 
                 //Now we've matched the tag, convert the textbuffer contents.
-                return callTag(variables, customTags, startTag.getIdentifier(), textBuffer, startTag.getArguments());
+                return callTag(variables, customTags, ((Element.StartTag) startTag).getIdentifier(), sb.toString(), ((Element.StartTag) startTag).getArguments());
             }catch (EmptyStackException ex){
                 //Looked through the whole stack and didn't find a matching open tag. Must be a rogue close tag instead.
                 //In this case, add items we removed back to the stack, and just treat the close tag as text, and add it to the text buffer.
                 while(!siftStack.empty()){
                     stack.push(siftStack.pop());
                 }
-                textBuffer += element.toString();
+                stack.add(new Element.TextElement(element.toString()));
             }
         }
 
-        return weakConvert(variables, customTags, textBuffer, stack, elements);
+        return weakConvert(variables, customTags, stack, elements);
     }
 
     /*public static String convert(JSONArray customTags, String input){
