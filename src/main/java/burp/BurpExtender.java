@@ -53,8 +53,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
     public static boolean isNativeTheme;
     public static boolean isDarkTheme;
     public static String argumentsRegex = "(?:0x[a-fA-F0-9]+|\\d+|'(?:\\\\'|[^']*)'|\"(?:\\\\\"|[^\"]*)\")";
-    private static List<String> NATIVE_LOOK_AND_FEELS = Arrays.asList("GTK", "Windows", "Aqua");
-    private static List<String> DARK_THEMES = Arrays.asList("Darcula");
+    private List<String> NATIVE_LOOK_AND_FEELS = Arrays.asList("GTK","Windows","Aqua","FlatLaf - Burp Light");
+    private List<String> DARK_THEMES = Arrays.asList("Darcula","FlatLaf - Burp Dark");
 
     private Hackvertor hackvertor;
     private ExtensionPanel extensionPanel;
@@ -325,7 +325,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
             }
         });
-        //callbacks.printOutput("Look And Feel: "+UIManager.getLookAndFeel().getID()); //For debug purpose
+        callbacks.printOutput("Look And Feel: "+UIManager.getLookAndFeel().getID()); //For debug purpose
         isNativeTheme = NATIVE_LOOK_AND_FEELS.contains(UIManager.getLookAndFeel().getID());
         isDarkTheme = DARK_THEMES.contains(UIManager.getLookAndFeel().getID());
     }
