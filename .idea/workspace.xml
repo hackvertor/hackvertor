@@ -5,10 +5,34 @@
       <artifact name="hackvertor" />
     </artifacts-to-build>
   </component>
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="ALL" />
+  </component>
+  <component name="BranchesTreeState">
+    <expand>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="LOCAL_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:origin" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+    </expand>
+    <select />
+  </component>
   <component name="ChangeListManager">
-    <list default="true" id="7757c1c9-85a7-4326-a693-b026dce334d8" name="Default" comment="Added substring tag">
+    <list default="true" id="7757c1c9-85a7-4326-a693-b026dce334d8" name="Default" comment="Reformat files">
+      <change afterPath="$PROJECT_DIR$/src/main/java/burp/parser/Element.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/burp/parser/Html.jj" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/burp/parser/parser.jj" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/test/java/TestParser.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/burp/BurpExtender.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/burp/BurpExtender.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,30 +49,56 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="HighlightingSettingsPerFile">
-    <setting file="file://$PROJECT_DIR$/src/main/java/burp/BurpExtender.java" root0="FORCE_HIGHLIGHTING" />
+  <component name="MavenImportPreferences">
+    <option name="generalSettings">
+      <MavenGeneralSettings>
+        <option name="mavenHome" value="$APPLICATION_HOME_DIR$/plugins/maven/lib/maven3" />
+      </MavenGeneralSettings>
+    </option>
   </component>
-  <component name="ProjectId" id="1f94BYKe72mOnqOtKHhjGuM94om" />
+  <component name="ProjectId" id="1g2l1QoK8l8nIYywGOgCSsdhPul" />
   <component name="ProjectViewState">
+    <option name="autoscrollFromSource" value="true" />
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent">
-    <property name="com.android.tools.idea.instantapp.provision.ProvisionBeforeRunTaskProvider.myTimeStamp" value="1595616123597" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/pom.xml" />
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="aspect.path.notification.shown" value="true" />
+    <property name="com.android.tools.idea.instantapp.provision.ProvisionBeforeRunTaskProvider.myTimeStamp" value="1587545568181" />
+    <property name="jcc.last.regexp.sample" value="" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../Fantasy/build.gradle" />
     <property name="project.structure.last.edited" value="Artifacts" />
     <property name="project.structure.proportion" value="0.15" />
     <property name="project.structure.side.proportion" value="0.40169132" />
-    <property name="settings.editor.selected.configurable" value="MavenSettings" />
+    <property name="settings.editor.selected.configurable" value="editor.preferences.fonts.default" />
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/src/main/java/burp" />
     </key>
   </component>
-  <component name="RunManager">
+  <component name="RunManager" selected="Application.TestParser">
     <configuration default="true" type="Applet" factoryName="Applet">
       <option name="POLICY_FILE" value="$APPLICATION_HOME_DIR$/bin/appletviewer.policy" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="#org.jetbrains.idea.devkit.run.PluginConfigurationType" factoryName="Plugin">
+      <module name="" />
+      <option name="VM_PARAMETERS" value="-Xmx512m -Xms256m -XX:MaxPermSize=250m -ea" />
+      <option name="PROGRAM_PARAMETERS" />
+      <predefined_log_file id="idea.log" enabled="true" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="TestParser" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="TestParser" />
+      <module name="hackvertor" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
       <method v="2">
         <option name="Make" enabled="true" />
       </method>
@@ -88,16 +138,13 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
-    <configuration default="true" type="#org.jetbrains.idea.devkit.run.PluginConfigurationType">
-      <module name="" />
-      <option name="VM_PARAMETERS" value="-Xmx512m -Xms256m -XX:MaxPermSize=250m -ea" />
-      <option name="PROGRAM_PARAMETERS" />
-      <predefined_log_file enabled="true" id="idea.log" />
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Application.TestParser" />
+      </list>
+    </recent_temporary>
   </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="SvnConfiguration">
     <configuration />
   </component>
@@ -108,6 +155,13 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1506502490999</updated>
+      <workItem from="1597320354218" duration="222000" />
+      <workItem from="1597320586853" duration="12881000" />
+      <workItem from="1597354823475" duration="7695000" />
+      <workItem from="1597391421184" duration="13660000" />
+      <workItem from="1598364704623" duration="167000" />
+      <workItem from="1606302334689" duration="7282000" />
+      <workItem from="1606329164712" duration="4328000" />
     </task>
     <task id="LOCAL-00001" summary="Added repeater style tabs to Hackvertor. Create a charset category and added more tags in encode.">
       <created>1510841192808</created>
@@ -312,113 +366,18 @@
       <option name="project" value="LOCAL" />
       <updated>1588628002970</updated>
     </task>
-    <task id="LOCAL-00030" summary="Fixed buttons">
-      <created>1589203986179</created>
+    <task id="LOCAL-00030" summary="Reformat files">
+      <created>1597320917783</created>
       <option name="number" value="00030" />
       <option name="presentableId" value="LOCAL-00030" />
       <option name="project" value="LOCAL" />
-      <updated>1589203986179</updated>
+      <updated>1597320917783</updated>
     </task>
-    <task id="LOCAL-00031" summary="Added support for parameters in custom tags.">
-      <created>1594468382677</created>
-      <option name="number" value="00031" />
-      <option name="presentableId" value="LOCAL-00031" />
-      <option name="project" value="LOCAL" />
-      <updated>1594468382677</updated>
-    </task>
-    <task id="LOCAL-00032" summary="Fixed tag name input height. Moved decrypt tags into their own category. Added test button for creating tags. Added scroll for code area. Added confirmation when deleting tags.">
-      <created>1595159882366</created>
-      <option name="number" value="00032" />
-      <option name="presentableId" value="LOCAL-00032" />
-      <option name="project" value="LOCAL" />
-      <updated>1595159882366</updated>
-    </task>
-    <task id="LOCAL-00033" summary="Added Hackvertor menu to intruder. Fixed bug where python and javascript tags were assigned to the wrong category.">
-      <created>1595428239704</created>
-      <option name="number" value="00033" />
-      <option name="presentableId" value="LOCAL-00033" />
-      <option name="project" value="LOCAL" />
-      <updated>1595428239704</updated>
-    </task>
-    <task id="LOCAL-00034" summary="Added the ability to edit existing tags.">
-      <created>1595431798564</created>
-      <option name="number" value="00034" />
-      <option name="presentableId" value="LOCAL-00034" />
-      <option name="project" value="LOCAL" />
-      <updated>1595431798564</updated>
-    </task>
-    <task id="LOCAL-00035" summary="Loaded custom tags when right clicking to fix bug where you have to reload Hackvertor to see them.">
-      <created>1597252132041</created>
-      <option name="number" value="00035" />
-      <option name="presentableId" value="LOCAL-00035" />
-      <option name="project" value="LOCAL" />
-      <updated>1597252132041</updated>
-    </task>
-    <task id="LOCAL-00036" summary="Used monospaced font for JTextAreas">
-      <created>1597257627634</created>
-      <option name="number" value="00036" />
-      <option name="presentableId" value="LOCAL-00036" />
-      <option name="project" value="LOCAL" />
-      <updated>1597257627634</updated>
-    </task>
-    <task id="LOCAL-00037" summary="Import/Export tags">
-      <created>1597260550802</created>
-      <option name="number" value="00037" />
-      <option name="presentableId" value="LOCAL-00037" />
-      <option name="project" value="LOCAL" />
-      <updated>1597260550802</updated>
-    </task>
-    <task id="LOCAL-00038" summary="Caught JSON parse error when loading custom tags.">
-      <created>1597261107323</created>
-      <option name="number" value="00038" />
-      <option name="presentableId" value="LOCAL-00038" />
-      <option name="project" value="LOCAL" />
-      <updated>1597261107323</updated>
-    </task>
-    <task id="LOCAL-00039" summary="Allowed Hackvertor variables to be used within JavaScript/Python">
-      <created>1597262070994</created>
-      <option name="number" value="00039" />
-      <option name="presentableId" value="LOCAL-00039" />
-      <option name="project" value="LOCAL" />
-      <updated>1597262070994</updated>
-    </task>
-    <task id="LOCAL-00040" summary="Tried to make variables clearer">
-      <created>1597269021797</created>
-      <option name="number" value="00040" />
-      <option name="presentableId" value="LOCAL-00040" />
-      <option name="project" value="LOCAL" />
-      <updated>1597269021797</updated>
-    </task>
-    <task id="LOCAL-00041" summary="Fixed AES decryption">
-      <created>1605726316428</created>
-      <option name="number" value="00041" />
-      <option name="presentableId" value="LOCAL-00041" />
-      <option name="project" value="LOCAL" />
-      <updated>1605726316428</updated>
-    </task>
-    <task id="LOCAL-00042" summary="Added monospaced font on input/output/hex">
-      <created>1605727262751</created>
-      <option name="number" value="00042" />
-      <option name="presentableId" value="LOCAL-00042" />
-      <option name="project" value="LOCAL" />
-      <updated>1605727262751</updated>
-    </task>
-    <task id="LOCAL-00043" summary="Added report bug/request feature menu">
-      <created>1605727621556</created>
-      <option name="number" value="00043" />
-      <option name="presentableId" value="LOCAL-00043" />
-      <option name="project" value="LOCAL" />
-      <updated>1605727621556</updated>
-    </task>
-    <task id="LOCAL-00044" summary="Added substring tag">
-      <created>1605728503379</created>
-      <option name="number" value="00044" />
-      <option name="presentableId" value="LOCAL-00044" />
-      <option name="project" value="LOCAL" />
-      <updated>1605728503379</updated>
-    </task>
-    <option name="localTasksCounter" value="45" />
+    <option name="localTasksCounter" value="31" />
     <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
   </component>
   <component name="Vcs.Log.History.Properties">
     <option name="COLUMN_ORDER">
@@ -430,7 +389,33 @@
       </list>
     </option>
   </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="oldMeFiltersMigrated" value="true" />
+  </component>
   <component name="VcsManagerConfiguration">
+    <MESSAGE value="Updated gitignore" />
+    <MESSAGE value="Updated group id in pom.xml" />
+    <MESSAGE value="Added auto decoding of xor encryption&#10;Added auto decoding of rotN etc&#10;Detection of English like text using ngrams.&#10;Fixed content-length bug reported by Paul.&#10;Fixed layout issues with the help of Mike.&#10;Added jwt tokens decoding/encoding.&#10;Added single self closing tag support for tags without input.&#10;Added tool tips for tags.&#10;Added support for hex in arguments&#10;Added a bunch of hash algorithms" />
+    <MESSAGE value="Added get xor key tag" />
+    <MESSAGE value="Added ngams class&#10;and .txt files" />
+    <MESSAGE value="Added ngams class&#10;and ngrams .txt files" />
+    <MESSAGE value="Auto decoded hex in auto_decode instead of in xor_decrypt" />
+    <MESSAGE value="Fixed index out of bounds issue when getting the code point for non-ascii text." />
+    <MESSAGE value="Changed percent difference for auto decoding" />
+    <MESSAGE value="Auto generated encoding tags when auto decoded.&#10;Added convert tags menu option and auto decode and convert&#10;Default decrypt xor to key length of 3&#10;Detected when keylength is not sent in xor decrypt&#10;Added some guessing when there is a small amount of ciphertext in xor decryption" />
+    <MESSAGE value="Added version number for maven plugin" />
+    <MESSAGE value="Added loads of charset tags to make it easier to convert to them. Added auto decode without decryption to avoid misidentifying encrypted data and produce better auto decoding. Changed auto decode and convert to use auto decoder without decryption. Added clipboard detection to auto decode and convert your clipboard when switching to the tab." />
+    <MESSAGE value="Upgraded vulnerable Apache commons compress. Added JWT none algo. Fixed tag menu to be sorted numerically and alpha and added scrollbars. Looked for existing HV tags in clipboard before deciding to decode automatically." />
+    <MESSAGE value="Added MenuScroller" />
     <MESSAGE value="Created MessageEditor tab. Fixed bug where autodecode_no_decrypt would decrypt rotN. Fixed bug where global instance of Hackvertor would interfere with other instances. Fixed payload processor bug." />
     <MESSAGE value="Added the ability to execute Python/JavaScript from tags. Disabled by default for obvious reasons." />
     <MESSAGE value="Caught exceptions when the output isn't set. Checked for NULL PTR." />
@@ -441,46 +426,58 @@
     <MESSAGE value="Removed border of button when in dark mode." />
     <MESSAGE value="Removed code argument from custom tags" />
     <MESSAGE value="Improved AES encrypt/decrypt to handle custom IV and key length" />
-    <MESSAGE value="Fixed buttons" />
-    <MESSAGE value="Added support for parameters in custom tags." />
-    <MESSAGE value="Fixed tag name input height. Moved decrypt tags into their own category. Added test button for creating tags. Added scroll for code area. Added confirmation when deleting tags." />
-    <MESSAGE value="Added Hackvertor menu to intruder. Fixed bug where python and javascript tags were assigned to the wrong category." />
-    <MESSAGE value="Added the ability to edit existing tags." />
-    <MESSAGE value="Loaded custom tags when right clicking to fix bug where you have to reload Hackvertor to see them." />
-    <MESSAGE value="Used monospaced font for JTextAreas" />
-    <MESSAGE value="Import/Export tags" />
-    <MESSAGE value="Caught JSON parse error when loading custom tags." />
-    <MESSAGE value="Allowed Hackvertor variables to be used within JavaScript/Python" />
-    <MESSAGE value="Tried to make variables clearer" />
-    <MESSAGE value="Fixed AES decryption" />
-    <MESSAGE value="Added monospaced font on input/output/hex" />
-    <MESSAGE value="Added report bug/request feature menu" />
-    <MESSAGE value="Added substring tag" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added substring tag" />
+    <MESSAGE value="Reformat files" />
+    <option name="LAST_COMMIT_MESSAGE" value="Reformat files" />
   </component>
   <component name="WindowStateProjectService">
-    <state x="661" y="308" key="CommitChangelistDialog2" timestamp="1605728503244">
-      <screen x="0" y="23" width="2560" height="1417" />
+    <state x="2458" y="751" width="1084" height="711" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1606304218358">
+      <screen x="1080" y="0" width="3840" height="2160" />
     </state>
-    <state x="661" y="298" key="CommitChangelistDialog2/0.23.2560.1366@0.23.2560.1366" timestamp="1597269021627" />
-    <state x="661" y="308" key="CommitChangelistDialog2/0.23.2560.1417@0.23.2560.1417" timestamp="1605728503244" />
-    <state x="404" y="290" width="1360" height="865" key="DiffContextDialog" timestamp="1597334353135">
-      <screen x="0" y="23" width="2560" height="1366" />
+    <state x="2458" y="751" width="1084" height="711" key="#com.intellij.execution.impl.EditConfigurationsDialog/1080.0.3840.2160/0.147.1080.1893/4920.120.1080.1920@1080.0.3840.2160" timestamp="1606304218358" />
+    <state x="2715" y="797" width="560" height="593" key="#com.intellij.ide.util.MemberChooser" timestamp="1606347473207">
+      <screen x="1080" y="0" width="3840" height="2160" />
     </state>
-    <state x="404" y="290" width="1360" height="865" key="DiffContextDialog/0.23.2560.1366@0.23.2560.1366" timestamp="1597334353135" />
-    <state x="881" y="432" key="RollbackChangesDialog" timestamp="1606475959508">
-      <screen x="0" y="23" width="2560" height="1366" />
+    <state x="2715" y="797" width="560" height="593" key="#com.intellij.ide.util.MemberChooser/1080.0.3840.2160/0.147.1080.1893/4920.120.1080.1920@1080.0.3840.2160" timestamp="1606347473207" />
+    <state x="2732" y="899" width="525" height="414" key="#com.intellij.ide.util.TreeClassChooserDialog" timestamp="1606304213889">
+      <screen x="1080" y="0" width="3840" height="2160" />
     </state>
-    <state x="881" y="432" key="RollbackChangesDialog/0.23.2560.1366@0.23.2560.1366" timestamp="1606475959508" />
-    <state x="572" y="304" key="SettingsEditor" timestamp="1600079599700">
-      <screen x="0" y="23" width="2560" height="1366" />
+    <state x="2732" y="899" width="525" height="414" key="#com.intellij.ide.util.TreeClassChooserDialog/1080.0.3840.2160/0.147.1080.1893/4920.120.1080.1920@1080.0.3840.2160" timestamp="1606304213889" />
+    <state x="1823" y="654" width="424" height="484" key="FileChooserDialogImpl" timestamp="1598364866735">
+      <screen x="1080" y="362" width="1920" height="1080" />
     </state>
-    <state x="572" y="304" key="SettingsEditor/0.23.2560.1366@0.23.2560.1366" timestamp="1600079599700" />
-    <state x="684" y="478" key="Vcs.Push.Dialog.v2" timestamp="1605728504667">
-      <screen x="0" y="23" width="2560" height="1417" />
+    <state x="1823" y="654" key="FileChooserDialogImpl/1080.362.1920.1080/0.387.1080.1533/3000.362.1920.1080@1080.362.1920.1080" timestamp="1598364866735" />
+    <state width="3794" height="803" key="GridCell.Tab.0.bottom" timestamp="1606347981717">
+      <screen x="1080" y="0" width="3840" height="2160" />
     </state>
-    <state x="684" y="462" key="Vcs.Push.Dialog.v2/0.23.2560.1366@0.23.2560.1366" timestamp="1597269022982" />
-    <state x="684" y="478" key="Vcs.Push.Dialog.v2/0.23.2560.1417@0.23.2560.1417" timestamp="1605728504667" />
+    <state width="3794" height="803" key="GridCell.Tab.0.bottom/1080.0.3840.2160/0.147.1080.1893/4920.120.1080.1920@1080.0.3840.2160" timestamp="1606347981717" />
+    <state width="3794" height="803" key="GridCell.Tab.0.center" timestamp="1606347981717">
+      <screen x="1080" y="0" width="3840" height="2160" />
+    </state>
+    <state width="3794" height="803" key="GridCell.Tab.0.center/1080.0.3840.2160/0.147.1080.1893/4920.120.1080.1920@1080.0.3840.2160" timestamp="1606347981717" />
+    <state width="3794" height="803" key="GridCell.Tab.0.left" timestamp="1606347981717">
+      <screen x="1080" y="0" width="3840" height="2160" />
+    </state>
+    <state width="3794" height="803" key="GridCell.Tab.0.left/1080.0.3840.2160/0.147.1080.1893/4920.120.1080.1920@1080.0.3840.2160" timestamp="1606347981717" />
+    <state width="3794" height="803" key="GridCell.Tab.0.right" timestamp="1606347981717">
+      <screen x="1080" y="0" width="3840" height="2160" />
+    </state>
+    <state width="3794" height="803" key="GridCell.Tab.0.right/1080.0.3840.2160/0.147.1080.1893/4920.120.1080.1920@1080.0.3840.2160" timestamp="1606347981717" />
+    <state x="2489" y="728" key="SettingsEditor" timestamp="1606302574812">
+      <screen x="1080" y="0" width="3840" height="2160" />
+    </state>
+    <state x="2489" y="728" key="SettingsEditor/1080.0.3840.2160/0.147.1080.1893/4920.120.1080.1920@1080.0.3840.2160" timestamp="1606302574812" />
+    <state x="2694" y="826" width="611" height="534" key="find.popup" timestamp="1606346207702">
+      <screen x="1080" y="0" width="3840" height="2160" />
+    </state>
+    <state x="2694" y="826" width="611" height="534" key="find.popup/1080.0.3840.2160/0.147.1080.1893/4920.120.1080.1920@1080.0.3840.2160" timestamp="1606346207702" />
+    <state x="2690" y="839" width="610" height="509" key="refactoring.ChangeSignatureDialog" timestamp="1606304297920">
+      <screen x="1080" y="0" width="3840" height="2160" />
+    </state>
+    <state x="2690" y="839" width="610" height="509" key="refactoring.ChangeSignatureDialog/1080.0.3840.2160/0.147.1080.1893/4920.120.1080.1920@1080.0.3840.2160" timestamp="1606304297920" />
+    <state x="2663" y="529" width="672" height="678" key="search.everywhere.popup" timestamp="1606303930989">
+      <screen x="1080" y="0" width="3840" height="2160" />
+    </state>
+    <state x="2663" y="529" width="672" height="678" key="search.everywhere.popup/1080.0.3840.2160/0.147.1080.1893/4920.120.1080.1920@1080.0.3840.2160" timestamp="1606303930989" />
   </component>
   <component name="debuggerHistoryManager">
     <expressions id="evaluateExpression">
@@ -495,5 +492,96 @@
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
     </expressions>
+  </component>
+  <component name="masterDetails">
+    <states>
+      <state key="ArtifactsStructureConfigurable.UI">
+        <settings>
+          <artifact-editor />
+          <last-edited>hackvertor</last-edited>
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.40169132" />
+                <option value="0.5" />
+              </list>
+            </option>
+          </splitter-proportions>
+        </settings>
+      </state>
+      <state key="FacetStructureConfigurable.UI">
+        <settings>
+          <last-edited>No facets are configured</last-edited>
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.40169132" />
+              </list>
+            </option>
+          </splitter-proportions>
+        </settings>
+      </state>
+      <state key="GlobalLibrariesConfigurable.UI">
+        <settings>
+          <last-edited>lib</last-edited>
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.40169132" />
+              </list>
+            </option>
+          </splitter-proportions>
+        </settings>
+      </state>
+      <state key="JdkListConfigurable.UI">
+        <settings>
+          <last-edited>1.8</last-edited>
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.40169132" />
+              </list>
+            </option>
+          </splitter-proportions>
+        </settings>
+      </state>
+      <state key="ModuleStructureConfigurable.UI">
+        <settings>
+          <last-edited>hackvertor</last-edited>
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.40169132" />
+                <option value="0.6" />
+              </list>
+            </option>
+          </splitter-proportions>
+        </settings>
+      </state>
+      <state key="ProjectJDKs.UI">
+        <settings>
+          <last-edited>1.8</last-edited>
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.2" />
+              </list>
+            </option>
+          </splitter-proportions>
+        </settings>
+      </state>
+      <state key="ProjectLibrariesConfigurable.UI">
+        <settings>
+          <last-edited>Maven: commons-codec:commons-codec:1.10</last-edited>
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.40169132" />
+              </list>
+            </option>
+          </splitter-proportions>
+        </settings>
+      </state>
+    </states>
   </component>
 </project>
