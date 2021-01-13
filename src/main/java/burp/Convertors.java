@@ -2407,7 +2407,7 @@ public class Convertors {
                 }
             }
 
-            if (Pattern.compile("[A-Z0-9+/]{4,}=*$", Pattern.CASE_INSENSITIVE).matcher(str).find() && str.length() % 4 == 0) {
+            if (Pattern.compile("[A-Z0-9+/]{4,}=*$", Pattern.CASE_INSENSITIVE).matcher(str).find() && str.length() % 4 == 0 && !matched) {
                 test = decode_base32(str);
                 if (Pattern.compile("^[\\x00-\\x7f]+$", Pattern.CASE_INSENSITIVE).matcher(test).find()) {
                     str = test;

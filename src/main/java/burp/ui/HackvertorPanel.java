@@ -42,9 +42,6 @@ public class HackvertorPanel extends JPanel {
         this.outputArea = new JTextArea();
 
         buildPanel(showLogo);
-
-        //TODO Enable again once functionality confirmed...
-        //readClipboardAndDecode();
     }
     
     private void buildPanel(boolean showLogo){
@@ -491,7 +488,7 @@ public class HackvertorPanel extends JPanel {
                 if (data.contains("<@/")) {
                     code = data;
                 } else {
-                    code = "<@auto_decode_no_decrypt_1>" + data + "<@/auto_decode_no_decrypt_1>";
+                    code = "<@auto_decode_no_decrypt>" + data + "<@/auto_decode_no_decrypt>";
                 }
                 String converted = Convertors.weakConvert(new HashMap<>(), hackvertor.getCustomTags(), code);
                 if (!data.equals(converted)) {

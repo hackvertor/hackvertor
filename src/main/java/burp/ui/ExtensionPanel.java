@@ -16,8 +16,16 @@ public class ExtensionPanel extends JTabbedPaneClosable {
 
     public ExtensionPanel(Hackvertor hackvertor){
         this.hackvertor = hackvertor;
+        HackvertorPanel firstPanel = new HackvertorPanel(hackvertor, true);
+        this.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentShown(ComponentEvent e) {
+                firstPanel.readClipboardAndDecode();
+            }
+        });
+
         //TODO Move to HackvertorPanel class
-        this.addTab("1", new HackvertorPanel(hackvertor, true));
+        this.addTab("1", firstPanel);
         this.addTab("...", new JPanel());
         this.addChangeListener(new ChangeListener() {
             public void stateChanged(ChangeEvent e) {

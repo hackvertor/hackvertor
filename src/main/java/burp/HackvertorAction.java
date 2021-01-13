@@ -41,7 +41,7 @@ class HackvertorAction extends AbstractAction {
                 //TODO Create and use new hackvertor tag for context menu actions
                 hackvertorPanel.getInputArea().setText(new String(message, StandardCharsets.ISO_8859_1));
             } else {
-                hackvertorPanel.getInputArea().setText("<@auto_decode_no_decrypt_1>" + new String(Arrays.copyOfRange(message, bounds[0], bounds[1]), StandardCharsets.ISO_8859_1).trim() + "<@/auto_decode_no_decrypt_1>");
+                hackvertorPanel.getInputArea().setText("<@auto_decode_no_decrypt>" + new String(Arrays.copyOfRange(message, bounds[0], bounds[1]), StandardCharsets.ISO_8859_1).trim() + "<@/auto_decode_no_decrypt>");
             }
             extensionPanel.makeActiveBurpTab();
         }
