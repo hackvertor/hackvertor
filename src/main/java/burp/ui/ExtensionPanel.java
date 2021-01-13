@@ -16,16 +16,19 @@ public class ExtensionPanel extends JTabbedPaneClosable {
 
     public ExtensionPanel(Hackvertor hackvertor){
         this.hackvertor = hackvertor;
-        HackvertorPanel firstPanel = new HackvertorPanel(hackvertor, true);
         this.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentShown(ComponentEvent e) {
-                firstPanel.readClipboardAndDecode();
+                if (ExtensionPanel.this.getSelectedIndex() == -1) {
+                    return;
+                }
+                HackvertorPanel selectedPanel = (HackvertorPanel) getComponentAt(ExtensionPanel.this.getSelectedIndex());
+                selectedPanel.readClipboardAndDecode();
             }
         });
 
         //TODO Move to HackvertorPanel class
-        this.addTab("1", firstPanel);
+        this.addTab("1", new HackvertorPanel(hackvertor, true));
         this.addTab("...", new JPanel());
         this.addChangeListener(new ChangeListener() {
             public void stateChanged(ChangeEvent e) {
@@ -43,7 +46,7 @@ public class ExtensionPanel extends JTabbedPaneClosable {
                 }
                 if (ExtensionPanel.this.getTitleAt(ExtensionPanel.this.getSelectedIndex()).equals("...")) {
                     tabCounter++;
-                    JPanel panel = new HackvertorPanel(hackvertor, true);
+                    HackvertorPanel panel = new HackvertorPanel(hackvertor, true);
                     ExtensionPanel.this.remove(ExtensionPanel.this.getSelectedIndex());
                     ExtensionPanel.this.addTab(tabCounter + "", panel);
                     ExtensionPanel.this.addTab("...", new JPanel());

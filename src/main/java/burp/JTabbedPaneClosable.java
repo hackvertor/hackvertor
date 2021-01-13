@@ -60,7 +60,7 @@ public class JTabbedPaneClosable extends JTabbedPane {
             c.gridy = 0;
             c.weightx = 0.5;
             c.gridwidth = 1;
-            c.ipadx = 3;
+            c.ipadx = 8;
             final JTextField textField = new JTextField(title);
             textField.setOpaque(false);
             textField.setBackground(new Color(0, 0, 0, 0));
@@ -84,17 +84,13 @@ public class JTabbedPaneClosable extends JTabbedPane {
                 }
             });
             add(textField, c);
-            JButton button = new JButton(MetalIconFactory.getInternalFrameCloseIcon(1));
-            button.setFont(new Font("Courier", Font.PLAIN, 5));
-            button.setPreferredSize(new Dimension(5, 5));
-            button.setBorderPainted(false);
-            button.setFocusPainted(false);
-            button.setContentAreaFilled(false);
-            button.setMargin(new Insets(0, 0, 0, 0));
-            button.setBorder(null);
-            button.addMouseListener(new CloseListener(tab));
+            JLabel close = new JLabel("x");
+            close.setFont(new Font("Courier", Font.PLAIN, 10));
+            close.setPreferredSize(new Dimension(10, 10));
+            close.setBorder(null);
+            close.addMouseListener(new CloseListener(tab));
             c.gridx = 1;
-            add(button, c);
+            add(close, c);
         }
     }
 
@@ -107,8 +103,8 @@ public class JTabbedPaneClosable extends JTabbedPane {
 
         @Override
         public void mouseClicked(MouseEvent e) {
-            if (e.getSource() instanceof JButton) {
-                JButton clickedButton = (JButton) e.getSource();
+            if (e.getSource() instanceof JLabel) {
+                JLabel clickedButton = (JLabel) e.getSource();
                 JTabbedPaneClosable tabbedPane = (JTabbedPaneClosable) clickedButton.getParent().getParent().getParent();
                 clickedDelete = true;
                 tabbedPane.remove(tab);
