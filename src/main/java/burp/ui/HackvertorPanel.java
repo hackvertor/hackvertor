@@ -482,6 +482,9 @@ public class HackvertorPanel extends JPanel {
     public void readClipboardAndDecode() {
         try {
             String data = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
+            if(data.length() > 10000) {
+                return;
+            }
             String inputValue = inputArea.getText();
             if (inputValue.length() == 0 && !data.contains(tagCodeExecutionKey)) {
                 String code;
