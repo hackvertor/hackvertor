@@ -657,6 +657,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 } else {
                     createCustomTag(tagName, language, code, argument1, argument1Combo.getSelectedItem().toString(), argument1DefaultValue, argument2, argument2Combo.getSelectedItem().toString(), argument2DefaultValue, numberOfArgs);
                 }
+                extensionPanel.refresh();
                 createTagWindow.dispose();
             }
         });
@@ -753,6 +754,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                     break;
                 }
             }
+            extensionPanel.refresh();
         });
         if (!isNativeTheme && !isDarkTheme) {
             deleteButton.setBackground(Color.decode("#005a70"));

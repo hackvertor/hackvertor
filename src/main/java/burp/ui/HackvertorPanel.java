@@ -34,6 +34,7 @@ public class HackvertorPanel extends JPanel {
     private final Hackvertor hackvertor;
     private final JTextArea inputArea;
     private final JTextArea outputArea;
+    private JTabbedPane tabs;
     
     public HackvertorPanel(Hackvertor hackvertor, boolean showLogo){
         super(new GridBagLayout());
@@ -43,9 +44,13 @@ public class HackvertorPanel extends JPanel {
 
         buildPanel(showLogo);
     }
-    
+
+    public JTabbedPane getTabs() {
+        return tabs;
+    }
+
     private void buildPanel(boolean showLogo){
-        JTabbedPane tabs = buildTabbedPane();
+        tabs = buildTabbedPane();
         JPanel topBar = new JPanel(new GridBagLayout());
         topBar.setPreferredSize(new Dimension(-1, 110));
         topBar.setMinimumSize(new Dimension(-1, 110));
@@ -454,7 +459,7 @@ public class HackvertorPanel extends JPanel {
         this.add(hexScroll, c);
     }
 
-    private JTabbedPane buildTabbedPane(){
+    public JTabbedPane buildTabbedPane(){
         JTabbedPane tabs = new JTabbedPane();
 
         for (int i = 0; i < Tag.Category.values().length; i++) {
