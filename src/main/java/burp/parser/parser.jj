@@ -1,0 +1,198 @@
+/**
+*
+*/
+
+options {
+  IGNORE_CASE = true;
+  STATIC = false;
+  DEBUG_TOKEN_MANAGER = false;
+}
+
+PARSER_BEGIN(HackvertorParser)
+package burp.parser;
+
+import java.io.StringReader;
+import java.util.LinkedList;
+import java.util.ArrayList;
+import org.unbescape.java.JavaEscape;
+
+public class HackvertorParser {
+
+    private static String getTokenText(Token first, Token cur) {
+    Token t;
+    StringBuffer sb = new StringBuffer();
+
+    for (t=first; t != cur.next; t = t.next) {
+      if (t.specialToken != null) {
+        Token tt=t.specialToken;
+        while (tt.specialToken != null)
+          tt = tt.specialToken;
+        for (; tt != null; tt = tt.next)
+          sb.append(tt.image);
+      };
+      sb.append(t.image);
+    };
+    return sb.toString();
+    }
+
+    public static LinkedList<Element> parse(String string) throws ParseException {
+        HackvertorParser parser = new HackvertorParser(new StringReader(string));
+        LinkedList<Element> elementList = parser.Input();
+//        for (Element e : elementList) {
+//            System.out.println(e.getClass() + " - " + e.toString());
+//        }
+        return elementList;
+    }
+}
+
+PARSER_END(HackvertorParser)
+
+TOKEN_MGR_DECLS : {
+  // required by SetState
+  void backup(int n) {
+    input_stream.backup(n);
+  }
+}
+
+<*> SKIP:  { " " | "=\r" | "=\r\n" }
+<*> TOKEN [IGNORE_CASE]: {
+    <#IDENTIFIER:   (["0"-"9", "a"-"z", "A"-"Z","_", "-"])+ >
+    | <#QUOTED_STRING: ( "'" ("\\" ~[] | ~["'", "\\"] )* "'" ) | ( "\"" ("\\" ~[] | ~["\"", "\\"] )* "\"" ) >
+    | <#LITERAL: (["0"-"9", "a"-"z", "A"-"Z", "-", "+", "."])+>
+    | <#WHITESPACE: ( " " | "\t" ) >
+}
+
+<*> TOKEN : {
+    <TAG_START: "<@" >: StartTag
+  | <ENDTAG_START: "<@/" >: StartTag
+}
+
+<DEFAULT> TOKEN: {
+  <TEXT: (~["<"])+> //Anything excluding <
+  | <LESSTHAN: "<">
+}
+
+<StartTag> TOKEN: {
+    <FUNCTION_NAME: <IDENTIFIER> > : InsideTag
+    | <ST_ERR: ~[]> : DEFAULT
+}
+
+//<InsideTag> SPECIAL_TOKEN :
+//{
+//  < (<WHITESPACE>)+ >
+//}
+
+<InsideTag> TOKEN : {
+    <ARGS_START: "("> : Args
+    | <SELF_CLOSE_TAG_END: "/>"> : DEFAULT
+    | <SELF_CLOSE_TAG_END_AT: "@/>"> : DEFAULT
+    | <TAG_END: ">" > : DEFAULT
+    | <IT_ERR: ~[]> : DEFAULT
+}
+
+<Args> TOKEN : {
+    <QUOTED_STRING_VAL: <QUOTED_STRING>>
+    | <LITERAL_VAL: <LITERAL> >
+    | <COMMA: ",">
+    | <ARGS_END: ")"> : InsideTag
+    | <ARG_ERR: ~[]> : DEFAULT
+}
+
+<*> TOKEN : { <UNKNOWN: ~[]> }
+
+LinkedList<Element> Input() :
+{
+    LinkedList<Element> s = new LinkedList<Element>();
+    LinkedList<Element> e;
+}
+{
+    (
+      e = ElementSequence() { s.addAll(e); }
+    )*<EOF>
+
+    { return s; }
+}
+
+LinkedList<Element> ElementSequence() :
+{
+ LinkedList<Element> elements = new LinkedList<Element>();
+ Element e;
+ Token text;
+ Token firstToken = getToken(1);
+}
+{
+    try{
+    elements = StartTag() { return elements; }
+    | elements = CloseTag() { return elements; }
+    | <LESSTHAN> { elements.add(new Element.TextElement("<")); return elements;}
+    | (
+         text = <TEXT> | text = <ST_ERR> | text = <IT_ERR> | text = <ARG_ERR> | text = <QUOTED_STRING_VAL>
+        | text = <LITERAL_VAL> | text = <COMMA> | text = <ARGS_END> | text = <TAG_END> | text = <SELF_CLOSE_TAG_END>
+      ) { elements.add(new Element.TextElement(text.image)); return elements; }
+    }catch(ParseException ex){ //Catch any unexpected inputs including EOF and try to recover
+        token_source.SwitchTo(DEFAULT);
+        elements.addFirst(new Element.TextElement(getTokenText(firstToken, getToken(0))));
+        elements.addAll(ElementSequence());
+        return elements;
+    }
+}
+
+LinkedList<Element> StartTag() :
+{
+    LinkedList<Element> elements = new LinkedList<Element>();
+    ArrayList<String> args = new ArrayList<String>();
+    LinkedList<Element> rest = null;
+    Token t;
+    Token identifier = null;
+    String arg;
+    Token firstToken = getToken(1);
+}
+{
+    try{
+        t=<TAG_START> identifier = <FUNCTION_NAME>
+        [
+
+                <ARGS_START>
+                    [
+                        arg = Argument() {args.add(arg);}
+                        (<COMMA> arg = Argument() {args.add(arg);})*
+                    ]
+                <ARGS_END>
+
+        ]
+        (
+        <TAG_END> {elements.add(new Element.StartTag(identifier.image, args)); return elements;}
+        | (<SELF_CLOSE_TAG_END>|<SELF_CLOSE_TAG_END_AT>) {elements.add(new Element.SelfClosingTag(identifier.image, args)); return elements;}
+        )
+    }catch(ParseException e){
+//        System.out.println("Failed Start tag. Treating as text");
+        elements.addFirst(new Element.TextElement(getTokenText(firstToken, getToken(0))));
+    }
+    [LOOKAHEAD(2) rest = ElementSequence()] { if(rest != null) elements.addAll(rest); return elements; }
+}
+
+String Argument() :
+{
+ Token t;
+}
+{
+    t = <QUOTED_STRING_VAL> {return JavaEscape.unescapeJava(t.image.substring(1, t.image.length() - 1));}
+    | t = <LITERAL_VAL> {return t.image;}
+}
+
+LinkedList<Element> CloseTag() :
+{
+    LinkedList<Element> elements = new LinkedList<Element>();
+    LinkedList<Element> rest = null;
+    Token t;
+    Token firstToken = getToken(1);
+}
+{
+    try{
+        <ENDTAG_START> t=<FUNCTION_NAME> <TAG_END> { elements.add(new Element.EndTag(t.image)); return elements; }
+    }catch(ParseException e){
+//        System.out.println("Failed End tag. Treating as text");
+        elements.addFirst(new Element.TextElement(getTokenText(firstToken, getToken(0))));
+    }
+    [LOOKAHEAD(2) rest = ElementSequence()] { if(rest != null) elements.addAll(rest); return elements; }
+}
