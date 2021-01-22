@@ -6,6 +6,7 @@ options {
   IGNORE_CASE = true;
   STATIC = false;
   DEBUG_TOKEN_MANAGER = false;
+  UNICODE_INPUT = true;
 }
 
 PARSER_BEGIN(HackvertorParser)
