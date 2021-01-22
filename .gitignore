@@ -3,6 +3,7 @@
 bin/
 build/
 target/
+out/
 #intellij
 .idea/
 .classpath/
