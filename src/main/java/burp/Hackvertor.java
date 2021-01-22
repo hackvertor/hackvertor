@@ -54,6 +54,7 @@ public class Hackvertor {
         tags.add(new Tag(Tag.Category.Date, "timestamp", false, "timestamp()"));
         tag = new Tag(Tag.Category.Date, "date", false, "date(String format)");
         tag.argument1 = new TagArgument("string", "yyyy-MM-dd HH:mm:ss");
+        tag.argument2 = new TagArgument("string", "GMT");
         tags.add(tag);
         tag = new Tag(Tag.Category.Encrypt, "aes_encrypt", true, "aes_encrypt(String plaintext, String key, String transformations)");
         tag.argument1 = new TagArgument("string", "supersecret12356");
