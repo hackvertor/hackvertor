@@ -960,6 +960,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         byte[] request = messageInfo.getRequest();
         if (helpers.indexOf(request, helpers.stringToBytes("<@"), true, 0, request.length) > -1) {
             Hackvertor hv = new Hackvertor();
+            hv.setCustomTags(hackvertor.getCustomTags());
             request = helpers.stringToBytes(hv.convert(helpers.bytesToString(request)));
             if (autoUpdateContentLength) {
                 request = fixContentLength(request);
