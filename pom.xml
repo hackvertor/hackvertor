@@ -6,7 +6,7 @@
 
     <groupId>uk.co.hackvertor.hackvertor-burp</groupId>
     <artifactId>hackvertor</artifactId>
-    <version>1.6.0</version>
+    <version>1.6.1</version>
     <dependencies>
         <dependency>
             <groupId>commons-codec</groupId>
@@ -62,6 +62,12 @@
             <groupId>org.python</groupId>
             <artifactId>jython-standalone</artifactId>
             <version>2.7.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>RELEASE</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
     <build>
