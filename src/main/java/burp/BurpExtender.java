@@ -564,7 +564,6 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 tag.put("code", code);
                 JSONObject customTagOptions = new JSONObject();
                 customTagOptions.put("customTag", tag);
-                Hackvertor hv = new Hackvertor();
                 ArrayList<String> args = new ArrayList<>();
                 if (numberOfArgs == 0) {
                     customTagOptions = null;
@@ -959,9 +958,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         }
         byte[] request = messageInfo.getRequest();
         if (helpers.indexOf(request, helpers.stringToBytes("<@"), true, 0, request.length) > -1) {
-            Hackvertor hv = new Hackvertor();
-            hv.setCustomTags(hackvertor.getCustomTags());
-            request = helpers.stringToBytes(hv.convert(helpers.bytesToString(request)));
+            request = helpers.stringToBytes(hackvertor.convert(helpers.bytesToString(request)));
             if (autoUpdateContentLength) {
                 request = fixContentLength(request);
             }
@@ -1038,8 +1035,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
 
         JMenuItem copyUrl = new JMenuItem("Copy URL");
         copyUrl.addActionListener(e -> {
-            Hackvertor hv = new Hackvertor();
-            URL url = helpers.analyzeRequest(invocation.getSelectedMessages()[0].getHttpService(), helpers.stringToBytes(hv.convert(helpers.bytesToString(invocation.getSelectedMessages()[0].getRequest())))).getUrl();
+            String converted = hackvertor.convert(helpers.bytesToString(invocation.getSelectedMessages()[0].getRequest()));
+            URL url = helpers.analyzeRequest(invocation.getSelectedMessages()[0].getHttpService(), helpers.stringToBytes(converted)).getUrl();
             StringSelection stringSelection = null;
             stringSelection = new StringSelection(buildUrl(url));
             Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
@@ -1049,16 +1046,14 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
 
         JMenuItem convert = new JMenuItem("Convert tags");
         convert.addActionListener(e -> {
-            Hackvertor hv = new Hackvertor();
             if (invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST || invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
                 byte[] message = invocation.getSelectedMessages()[0].getRequest();
-                invocation.getSelectedMessages()[0].setRequest(helpers.stringToBytes(hv.convert(helpers.bytesToString(message))));
+                invocation.getSelectedMessages()[0].setRequest(helpers.stringToBytes(hackvertor.convert(helpers.bytesToString(message))));
             }
         });
         submenu.add(convert);
         JMenuItem autodecodeConvert = new JMenuItem("Auto decode & Convert");
         autodecodeConvert.addActionListener(e -> {
-            Hackvertor hv = new Hackvertor();
             if (invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST || invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
                 byte[] message = invocation.getSelectedMessages()[0].getRequest();
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -1074,7 +1069,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                     System.err.println(e1.toString());
                 }
                 message = invocation.getSelectedMessages()[0].getRequest();
-                invocation.getSelectedMessages()[0].setRequest(helpers.stringToBytes(hv.convert(helpers.bytesToString(message))));
+                invocation.getSelectedMessages()[0].setRequest(helpers.stringToBytes(hackvertor.convert(helpers.bytesToString(message))));
             }
         });
         submenu.add(autodecodeConvert);
