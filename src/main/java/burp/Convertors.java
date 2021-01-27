@@ -218,7 +218,7 @@ public class Convertors {
             case "timestamp":
                 return timestamp();
             case "date":
-                return date(getString(arguments, 0));
+                return date(getString(arguments, 0), getString(arguments, 1));
             case "html_entities":
                 return html_entities(output);
             case "d_html_entities":
@@ -860,9 +860,10 @@ public class Convertors {
         return unixTime + "";
     }
 
-    static String date(String format) {
+    static String date(String format, String timezone) {
         try {
             SimpleDateFormat dateF = new SimpleDateFormat(format);
+            dateF.setTimeZone(TimeZone.getTimeZone(timezone));
             Date now = new Date();
             return dateF.format(now);
         } catch (IllegalArgumentException e) {
