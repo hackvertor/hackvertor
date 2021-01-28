@@ -58,7 +58,6 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import static burp.BurpExtender.*;
-import static burp.BurpExtender.tagCodeExecutionKey;
 
 public class Convertors {
 
@@ -166,7 +165,7 @@ public class Convertors {
                     return output;
                 }else if(tag.startsWith("get_")){ //Backwards compatibility with previous get_VARNAME tag format
                     String varname = tag.replace("get_","");
-                    return variableMap.getOrDefault(varname, StringUtils.isEmpty(output) ? "UNDEFINED" : output);
+                    return variableMap.getOrDefault(varname, StringUtils.isEmpty(output) ? null : output);
                 } else {
                     try {
                         return charset_convert(output, "UTF-8", tag);
@@ -634,7 +633,15 @@ public class Convertors {
         if(elements.size() == 0) {
             StringBuilder sb = new StringBuilder();
             while(!stack.empty()){
-                sb.insert(0, stack.pop());
+
+                Element element = stack.pop();
+                if (element instanceof Element.SelfClosingTag){
+                    Element.SelfClosingTag tag = (Element.SelfClosingTag) element;
+                    String tagOutput = callTag(variables, customTags, tag.getIdentifier(), "", tag.getArguments());
+                    sb.insert(0, tagOutput==null?"UNDEFINED":tagOutput);
+                }else{
+                    sb.insert(0, element);
+                }
             }
             return sb.toString();
         }
@@ -646,7 +653,7 @@ public class Convertors {
         }else if(element instanceof Element.SelfClosingTag){ //Self closing tag. Add its output as a TextElement to our stack.
             Element.SelfClosingTag selfClosingTag = (Element.SelfClosingTag) element;
             String tagOutput = callTag(variables, customTags, selfClosingTag.getIdentifier(), "", selfClosingTag.getArguments());
-            stack.push(new Element.TextElement(tagOutput));
+            stack.push(tagOutput==null?selfClosingTag:new Element.TextElement(tagOutput));
         }else if(element instanceof Element.StartTag){ //Start of a conversion.
             Stack<Element> newStackContext = new Stack<>();
             newStackContext.push(element);
