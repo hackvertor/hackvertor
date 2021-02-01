@@ -58,6 +58,7 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import static burp.BurpExtender.*;
+import static burp.BurpExtender.tagCodeExecutionKey;
 
 public class Convertors {
 
@@ -633,7 +634,6 @@ public class Convertors {
         if(elements.size() == 0) {
             StringBuilder sb = new StringBuilder();
             while(!stack.empty()){
-
                 Element element = stack.pop();
                 if (element instanceof Element.SelfClosingTag){
                     Element.SelfClosingTag tag = (Element.SelfClosingTag) element;
