@@ -2732,7 +2732,18 @@ public class Convertors {
             if (code.endsWith(".py")) {
                 pythonInterpreter.execfile(code);
             } else {
-                pythonInterpreter.exec(code);
+                String initCode = "import sys\n" +
+                "from burp import BurpExtender\n" +
+                "class StreamWrapper(object):\n" +
+                "   def __init__(self, wrapped):\n" +
+                "       self.__wrapped = wrapped\n" +
+                "   def __getattr__(self, name):\n" +
+                "       return getattr(self.__wrapped, name)\n" +
+                "   def write(self, text):\n" +
+                "       BurpExtender.print(text)\n" +
+                "orig_stdout = sys.stdout\n" +
+                "sys.stdout = StreamWrapper(orig_stdout)\n";
+                pythonInterpreter.exec(initCode + code);
             }
             PyObject output = pythonInterpreter.get("output");
             if (output != null) {

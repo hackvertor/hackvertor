@@ -19,7 +19,6 @@ import java.net.*;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.lang.reflect.Method;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -136,11 +135,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         return tag;
     }
 
-    private JPanel generateBlankPanel() {
-        JPanel blankPanel = new JPanel();
-        blankPanel.setMaximumSize(new Dimension(0, 0));
-        blankPanel.setVisible(false);
-        return blankPanel;
+    public static void print(String s){
+        System.out.print(s);
+        callbacks.printOutput(s);
     }
 
     private String generateRandomCodeExecutionKey() {
