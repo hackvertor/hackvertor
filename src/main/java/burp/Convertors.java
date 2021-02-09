@@ -8,8 +8,11 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.EncoderException;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.codec.net.QuotedPrintableCodec;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorOutputStream;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
@@ -271,6 +274,10 @@ public class Convertors {
                 return substitution_decrypt(output, getString(arguments, 0));
             case "jwt":
                 return jwt(output, getString(arguments, 0), getString(arguments, 1));
+            case "quoted_printable":
+                return quoted_printable(output);
+            case "d_quoted_printable":
+                return d_quoted_printable(output);
             case "auto_decode":
                 return auto_decode(output);
             case "auto_decode_no_decrypt":
@@ -1166,6 +1173,23 @@ public class Convertors {
         return JavaScriptEscape.escapeJavaScript(str, JavaScriptEscapeType.UHEXA, JavaScriptEscapeLevel.LEVEL_4_ALL_CHARACTERS);
     }
 
+    static String quoted_printable(String str) {
+        QuotedPrintableCodec codec = new QuotedPrintableCodec();
+        try {
+            return codec.encode(str);
+        } catch (EncoderException e) {
+            return "Error encoding:"+e.toString();
+        }
+    }
+
+    static String d_quoted_printable(String str) {
+        QuotedPrintableCodec codec = new QuotedPrintableCodec();
+        try {
+            return codec.decode(str);
+        } catch (DecoderException e) {
+            return "Error decoding:"+e.toString();
+        }
+    }
     static String php_non_alpha(String input) {
         String converted = "";
         converted += "$_[]++;$_[]=$_._;";
