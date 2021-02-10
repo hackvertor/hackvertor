@@ -562,6 +562,7 @@ public class Convertors {
         Queue<Element> tagElements;
         try {
             tagElements = HackvertorParser.parse(input);
+            tagElements = weakConvertProcessSetTags(variables, customTags, tagElements);
             return weakConvert(variables, customTags, new Stack<>(), tagElements);
         }catch (Exception e){
             StringWriter sw = new StringWriter();
@@ -624,6 +625,46 @@ public class Convertors {
         return convert(variables, customTags, textBuffer, stack, elements);
     }
 
+    private static Queue<Element> weakConvertProcessSetTags(HashMap<String, String> variables,
+                                                            JSONArray customTags,
+                                                            Queue<Element> elements) throws ParseException{
+        Queue<Element> elementQueue = new LinkedList<>();
+        Iterator<Element> iter = elements.iterator();
+        while(iter.hasNext()) {
+            Element element = iter.next();
+            if (element instanceof Element.StartTag) {
+                Element.StartTag startSetTag = (Element.StartTag) element;
+                if (startSetTag.getIdentifier().equalsIgnoreCase("set")
+                        || startSetTag.getIdentifier().startsWith("set_")) {
+                    //We're processing the contents of a set tag.
+                    Queue<Element> setQueue = new LinkedList<>();
+                    while (iter.hasNext()){
+                        element = iter.next();
+                        if(element instanceof Element.EndTag &&
+                                ((Element.EndTag) element).getIdentifier().equalsIgnoreCase(startSetTag.getIdentifier())){
+                            //We've got the matching end tag.
+                            String output = weakConvert(variables, customTags, new Stack<>(), setQueue);
+                            setQueue.clear();
+                            elementQueue.add(new Element.TextElement(output));
+                            break;
+                        }else{
+                            setQueue.add(element);
+                        }
+                    }
+                    if(!setQueue.isEmpty()){ //If we didn't find the matching close tag.
+                        elementQueue.add(startSetTag);
+                        elementQueue.addAll(setQueue);
+                    }
+                }else{
+                    elementQueue.add(element);
+                }
+            }else{
+                elementQueue.add(element);
+            }
+        }
+        return elementQueue;
+    }
+
     /**
      *
      * @param variables
@@ -641,14 +682,7 @@ public class Convertors {
         if(elements.size() == 0) {
             StringBuilder sb = new StringBuilder();
             while(!stack.empty()){
-                Element element = stack.pop();
-                if (element instanceof Element.SelfClosingTag){
-                    Element.SelfClosingTag tag = (Element.SelfClosingTag) element;
-                    String tagOutput = callTag(variables, customTags, tag.getIdentifier(), "", tag.getArguments());
-                    sb.insert(0, tagOutput==null?"UNDEFINED":tagOutput);
-                }else{
-                    sb.insert(0, element);
-                }
+                sb.insert(0, stack.pop());
             }
             return sb.toString();
         }
@@ -660,7 +694,7 @@ public class Convertors {
         }else if(element instanceof Element.SelfClosingTag){ //Self closing tag. Add its output as a TextElement to our stack.
             Element.SelfClosingTag selfClosingTag = (Element.SelfClosingTag) element;
             String tagOutput = callTag(variables, customTags, selfClosingTag.getIdentifier(), "", selfClosingTag.getArguments());
-            stack.push(tagOutput==null?selfClosingTag:new Element.TextElement(tagOutput));
+            stack.push(new Element.TextElement(tagOutput));
         }else if(element instanceof Element.StartTag){ //Start of a conversion.
             Stack<Element> newStackContext = new Stack<>();
             newStackContext.push(element);
