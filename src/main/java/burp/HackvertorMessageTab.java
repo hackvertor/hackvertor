@@ -11,35 +11,35 @@ import java.awt.event.ComponentEvent;
 
 public class HackvertorMessageTab implements IMessageEditorTab {
     private final JPanel hackvertorContainer = new JPanel(new BorderLayout());
-    private final HackvertorPanel hackvertorPanel;
+    private HackvertorPanel hackvertorPanel;
 
     private byte[] currentMessage;
     private Boolean changed = false;
 
     public HackvertorMessageTab(Hackvertor hackvertor) {
-        hackvertorPanel = new HackvertorPanel(hackvertor, false);
-        hackvertorPanel.getInputArea().getDocument().addDocumentListener(new DocumentListener() {
-            @Override
-            public void insertUpdate(DocumentEvent e) {
-                changed = true;
-            }
-
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                changed = true;
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent e) {
-                changed = true;
-            }
-        });
-        hackvertorContainer.add(hackvertorPanel);
         hackvertorContainer.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentShown(ComponentEvent e) {
                 SwingUtilities.invokeLater(new Runnable() {
                     public void run() {
+                        hackvertorPanel = new HackvertorPanel(hackvertor, false);
+                        hackvertorPanel.getInputArea().getDocument().addDocumentListener(new DocumentListener() {
+                            @Override
+                            public void insertUpdate(DocumentEvent e) {
+                                changed = true;
+                            }
+
+                            @Override
+                            public void removeUpdate(DocumentEvent e) {
+                                changed = true;
+                            }
+
+                            @Override
+                            public void changedUpdate(DocumentEvent e) {
+                                changed = true;
+                            }
+                        });
+                        hackvertorContainer.add(hackvertorPanel);
                         if (currentMessage != null) {
                             hackvertorPanel.getInputArea().setText(BurpExtender.helpers.bytesToString(currentMessage));
                         }
