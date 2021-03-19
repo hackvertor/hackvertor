@@ -638,8 +638,10 @@ public class Convertors {
                         || startSetTag.getIdentifier().startsWith("set_")) {
                     //We're processing the contents of a set tag.
                     Queue<Element> setQueue = new LinkedList<>();
+                    setQueue.add(startSetTag);
                     while (iter.hasNext()){
                         element = iter.next();
+                        setQueue.add(element);
                         if(element instanceof Element.EndTag &&
                                 ((Element.EndTag) element).getIdentifier().equalsIgnoreCase(startSetTag.getIdentifier())){
                             //We've got the matching end tag.
@@ -647,8 +649,6 @@ public class Convertors {
                             setQueue.clear();
                             elementQueue.add(new Element.TextElement(output));
                             break;
-                        }else{
-                            setQueue.add(element);
                         }
                     }
                     if(!setQueue.isEmpty()){ //If we didn't find the matching close tag.
