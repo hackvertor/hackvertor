@@ -8,8 +8,11 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.EncoderException;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.codec.net.QuotedPrintableCodec;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorOutputStream;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
@@ -166,7 +169,7 @@ public class Convertors {
                     return output;
                 }else if(tag.startsWith("get_")){ //Backwards compatibility with previous get_VARNAME tag format
                     String varname = tag.replace("get_","");
-                    return variableMap.getOrDefault(varname, StringUtils.isEmpty(output) ? "UNDEFINED" : output);
+                    return variableMap.getOrDefault(varname, StringUtils.isEmpty(output) ? null : output);
                 } else {
                     try {
                         return charset_convert(output, "UTF-8", tag);
@@ -271,6 +274,10 @@ public class Convertors {
                 return substitution_decrypt(output, getString(arguments, 0));
             case "jwt":
                 return jwt(output, getString(arguments, 0), getString(arguments, 1));
+            case "quoted_printable":
+                return quoted_printable(output);
+            case "d_quoted_printable":
+                return d_quoted_printable(output);
             case "auto_decode":
                 return auto_decode(output);
             case "auto_decode_no_decrypt":
@@ -555,6 +562,7 @@ public class Convertors {
         Queue<Element> tagElements;
         try {
             tagElements = HackvertorParser.parse(input);
+            tagElements = weakConvertProcessSetTags(variables, customTags, tagElements);
             return weakConvert(variables, customTags, new Stack<>(), tagElements);
         }catch (Exception e){
             StringWriter sw = new StringWriter();
@@ -615,6 +623,46 @@ public class Convertors {
         }
 
         return convert(variables, customTags, textBuffer, stack, elements);
+    }
+
+    private static Queue<Element> weakConvertProcessSetTags(HashMap<String, String> variables,
+                                                            JSONArray customTags,
+                                                            Queue<Element> elements) throws ParseException{
+        Queue<Element> elementQueue = new LinkedList<>();
+        Iterator<Element> iter = elements.iterator();
+        while(iter.hasNext()) {
+            Element element = iter.next();
+            if (element instanceof Element.StartTag) {
+                Element.StartTag startSetTag = (Element.StartTag) element;
+                if (startSetTag.getIdentifier().equalsIgnoreCase("set")
+                        || startSetTag.getIdentifier().startsWith("set_")) {
+                    //We're processing the contents of a set tag.
+                    Queue<Element> setQueue = new LinkedList<>();
+                    setQueue.add(startSetTag);
+                    while (iter.hasNext()){
+                        element = iter.next();
+                        setQueue.add(element);
+                        if(element instanceof Element.EndTag &&
+                                ((Element.EndTag) element).getIdentifier().equalsIgnoreCase(startSetTag.getIdentifier())){
+                            //We've got the matching end tag.
+                            String output = weakConvert(variables, customTags, new Stack<>(), setQueue);
+                            setQueue.clear();
+                            elementQueue.add(new Element.TextElement(output));
+                            break;
+                        }
+                    }
+                    if(!setQueue.isEmpty()){ //If we didn't find the matching close tag.
+                        elementQueue.add(startSetTag);
+                        elementQueue.addAll(setQueue);
+                    }
+                }else{
+                    elementQueue.add(element);
+                }
+            }else{
+                elementQueue.add(element);
+            }
+        }
+        return elementQueue;
     }
 
     /**
@@ -1159,6 +1207,23 @@ public class Convertors {
         return JavaScriptEscape.escapeJavaScript(str, JavaScriptEscapeType.UHEXA, JavaScriptEscapeLevel.LEVEL_4_ALL_CHARACTERS);
     }
 
+    static String quoted_printable(String str) {
+        QuotedPrintableCodec codec = new QuotedPrintableCodec();
+        try {
+            return codec.encode(str);
+        } catch (EncoderException e) {
+            return "Error encoding:"+e.toString();
+        }
+    }
+
+    static String d_quoted_printable(String str) {
+        QuotedPrintableCodec codec = new QuotedPrintableCodec();
+        try {
+            return codec.decode(str);
+        } catch (DecoderException e) {
+            return "Error decoding:"+e.toString();
+        }
+    }
     static String php_non_alpha(String input) {
         String converted = "";
         converted += "$_[]++;$_[]=$_._;";
@@ -2725,7 +2790,18 @@ public class Convertors {
             if (code.endsWith(".py")) {
                 pythonInterpreter.execfile(code);
             } else {
-                pythonInterpreter.exec(code);
+                String initCode = "import sys\n" +
+                "from burp import BurpExtender\n" +
+                "class StreamWrapper(object):\n" +
+                "   def __init__(self, wrapped):\n" +
+                "       self.__wrapped = wrapped\n" +
+                "   def __getattr__(self, name):\n" +
+                "       return getattr(self.__wrapped, name)\n" +
+                "   def write(self, text):\n" +
+                "       BurpExtender.print(text)\n" +
+                "orig_stdout = sys.stdout\n" +
+                "sys.stdout = StreamWrapper(orig_stdout)\n";
+                pythonInterpreter.exec(initCode + code);
             }
             PyObject output = pythonInterpreter.get("output");
             if (output != null) {

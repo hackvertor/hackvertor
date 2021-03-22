@@ -1,7 +1,6 @@
 package burp;
 
 import burp.ui.ExtensionPanel;
-import burp.ui.HackvertorPanel;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONArray;
@@ -16,23 +15,15 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.*;
-import java.io.*;
 import java.net.*;
-import java.nio.charset.Charset;
-import java.security.*;
-import java.text.SimpleDateFormat;
-import java.util.*;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.lang.reflect.Method;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.Security;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
 
 import static burp.Convertors.*;
@@ -97,19 +88,6 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         }
     }
 
-    public static boolean hasMethodAnd1Arg(Object obj, String methodStr) {
-        boolean hasMethod = false;
-        Method[] methods = obj.getClass().getDeclaredMethods();
-        for (Method m : methods) {
-            if (m.getName().equals(methodStr) && m.getParameterTypes().length == 1) {
-                hasMethod = true;
-                break;
-            }
-        }
-
-        return hasMethod;
-    }
-
     public static Tag generateCustomTag(JSONObject customTag) {
         int numberOfArgs = 0;
         if (customTag.has("numberOfArgs")) {
@@ -157,11 +135,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         return tag;
     }
 
-    private JPanel generateBlankPanel() {
-        JPanel blankPanel = new JPanel();
-        blankPanel.setMaximumSize(new Dimension(0, 0));
-        blankPanel.setVisible(false);
-        return blankPanel;
+    public static void print(String s){
+        System.out.print(s);
+        callbacks.printOutput(s);
     }
 
     private String generateRandomCodeExecutionKey() {
@@ -198,7 +174,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
             public void run() {
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.6.1");
+	            	stdout.println("Hackvertor v1.6.2");
                     loadCustomTags();
                     registerPayloadProcessors();
                     extensionPanel = new ExtensionPanel(hackvertor);
@@ -331,9 +307,15 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
     }
 
     void registerPayloadProcessors() {
-        for (final Tag tagObj : hackvertor.getTags()) {
-            if (BurpExtender.hasMethodAnd1Arg(this, tagObj.name)) {
-                callbacks.registerIntruderPayloadProcessor(new HackvertorPayloadProcessor( hackvertor, "Hackvertor_" + capitalise(tagObj.name), tagObj.name));
+        ArrayList<Tag> tags = hackvertor.getTags();
+        tags.sort(Comparator.comparing(o -> o.name));
+        for(int i=0;i<tags.size();i++) {
+            Tag tag = tags.get(i);
+            if(tag.argument1 == null) {
+                if(tag.name.startsWith("_")) {
+                    continue;
+                }
+                callbacks.registerIntruderPayloadProcessor(new HackvertorPayloadProcessor(hackvertor, "Hackvertor_" + capitalise(tag.name), tag.name));
             }
         }
     }
