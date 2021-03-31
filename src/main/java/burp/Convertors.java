@@ -518,6 +518,13 @@ public class Convertors {
                 return loop_letters_upper(variableMap, customTags, output, getString(arguments, 0));
             case "loop_numbers":
                 return loop_letters_numbers(variableMap, customTags, output, getString(arguments, 0));
+            case "sleep":
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                return "";
         }
     }
 
@@ -2247,13 +2254,10 @@ public class Convertors {
     }
 
     static String repeat(String str, int amount) {
-        String output = "";
         if (amount > 0 && amount < 10000) {
-            for (int i = 0; i < amount; i++) {
-                output += str;
-            }
+            return str.repeat(amount);
         }
-        return output;
+        return "";
     }
 
     static String split_join(String str, String splitChar, String joinChar) {
