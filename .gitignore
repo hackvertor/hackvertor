@@ -8,3 +8,5 @@ out/
 .idea/
 .classpath/
 .project/
+/build/
+/.gradle/

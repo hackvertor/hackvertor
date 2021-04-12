@@ -174,7 +174,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
             public void run() {
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.6.2");
+	            	stdout.println("Hackvertor v1.7.0");
                     loadCustomTags();
                     registerPayloadProcessors();
                     extensionPanel = new ExtensionPanel(hackvertor);
@@ -301,7 +301,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
             }
         });
-        callbacks.printOutput("Look And Feel: "+UIManager.getLookAndFeel().getID()); //For debug purpose
+        //callbacks.printOutput("Look And Feel: "+UIManager.getLookAndFeel().getID());
         isNativeTheme = NATIVE_LOOK_AND_FEELS.contains(UIManager.getLookAndFeel().getID());
         isDarkTheme = DARK_THEMES.contains(UIManager.getLookAndFeel().getID());
     }
@@ -393,12 +393,15 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         languageCombo.setPreferredSize(new Dimension(220, 25));
         languageCombo.addItem("JavaScript");
         languageCombo.addItem("Python");
+        languageCombo.addItem("Java");
 
         if (edit && customTag != null && customTag.has("language")) {
             if (customTag.getString("language").equals("JavaScript")) {
                 languageCombo.setSelectedIndex(0);
-            } else {
+            } else if (customTag.getString("language").equals("Python")) {
                 languageCombo.setSelectedIndex(1);
+            } else if (customTag.getString("language").equals("Java")) {
+                languageCombo.setSelectedIndex(2);
             }
         }
         if (edit && customTag != null && customTag.has("code")) {
@@ -479,7 +482,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         argument2Panel.add(argument2DefaultValueField);
         createTagPanel.add(argument2Panel);
 
-        JLabel codeLabel = new JLabel("Code (if you end the code with .js/.py it will read a file)");
+        JLabel codeLabel = new JLabel("Code (if you end the code with .js/.py/.java it will read a file)");
         codeLabel.setPreferredSize(new Dimension(450, 25));
         codeScroll.setPreferredSize(new Dimension(450, 300));
         createTagPanel.add(codeLabel);
@@ -577,8 +580,10 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 try {
                     if (language.equals("JavaScript")) {
                         output = javascript(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions);
-                    } else {
+                    } else if(language.equals("Python")){
                         output = python(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions);
+                    } else if(language.equals("Java")){
+                        output = java(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions);
                     }
                 }catch (Exception ee){
                     ee.printStackTrace();

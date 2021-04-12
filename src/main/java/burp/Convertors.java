@@ -1,5 +1,8 @@
 package burp;
 
+import bsh.EvalError;
+import bsh.Interpreter;
+import bsh.Parser;
 import burp.parser.Element;
 import burp.parser.HackvertorParser;
 import burp.parser.ParseException;
@@ -8,6 +11,9 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import org.apache.bsf.BSFEngine;
+import org.apache.bsf.BSFException;
+import org.apache.bsf.BSFManager;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.EncoderException;
 import org.apache.commons.codec.binary.Base32;
@@ -158,8 +164,10 @@ public class Convertors {
                             String code = customTag.getString("code");
                             if (language.equals("javascript")) {
                                 return javascript(variableMap, output, code, eKey, customTagOptions);
-                            } else {
+                            } else if (language.equals("python")) {
                                 return python(variableMap, output, code, eKey, customTagOptions);
+                            } else if (language.equals("java")) {
+                                return java(variableMap, output, code, eKey, customTagOptions);
                             }
                         }
                     }
@@ -510,6 +518,8 @@ public class Convertors {
                 return python(variableMap, output, getString(arguments, 0), getString(arguments, 1), null);
             case "javascript":
                 return javascript(variableMap, output, getString(arguments, 0), getString(arguments, 1), null);
+            case "java":
+                return java(variableMap, output, getString(arguments, 0), getString(arguments, 1), null);
             case "loop_for":
                 return loop_for(variableMap, customTags, output, getInt(arguments, 0), getInt(arguments, 1), getInt(arguments, 2), getString(arguments, 3));
             case "loop_letters_lower":
@@ -2816,6 +2826,54 @@ public class Convertors {
         }
     }
 
+    static String java(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions) {
+        if (!codeExecutionTagsEnabled) {
+            return "Code execution tags are disabled by default. Use the menu bar to enable them.";
+        }
+        if (executionKey == null) {
+            return "No execution key defined";
+        }
+        if (executionKey.length() != 32) {
+            return "Code execution key length incorrect";
+        }
+        if (!tagCodeExecutionKey.equals(executionKey)) {
+            return "Incorrect tag code execution key";
+        }
+        Interpreter javaInterpreter = new Interpreter();
+        try {
+            javaInterpreter.set("input", input);
+            for (Map.Entry<String, String> entry : variableMap.entrySet()) {
+                String name = entry.getKey();
+                Object value = entry.getValue();
+                if (name.length() > 0) {
+                    javaInterpreter.set(name, value);
+                }
+            }
+            if (customTagOptions != null) {
+                JSONObject customTag = (JSONObject) customTagOptions.get("customTag");
+                int numberOfArgs = customTag.getInt("numberOfArgs");
+                if (numberOfArgs == 1) {
+                    javaInterpreter.set(customTag.getString("argument1"), customTagOptions.get("param1"));
+                }
+                if (numberOfArgs == 2) {
+                    javaInterpreter.set(customTag.getString("argument1"), customTagOptions.get("param1"));
+                    javaInterpreter.set(customTag.getString("argument2"), customTagOptions.get("param2"));
+                }
+            }
+            if (code.endsWith(".java")) {
+                javaInterpreter.source(code);
+            } else {
+                javaInterpreter.eval(code);
+            }
+            return javaInterpreter.get("output").toString();
+        } catch (EvalError | IOException e) {
+            return "Unable to parse Java:" + e.toString();
+        } catch (NullPointerException e) {
+            return "Unable to get output. Make sure you have defined an output variable:" + e.toString();
+        } catch (Exception | Error e ) {
+            return "Unable to parse Java:" + e.toString();
+        }
+    }
     static String javascript(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions) {
         if (!codeExecutionTagsEnabled) {
             return "Code execution tags are disabled by default. Use the menu bar to enable them.";

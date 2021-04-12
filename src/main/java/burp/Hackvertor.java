@@ -323,6 +323,10 @@ public class Hackvertor {
         tag.argument1 = new TagArgument("string", "output = input.toUpperCase()");
         tag.argument2 = new TagArgument("string", tagCodeExecutionKey);
         tags.add(tag);
+        tag = new Tag(Tag.Category.Languages, "java", true, "java(String input, String code, String codeExecuteKey)");
+        tag.argument1 = new TagArgument("string", "output = input.toUpperCase()");
+        tag.argument2 = new TagArgument("string", tagCodeExecutionKey);
+        tags.add(tag);
         for (int j = 0; j < customTags.length(); j++) {
             JSONObject customTag = (JSONObject) customTags.get(j);
             tag = generateCustomTag(customTag);

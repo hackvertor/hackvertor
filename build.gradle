@@ -1,11 +1,28 @@
 apply plugin: 'java'
 
+targetCompatibility = 1.8
+sourceCompatibility = 1.8
+
 repositories {
     mavenCentral()
 }
 
 dependencies {
     compile 'net.portswigger.burp.extender:burp-extender-api:1.7.22'
+    compile 'commons-codec:commons-codec:1.10'
+    compile 'org.apache.commons:commons-lang3:3.7'
+    compile 'org.unbescape:unbescape:1.1.5.RELEASE'
+    compile 'org.bouncycastle:bcpkix-jdk15on:1.60'
+    compile 'com.auth0:java-jwt:3.4.0'
+    compile 'org.json:json:20190722'
+    compile 'commons-io:commons-io:2.6'
+    compile 'org.apache.commons:commons-compress:1.19'
+    compile 'org.brotli:dec:0.1.2'
+    compile 'org.python:jython-standalone:2.7.0'
+    compile 'junit:junit:4.13.1'
+    compile 'org.junit.jupiter:junit-jupiter:5.7.0'
+    compile 'bsf:bsf:2.4.0'
+    compile 'org.apache-extras.beanshell:bsh:2.0b6'
 }
 
 sourceSets {
@@ -14,19 +31,18 @@ sourceSets {
             srcDir 'src'
         }
         resources {
-            srcDir 'resources'
+            srcDir 'src'
         }
     }
 }
 
 task fatJar(type: Jar) {
-
     baseName = project.name + '-all'
-    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    from ( configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }) {
+        exclude 'META-INF/MANIFEST.MF'
+        exclude 'META-INF/*.SF'
+        exclude 'META-INF/*.DSA'
+        exclude 'META-INF/*.RSA'
+    }
     with jar
-}
-
-compileJava {
-    targetCompatibility '1.8'
-    sourceCompatibility '1.8'
 }
