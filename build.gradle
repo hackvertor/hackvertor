@@ -23,6 +23,7 @@ dependencies {
     compile 'org.junit.jupiter:junit-jupiter:5.7.0'
     compile 'bsf:bsf:2.4.0'
     compile 'org.apache-extras.beanshell:bsh:2.0b6'
+    compile 'org.codehaus.groovy:groovy-all:3.0.7'
 }
 
 sourceSets {

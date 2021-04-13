@@ -2,7 +2,6 @@ package burp;
 
 import bsh.EvalError;
 import bsh.Interpreter;
-import bsh.Parser;
 import burp.parser.Element;
 import burp.parser.HackvertorParser;
 import burp.parser.ParseException;
@@ -11,9 +10,9 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import org.apache.bsf.BSFEngine;
-import org.apache.bsf.BSFException;
-import org.apache.bsf.BSFManager;
+import groovy.lang.Binding;
+import groovy.lang.GroovyShell;
+import groovy.util.Eval;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.EncoderException;
 import org.apache.commons.codec.binary.Base32;
@@ -30,6 +29,7 @@ import org.bouncycastle.crypto.digests.*;
 import org.bouncycastle.jcajce.provider.digest.Skein;
 import org.bouncycastle.util.encoders.Hex;
 import org.brotli.dec.BrotliInputStream;
+import org.codehaus.groovy.control.CompilationFailedException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.python.core.PyException;
@@ -168,6 +168,8 @@ public class Convertors {
                                 return python(variableMap, output, code, eKey, customTagOptions);
                             } else if (language.equals("java")) {
                                 return java(variableMap, output, code, eKey, customTagOptions);
+                            } else if (language.equals("groovy")) {
+                                return groovy(variableMap, output, code, eKey, customTagOptions);
                             }
                         }
                     }
@@ -520,6 +522,8 @@ public class Convertors {
                 return javascript(variableMap, output, getString(arguments, 0), getString(arguments, 1), null);
             case "java":
                 return java(variableMap, output, getString(arguments, 0), getString(arguments, 1), null);
+            case "groovy":
+                return groovy(variableMap, output, getString(arguments, 0), getString(arguments, 1), null);
             case "loop_for":
                 return loop_for(variableMap, customTags, output, getInt(arguments, 0), getInt(arguments, 1), getInt(arguments, 2), getString(arguments, 3));
             case "loop_letters_lower":
@@ -2873,6 +2877,33 @@ public class Convertors {
         } catch (Exception | Error e ) {
             return "Unable to parse Java:" + e.toString();
         }
+    }
+    static String groovy(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions) {
+        if (!codeExecutionTagsEnabled) {
+            return "Code execution tags are disabled by default. Use the menu bar to enable them.";
+        }
+        if (executionKey == null) {
+            return "No execution key defined";
+        }
+        if (executionKey.length() != 32) {
+            return "Code execution key length incorrect";
+        }
+        if (!tagCodeExecutionKey.equals(executionKey)) {
+            return "Incorrect tag code execution key";
+        }
+        Binding data = new Binding();
+        GroovyShell shell = new GroovyShell(data);
+        data.setProperty("input", input);
+        try {
+            if (code.endsWith(".groovy")) {
+                shell.evaluate(new FileReader(code));
+            } else {
+                shell.evaluate(code);
+            }
+        } catch (FileNotFoundException | CompilationFailedException e) {
+            return "Unable to parse Groovy:" + e.toString();
+        }
+        return shell.getVariable("output").toString();
     }
     static String javascript(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions) {
         if (!codeExecutionTagsEnabled) {

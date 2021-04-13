@@ -394,6 +394,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         languageCombo.addItem("JavaScript");
         languageCombo.addItem("Python");
         languageCombo.addItem("Java");
+        languageCombo.addItem("Groovy");
 
         if (edit && customTag != null && customTag.has("language")) {
             if (customTag.getString("language").equals("JavaScript")) {
@@ -402,6 +403,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 languageCombo.setSelectedIndex(1);
             } else if (customTag.getString("language").equals("Java")) {
                 languageCombo.setSelectedIndex(2);
+            } else if (customTag.getString("language").equals("groovy")) {
+                languageCombo.setSelectedIndex(3);
             }
         }
         if (edit && customTag != null && customTag.has("code")) {
@@ -482,7 +485,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         argument2Panel.add(argument2DefaultValueField);
         createTagPanel.add(argument2Panel);
 
-        JLabel codeLabel = new JLabel("Code (if you end the code with .js/.py/.java it will read a file)");
+        JLabel codeLabel = new JLabel("Code (if you end the code with .js/.py/.java/.groovy it will read a file)");
         codeLabel.setPreferredSize(new Dimension(450, 25));
         codeScroll.setPreferredSize(new Dimension(450, 300));
         createTagPanel.add(codeLabel);
@@ -584,6 +587,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                         output = python(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions);
                     } else if(language.equals("Java")){
                         output = java(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions);
+                    } else if(language.equals("Groovy")){
+                        output = groovy(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions);
                     }
                 }catch (Exception ee){
                     ee.printStackTrace();
