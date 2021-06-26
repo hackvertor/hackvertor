@@ -1018,7 +1018,7 @@ public class Convertors {
         StringBuilder converted = new StringBuilder();
         for (int i = 0; i < str.length(); i++) {
             int codePoint = Character.codePointAt(str, i);
-            if (codePoint <= 0xff) {
+            if (codePoint <= 0x7f) {
                 converted.append("%" + String.format("%02X", codePoint));
             } else {
                 try {
