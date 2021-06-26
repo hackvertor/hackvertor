@@ -10,6 +10,7 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.eclipsesource.v8.V8;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import groovy.util.Eval;
@@ -53,6 +54,9 @@ import javax.script.ScriptException;
 import java.io.*;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -2918,42 +2922,69 @@ public class Convertors {
         if (!tagCodeExecutionKey.equals(executionKey)) {
             return "Incorrect tag code execution key";
         }
-        ScriptEngineManager manager = new ScriptEngineManager();
-        ScriptEngine engine = manager.getEngineByName("JavaScript");
-        engine.put("input", input);
+        V8 v8 = V8.createV8Runtime(null, String.valueOf(BurpExtender.j2v8TempDirectory));
+        String declarations = "var input, output, argument1, argument2";
+        Set keySet = variableMap.keySet();
+        if(keySet.size() > 0) {
+            declarations += "," + keySet.stream().collect(Collectors.joining(","));
+        }
+        v8.executeScript(declarations);
+        v8.add("input", input);
         for (Map.Entry<String, String> entry : variableMap.entrySet()) {
             String name = entry.getKey();
-            Object value = entry.getValue();
+            String value = entry.getValue();
             if (name.length() > 0) {
-                engine.put(name, value);
+                if(value.matches("^\\d+$")) {
+                    v8.add(name, Integer.parseInt(value));
+                } else {
+                    v8.add(name, value);
+                }
             }
         }
         if (customTagOptions != null) {
             JSONObject customTag = (JSONObject) customTagOptions.get("customTag");
             int numberOfArgs = customTag.getInt("numberOfArgs");
             if (numberOfArgs == 1) {
-                engine.put(customTag.getString("argument1"), customTagOptions.get("param1"));
+                String name = customTag.getString("argument1");
+                String value = customTagOptions.get("param1").toString();
+                if(value.matches("^\\d+$")) {
+                    v8.add(name, Integer.parseInt(value));
+                } else {
+                    v8.add(name, value);
+                }
             }
             if (numberOfArgs == 2) {
-                engine.put(customTag.getString("argument1"), customTagOptions.get("param1"));
-                engine.put(customTag.getString("argument2"), customTagOptions.get("param2"));
+                String argument1Name = customTag.getString("argument1");
+                String param1Value = customTagOptions.get("param1").toString();
+                if(param1Value.matches("^\\d+$")) {
+                    v8.add(argument1Name, Integer.parseInt(param1Value));
+                } else {
+                    v8.add(argument1Name, param1Value);
+                }
+                String argument2Name = customTag.getString("argument2");
+                String param2Value = customTagOptions.get("param2").toString();
+                if(param2Value.matches("^\\d+$")) {
+                    v8.add(argument2Name, Integer.parseInt(param2Value));
+                } else {
+                    v8.add(argument2Name, param2Value);
+                }
             }
         }
         try {
             if (code.endsWith(".js")) {
-                engine.eval(new FileReader(code));
+                v8.executeScript(Files.readString(Path.of(code), StandardCharsets.UTF_8));
             } else {
-                engine.eval(code);
+                v8.executeScript(code);
             }
-            return engine.get("output").toString();
-        } catch (ScriptException | IllegalArgumentException e) {
-            return "Invalid JavaScript:" + e.toString();
+            return v8.get("output").toString();
         } catch (FileNotFoundException e) {
-            return "Unable to find JavaScript file:" + e.toString();
+            return "Unable to find JavaScript file:" + e;
         } catch (NullPointerException e) {
             return "Unable to get output. Make sure you have defined an output variable:" + e.toString();
         } catch (AssertionError | Exception e) {
-            return "Unable to parse JavaScript:" + e.toString();
+            return "Unable to parse JavaScript:" + e;
+        } finally {
+            v8.shutdownExecutors(true);
         }
     }
 

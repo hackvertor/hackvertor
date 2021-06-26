@@ -20,6 +20,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.Security;
@@ -37,6 +39,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
     public static Ngrams ngrams;
     public static PrintWriter stderr;
     public static PrintWriter stdout;
+    public static Path j2v8TempDirectory;
     /**
      * Native theme will not have the same color scheme as the default Nimbus L&F.
      * The native theme on Windows does not allow the override of button background color.
@@ -172,6 +175,11 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         Security.addProvider(new BouncyCastleProvider());
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
+                try {
+                    j2v8TempDirectory = Files.createTempDirectory("j2v8");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
                 try {
                     hackvertor = new Hackvertor();
 	            	stdout.println("Hackvertor v1.7.0");
