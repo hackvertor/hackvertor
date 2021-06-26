@@ -13,7 +13,6 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.eclipsesource.v8.V8;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
-import groovy.util.Eval;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.EncoderException;
 import org.apache.commons.codec.binary.Base32;
@@ -48,9 +47,6 @@ import org.unbescape.javascript.JavaScriptEscapeType;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
 import java.io.*;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -180,9 +176,16 @@ public class Convertors {
                 }else if(tag.startsWith("set_")){ //Backwards compatibility with previous set_VARNAME tag format
                     String varname = tag.replace("set_","");
                     variableMap.put(varname, output);
+                    String global = getString(arguments, 0);
+                    if(global.equals("true")) {
+                        globalVariables.put(varname, output);
+                    }
                     return output;
                 }else if(tag.startsWith("get_")){ //Backwards compatibility with previous get_VARNAME tag format
                     String varname = tag.replace("get_","");
+                    if(globalVariables.containsKey(varname) && !variableMap.containsKey(varname)) {
+                        return globalVariables.getOrDefault(varname, StringUtils.isEmpty(output) ? null : output);
+                    }
                     return variableMap.getOrDefault(varname, StringUtils.isEmpty(output) ? null : output);
                 } else {
                     try {

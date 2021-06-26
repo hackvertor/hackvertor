@@ -40,6 +40,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
     public static PrintWriter stderr;
     public static PrintWriter stdout;
     public static Path j2v8TempDirectory;
+    public static HashMap<String,String>globalVariables = new HashMap<>();
     /**
      * Native theme will not have the same color scheme as the default Nimbus L&F.
      * The native theme on Windows does not allow the override of button background color.
