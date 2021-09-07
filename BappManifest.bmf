@@ -2,11 +2,12 @@ Uuid: 65033cbd2c344fbabe57ac060b5dd100
 ExtensionType: 1
 Name: Hackvertor
 RepoName: hackvertor
-ScreenVersion: 1.6.2
+ScreenVersion: 1.7.0
 SerialVersion: 32
 MinPlatformVersion: 0
 ProOnly: False
 Author: Portswigger Web Security - Gareth Heyes
 ShortDescription: Converts data using a tag-based configuration to apply various encoding and escaping operations.
-EntryPoint: target/hackvertor-1.6.2-jar-with-dependencies.jar
-BuildCommand: mvn package
+EntryPoint: build/libs/hackvertor-all.jar
+BuildCommand: gradle build fatJar
+SupportedProducts: Pro, Community

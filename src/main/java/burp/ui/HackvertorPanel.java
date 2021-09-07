@@ -1,9 +1,6 @@
 package burp.ui;
 
-import burp.Convertors;
-import burp.Hackvertor;
-import burp.Tag;
-import burp.Utils;
+import burp.*;
 import burp.parser.Element;
 import burp.parser.HackvertorParser;
 import burp.parser.ParseException;
@@ -64,7 +61,7 @@ public class HackvertorPanel extends JPanel {
             logoLabel = new JLabel();
         }
         final JTextArea hexView = new JTextArea();
-        hexView.setFont(new Font("Courier New", Font.PLAIN, 12));
+        hexView.setFont(new Font("Courier New", Font.PLAIN, hexView.getFont().getSize()));
         hexView.setRows(0);
         hexView.setOpaque(true);
         hexView.setEditable(false);
@@ -78,7 +75,7 @@ public class HackvertorPanel extends JPanel {
         hexScroll.setPreferredSize(new Dimension(-1, 100));
         hexScroll.setMinimumSize(new Dimension(-1, 100));
         JPanel buttonsPanel = new JPanel(new GridLayout(1, 0, 10, 0));
-        inputArea.setFont(new Font("Courier New", Font.PLAIN, 12));
+        inputArea.setFont(new Font("Courier New", Font.PLAIN, inputArea.getFont().getSize()));
         inputArea.setLineWrap(true);
         inputArea.setRows(0);
         final UndoManager undo = new UndoManager();
@@ -134,7 +131,7 @@ public class HackvertorPanel extends JPanel {
             inputLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
         }
         final JTextArea outputArea = new JTextArea();
-        outputArea.setFont(new Font("Courier New", Font.PLAIN, 12));
+        outputArea.setFont(new Font("Courier New", Font.PLAIN, outputArea.getFont().getSize()));
         DocumentListener documentListener = new DocumentListener() {
             public void changedUpdate(DocumentEvent documentEvent) {
                 updateLen(documentEvent);

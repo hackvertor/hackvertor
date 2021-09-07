@@ -20,6 +20,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.Security;
@@ -37,6 +39,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
     public static Ngrams ngrams;
     public static PrintWriter stderr;
     public static PrintWriter stdout;
+    public static Path j2v8TempDirectory;
+    public static HashMap<String,String>globalVariables = new HashMap<>();
     /**
      * Native theme will not have the same color scheme as the default Nimbus L&F.
      * The native theme on Windows does not allow the override of button background color.
@@ -173,8 +177,13 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 try {
+                    j2v8TempDirectory = Files.createTempDirectory("j2v8");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.6.2");
+	            	stdout.println("Hackvertor v1.7.0");
                     loadCustomTags();
                     registerPayloadProcessors();
                     extensionPanel = new ExtensionPanel(hackvertor);
@@ -301,7 +310,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
             }
         });
-        callbacks.printOutput("Look And Feel: "+UIManager.getLookAndFeel().getID()); //For debug purpose
+        //callbacks.printOutput("Look And Feel: "+UIManager.getLookAndFeel().getID());
         isNativeTheme = NATIVE_LOOK_AND_FEELS.contains(UIManager.getLookAndFeel().getID());
         isDarkTheme = DARK_THEMES.contains(UIManager.getLookAndFeel().getID());
     }
@@ -393,12 +402,18 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         languageCombo.setPreferredSize(new Dimension(220, 25));
         languageCombo.addItem("JavaScript");
         languageCombo.addItem("Python");
+        languageCombo.addItem("Java");
+        languageCombo.addItem("Groovy");
 
         if (edit && customTag != null && customTag.has("language")) {
             if (customTag.getString("language").equals("JavaScript")) {
                 languageCombo.setSelectedIndex(0);
-            } else {
+            } else if (customTag.getString("language").equals("Python")) {
                 languageCombo.setSelectedIndex(1);
+            } else if (customTag.getString("language").equals("Java")) {
+                languageCombo.setSelectedIndex(2);
+            } else if (customTag.getString("language").equals("groovy")) {
+                languageCombo.setSelectedIndex(3);
             }
         }
         if (edit && customTag != null && customTag.has("code")) {
@@ -479,7 +494,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         argument2Panel.add(argument2DefaultValueField);
         createTagPanel.add(argument2Panel);
 
-        JLabel codeLabel = new JLabel("Code (if you end the code with .js/.py it will read a file)");
+        JLabel codeLabel = new JLabel("Code (if you end the code with .js/.py/.java/.groovy it will read a file)");
         codeLabel.setPreferredSize(new Dimension(450, 25));
         codeScroll.setPreferredSize(new Dimension(450, 300));
         createTagPanel.add(codeLabel);
@@ -577,8 +592,12 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 try {
                     if (language.equals("JavaScript")) {
                         output = javascript(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions);
-                    } else {
+                    } else if(language.equals("Python")){
                         output = python(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions);
+                    } else if(language.equals("Java")){
+                        output = java(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions);
+                    } else if(language.equals("Groovy")){
+                        output = groovy(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions);
                     }
                 }catch (Exception ee){
                     ee.printStackTrace();

@@ -1,5 +1,7 @@
 package burp;
 
+import bsh.EvalError;
+import bsh.Interpreter;
 import burp.parser.Element;
 import burp.parser.HackvertorParser;
 import burp.parser.ParseException;
@@ -8,6 +10,9 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.eclipsesource.v8.V8;
+import groovy.lang.Binding;
+import groovy.lang.GroovyShell;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.EncoderException;
 import org.apache.commons.codec.binary.Base32;
@@ -24,6 +29,7 @@ import org.bouncycastle.crypto.digests.*;
 import org.bouncycastle.jcajce.provider.digest.Skein;
 import org.bouncycastle.util.encoders.Hex;
 import org.brotli.dec.BrotliInputStream;
+import org.codehaus.groovy.control.CompilationFailedException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.python.core.PyException;
@@ -41,12 +47,12 @@ import org.unbescape.javascript.JavaScriptEscapeType;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
 import java.io.*;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -158,17 +164,28 @@ public class Convertors {
                             String code = customTag.getString("code");
                             if (language.equals("javascript")) {
                                 return javascript(variableMap, output, code, eKey, customTagOptions);
-                            } else {
+                            } else if (language.equals("python")) {
                                 return python(variableMap, output, code, eKey, customTagOptions);
+                            } else if (language.equals("java")) {
+                                return java(variableMap, output, code, eKey, customTagOptions);
+                            } else if (language.equals("groovy")) {
+                                return groovy(variableMap, output, code, eKey, customTagOptions);
                             }
                         }
                     }
                 }else if(tag.startsWith("set_")){ //Backwards compatibility with previous set_VARNAME tag format
                     String varname = tag.replace("set_","");
                     variableMap.put(varname, output);
+                    String global = getString(arguments, 0);
+                    if(global.equals("true")) {
+                        globalVariables.put(varname, output);
+                    }
                     return output;
                 }else if(tag.startsWith("get_")){ //Backwards compatibility with previous get_VARNAME tag format
                     String varname = tag.replace("get_","");
+                    if(globalVariables.containsKey(varname) && !variableMap.containsKey(varname)) {
+                        return globalVariables.getOrDefault(varname, StringUtils.isEmpty(output) ? null : output);
+                    }
                     return variableMap.getOrDefault(varname, StringUtils.isEmpty(output) ? null : output);
                 } else {
                     try {
@@ -510,6 +527,10 @@ public class Convertors {
                 return python(variableMap, output, getString(arguments, 0), getString(arguments, 1), null);
             case "javascript":
                 return javascript(variableMap, output, getString(arguments, 0), getString(arguments, 1), null);
+            case "java":
+                return java(variableMap, output, getString(arguments, 0), getString(arguments, 1), null);
+            case "groovy":
+                return groovy(variableMap, output, getString(arguments, 0), getString(arguments, 1), null);
             case "loop_for":
                 return loop_for(variableMap, customTags, output, getInt(arguments, 0), getInt(arguments, 1), getInt(arguments, 2), getString(arguments, 3));
             case "loop_letters_lower":
@@ -997,7 +1018,7 @@ public class Convertors {
         StringBuilder converted = new StringBuilder();
         for (int i = 0; i < str.length(); i++) {
             int codePoint = Character.codePointAt(str, i);
-            if (codePoint <= 0xff) {
+            if (codePoint <= 0x7f) {
                 converted.append("%" + String.format("%02X", codePoint));
             } else {
                 try {
@@ -2816,6 +2837,81 @@ public class Convertors {
         }
     }
 
+    static String java(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions) {
+        if (!codeExecutionTagsEnabled) {
+            return "Code execution tags are disabled by default. Use the menu bar to enable them.";
+        }
+        if (executionKey == null) {
+            return "No execution key defined";
+        }
+        if (executionKey.length() != 32) {
+            return "Code execution key length incorrect";
+        }
+        if (!tagCodeExecutionKey.equals(executionKey)) {
+            return "Incorrect tag code execution key";
+        }
+        Interpreter javaInterpreter = new Interpreter();
+        try {
+            javaInterpreter.set("input", input);
+            for (Map.Entry<String, String> entry : variableMap.entrySet()) {
+                String name = entry.getKey();
+                Object value = entry.getValue();
+                if (name.length() > 0) {
+                    javaInterpreter.set(name, value);
+                }
+            }
+            if (customTagOptions != null) {
+                JSONObject customTag = (JSONObject) customTagOptions.get("customTag");
+                int numberOfArgs = customTag.getInt("numberOfArgs");
+                if (numberOfArgs == 1) {
+                    javaInterpreter.set(customTag.getString("argument1"), customTagOptions.get("param1"));
+                }
+                if (numberOfArgs == 2) {
+                    javaInterpreter.set(customTag.getString("argument1"), customTagOptions.get("param1"));
+                    javaInterpreter.set(customTag.getString("argument2"), customTagOptions.get("param2"));
+                }
+            }
+            if (code.endsWith(".java")) {
+                javaInterpreter.source(code);
+            } else {
+                javaInterpreter.eval(code);
+            }
+            return javaInterpreter.get("output").toString();
+        } catch (EvalError | IOException e) {
+            return "Unable to parse Java:" + e.toString();
+        } catch (NullPointerException e) {
+            return "Unable to get output. Make sure you have defined an output variable:" + e.toString();
+        } catch (Exception | Error e ) {
+            return "Unable to parse Java:" + e.toString();
+        }
+    }
+    static String groovy(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions) {
+        if (!codeExecutionTagsEnabled) {
+            return "Code execution tags are disabled by default. Use the menu bar to enable them.";
+        }
+        if (executionKey == null) {
+            return "No execution key defined";
+        }
+        if (executionKey.length() != 32) {
+            return "Code execution key length incorrect";
+        }
+        if (!tagCodeExecutionKey.equals(executionKey)) {
+            return "Incorrect tag code execution key";
+        }
+        Binding data = new Binding();
+        GroovyShell shell = new GroovyShell(data);
+        data.setProperty("input", input);
+        try {
+            if (code.endsWith(".groovy")) {
+                shell.evaluate(new FileReader(code));
+            } else {
+                shell.evaluate(code);
+            }
+        } catch (FileNotFoundException | CompilationFailedException e) {
+            return "Unable to parse Groovy:" + e.toString();
+        }
+        return shell.getVariable("output").toString();
+    }
     static String javascript(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions) {
         if (!codeExecutionTagsEnabled) {
             return "Code execution tags are disabled by default. Use the menu bar to enable them.";
@@ -2829,42 +2925,69 @@ public class Convertors {
         if (!tagCodeExecutionKey.equals(executionKey)) {
             return "Incorrect tag code execution key";
         }
-        ScriptEngineManager manager = new ScriptEngineManager();
-        ScriptEngine engine = manager.getEngineByName("JavaScript");
-        engine.put("input", input);
+        V8 v8 = V8.createV8Runtime(null, String.valueOf(BurpExtender.j2v8TempDirectory));
+        String declarations = "var input, output, argument1, argument2";
+        Set keySet = variableMap.keySet();
+        if(keySet.size() > 0) {
+            declarations += "," + keySet.stream().collect(Collectors.joining(","));
+        }
+        v8.executeScript(declarations);
+        v8.add("input", input);
         for (Map.Entry<String, String> entry : variableMap.entrySet()) {
             String name = entry.getKey();
-            Object value = entry.getValue();
+            String value = entry.getValue();
             if (name.length() > 0) {
-                engine.put(name, value);
+                if(value.matches("^\\d+$")) {
+                    v8.add(name, Integer.parseInt(value));
+                } else {
+                    v8.add(name, value);
+                }
             }
         }
         if (customTagOptions != null) {
             JSONObject customTag = (JSONObject) customTagOptions.get("customTag");
             int numberOfArgs = customTag.getInt("numberOfArgs");
             if (numberOfArgs == 1) {
-                engine.put(customTag.getString("argument1"), customTagOptions.get("param1"));
+                String name = customTag.getString("argument1");
+                String value = customTagOptions.get("param1").toString();
+                if(value.matches("^\\d+$")) {
+                    v8.add(name, Integer.parseInt(value));
+                } else {
+                    v8.add(name, value);
+                }
             }
             if (numberOfArgs == 2) {
-                engine.put(customTag.getString("argument1"), customTagOptions.get("param1"));
-                engine.put(customTag.getString("argument2"), customTagOptions.get("param2"));
+                String argument1Name = customTag.getString("argument1");
+                String param1Value = customTagOptions.get("param1").toString();
+                if(param1Value.matches("^\\d+$")) {
+                    v8.add(argument1Name, Integer.parseInt(param1Value));
+                } else {
+                    v8.add(argument1Name, param1Value);
+                }
+                String argument2Name = customTag.getString("argument2");
+                String param2Value = customTagOptions.get("param2").toString();
+                if(param2Value.matches("^\\d+$")) {
+                    v8.add(argument2Name, Integer.parseInt(param2Value));
+                } else {
+                    v8.add(argument2Name, param2Value);
+                }
             }
         }
         try {
             if (code.endsWith(".js")) {
-                engine.eval(new FileReader(code));
+                v8.executeScript(Files.readString(Path.of(code), StandardCharsets.UTF_8));
             } else {
-                engine.eval(code);
+                v8.executeScript(code);
             }
-            return engine.get("output").toString();
-        } catch (ScriptException | IllegalArgumentException e) {
-            return "Invalid JavaScript:" + e.toString();
+            return v8.get("output").toString();
         } catch (FileNotFoundException e) {
-            return "Unable to find JavaScript file:" + e.toString();
+            return "Unable to find JavaScript file:" + e;
         } catch (NullPointerException e) {
             return "Unable to get output. Make sure you have defined an output variable:" + e.toString();
         } catch (AssertionError | Exception e) {
-            return "Unable to parse JavaScript:" + e.toString();
+            return "Unable to parse JavaScript:" + e;
+        } finally {
+            v8.shutdownExecutors(true);
         }
     }
 
