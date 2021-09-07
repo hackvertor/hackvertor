@@ -52,6 +52,6 @@ task fatJar(type: Jar) {
     with jar
 }
 
-test {
+/*test {
     useJUnitPlatform()
-}
+}*/
