@@ -1065,12 +1065,11 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                     outputStream.write(helpers.stringToBytes("<@/auto_decode_no_decrypt>"));
                     outputStream.write(Arrays.copyOfRange(message, bounds[1], message.length));
                     outputStream.flush();
-                    invocation.getSelectedMessages()[0].setRequest(outputStream.toByteArray());
+                    byte[] taggedMessage = outputStream.toByteArray();
+                    invocation.getSelectedMessages()[0].setRequest(helpers.stringToBytes(hackvertor.convert(helpers.bytesToString(taggedMessage))));
                 } catch (IOException e1) {
                     System.err.println(e1.toString());
                 }
-                message = invocation.getSelectedMessages()[0].getRequest();
-                invocation.getSelectedMessages()[0].setRequest(helpers.stringToBytes(hackvertor.convert(helpers.bytesToString(message))));
             }
         });
         submenu.add(autodecodeConvert);
