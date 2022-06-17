@@ -183,8 +183,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.7.0");
+	            	stdout.println("Hackvertor v1.7.1");
                     loadCustomTags();
+                    loadGlobalVariables();
                     registerPayloadProcessors();
                     extensionPanel = new ExtensionPanel(hackvertor);
 
@@ -275,6 +276,13 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                         }
                     });
                     hvMenuBar.add(fixContentLengthMenu);
+                    JMenuItem globalVariablesMenu = new JMenuItem("Global variables");
+                    globalVariablesMenu.addActionListener(new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            showGlobalVariablesWindow();
+                        }
+                    });
                     JMenuItem createCustomTagsMenu = new JMenuItem("Create custom tag");
                     createCustomTagsMenu.addActionListener(new ActionListener() {
                         @Override
@@ -289,6 +297,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                             showListTagsDialog();
                         }
                     });
+                    hvMenuBar.add(globalVariablesMenu);
                     hvMenuBar.add(createCustomTagsMenu);
                     hvMenuBar.add(listCustomTagsMenu);
                     JMenuItem reportBugMenu = new JMenuItem("Report bug/request feature");
@@ -329,6 +338,129 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         }
     }
 
+    public void showGlobalVariablesWindow() {
+        JPanel createVariablePanel = new JPanel();
+        JFrame createVariableWindow = new JFrame("Global variables");
+        createVariableWindow.setResizable(false);
+        createVariableWindow.setPreferredSize(new Dimension(500, 600));
+
+        JLabel errorMessage = new JLabel();
+        errorMessage.setPreferredSize(new Dimension(450, 25));
+        errorMessage.setForeground(Color.red);
+
+        JLabel variableLabel = new JLabel("Variable name");
+        variableLabel.setPreferredSize(new Dimension(220, 25));
+        JTextField variableNameField = new JTextField();
+        variableNameField.setPreferredSize(new Dimension(220, 30));
+
+        JLabel variableValueLabel = new JLabel("Variable value");
+        variableValueLabel.setPreferredSize(new Dimension(220, 25));
+        JTextField variableValueField = new JTextField();
+        variableValueField.setPreferredSize(new Dimension(220, 30));
+
+        JComboBox variableCombo = new JComboBox();
+
+        JButton closeButton = new JButton("Close");
+        closeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                createVariableWindow.dispose();
+            }
+        });
+        JButton createButton = new JButton("Create/Update variable");
+        createButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                errorMessage.setText("");
+                String variableName = variableNameField.getText().replaceAll("[^\\w+]", "");
+                String variableValue = variableValueField.getText();
+                if (variableName.length() < 1) {
+                    errorMessage.setText("Invalid variable name. Use a-zA-Z_0-9 for variable names");
+                    return;
+                }
+                if (variableValue.length() < 1) {
+                    errorMessage.setText("Your variable value cannot be blank");
+                    return;
+                }
+                globalVariables.put(variableName, variableValue);
+                variableCombo.removeAllItems();
+                for (String variable : globalVariables.keySet()) {
+                    variableCombo.addItem(variable);
+                }
+                saveGlobalVariables();
+            }
+        });
+        if (!isNativeTheme && !isDarkTheme) {
+            createButton.setBackground(Color.decode("#005a70"));
+            createButton.setForeground(Color.white);
+            closeButton.setBackground(Color.decode("#005a70"));
+            closeButton.setForeground(Color.white);
+        }
+
+        JLabel tagLabel = new JLabel("Variable");
+        tagLabel.setPreferredSize(new Dimension(50, 25));
+        variableCombo.setPreferredSize(new Dimension(200, 25));
+        createVariablePanel.add(tagLabel);
+        createVariablePanel.add(variableCombo);
+        for (String variable : globalVariables.keySet()) {
+            variableCombo.addItem(variable);
+        }
+        JButton copyButton = new JButton("copy");
+        copyButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (variableCombo.getSelectedIndex() == -1) {
+                    return;
+                }
+                String key = variableCombo.getSelectedItem().toString();
+                Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+                StringSelection variableTag = new StringSelection("<@get_"+key+"/>");
+                clipboard.setContents(variableTag, null);
+            }
+        });
+        JButton editButton = new JButton("Edit");
+        editButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (variableCombo.getSelectedIndex() == -1) {
+                    return;
+                }
+                String key = variableCombo.getSelectedItem().toString();
+                variableNameField.setText(key);
+                variableValueField.setText(globalVariables.get(key));
+            }
+        });
+        JButton deleteButton = new JButton("Delete");
+        deleteButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (variableCombo.getSelectedIndex() == -1) {
+                    return;
+                }
+                globalVariables.remove(variableCombo.getSelectedItem().toString());
+                variableCombo.removeAllItems();
+                for (String variable : globalVariables.keySet()) {
+                    variableCombo.addItem(variable);
+                }
+            }
+        });
+        createVariablePanel.add(copyButton);
+        createVariablePanel.add(editButton);
+        createVariablePanel.add(deleteButton);
+
+        Container pane = createVariableWindow.getContentPane();
+        createVariablePanel.add(errorMessage);
+        createVariablePanel.add(variableLabel);
+        createVariablePanel.add(variableNameField);
+        createVariablePanel.add(variableValueLabel);
+        createVariablePanel.add(variableValueField);
+        createVariablePanel.add(closeButton);
+        createVariablePanel.add(createButton);
+        pane.add(createVariablePanel);
+        createVariableWindow.pack();
+        createVariableWindow.setLocationRelativeTo(null);
+        createVariableWindow.setVisible(true);
+    }
     public void showCreateEditTagDialog(boolean edit, String editTagName) {
         JPanel createTagPanel = new JPanel();
         JFrame createTagWindow;
@@ -790,6 +922,25 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
     public void saveCustomTags() {
         callbacks.saveExtensionSetting("customTags", hackvertor.getCustomTags().toString());
     }
+    public void saveGlobalVariables() {
+        JSONObject json = new JSONObject(globalVariables);
+        callbacks.saveExtensionSetting("globalVariables", json.toString());
+    }
+    public void loadGlobalVariables() {
+        String json = callbacks.loadExtensionSetting("globalVariables");
+        if (json != null && json.length() > 0) {
+            try {
+                JSONObject jsonObject = new JSONObject(json);
+                Iterator<String> keys = jsonObject.keys();
+                while(keys.hasNext()) {
+                    String key = keys.next();
+                    globalVariables.put(key, jsonObject.get(key).toString());
+                }
+            } catch (JSONException e) {
+                alert("Failed to load global variables");
+            }
+        }
+    }
 
     public void updateCustomTag(String tagName, String language, String code, String argument1, String argument1Type, String argument1DefaultValue, String argument2, String argument2Type, String argument2DefaultValue, int numberOfArgs) {
         JSONObject tag = new JSONObject();
@@ -1057,20 +1208,18 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         autodecodeConvert.addActionListener(e -> {
             if (invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST || invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
                 byte[] message = invocation.getSelectedMessages()[0].getRequest();
+                byte[] selection = Arrays.copyOfRange(message, bounds[0], bounds[1]);
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
                 try {
+                    byte[] convertedSelection = helpers.stringToBytes(auto_decode_no_decrypt(helpers.bytesToString(selection)));
                     outputStream.write(Arrays.copyOfRange(message, 0, bounds[0]));
-                    outputStream.write(helpers.stringToBytes("<@auto_decode_no_decrypt>"));
-                    outputStream.write(Arrays.copyOfRange(message, bounds[0], bounds[1]));
-                    outputStream.write(helpers.stringToBytes("<@/auto_decode_no_decrypt>"));
+                    outputStream.write(convertedSelection);
                     outputStream.write(Arrays.copyOfRange(message, bounds[1], message.length));
                     outputStream.flush();
                     invocation.getSelectedMessages()[0].setRequest(outputStream.toByteArray());
                 } catch (IOException e1) {
                     System.err.println(e1.toString());
                 }
-                message = invocation.getSelectedMessages()[0].getRequest();
-                invocation.getSelectedMessages()[0].setRequest(helpers.stringToBytes(hackvertor.convert(helpers.bytesToString(message))));
             }
         });
         submenu.add(autodecodeConvert);
