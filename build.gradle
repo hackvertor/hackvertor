@@ -3,6 +3,9 @@ apply plugin: 'java'
 targetCompatibility = 1.8
 sourceCompatibility = 1.8
 
+compileJava.options.encoding = 'UTF-8'
+compileTestJava.options.encoding = 'UTF-8'
+
 repositories {
     mavenCentral()
 }
@@ -40,6 +43,7 @@ sourceSets {
 
 task fatJar(type: Jar) {
     baseName = project.name + '-all'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
         configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
