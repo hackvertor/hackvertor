@@ -1217,6 +1217,10 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                     outputStream.write(Arrays.copyOfRange(message, bounds[1], message.length));
                     outputStream.flush();
                     invocation.getSelectedMessages()[0].setRequest(outputStream.toByteArray());
+                    Object source = invocation.getInputEvent().getSource();
+                    if (source instanceof JTextArea) {
+                        ((JTextArea) source).select(bounds[0], bounds[0] + convertedSelection.length);
+                    }
                 } catch (IOException e1) {
                     System.err.println(e1.toString());
                 }
