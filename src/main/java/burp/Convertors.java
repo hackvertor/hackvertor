@@ -53,6 +53,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -489,6 +490,22 @@ public class Convertors {
                 return whirlpool(output);
             case "random":
                 return random(output, getInt(arguments, 0));
+            case "random_alpha_lower":
+                return random_alpha_lower(getInt(arguments, 0));
+            case "random_alphanum_lower":
+                return random_alphanum_lower(getInt(arguments, 0));
+            case "random_alpha_upper":
+                return random_alpha_upper(getInt(arguments, 0));
+            case "random_alphanum_upper":
+                return random_alphanum_upper(getInt(arguments, 0));
+            case "random_alpha_mixed":
+                return random_alpha_mixed(getInt(arguments, 0));
+            case "random_alphanum_mixed":
+                return random_alphanum_mixed(getInt(arguments, 0));
+            case "random_hex":
+                return random_hex(getInt(arguments, 0));
+            case "random_hex_mixed":
+                return random_hex_mixed(getInt(arguments, 0));
             case "random_num":
                 return random_num(getInt(arguments, 0));
             case "random_unicode":
@@ -1047,6 +1064,38 @@ public class Convertors {
 
     static String random_num(int len) {
         return random("0123456789", len);
+    }
+
+    static String random_alpha_lower(int len) {
+        return random("abcdefghijklmnopqrstuvwxyz", len);
+    }
+
+    static String random_alphanum_lower(int len) {
+        return random("0123456789abcdefghijklmnopqrstuvwxyz", len);
+    }
+
+    static String random_alpha_upper(int len) {
+        return random("ABCDEFGHIJKLMNOPQRSTUVWXYZ", len);
+    }
+
+    static String random_alphanum_upper(int len) {
+        return random("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", len);
+    }
+
+    static String random_alpha_mixed(int len) {
+        return random("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", len);
+    }
+
+    static String random_alphanum_mixed(int len) {
+        return random("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", len);
+    }
+
+    static String random_hex(int len) {
+        return random("0123456789abcdef", len);
+    }
+
+    static String random_hex_mixed(int len) {
+        return random("0123456789abcdefABCDEF", len);
     }
 
     static String random(String chars, int len) {
@@ -2925,7 +2974,7 @@ public class Convertors {
         if (!tagCodeExecutionKey.equals(executionKey)) {
             return "Incorrect tag code execution key";
         }
-        V8 v8 = V8.createV8Runtime(null, String.valueOf(BurpExtender.j2v8TempDirectory));
+        V8 v8 = V8.createV8Runtime(null, String.valueOf(j2v8TempDirectory));
         String declarations = "var input, output, argument1, argument2";
         Set keySet = variableMap.keySet();
         if(keySet.size() > 0) {
@@ -2975,7 +3024,7 @@ public class Convertors {
         }
         try {
             if (code.endsWith(".js")) {
-                v8.executeScript(Files.readString(Path.of(code), StandardCharsets.UTF_8));
+                v8.executeScript(new String(Files.readAllBytes(Paths.get(code)), StandardCharsets.UTF_8));
             } else {
                 v8.executeScript(code);
             }
