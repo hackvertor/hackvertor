@@ -75,6 +75,7 @@ public class HackvertorPanel extends JPanel {
         hexScroll.setPreferredSize(new Dimension(-1, 100));
         hexScroll.setMinimumSize(new Dimension(-1, 100));
         JPanel buttonsPanel = new JPanel(new GridLayout(1, 0, 10, 0));
+        callbacks.customizeUiComponent(inputArea);
         inputArea.setFont(new Font("Courier New", Font.PLAIN, inputArea.getFont().getSize()));
         inputArea.setLineWrap(true);
         inputArea.setRows(0);
@@ -131,6 +132,7 @@ public class HackvertorPanel extends JPanel {
             inputLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
         }
         final JTextArea outputArea = new JTextArea();
+        callbacks.customizeUiComponent(outputArea);
         outputArea.setFont(new Font("Courier New", Font.PLAIN, outputArea.getFont().getSize()));
         DocumentListener documentListener = new DocumentListener() {
             public void changedUpdate(DocumentEvent documentEvent) {
