@@ -384,6 +384,7 @@ public class Hackvertor {
             Tag tag = generateCustomTag(customTag);
             tagsAndCustom.add(tag);
         }
+        tagsAndCustom.sort(Comparator.comparing(o -> o.name));
         return tagsAndCustom;
     }
 }

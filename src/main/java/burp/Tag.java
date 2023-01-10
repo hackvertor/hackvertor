@@ -2,7 +2,7 @@ package burp;
 
 public class Tag {
     public enum Category {
-        Charsets, Compression, Encrypt, Decrypt, Encode, Date, Decode, Convert, String, Hash, HMAC, Math, XSS, Variables, Loops, Languages, Custom
+        Custom, Variables, Encode, Decode, String, Convert, Math, Hash, HMAC, Charsets, Compression, Date, Loops, Encrypt, Decrypt, Languages, XSS
     };
 
     public Category category;

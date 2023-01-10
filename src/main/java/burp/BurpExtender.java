@@ -183,7 +183,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.7.2");
+	            	stdout.println("Hackvertor v1.7.3");
                     loadCustomTags();
                     loadGlobalVariables();
                     registerPayloadProcessors();
@@ -326,7 +326,6 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
 
     void registerPayloadProcessors() {
         ArrayList<Tag> tags = hackvertor.getTags();
-        tags.sort(Comparator.comparing(o -> o.name));
         for(int i=0;i<tags.size();i++) {
             Tag tag = tags.get(i);
             if(tag.argument1 == null) {
