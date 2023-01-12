@@ -183,8 +183,8 @@ public class Convertors {
                 }else if(tag.startsWith("set_")){ //Backwards compatibility with previous set_VARNAME tag format
                     String varname = tag.replace("set_","");
                     variableMap.put(varname, output);
-                    String global = getString(arguments, 0);
-                    if(global.equals("true")) {
+                    Boolean global = getBoolean(arguments, 0);
+                    if(global) {
                         globalVariables.put(varname, output);
                     }
                     return output;

@@ -324,7 +324,7 @@ public class Hackvertor {
         tags.add(new Tag(Tag.Category.XSS, "template_eval", true, "template_eval(String str)"));
         tags.add(new Tag(Tag.Category.XSS, "throw_eval", true, "throw_eval(String str)"));
         Tag setTag = new Tag(Tag.Category.Variables, "set_variable1", true, "Special tag that lets you store the results of a conversion. Change variable1 to your own variable name. The argument specifies if the variable is global.");
-        setTag.argument1 = new TagArgument("string", "false");
+        setTag.argument1 = new TagArgument("boolean", "false");
         tags.add(setTag);
         tags.add(new Tag(Tag.Category.Variables, "get_variable1", false, "Special tag that lets you get a previously set variable. Change var to your own variable name."));
         tag = new Tag(Tag.Category.Loops, "loop_for", true, "loop_for(String input, int start, int end, int increment, String i)//Does a for loop. Use a Hackvertor variable inside the tags to retrieve the position in the loop.");
