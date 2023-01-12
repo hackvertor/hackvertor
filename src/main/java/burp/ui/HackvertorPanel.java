@@ -29,15 +29,15 @@ import static java.awt.GridBagConstraints.BOTH;
 public class HackvertorPanel extends JPanel {
     
     private final Hackvertor hackvertor;
-    private final JTextArea inputArea;
-    private final JTextArea outputArea;
+    private final HackvertorInput inputArea;
+    private final HackvertorInput outputArea;
     private JTabbedPane tabs;
     
     public HackvertorPanel(Hackvertor hackvertor, boolean showLogo){
         super(new GridBagLayout());
         this.hackvertor = hackvertor;
-        this.inputArea = new JTextArea();
-        this.outputArea = new JTextArea();
+        this.inputArea = new HackvertorInput();
+        this.outputArea = new HackvertorInput();
 
         buildPanel(showLogo);
     }
@@ -75,8 +75,6 @@ public class HackvertorPanel extends JPanel {
         hexScroll.setPreferredSize(new Dimension(-1, 100));
         hexScroll.setMinimumSize(new Dimension(-1, 100));
         JPanel buttonsPanel = new JPanel(new GridLayout(1, 0, 10, 0));
-        callbacks.customizeUiComponent(inputArea);
-        inputArea.setFont(new Font("Courier New", Font.PLAIN, inputArea.getFont().getSize()));
         inputArea.setLineWrap(true);
         inputArea.setRows(0);
         final UndoManager undo = new UndoManager();
@@ -131,9 +129,7 @@ public class HackvertorPanel extends JPanel {
             inputLenLabel.setBackground(Color.decode("#FFF5BF"));
             inputLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
         }
-        final JTextArea outputArea = new JTextArea();
-        callbacks.customizeUiComponent(outputArea);
-        outputArea.setFont(new Font("Courier New", Font.PLAIN, outputArea.getFont().getSize()));
+        final JTextArea outputArea = new HackvertorInput();
         DocumentListener documentListener = new DocumentListener() {
             public void changedUpdate(DocumentEvent documentEvent) {
                 updateLen(documentEvent);
