@@ -273,8 +273,9 @@ public class Hackvertor {
         tag.argument2 = new TagArgument("int", "from");
         tag.argument3 = new TagArgument("int", "to");
         tags.add(tag);
-        tag = new Tag(Tag.Category.Math, "random", true, "random(String chars, int len)");
+        tag = new Tag(Tag.Category.Math, "random", true, "random(String chars, int len, Boolean everyCharOnce)");
         tag.argument1 = new TagArgument("int", "10");
+        tag.argument2 = new TagArgument("boolean", "false");
         tags.add(tag);
         tag = new Tag(Tag.Category.Math, "random_alpha_lower", false, "random_alpha_lower(int len)");
         tag.argument1 = new TagArgument("int", "10");

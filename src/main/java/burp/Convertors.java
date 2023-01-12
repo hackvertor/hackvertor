@@ -52,7 +52,6 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -96,6 +95,13 @@ public class Convertors {
             return "";
         }
         return args.get(pos);
+    }
+
+    public static Boolean getBoolean(ArrayList<String> args, Integer pos) {
+        if (args.size() < pos + 1) {
+            return false;
+        }
+        return Boolean.valueOf(args.get(pos));
     }
 
     public static Integer getInt(ArrayList<String> args, Integer pos) {
@@ -489,7 +495,7 @@ public class Convertors {
             case "whirlpool":
                 return whirlpool(output);
             case "random":
-                return random(output, getInt(arguments, 0));
+                return random(output, getInt(arguments, 0), getBoolean(arguments, 1));
             case "random_alpha_lower":
                 return random_alpha_lower(getInt(arguments, 0));
             case "random_alphanum_lower":
@@ -1063,47 +1069,58 @@ public class Convertors {
     }
 
     static String random_num(int len) {
-        return random("0123456789", len);
+        return random("0123456789", len, false);
     }
 
     static String random_alpha_lower(int len) {
-        return random("abcdefghijklmnopqrstuvwxyz", len);
+        return random("abcdefghijklmnopqrstuvwxyz", len, false);
     }
 
     static String random_alphanum_lower(int len) {
-        return random("0123456789abcdefghijklmnopqrstuvwxyz", len);
+        return random("0123456789abcdefghijklmnopqrstuvwxyz", len, false);
     }
 
     static String random_alpha_upper(int len) {
-        return random("ABCDEFGHIJKLMNOPQRSTUVWXYZ", len);
+        return random("ABCDEFGHIJKLMNOPQRSTUVWXYZ", len, false);
     }
 
     static String random_alphanum_upper(int len) {
-        return random("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", len);
+        return random("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", len, false);
     }
 
     static String random_alpha_mixed(int len) {
-        return random("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", len);
+        return random("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", len, false);
     }
 
     static String random_alphanum_mixed(int len) {
-        return random("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", len);
+        return random("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", len, false);
     }
 
     static String random_hex(int len) {
-        return random("0123456789abcdef", len);
+        return random("0123456789abcdef", len, false);
     }
 
     static String random_hex_mixed(int len) {
-        return random("0123456789abcdefABCDEF", len);
+        return random("0123456789abcdefABCDEF", len, false);
     }
 
-    static String random(String chars, int len) {
+    static String random(String chars, int len, Boolean everyCharacterOnce) {
+        Set<Character> usedChars = chars.chars().mapToObj(e->(char)e).collect(Collectors.toSet());
         if (len > 0 && chars.length() > 0) {
             StringBuilder sb = new StringBuilder();
             Random random = new Random();
-            for (int i = 0; i < len; i++) {
-                sb.append(chars.charAt(random.nextInt(chars.length())));
+            int i = 0;
+            while(i < len) {
+                if(everyCharacterOnce && usedChars.size() > 0) {
+                    char chr = usedChars.stream().skip(new Random().nextInt(usedChars.size())).findFirst().orElse(null);
+                    sb.append(chr);
+                    usedChars.remove(chr);
+                } else {
+                    int randomNum = random.nextInt(chars.length());
+                    char chr = chars.charAt(randomNum);
+                    sb.append(chr);
+                }
+                i++;
             }
             return sb.toString();
         }
