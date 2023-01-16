@@ -129,6 +129,7 @@ public class Hackvertor {
         tag.argument2 = new TagArgument("string", "secret");
         tags.add(tag);
         tags.add(new Tag(Tag.Category.Encode, "quoted_printable", true, "quoted_printable(String str)"));
+        tags.add(new Tag(Tag.Category.Encode, "js_string", true, "js_string(String str)"));
         tags.add(new Tag(Tag.Category.Decode, "auto_decode", true, "auto_decode(String str)"));
         tags.add(new Tag(Tag.Category.Decode, "auto_decode_no_decrypt", true, "auto_decode_no_decrypt(String str)"));
         tags.add(new Tag(Tag.Category.Decode, "d_base32", true, "decode_base32(String str)"));

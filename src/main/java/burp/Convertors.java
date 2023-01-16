@@ -44,6 +44,7 @@ import org.unbescape.html.HtmlEscapeType;
 import org.unbescape.javascript.JavaScriptEscape;
 import org.unbescape.javascript.JavaScriptEscapeLevel;
 import org.unbescape.javascript.JavaScriptEscapeType;
+import org.unbescape.json.JsonEscape;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -300,6 +301,8 @@ public class Convertors {
                 return jwt(output, getString(arguments, 0), getString(arguments, 1));
             case "quoted_printable":
                 return quoted_printable(output);
+            case "js_string":
+                return js_string(output);
             case "d_quoted_printable":
                 return d_quoted_printable(output);
             case "auto_decode":
@@ -1301,6 +1304,9 @@ public class Convertors {
         } catch (EncoderException e) {
             return "Error encoding:"+e.toString();
         }
+    }
+    static String js_string(String str) {
+        return JsonEscape.escapeJson(str);
     }
 
     static String d_quoted_printable(String str) {
