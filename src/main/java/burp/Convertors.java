@@ -1819,21 +1819,22 @@ public class Convertors {
         return CssEscape.unescapeCss(str);
     }
 
-    static String dec2hex(String str, String splitChar) {
-        String[] chars = {};
-        try {
-            chars = str.split(splitChar);
-        } catch (PatternSyntaxException e) {
-            stderr.println(e.getMessage());
-        }
-        for (int i = 0; i < chars.length; i++) {
+    static String dec2hex(String str, String regex) {
+        StringBuffer result = new StringBuffer();
+        Pattern pattern = Pattern.compile(regex);
+        Matcher regexMatcher = pattern.matcher(str);
+        while (regexMatcher.find()) {
             try {
-                chars[i] = zeropad(Integer.toHexString(Integer.parseInt(chars[i])), ",", 2);
+                String hex = Integer.toHexString(Integer.parseInt(regexMatcher.group()));
+                if(hex.length() == 1) {
+                    hex = "0" + hex;
+                }
+                regexMatcher.appendReplacement(result, hex);
             } catch (NumberFormatException e) {
                 stderr.println(e.getMessage());
             }
         }
-        return StringUtils.join(chars, ",");
+        return regexMatcher.appendTail(result).toString();
     }
 
     static String chunked_dec2hex(String str) {
@@ -1844,89 +1845,76 @@ public class Convertors {
         }
     }
 
-    static String dec2oct(String str, String splitChar) {
-        String[] chars = {};
-        try {
-            chars = str.split(splitChar);
-        } catch (PatternSyntaxException e) {
-            stderr.println(e.getMessage());
-        }
-        for (int i = 0; i < chars.length; i++) {
+    static String dec2oct(String str, String regex) {
+        StringBuffer result = new StringBuffer();
+        Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        Matcher regexMatcher = pattern.matcher(str);
+        while (regexMatcher.find()) {
             try {
-                chars[i] = Integer.toOctalString(Integer.parseInt(chars[i]));
+                String oct = Integer.toOctalString(Integer.parseInt(regexMatcher.group()));
+                regexMatcher.appendReplacement(result, oct);
             } catch (NumberFormatException e) {
                 stderr.println(e.getMessage());
             }
         }
-        return StringUtils.join(chars, ",");
+        return regexMatcher.appendTail(result).toString();
     }
 
-    static String dec2bin(String str, String splitChar) {
-        String[] chars = {};
-        try {
-            chars = str.split(splitChar);
-        } catch (PatternSyntaxException e) {
-            stderr.println(e.getMessage());
-        }
-        for (int i = 0; i < chars.length; i++) {
+    static String dec2bin(String str, String regex) {
+        StringBuffer result = new StringBuffer();
+        Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        Matcher regexMatcher = pattern.matcher(str);
+        while (regexMatcher.find()) {
             try {
-                chars[i] = Integer.toBinaryString(Integer.parseInt(chars[i]));
+                String bin = Integer.toBinaryString(Integer.parseInt(regexMatcher.group()));
+                regexMatcher.appendReplacement(result, bin);
             } catch (NumberFormatException e) {
                 stderr.println(e.getMessage());
             }
         }
-        return StringUtils.join(chars, ",");
+        return regexMatcher.appendTail(result).toString();
     }
 
-    static String hex2dec(String str, String splitChar) {
-        String[] chars = {};
-        try {
-            chars = str.split(splitChar);
-        } catch (PatternSyntaxException e) {
-            stderr.println(e.getMessage());
-        }
-        for (int i = 0; i < chars.length; i++) {
+    static String hex2dec(String str, String regex) {
+        StringBuffer result = new StringBuffer();
+        Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        Matcher regexMatcher = pattern.matcher(str);
+        while (regexMatcher.find()) {
             try {
-                chars[i] = Integer.toString(Integer.parseInt(chars[i], 16));
+                regexMatcher.appendReplacement(result, Integer.toString(Integer.parseInt(regexMatcher.group().replaceFirst("^0[xX]",""), 16)));
             } catch (NumberFormatException e) {
                 stderr.println(e.getMessage());
             }
         }
-        return StringUtils.join(chars, ",");
+        return regexMatcher.appendTail(result).toString();
     }
 
-    static String oct2dec(String str, String splitChar) {
-        String[] chars = {};
-        try {
-            chars = str.split(splitChar);
-        } catch (PatternSyntaxException e) {
-            stderr.println(e.getMessage());
-        }
-        for (int i = 0; i < chars.length; i++) {
+    static String oct2dec(String str, String regex) {
+        StringBuffer result = new StringBuffer();
+        Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        Matcher regexMatcher = pattern.matcher(str);
+        while (regexMatcher.find()) {
             try {
-                chars[i] = Integer.toString(Integer.parseInt(chars[i], 8));
+                regexMatcher.appendReplacement(result, Integer.toString(Integer.parseInt(regexMatcher.group(), 8)));
             } catch (NumberFormatException e) {
                 stderr.println(e.getMessage());
             }
         }
-        return StringUtils.join(chars, ",");
+        return regexMatcher.appendTail(result).toString();
     }
 
-    static String bin2dec(String str, String splitChar) {
-        String[] chars = {};
-        try {
-            chars = str.split(splitChar);
-        } catch (PatternSyntaxException e) {
-            stderr.println(e.getMessage());
-        }
-        for (int i = 0; i < chars.length; i++) {
+    static String bin2dec(String str, String regex) {
+        StringBuffer result = new StringBuffer();
+        Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        Matcher regexMatcher = pattern.matcher(str);
+        while (regexMatcher.find()) {
             try {
-                chars[i] = Integer.toString(Integer.parseInt(chars[i], 2));
+                regexMatcher.appendReplacement(result, Integer.toString(Integer.parseInt(regexMatcher.group(), 2)));
             } catch (NumberFormatException e) {
                 stderr.println(e.getMessage());
             }
         }
-        return StringUtils.join(chars, ",");
+        return regexMatcher.appendTail(result).toString();
     }
 
     static String from_charcode(String str) {
