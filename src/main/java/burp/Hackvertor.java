@@ -417,7 +417,7 @@ public class Hackvertor {
     public void generateFakeTags(Object[] fakeObjects) {
         for(int i=0;i<fakeObjects.length;i++) {
             Object fakeObject = fakeObjects[i];
-            String name = fakeObject.getClass().getSimpleName().toLowerCase();
+            String name = Convertors.lowercaseFirst(fakeObject.getClass().getSimpleName());
             Tag tag = new Tag(Tag.Category.Fake, "fake_" + name, false, name + "(String properties, String locale)");
             Method[] methods = fakeObject.getClass().getDeclaredMethods();
             ArrayList<String> properties = new ArrayList<>();

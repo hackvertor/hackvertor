@@ -1158,6 +1158,10 @@ public class Convertors {
         return StringUtils.lowerCase(str);
     }
 
+    static String lowercaseFirst(String str) {
+        return Character.toLowerCase(str.charAt(0)) + str.substring(1);
+    }
+
     static String unique(String str) {
         String words[] = str.split(" ");
         Set result = new HashSet(Arrays.asList(words));
