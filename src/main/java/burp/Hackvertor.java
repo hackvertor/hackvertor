@@ -1,8 +1,11 @@
 package burp;
 
+import com.github.javafaker.Faker;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
 import java.util.*;
 
@@ -206,6 +209,50 @@ public class Hackvertor {
         tag.argument1 = new TagArgument("string", "split char");
         tag.argument2 = new TagArgument("string", "join char");
         tags.add(tag);
+
+        Faker faker = new Faker();
+        generateFakeTags(new Object[]{
+                faker.address(),
+                faker.ancient(),
+                faker.animal(),
+                faker.app(),
+                faker.artist(),
+                faker.avatar(),
+                faker.aviation(),
+                faker.book(),
+                faker.bool(),
+                faker.business(),
+                faker.code(),
+                faker.currency(),
+                faker.color(),
+                faker.commerce(),
+                faker.company(),
+                faker.crypto(),
+                faker.date(),
+                faker.demographic(),
+                faker.educator(),
+                faker.file(),
+                faker.finance(),
+                faker.food(),
+                faker.hacker(),
+                faker.idNumber(),
+                faker.internet(),
+                faker.job(),
+                faker.lorem(),
+                faker.music(),
+                faker.name(),
+                faker.nation(),
+                faker.number(),
+                faker.options(),
+                faker.phoneNumber(),
+                faker.slackEmoji(),
+                faker.space(),
+                faker.stock(),
+                faker.team(),
+                faker.university(),
+                faker.weather()
+        });
+
         tag = new Tag(Tag.Category.HMAC, "hmac_md5", true, "hmacmd5(String str, String key)");
         tag.argument1 = new TagArgument("string", "SECRET");
         tags.add(tag);
@@ -365,6 +412,29 @@ public class Hackvertor {
             tags.add(tag);
         }
 
+    }
+
+    public void generateFakeTags(Object[] fakeObjects) {
+        for(int i=0;i<fakeObjects.length;i++) {
+            Object fakeObject = fakeObjects[i];
+            String name = fakeObject.getClass().getSimpleName().toLowerCase();
+            Tag tag = new Tag(Tag.Category.Fake, "fake_" + name, false, name + "(String properties, String locale)");
+            Method[] methods = fakeObject.getClass().getDeclaredMethods();
+            ArrayList<String> properties = new ArrayList<>();
+            for (Method method : methods) {
+                if (shouldFilterMethod(method)) {
+                    continue;
+                }
+                properties.add('$' + method.getName());
+            }
+            tag.argument1 = new TagArgument("string", String.join(", ", properties));
+            tag.argument2 = new TagArgument("string", "en-GB");
+            tags.add(tag);
+        }
+    }
+
+    public static Boolean shouldFilterMethod(Method method) {
+        return method.getParameterCount() != 0 || !Modifier.isPublic(method.getModifiers());
     }
 
     public JSONArray getCustomTags() {

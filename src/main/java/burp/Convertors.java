@@ -11,6 +11,8 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.eclipsesource.v8.V8;
+import com.github.javafaker.Address;
+import com.github.javafaker.Faker;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import org.apache.commons.codec.DecoderException;
@@ -49,6 +51,8 @@ import org.unbescape.json.JsonEscape;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -129,7 +133,9 @@ public class Convertors {
     public static String callTag(HashMap<String, String> variableMap, JSONArray customTags, String tag, String output, ArrayList<String> arguments) throws ParseException {
         switch (tag) {
             default:
-                if (tag.startsWith("_")) {
+                if (tag.startsWith("fake_")) {
+                    return fake(tag, getString(arguments, 0), getString(arguments, 1));
+                } else if (tag.startsWith("_")) {
                     for (int i = 0; i < customTags.length(); i++) {
                         JSONObject customTag = (JSONObject) customTags.get(i);
                         String customTagName = customTag.getString("tagName");
@@ -2056,6 +2062,47 @@ public class Convertors {
 
     static String hmacsha512(String str, String key) {
         return hmac(str, key, "HmacSHA512");
+    }
+
+    static String fake(String name, String properties, String locale) {
+        Faker faker = new Faker(new Locale(locale));
+        name = name.replaceFirst("^fake_", "");
+        name = name.replaceAll("[^\\w]+","");
+        Method[] methods = faker.getClass().getDeclaredMethods();;
+        for(Method method : methods) {
+            if(Hackvertor.shouldFilterMethod(method)) {
+                continue;
+            }
+            if(!method.getName().equals(name)) {
+                continue;
+            }
+            try {
+                Object obj = method.invoke(faker);
+                return replaceProperties(obj, replaceProperties(obj, properties));
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            } catch (InvocationTargetException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return "";
+    }
+
+    private static String replaceProperties(Object obj, String properties) {
+        Method[] methods = obj.getClass().getDeclaredMethods();
+        for(Method method : methods) {
+            if(Hackvertor.shouldFilterMethod(method)) {
+                continue;
+            }
+            try {
+                properties = properties.replaceAll("\\$"+method.getName(), method.invoke(obj).toString());
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            } catch (InvocationTargetException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return properties;
     }
 
     static String sha1(String str) {
