@@ -183,7 +183,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.7.10");
+	            	stdout.println("Hackvertor v1.7.12");
                     loadCustomTags();
                     loadGlobalVariables();
                     registerPayloadProcessors();
@@ -522,10 +522,10 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                     return;
                 }
                 if (index == 0) {
-                    codeArea.setText("output = input.toUpperCase()");
+                    codeArea.setText("output = convert(\"<@base64>\"+input+\"<@/base64>\").toUpperCase()");
                     changes[0] = 0;
                 } else if (index == 1) {
-                    codeArea.setText("output = input.upper()");
+                    codeArea.setText("output = convert(\"<@base64>\"+input+\"<@/base64>\").upper()");
                     changes[0] = 0;
                 }
             }
@@ -624,10 +624,11 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         argument2Panel.add(argument2DefaultLabel);
         argument2Panel.add(argument2DefaultValueField);
         createTagPanel.add(argument2Panel);
-
+        JLabel convertLabel = new JLabel("You can now convert Hackvertor tags inside customTags!");
         JLabel codeLabel = new JLabel("Code (if you end the code with .js/.py/.java/.groovy it will read a file)");
         codeLabel.setPreferredSize(new Dimension(450, 25));
         codeScroll.setPreferredSize(new Dimension(450, 300));
+        createTagPanel.add(convertLabel);
         createTagPanel.add(codeLabel);
         createTagPanel.add(codeScroll);
         JButton cancelButton = new JButton("Cancel");
@@ -728,7 +729,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                     } else if(language.equals("Java")){
                         output = java(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions);
                     } else if(language.equals("Groovy")){
-                        output = groovy(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions);
+                        output = groovy(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions, null);
                     }
                 }catch (Exception ee){
                     ee.printStackTrace();

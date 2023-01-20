@@ -10,8 +10,7 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import com.eclipsesource.v8.V8;
-import com.github.javafaker.Address;
+import com.eclipsesource.v8.*;
 import com.github.javafaker.Faker;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
@@ -188,7 +187,7 @@ public class Convertors {
                             } else if (language.equals("java")) {
                                 return java(variableMap, output, code, eKey, customTagOptions);
                             } else if (language.equals("groovy")) {
-                                return groovy(variableMap, output, code, eKey, customTagOptions);
+                                return groovy(variableMap, output, code, eKey, customTagOptions, null);
                             }
                         }
                     }
@@ -567,7 +566,7 @@ public class Convertors {
             case "java":
                 return java(variableMap, output, getString(arguments, 0), getString(arguments, 1), null);
             case "groovy":
-                return groovy(variableMap, output, getString(arguments, 0), getString(arguments, 1), null);
+                return groovy(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, null);
             case "loop_for":
                 return loop_for(variableMap, customTags, output, getInt(arguments, 0), getInt(arguments, 1), getInt(arguments, 2), getString(arguments, 3));
             case "loop_letters_lower":
@@ -2905,6 +2904,8 @@ public class Convertors {
         try {
             PythonInterpreter pythonInterpreter = new PythonInterpreter();
             pythonInterpreter.set("input", input);
+            pythonInterpreter.set("variableMap", variableMap);
+            pythonInterpreter.set("customTags", new Hackvertor().getCustomTags());
             for (Map.Entry<String, String> entry : variableMap.entrySet()) {
                 String name = entry.getKey();
                 Object value = entry.getValue();
@@ -2937,7 +2938,12 @@ public class Convertors {
                 "   def write(self, text):\n" +
                 "       BurpExtender.print(text)\n" +
                 "orig_stdout = sys.stdout\n" +
-                "sys.stdout = StreamWrapper(orig_stdout)\n";
+                "sys.stdout = StreamWrapper(orig_stdout)\n" +
+                "from burp import Convertors\n" +
+                "def convert(input):\n" +
+                "   return Convertors.convert(variableMap, customTags, input)\n" +
+                "\n";
+
                 pythonInterpreter.exec(initCode + code);
             }
             PyObject output = pythonInterpreter.get("output");
@@ -2969,6 +2975,12 @@ public class Convertors {
         Interpreter javaInterpreter = new Interpreter();
         try {
             javaInterpreter.set("input", input);
+            javaInterpreter.set("variableMap", variableMap);
+            javaInterpreter.set("customTags", new Hackvertor().getCustomTags());
+            String initCode = "import burp.Convertors;\n" +
+                    "public String convert(String input) {\n" +
+                    "   return Convertors.convert(variableMap, customTags, input);\n" +
+                    "}\n";
             for (Map.Entry<String, String> entry : variableMap.entrySet()) {
                 String name = entry.getKey();
                 Object value = entry.getValue();
@@ -2990,7 +3002,7 @@ public class Convertors {
             if (code.endsWith(".java")) {
                 javaInterpreter.source(code);
             } else {
-                javaInterpreter.eval(code);
+                javaInterpreter.eval(initCode + code);
             }
             return javaInterpreter.get("output").toString();
         } catch (EvalError | IOException e) {
@@ -3001,7 +3013,7 @@ public class Convertors {
             return "Unable to parse Java:" + e.toString();
         }
     }
-    static String groovy(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions) {
+    static String groovy(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions, JSONArray customTags) {
         if (!codeExecutionTagsEnabled) {
             return "Code execution tags are disabled by default. Use the menu bar to enable them.";
         }
@@ -3017,11 +3029,17 @@ public class Convertors {
         Binding data = new Binding();
         GroovyShell shell = new GroovyShell(data);
         data.setProperty("input", input);
+        data.setVariable("variableMap", variableMap);
+        data.setVariable("customTags", new Hackvertor().getCustomTags());
+        String initCode = "import burp.Convertors;\n" +
+                "public String convert(String input) {\n" +
+                "   return Convertors.convert(variableMap, customTags, input);\n" +
+                "}\n";
         try {
             if (code.endsWith(".groovy")) {
                 shell.evaluate(new FileReader(code));
             } else {
-                shell.evaluate(code);
+                shell.evaluate(initCode + code);
             }
         } catch (FileNotFoundException | CompilationFailedException e) {
             return "Unable to parse Groovy:" + e.toString();
@@ -3049,6 +3067,20 @@ public class Convertors {
         }
         v8.executeScript(declarations);
         v8.add("input", input);
+        JavaCallback callback = new JavaCallback() {
+            public String invoke(final V8Object receiver, final V8Array parameters) {
+                if (parameters.length() > 0) {
+                    Object input = parameters.get(0);
+                    String output = convert(variableMap, new Hackvertor().getCustomTags(), input.toString());
+                    if (input instanceof Releasable) {
+                        ((Releasable) input).release();
+                    }
+                    return output;
+                }
+                return "";
+            }
+        };
+        v8.registerJavaMethod(callback, "convert");
         for (Map.Entry<String, String> entry : variableMap.entrySet()) {
             String name = entry.getKey();
             String value = entry.getValue();
