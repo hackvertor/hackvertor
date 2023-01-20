@@ -131,6 +131,11 @@ public class Convertors {
     }
 
     public static String callTag(HashMap<String, String> variableMap, JSONArray customTags, String tag, String output, ArrayList<String> arguments) throws ParseException {
+
+        for(int i=0;i<arguments.size();i++) {
+            arguments.set(i, convert(variableMap, customTags, arguments.get(i)));
+        }
+
         switch (tag) {
             default:
                 if (tag.startsWith("fake_")) {
