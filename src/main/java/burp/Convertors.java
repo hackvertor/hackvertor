@@ -181,13 +181,13 @@ public class Convertors {
                             String language = customTag.getString("language").toLowerCase();
                             String code = customTag.getString("code");
                             if (language.equals("javascript")) {
-                                return javascript(variableMap, output, code, eKey, customTagOptions);
+                                return javascript(variableMap, output, code, eKey, customTagOptions, customTags);
                             } else if (language.equals("python")) {
-                                return python(variableMap, output, code, eKey, customTagOptions);
+                                return python(variableMap, output, code, eKey, customTagOptions, customTags);
                             } else if (language.equals("java")) {
-                                return java(variableMap, output, code, eKey, customTagOptions);
+                                return java(variableMap, output, code, eKey, customTagOptions, customTags);
                             } else if (language.equals("groovy")) {
-                                return groovy(variableMap, output, code, eKey, customTagOptions, null);
+                                return groovy(variableMap, output, code, eKey, customTagOptions, customTags);
                             }
                         }
                     }
@@ -560,13 +560,13 @@ public class Convertors {
             case "throw_eval":
                 return throw_eval(output);
             case "python":
-                return python(variableMap, output, getString(arguments, 0), getString(arguments, 1), null);
+                return python(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags);
             case "javascript":
-                return javascript(variableMap, output, getString(arguments, 0), getString(arguments, 1), null);
+                return javascript(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags);
             case "java":
-                return java(variableMap, output, getString(arguments, 0), getString(arguments, 1), null);
+                return java(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags);
             case "groovy":
-                return groovy(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, null);
+                return groovy(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags);
             case "loop_for":
                 return loop_for(variableMap, customTags, output, getInt(arguments, 0), getInt(arguments, 1), getInt(arguments, 2), getString(arguments, 3));
             case "loop_letters_lower":
@@ -2888,7 +2888,7 @@ public class Convertors {
         return "eval(`" + str.replaceAll("(.)", "$1\\${[]}") + "`)";
     }
 
-    static String python(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions) {
+    static String python(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions, JSONArray customTags) {
         if (!codeExecutionTagsEnabled) {
             return "Code execution tags are disabled by default. Use the menu bar to enable them.";
         }
@@ -2904,8 +2904,9 @@ public class Convertors {
         try {
             PythonInterpreter pythonInterpreter = new PythonInterpreter();
             pythonInterpreter.set("input", input);
+            pythonInterpreter.set("executionKey", executionKey);
             pythonInterpreter.set("variableMap", variableMap);
-            pythonInterpreter.set("customTags", new Hackvertor().getCustomTags());
+            pythonInterpreter.set("customTags", customTags);
             for (Map.Entry<String, String> entry : variableMap.entrySet()) {
                 String name = entry.getKey();
                 Object value = entry.getValue();
@@ -2959,7 +2960,7 @@ public class Convertors {
         }
     }
 
-    static String java(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions) {
+    static String java(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions, JSONArray customTags) {
         if (!codeExecutionTagsEnabled) {
             return "Code execution tags are disabled by default. Use the menu bar to enable them.";
         }
@@ -2976,7 +2977,8 @@ public class Convertors {
         try {
             javaInterpreter.set("input", input);
             javaInterpreter.set("variableMap", variableMap);
-            javaInterpreter.set("customTags", new Hackvertor().getCustomTags());
+            javaInterpreter.set("executionKey", executionKey);
+            javaInterpreter.set("customTags", customTags);
             String initCode = "import burp.Convertors;\n" +
                     "public String convert(String input) {\n" +
                     "   return Convertors.convert(variableMap, customTags, input);\n" +
@@ -3030,7 +3032,8 @@ public class Convertors {
         GroovyShell shell = new GroovyShell(data);
         data.setProperty("input", input);
         data.setVariable("variableMap", variableMap);
-        data.setVariable("customTags", new Hackvertor().getCustomTags());
+        data.setVariable("executionKey", executionKey);
+        data.setVariable("customTags", customTags);
         String initCode = "import burp.Convertors;\n" +
                 "public String convert(String input) {\n" +
                 "   return Convertors.convert(variableMap, customTags, input);\n" +
@@ -3046,7 +3049,7 @@ public class Convertors {
         }
         return shell.getVariable("output").toString();
     }
-    static String javascript(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions) {
+    static String javascript(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions, JSONArray customTags) {
         if (!codeExecutionTagsEnabled) {
             return "Code execution tags are disabled by default. Use the menu bar to enable them.";
         }
@@ -3067,11 +3070,12 @@ public class Convertors {
         }
         v8.executeScript(declarations);
         v8.add("input", input);
+        v8.add("executionKey", executionKey);
         JavaCallback callback = new JavaCallback() {
             public String invoke(final V8Object receiver, final V8Array parameters) {
                 if (parameters.length() > 0) {
                     Object input = parameters.get(0);
-                    String output = convert(variableMap, new Hackvertor().getCustomTags(), input.toString());
+                    String output = convert(variableMap, customTags, input.toString());
                     if (input instanceof Releasable) {
                         ((Releasable) input).release();
                     }

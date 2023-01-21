@@ -183,7 +183,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.7.12");
+	            	stdout.println("Hackvertor v1.7.13");
                     loadCustomTags();
                     loadGlobalVariables();
                     registerPayloadProcessors();
@@ -672,7 +672,6 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 String input = JOptionPane.showInputDialog(null, "Enter input for your tag", "test");
                 String output = "";
 
-
                 JSONObject tag = new JSONObject();
                 tag.put("tagName", "_" + tagName);
                 tag.put("language", language);
@@ -723,13 +722,13 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
 
                 try {
                     if (language.equals("JavaScript")) {
-                        output = javascript(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions);
+                        output = javascript(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions, hackvertor.getCustomTags());
                     } else if(language.equals("Python")){
-                        output = python(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions);
+                        output = python(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions, hackvertor.getCustomTags());
                     } else if(language.equals("Java")){
-                        output = java(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions);
+                        output = java(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions, hackvertor.getCustomTags());
                     } else if(language.equals("Groovy")){
-                        output = groovy(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions, null);
+                        output = groovy(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions, hackvertor.getCustomTags());
                     }
                 }catch (Exception ee){
                     ee.printStackTrace();
