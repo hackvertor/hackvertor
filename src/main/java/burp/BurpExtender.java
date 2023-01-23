@@ -183,7 +183,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.7.13");
+	            	stdout.println("Hackvertor v1.7.14");
                     loadCustomTags();
                     loadGlobalVariables();
                     registerPayloadProcessors();
@@ -521,13 +521,14 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 if (changes[0] > 0) {
                     return;
                 }
-                if (index == 0) {
-                    codeArea.setText("output = convert(\"<@base64>\"+input+\"<@/base64>\").toUpperCase()");
-                    changes[0] = 0;
-                } else if (index == 1) {
-                    codeArea.setText("output = convert(\"<@base64>\"+input+\"<@/base64>\").upper()");
-                    changes[0] = 0;
+                String code = "output = convert(\"<@base64>\"+input+\"<@/base64>\")\n";
+                String comment = "//";
+                if(index == 1) {
+                    comment = "#";
                 }
+                code += comment + "output = convert(\"<@customTag('\"+executionKey+\"')>\"+input+\"<@/customTag>\")";
+                codeArea.setText(code);
+                changes[0] = 0;
             }
         });
         languageCombo.setPreferredSize(new Dimension(220, 25));
