@@ -183,7 +183,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.7.14");
+	            	stdout.println("Hackvertor v1.7.15");
                     loadCustomTags();
                     loadGlobalVariables();
                     registerPayloadProcessors();
@@ -341,7 +341,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         JPanel createVariablePanel = new JPanel();
         JFrame createVariableWindow = new JFrame("Global variables");
         createVariableWindow.setResizable(false);
-        createVariableWindow.setPreferredSize(new Dimension(500, 600));
+        createVariableWindow.setPreferredSize(new Dimension(500, 200));
 
         JLabel errorMessage = new JLabel();
         errorMessage.setPreferredSize(new Dimension(450, 25));
