@@ -60,9 +60,20 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
     private boolean tagsInScanner = true;
     private boolean tagsInExtensions = true;
     private boolean autoUpdateContentLength = true;
+    public static boolean allowTagCount = false;
+    public static HashMap<String, Integer> tagCount = new HashMap<>();
+   public static final HashMap<String, HashMap<String, Integer>> contextTagCount = new HashMap() {
+        {
+            put("GET", new HashMap<>());
+            put("POST", new HashMap<>());
+            put("JSON", new HashMap<>());
+        }
+    };
     private boolean hvShutdown = false;
     private JMenuBar burpMenuBar;
     private JMenu hvMenuBar;
+
+    public static int MAX_POPULAR_TAGS = 10;
 
     public static GridBagConstraints createConstraints(int x, int y, int gridWidth) {
         GridBagConstraints c = new GridBagConstraints();
@@ -159,6 +170,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
 
     public void registerExtenderCallbacks(final IBurpExtenderCallbacks burpCallbacks) {
         callbacks = burpCallbacks;
+        allowTagCount = Boolean.valueOf(callbacks.loadExtensionSetting("allowTagCount"));
         helpers = callbacks.getHelpers();
         stderr = new PrintWriter(callbacks.getStderr(), true);
         stdout = new PrintWriter(callbacks.getStdout(), true);
@@ -183,7 +195,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.7.15");
+	            	stdout.println("Hackvertor v1.7.17");
                     loadCustomTags();
                     loadGlobalVariables();
                     registerPayloadProcessors();
@@ -276,6 +288,19 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                         }
                     });
                     hvMenuBar.add(fixContentLengthMenu);
+                    final JCheckBoxMenuItem countTagUsageMenu = new JCheckBoxMenuItem(
+                            "Allow Hackvertor to count tag usage", allowTagCount);
+                    countTagUsageMenu.addItemListener(new ItemListener() {
+                        public void itemStateChanged(ItemEvent e) {
+                            if (countTagUsageMenu.getState()) {
+                                allowTagCount = true;
+                            } else {
+                                allowTagCount = false;
+                            }
+                            callbacks.saveExtensionSetting("allowTagCount", String.valueOf(allowTagCount));
+                        }
+                    });
+                    hvMenuBar.add(countTagUsageMenu);
                     JMenuItem globalVariablesMenu = new JMenuItem("Global variables");
                     globalVariablesMenu.addActionListener(new ActionListener() {
                         @Override
@@ -999,7 +1024,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         hvShutdown = true;
         burpMenuBar.remove(hvMenuBar);
         burpMenuBar.repaint();
-        stdout.println("Hackvertor unloaded");
+        callbacks.printOutput("Hackvertor unloaded");
     }
 
     public byte[] fixContentLength(byte[] request) {
@@ -1226,12 +1251,43 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
             }
         });
-        submenu.add(autodecodeConvert);
-        submenu.addSeparator();
         loadCustomTags();
+        submenu.add(autodecodeConvert);
+        if(allowTagCount) {
+            JMenu contextPopularTags = new JMenu("Popular tags for this context");
+            ArrayList<Tag> tags = hackvertor.getTags();
+            byte[] message = invocation.getSelectedMessages()[0].getRequest();
+            IRequestInfo analyzedRequest = helpers.analyzeRequest(message);
+            String context = Utils.getContext(analyzedRequest);
+            if(contextTagCount.containsKey(context)) {
+                if(contextTagCount.get(context) != null) {
+                    contextTagCount.get(context).entrySet().stream().limit(MAX_POPULAR_TAGS)
+                            .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
+                            .forEach(entry -> {
+                                JMenuItem tagMenuItem = new JMenuItem(entry.getKey() + "(" + entry.getValue() + ")");
+                                Tag tagObj = Utils.getTagByTagName(tags, entry.getKey());
+                                tagMenuItem.addActionListener(Utils.generateTagActionListener(invocation, tagObj));
+                                contextPopularTags.add(tagMenuItem);
+                            });
+                    submenu.add(contextPopularTags);
+                }
+            }
+            JMenu popularTags = new JMenu("Popular tags");
+            tagCount.entrySet().stream().limit(MAX_POPULAR_TAGS)
+                    .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
+                    .forEach(entry -> {
+                        JMenuItem tagMenuItem = new JMenuItem(entry.getKey() + "("+entry.getValue()+")");
+                        Tag tagObj = Utils.getTagByTagName(tags, entry.getKey());
+                        tagMenuItem.addActionListener(Utils.generateTagActionListener(invocation, tagObj));
+                        popularTags.add(tagMenuItem);
+                    });
+            submenu.add(popularTags);
+        }
+
+        submenu.addSeparator();
         for (int i = 0; i < Tag.Category.values().length; i++) {
             Tag.Category category = Tag.Category.values()[i];
-            JMenu categoryMenu = Utils.createTagMenuForCategory(hackvertor.getTags(), category, invocation, "", false);
+            JMenu categoryMenu = Utils.createTagMenuForCategory(hackvertor.getTags(), category, invocation, "", false, null);
             submenu.add(categoryMenu);
         }
         menu.add(submenu);

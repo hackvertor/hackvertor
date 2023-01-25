@@ -11,6 +11,7 @@ import java.awt.event.ActionListener;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -76,7 +77,59 @@ public class Utils {
         return elements.stream().map(Objects::toString).collect(Collectors.joining());
     }
 
-    public static JMenu createTagMenuForCategory(List<Tag> tags, Tag.Category category, final IContextMenuInvocation invocation, String searchTag, Boolean regex) {
+    public static Tag getTagByTagName(Collection<Tag> tags, String tagName) {
+        return tags.stream().filter(tag -> tagName.equals(tag.name)).findFirst().orElse(null);
+    }
+
+    public static String getContext(IRequestInfo analyzedRequest) {
+        if(analyzedRequest.getContentType() == IRequestInfo.CONTENT_TYPE_JSON) {
+            return "JSON";
+        }
+        if(analyzedRequest.getMethod().equalsIgnoreCase("GET")) {
+            return "GET";
+        }
+        if(analyzedRequest.getMethod().equalsIgnoreCase("POST")) {
+            return "POST";
+        }
+        return null;
+    }
+
+    public static ActionListener generateTagActionListener(final IContextMenuInvocation invocation, Tag tagObj) {
+        return  e -> {
+            String[] tagStartEnd = Convertors.generateTagStartEnd(tagObj);
+            String tagStart = tagStartEnd[0];
+            String tagEnd = tagStartEnd[1];
+            if (invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST || invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST || invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_INTRUDER_PAYLOAD_POSITIONS) {
+                int[] bounds = invocation.getSelectionBounds();
+                byte[] message = invocation.getSelectedMessages()[0].getRequest();
+                if(allowTagCount) {
+                    IRequestInfo analyzedRequest = helpers.analyzeRequest(message);
+                    String context = getContext(analyzedRequest);
+                    if(contextTagCount.containsKey(context)) {
+                        int currentCount = contextTagCount.get(context).get(tagObj.name) == null ? 0 : contextTagCount.get(context).get(tagObj.name);
+                        contextTagCount.get(context).put(tagObj.name, currentCount + 1);
+                    }
+
+                    int count = tagCount.get(tagObj.name) == null ? 0 : tagCount.get(tagObj.name);
+                    tagCount.put(tagObj.name, count + 1);
+                }
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                try {
+                    outputStream.write(Arrays.copyOfRange(message, 0, bounds[0]));
+                    outputStream.write(helpers.stringToBytes(tagStart));
+                    outputStream.write(Arrays.copyOfRange(message, bounds[0], bounds[1]));
+                    outputStream.write(helpers.stringToBytes(tagEnd));
+                    outputStream.write(Arrays.copyOfRange(message, bounds[1], message.length));
+                    outputStream.flush();
+                    invocation.getSelectedMessages()[0].setRequest(outputStream.toByteArray());
+                } catch (IOException e1) {
+                    System.err.println(e1.toString());
+                }
+            }
+        };
+    }
+
+    public static JMenu createTagMenuForCategory(List<Tag> tags, Tag.Category category, final IContextMenuInvocation invocation, String searchTag, Boolean regex, Tag specificTag) {
         JMenu parentMenu = new JMenu(category.name());
         int tagCount = (int) tags.stream().filter(tag -> tag.category == category).count();
         if (tagCount > 40) {
@@ -93,33 +146,8 @@ public class Utils {
         for (final Tag tagObj : tags) {
             final JMenuItem menu = new JMenuItem(tagObj.name);
             menu.setToolTipText(tagObj.tooltip);
-
-            ActionListener actionListener;
             if ((category != null && category.equals(tagObj.category)) || (searchTag.length() > 0 && (regex ? tagObj.name.matches(searchTag) : tagObj.name.contains(searchTag)))) {
-
-                actionListener = e -> {
-                    String[] tagStartEnd = Convertors.generateTagStartEnd(tagObj);
-                    String tagStart = tagStartEnd[0];
-                    String tagEnd = tagStartEnd[1];
-                    if (invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST || invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST || invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_INTRUDER_PAYLOAD_POSITIONS) {
-                        int[] bounds = invocation.getSelectionBounds();
-                        byte[] message = invocation.getSelectedMessages()[0].getRequest();
-                        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                        try {
-                            outputStream.write(Arrays.copyOfRange(message, 0, bounds[0]));
-                            outputStream.write(helpers.stringToBytes(tagStart));
-                            outputStream.write(Arrays.copyOfRange(message, bounds[0], bounds[1]));
-                            outputStream.write(helpers.stringToBytes(tagEnd));
-                            outputStream.write(Arrays.copyOfRange(message, bounds[1], message.length));
-                            outputStream.flush();
-                            invocation.getSelectedMessages()[0].setRequest(outputStream.toByteArray());
-                        } catch (IOException e1) {
-                            System.err.println(e1.toString());
-                        }
-                    }
-                };
-
-                menu.addActionListener(actionListener);
+                menu.addActionListener(generateTagActionListener(invocation, tagObj));
                 if (tagCount > 40) {
                     for (int i = 0; i < parentMenu.getItemCount(); i++) {
                         if (parentMenu.getItem(i).getText().equals("0-9") && Character.isDigit(tagObj.name.charAt(0))) {

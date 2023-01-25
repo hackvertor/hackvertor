@@ -130,7 +130,10 @@ public class Convertors {
     }
 
     public static String callTag(HashMap<String, String> variableMap, JSONArray customTags, String tag, String output, ArrayList<String> arguments) throws ParseException {
-
+        if(allowTagCount) {
+            int count = tagCount.get(tag) == null ? 0 : tagCount.get(tag);
+            tagCount.put(tag, count + 1);
+        }
         for(int i=0;i<arguments.size();i++) {
             arguments.set(i, convert(variableMap, customTags, arguments.get(i)));
         }
