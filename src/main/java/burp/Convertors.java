@@ -814,6 +814,9 @@ public class Convertors {
     }
 
     static String context_url(String properties, Hackvertor hackvertor) {
+        if(hackvertor == null) {
+            return properties;
+        }
         IRequestInfo analyzedRequest = hackvertor.getAnalyzedRequest();
         properties = properties.replace("$protocol", analyzedRequest.getUrl().getProtocol());
         properties = properties.replace("$host", analyzedRequest.getUrl().getHost());
