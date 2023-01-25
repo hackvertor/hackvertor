@@ -1,5 +1,8 @@
 package burp;
 
+import burp.parser.Element;
+import burp.parser.HackvertorParser;
+import burp.parser.ParseException;
 import com.github.javafaker.Faker;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -8,15 +11,37 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static burp.BurpExtender.*;
 
 public class Hackvertor {
     private ArrayList<Tag> tags = new ArrayList<Tag>();
     private JSONArray customTags = new JSONArray();
-
+    private IRequestInfo analyzedRequest = null;
     public Hackvertor(){
         init();
+    }
+
+    public void analyzeRequest(byte[] request, IHttpRequestResponse messageInfo) {
+        this.analyzedRequest = helpers.analyzeRequest(messageInfo.getHttpService(), request);
+    }
+
+    public static String removeHackvertorTags(String input) {
+        try {
+            input = HackvertorParser.parse(input).stream()
+                    .filter(element -> element instanceof Element.TextElement)
+                    .map(element -> ((Element.TextElement) element).getContent())
+                    .collect(Collectors.joining());
+        }catch (ParseException ex){
+            //TODO Better error handling.
+            ex.printStackTrace();
+        }
+        return input;
+    }
+
+    public IRequestInfo getAnalyzedRequest() {
+        return analyzedRequest;
     }
 
     void init() {
@@ -375,6 +400,12 @@ public class Hackvertor {
         setTag.argument1 = new TagArgument("boolean", "false");
         tags.add(setTag);
         tags.add(new Tag(Tag.Category.Variables, "get_variable1", false, "Special tag that lets you get a previously set variable. Change var to your own variable name."));
+        tag = new Tag(Tag.Category.Variables, "context_url", false, "context_url(String properties");
+        tag.argument1 = new TagArgument("string", "$protocol $host $path $file $query $port");
+        tags.add(tag);
+        tag = new Tag(Tag.Category.Variables, "context_header", false, "context_url(String headerName");
+        tag.argument1 = new TagArgument("string", "$headerName");
+        tags.add(tag);
         tag = new Tag(Tag.Category.Loops, "loop_for", true, "loop_for(String input, int start, int end, int increment, String i)//Does a for loop. Use a Hackvertor variable inside the tags to retrieve the position in the loop.");
         tag.argument1 = new TagArgument("int", "0");
         tag.argument2 = new TagArgument("int", "10");
@@ -445,8 +476,8 @@ public class Hackvertor {
         this.customTags = tags;
     }
 
-    public String convert(String message){
-        return Convertors.weakConvert(new HashMap<>(), customTags, message);
+    public String convert(String message, Hackvertor hackvertor){
+        return Convertors.weakConvert(new HashMap<>(), customTags, message, hackvertor);
     }
 
     public ArrayList<Tag> getTags() {

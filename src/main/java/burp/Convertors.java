@@ -129,7 +129,7 @@ public class Convertors {
         return output;
     }
 
-    public static String callTag(HashMap<String, String> variableMap, JSONArray customTags, String tag, String output, ArrayList<String> arguments) throws ParseException {
+    public static String callTag(HashMap<String, String> variableMap, JSONArray customTags, String tag, String output, ArrayList<String> arguments, Hackvertor hackvertor) throws ParseException {
         if(allowTagCount) {
             int count = tagCount.get(tag) == null ? 0 : tagCount.get(tag);
             tagCount.put(tag, count + 1);
@@ -216,7 +216,7 @@ public class Convertors {
                         if(tag.matches(".*_\\d+$")) {
                             String tagWithoutID = tag.replaceFirst("_\\d+$", "");
                             try {
-                                return callTag(variableMap, customTags, tagWithoutID, output, arguments);
+                                return callTag(variableMap, customTags, tagWithoutID, output, arguments, null);
                             } catch (ParseException e1) { }
                         }
 
@@ -233,6 +233,10 @@ public class Convertors {
             case "get_var":
             case "get_variable":
                 return variableMap.getOrDefault(getString(arguments,0), StringUtils.isEmpty(output) ? "UNDEFINED" : output);
+            case "context_url":
+                return context_url(getString(arguments,0), hackvertor);
+            case "context_header":
+                return context_header(getString(arguments,0), hackvertor);
             case "charset_convert": {
                 try {
                     return charset_convert(output, getString(arguments, 0), getString(arguments, 1));
@@ -618,12 +622,12 @@ public class Convertors {
     /**
      * Recursive conversion, treating mismatched tags as text
      */
-    public static String weakConvert(HashMap<String, String> variables, JSONArray customTags, String input){
+    public static String weakConvert(HashMap<String, String> variables, JSONArray customTags, String input, Hackvertor hackvertor){
         Queue<Element> tagElements;
         try {
             tagElements = HackvertorParser.parse(input);
             tagElements = weakConvertProcessSetTags(variables, customTags, tagElements);
-            return weakConvert(variables, customTags, new Stack<>(), tagElements);
+            return weakConvert(variables, customTags, new Stack<>(), tagElements, hackvertor);
         }catch (Exception e){
             StringWriter sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
@@ -662,7 +666,7 @@ public class Convertors {
             textBuffer+= ((Element.TextElement) element).getContent();
         }else if(element instanceof Element.SelfClosingTag){ //Self closing tag. Just add its output to textbuffer.
             Element.SelfClosingTag selfClosingTag = (Element.SelfClosingTag) element;
-            String tagOutput = callTag(variables, customTags, selfClosingTag.getIdentifier(), "", selfClosingTag.getArguments());
+            String tagOutput = callTag(variables, customTags, selfClosingTag.getIdentifier(), "", selfClosingTag.getArguments(), null);
             textBuffer+= tagOutput;
         }else if(element instanceof Element.StartTag){ //Start of a conversion.
             stack.push((Element.StartTag) element);
@@ -679,7 +683,7 @@ public class Convertors {
                 throw new ParseException(String.format("Mismatched opening and closing tags, %s and %s.",
                         startTag.getIdentifier(), endTag.getIdentifier()));
             }
-            return callTag(variables, customTags, startTag.getIdentifier(), textBuffer, startTag.getArguments());
+            return callTag(variables, customTags, startTag.getIdentifier(), textBuffer, startTag.getArguments(), null);
         }
 
         return convert(variables, customTags, textBuffer, stack, elements);
@@ -705,7 +709,7 @@ public class Convertors {
                         if(element instanceof Element.EndTag &&
                                 ((Element.EndTag) element).getIdentifier().equalsIgnoreCase(startSetTag.getIdentifier())){
                             //We've got the matching end tag.
-                            String output = weakConvert(variables, customTags, new Stack<>(), setQueue);
+                            String output = weakConvert(variables, customTags, new Stack<>(), setQueue, null);
                             setQueue.clear();
                             elementQueue.add(new Element.TextElement(output));
                             break;
@@ -726,18 +730,18 @@ public class Convertors {
     }
 
     /**
-     *
      * @param variables
      * @param customTags
      * @param stack
      * @param elements
+     * @param hackvertor
      * @return
      * @throws ParseException
      */
     private static String weakConvert(HashMap<String, String> variables,
-                                  JSONArray customTags,
-                                  Stack<Element> stack,
-                                  Queue<Element> elements) throws ParseException{
+                                      JSONArray customTags,
+                                      Stack<Element> stack,
+                                      Queue<Element> elements, Hackvertor hackvertor) throws ParseException{
 
         if(elements.size() == 0) {
             StringBuilder sb = new StringBuilder();
@@ -753,12 +757,12 @@ public class Convertors {
             stack.push((element));
         }else if(element instanceof Element.SelfClosingTag){ //Self closing tag. Add its output as a TextElement to our stack.
             Element.SelfClosingTag selfClosingTag = (Element.SelfClosingTag) element;
-            String tagOutput = callTag(variables, customTags, selfClosingTag.getIdentifier(), "", selfClosingTag.getArguments());
+            String tagOutput = callTag(variables, customTags, selfClosingTag.getIdentifier(), "", selfClosingTag.getArguments(), hackvertor);
             stack.push(new Element.TextElement(tagOutput));
         }else if(element instanceof Element.StartTag){ //Start of a conversion.
             Stack<Element> newStackContext = new Stack<>();
             newStackContext.push(element);
-            stack.push(new Element.TextElement(weakConvert(variables, customTags, newStackContext, elements)));
+            stack.push(new Element.TextElement(weakConvert(variables, customTags, newStackContext, elements, hackvertor)));
         }else if(element instanceof Element.EndTag){ //End of a conversion. Convert and update textbuffer.
             Stack<Element> siftStack = new Stack<>();
 
@@ -779,7 +783,7 @@ public class Convertors {
                 }
 
                 //Now we've matched the tag, convert the textbuffer contents.
-                return callTag(variables, customTags, ((Element.StartTag) startTag).getIdentifier(), sb.toString(), ((Element.StartTag) startTag).getArguments());
+                return callTag(variables, customTags, ((Element.StartTag) startTag).getIdentifier(), sb.toString(), ((Element.StartTag) startTag).getArguments(), hackvertor);
             }catch (EmptyStackException ex){
                 //Looked through the whole stack and didn't find a matching open tag. Must be a rogue close tag instead.
                 //In this case, add items we removed, and the textual representation of the close tag, back to the stack.
@@ -790,7 +794,7 @@ public class Convertors {
             }
         }
 
-        return weakConvert(variables, customTags, stack, elements);
+        return weakConvert(variables, customTags, stack, elements, hackvertor);
     }
 
 
@@ -807,6 +811,29 @@ public class Convertors {
         byte[] inputBytes = input.getBytes();
         byte[] output = new String(inputBytes, from).getBytes(to);
         return helpers.bytesToString(output);
+    }
+
+    static String context_url(String properties, Hackvertor hackvertor) {
+        IRequestInfo analyzedRequest = hackvertor.getAnalyzedRequest();
+        properties = properties.replace("$protocol", analyzedRequest.getUrl().getProtocol());
+        properties = properties.replace("$host", analyzedRequest.getUrl().getHost());
+        properties = properties.replace("$path", analyzedRequest.getUrl().getPath());
+        properties = properties.replace("$file", analyzedRequest.getUrl().getFile());
+        properties = properties.replace("$query", analyzedRequest.getUrl().getQuery());
+        properties = properties.replace("$port", String.valueOf(analyzedRequest.getUrl().getPort()));
+        return properties;
+    }
+
+    static String context_header(String properties, Hackvertor hackvertor) {
+        IRequestInfo analyzedRequest = hackvertor.getAnalyzedRequest();
+        List<String> headers = analyzedRequest.getHeaders();
+        for(String header : headers) {
+            String[] nameValue = header.split(":");
+            if(nameValue.length > 1) {
+                properties = properties.replace("$" + nameValue[0].trim(), nameValue[1].trim());
+            }
+        }
+        return properties;
     }
 
     static String utf7(String input, String excludeCharacters) {

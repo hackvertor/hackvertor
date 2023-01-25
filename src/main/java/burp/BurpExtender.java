@@ -195,7 +195,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.7.17");
+	            	stdout.println("Hackvertor v1.7.18");
                     loadCustomTags();
                     loadGlobalVariables();
                     registerPayloadProcessors();
@@ -1134,8 +1134,10 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 return;
         }
         byte[] request = messageInfo.getRequest();
-        if (helpers.indexOf(request, helpers.stringToBytes("<@"), true, 0, request.length) > -1) {
-            request = helpers.stringToBytes(hackvertor.convert(helpers.bytesToString(request)));
+        if (helpers.indexOf(request, helpers.stringToBytes("<@"), false, 0, request.length) > -1) {
+            String requestStr = helpers.bytesToString(request);
+            hackvertor.analyzeRequest(helpers.stringToBytes(Hackvertor.removeHackvertorTags(requestStr)), messageInfo);
+            request = helpers.stringToBytes(hackvertor.convert(requestStr, hackvertor));
             if (autoUpdateContentLength) {
                 request = fixContentLength(request);
             }
@@ -1212,7 +1214,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
 
         JMenuItem copyUrl = new JMenuItem("Copy URL");
         copyUrl.addActionListener(e -> {
-            String converted = hackvertor.convert(helpers.bytesToString(invocation.getSelectedMessages()[0].getRequest()));
+            String converted = hackvertor.convert(helpers.bytesToString(invocation.getSelectedMessages()[0].getRequest()), null);
             URL url = helpers.analyzeRequest(invocation.getSelectedMessages()[0].getHttpService(), helpers.stringToBytes(converted)).getUrl();
             StringSelection stringSelection = null;
             stringSelection = new StringSelection(buildUrl(url));
@@ -1225,7 +1227,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         convert.addActionListener(e -> {
             if (invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST || invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
                 byte[] message = invocation.getSelectedMessages()[0].getRequest();
-                invocation.getSelectedMessages()[0].setRequest(helpers.stringToBytes(hackvertor.convert(helpers.bytesToString(message))));
+                invocation.getSelectedMessages()[0].setRequest(helpers.stringToBytes(hackvertor.convert(helpers.bytesToString(message), null)));
             }
         });
         submenu.add(convert);

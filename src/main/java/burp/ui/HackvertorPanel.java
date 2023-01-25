@@ -133,19 +133,19 @@ public class HackvertorPanel extends JPanel {
         DocumentListener documentListener = new DocumentListener() {
             public void changedUpdate(DocumentEvent documentEvent) {
                 updateLen(documentEvent);
-                outputArea.setText(hackvertor.convert(inputArea.getText()));
+                outputArea.setText(hackvertor.convert(inputArea.getText(), null));
                 outputArea.setCaretPosition(0);
             }
 
             public void insertUpdate(DocumentEvent documentEvent) {
                 updateLen(documentEvent);
-                outputArea.setText(hackvertor.convert(inputArea.getText()));
+                outputArea.setText(hackvertor.convert(inputArea.getText(), null));
                 outputArea.setCaretPosition(0);
             }
 
             public void removeUpdate(DocumentEvent documentEvent) {
                 updateLen(documentEvent);
-                outputArea.setText(hackvertor.convert(inputArea.getText()));
+                outputArea.setText(hackvertor.convert(inputArea.getText(), null));
                 outputArea.setCaretPosition(0);
             }
 
@@ -292,15 +292,7 @@ public class HackvertorPanel extends JPanel {
         clearTagsButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 String input = inputArea.getText();
-                try {
-                    input = HackvertorParser.parse(input).stream()
-                            .filter(element -> element instanceof Element.TextElement)
-                            .map(element -> ((Element.TextElement) element).getContent())
-                            .collect(Collectors.joining());
-                }catch (ParseException ex){
-                    //TODO Better error handling.
-                    ex.printStackTrace();
-                }
+                input = Hackvertor.removeHackvertorTags(input);
                 inputArea.setText(input);
                 inputArea.requestFocus();
             }
@@ -374,7 +366,7 @@ public class HackvertorPanel extends JPanel {
         final JButton convertButton = new JButton("Convert");
         convertButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                outputArea.setText(hackvertor.convert(inputArea.getText()));
+                outputArea.setText(hackvertor.convert(inputArea.getText(), null));
             }
         });
         if (!isNativeTheme && !isDarkTheme) {
@@ -493,7 +485,7 @@ public class HackvertorPanel extends JPanel {
                 } else {
                     code = "<@auto_decode_no_decrypt>" + data + "<@/auto_decode_no_decrypt>";
                 }
-                String converted = Convertors.weakConvert(new HashMap<>(), hackvertor.getCustomTags(), code);
+                String converted = Convertors.weakConvert(new HashMap<>(), hackvertor.getCustomTags(), code, null);
                 if (!data.equals(converted)) {
                     inputArea.setText(code);
                 }
