@@ -828,6 +828,9 @@ public class Convertors {
     }
 
     static String context_header(String properties, Hackvertor hackvertor) {
+        if(hackvertor == null) {
+            return properties;
+        }
         IRequestInfo analyzedRequest = hackvertor.getAnalyzedRequest();
         List<String> headers = analyzedRequest.getHeaders();
         for(String header : headers) {
