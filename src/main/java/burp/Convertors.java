@@ -237,6 +237,8 @@ public class Convertors {
                 return context_url(getString(arguments,0), hackvertor);
             case "context_header":
                 return context_header(getString(arguments,0), hackvertor);
+            case "context_param":
+                return context_param(getString(arguments,0), hackvertor);
             case "charset_convert": {
                 try {
                     return charset_convert(output, getString(arguments, 0), getString(arguments, 1));
@@ -838,6 +840,17 @@ public class Convertors {
             if(nameValue.length > 1) {
                 properties = properties.replace("$" + nameValue[0].trim(), nameValue[1].trim());
             }
+        }
+        return properties;
+    }
+    static String context_param(String properties, Hackvertor hackvertor) {
+        if(hackvertor == null) {
+            return properties;
+        }
+        IRequestInfo analyzedRequest = hackvertor.getAnalyzedRequest();
+        List<IParameter> params = analyzedRequest.getParameters();
+        for(IParameter param : params) {
+            properties = properties.replace("$"+param.getName(), param.getValue());
         }
         return properties;
     }

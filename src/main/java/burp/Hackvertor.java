@@ -406,6 +406,9 @@ public class Hackvertor {
         tag = new Tag(Tag.Category.Variables, "context_header", false, "context_url(String headerName");
         tag.argument1 = new TagArgument("string", "$headerName");
         tags.add(tag);
+        tag = new Tag(Tag.Category.Variables, "context_param", false, "context_url(String paramName");
+        tag.argument1 = new TagArgument("string", "$paramName");
+        tags.add(tag);
         tag = new Tag(Tag.Category.Loops, "loop_for", true, "loop_for(String input, int start, int end, int increment, String i)//Does a for loop. Use a Hackvertor variable inside the tags to retrieve the position in the loop.");
         tag.argument1 = new TagArgument("int", "0");
         tag.argument2 = new TagArgument("int", "10");
