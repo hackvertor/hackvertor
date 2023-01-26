@@ -237,6 +237,8 @@ public class Convertors {
                 return context_url(getString(arguments,0), hackvertor);
             case "context_header":
                 return context_header(getString(arguments,0), hackvertor);
+            case "context_body":
+                return context_body(hackvertor);
             case "context_param":
                 return context_param(getString(arguments,0), hackvertor);
             case "charset_convert": {
@@ -855,6 +857,16 @@ public class Convertors {
             properties = properties.replace("$"+param.getName(), param.getValue());
         }
         return properties;
+    }
+
+    static String context_body(Hackvertor hackvertor) {
+        if(hackvertor == null) {
+            return "";
+        }
+        IRequestInfo analyzedRequest = hackvertor.getAnalyzedRequest();
+        int bodyOffset = analyzedRequest.getBodyOffset();
+        byte[] req = hackvertor.getRequest();
+        return helpers.bytesToString(Arrays.copyOfRange(req, bodyOffset, req.length));
     }
 
     static String json_parse(String input, String properties) {

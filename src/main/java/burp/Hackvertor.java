@@ -19,12 +19,18 @@ public class Hackvertor {
     private ArrayList<Tag> tags = new ArrayList<Tag>();
     private JSONArray customTags = new JSONArray();
     private IRequestInfo analyzedRequest = null;
+    private byte[] request;
     public Hackvertor(){
         init();
     }
 
     public void analyzeRequest(byte[] request, IHttpRequestResponse messageInfo) {
+        this.request = request;
         this.analyzedRequest = helpers.analyzeRequest(messageInfo.getHttpService(), request);
+    }
+
+    public byte[] getRequest() {
+        return request;
     }
 
     public static String removeHackvertorTags(String input) {
@@ -405,6 +411,8 @@ public class Hackvertor {
         tags.add(new Tag(Tag.Category.Variables, "get_variable1", false, "Special tag that lets you get a previously set variable. Change var to your own variable name."));
         tag = new Tag(Tag.Category.Variables, "context_url", false, "context_url(String properties");
         tag.argument1 = new TagArgument("string", "$protocol $host $path $file $query $port");
+        tags.add(tag);
+        tag = new Tag(Tag.Category.Variables, "context_body", false, "context_body()");
         tags.add(tag);
         tag = new Tag(Tag.Category.Variables, "context_header", false, "context_url(String headerName");
         tag.argument1 = new TagArgument("string", "$headerName");
