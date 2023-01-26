@@ -362,6 +362,8 @@ public class Convertors {
                 return base64urlEncode(output);
             case "d_base64url":
                 return decode_base64url(output);
+            case "json_parse":
+                return json_parse(output, getString(arguments, 0));
             case "burp_urlencode":
                 return burp_urlencode(output);
             case "urlencode":
@@ -851,6 +853,35 @@ public class Convertors {
         List<IParameter> params = analyzedRequest.getParameters();
         for(IParameter param : params) {
             properties = properties.replace("$"+param.getName(), param.getValue());
+        }
+        return properties;
+    }
+
+    static String json_parse(String input, String properties) {
+        input = input.trim();
+        return recursiveTraverse("", new JSONObject(input), properties);
+    }
+
+    private static String recursiveTraverse(String previousKey, JSONObject currentObject, String properties) {
+        for (String currentKey : currentObject.keySet()) {
+            String nextKey = previousKey == null || previousKey.isEmpty() ? currentKey : previousKey + "-" + currentKey;
+            Object value = currentObject.get(currentKey);
+            if (value instanceof JSONObject) {
+                properties = recursiveTraverse(nextKey, (JSONObject) value, properties);
+            } else if (value instanceof JSONArray) {
+                JSONArray array = (JSONArray) value;
+                for (int i = 0; i < array.length(); i++) {
+                    Object object = array.get(i);
+                    if (object instanceof JSONObject) {
+                        JSONObject jsonObject = (JSONObject) object;
+                        properties = recursiveTraverse(nextKey + "." + i, jsonObject, properties);
+                    } else {
+                        properties = properties.replace("$"+nextKey, object.toString());
+                    }
+                }
+            } else {
+                properties = properties.replace("$"+nextKey, value.toString());
+            }
         }
         return properties;
     }

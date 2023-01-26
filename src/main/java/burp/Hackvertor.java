@@ -174,6 +174,9 @@ public class Hackvertor {
         tags.add(new Tag(Tag.Category.Decode, "d_jwt_get_payload", true, "d_jwt_get_payload(String token)"));
         tags.add(new Tag(Tag.Category.Decode, "d_jwt_get_header", true, "d_jwt_get_header(String token)"));
         tags.add(new Tag(Tag.Category.Decode, "d_quoted_printable", true, "d_quoted_printable(String str)"));
+        tag = new Tag(Tag.Category.Decode, "json_parse", true, "json_parse(String json, String properties)");
+        tag.argument1 = new TagArgument("string", "$property $propertyA-$propertyB");
+        tags.add(tag);
         tag = new Tag(Tag.Category.Decode, "d_jwt_verify", true, "d_jwt_verify(String token, String secret)");
         tag.argument1 = new TagArgument("string", "secret");
         tags.add(tag);
