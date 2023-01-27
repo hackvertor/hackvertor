@@ -1,9 +1,6 @@
 package burp.ui;
 
-import burp.Hackvertor;
-import burp.JTabbedPaneClosable;
-import burp.Tag;
-import burp.Utils;
+import burp.*;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
@@ -24,8 +21,10 @@ public class ExtensionPanel extends JTabbedPaneClosable {
                 if (ExtensionPanel.this.getSelectedIndex() == -1) {
                     return;
                 }
-                HackvertorPanel selectedPanel = (HackvertorPanel) getComponentAt(ExtensionPanel.this.getSelectedIndex());
-                selectedPanel.readClipboardAndDecode();
+                if(BurpExtender.allowAutoConvertClipboard) {
+                    HackvertorPanel selectedPanel = (HackvertorPanel) getComponentAt(ExtensionPanel.this.getSelectedIndex());
+                    selectedPanel.readClipboardAndDecode();
+                }
             }
         });
 

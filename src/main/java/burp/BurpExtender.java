@@ -61,6 +61,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
     private boolean tagsInExtensions = true;
     private boolean autoUpdateContentLength = true;
     public static boolean allowTagCount = false;
+    public static boolean allowAutoConvertClipboard = false;
     public static HashMap<String, Integer> tagCount = new HashMap<>();
    public static final HashMap<String, HashMap<String, Integer>> contextTagCount = new HashMap() {
         {
@@ -171,6 +172,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
     public void registerExtenderCallbacks(final IBurpExtenderCallbacks burpCallbacks) {
         callbacks = burpCallbacks;
         allowTagCount = Boolean.valueOf(callbacks.loadExtensionSetting("allowTagCount"));
+        allowAutoConvertClipboard = Boolean.valueOf(callbacks.loadExtensionSetting("allowAutoConvertClipboard"));
         helpers = callbacks.getHelpers();
         stderr = new PrintWriter(callbacks.getStderr(), true);
         stdout = new PrintWriter(callbacks.getStdout(), true);
@@ -195,7 +197,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.7.24");
+	            	stdout.println("Hackvertor v1.7.25");
                     loadCustomTags();
                     loadGlobalVariables();
                     registerPayloadProcessors();
@@ -301,6 +303,19 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                         }
                     });
                     hvMenuBar.add(countTagUsageMenu);
+                    final JCheckBoxMenuItem autoConvertClipboardMenu = new JCheckBoxMenuItem(
+                            "Allow Hackvertor to auto convert clipboard", allowAutoConvertClipboard);
+                    autoConvertClipboardMenu.addItemListener(new ItemListener() {
+                        public void itemStateChanged(ItemEvent e) {
+                            if (autoConvertClipboardMenu.getState()) {
+                                allowAutoConvertClipboard = true;
+                            } else {
+                                allowAutoConvertClipboard = false;
+                            }
+                            callbacks.saveExtensionSetting("allowAutoConvertClipboard", String.valueOf(allowAutoConvertClipboard));
+                        }
+                    });
+                    hvMenuBar.add(autoConvertClipboardMenu);
                     JMenuItem globalVariablesMenu = new JMenuItem("Global variables");
                     globalVariablesMenu.addActionListener(new ActionListener() {
                         @Override
