@@ -322,6 +322,8 @@ public class Convertors {
                 return jwt(output, getString(arguments, 0), getString(arguments, 1));
             case "quoted_printable":
                 return quoted_printable(output);
+            case "powershell":
+                return powershell(output);
             case "js_string":
                 return js_string(output);
             case "d_quoted_printable":
@@ -1411,6 +1413,11 @@ public class Convertors {
             return "Error encoding:"+e.toString();
         }
     }
+
+    static String powershell(String cmd) {
+        return base64Encode(convertCharset(cmd, "UTF-16LE"));
+    }
+
     static String js_string(String str) {
         return JsonEscape.escapeJson(str);
     }
