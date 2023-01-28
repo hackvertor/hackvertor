@@ -84,7 +84,9 @@ public class Hackvertor {
         tags.add(new Tag(Tag.Category.Compression, "bzip2_compress", true, "bzip2_compress(String str)"));
         tags.add(new Tag(Tag.Category.Compression, "bzip2_decompress", true, "bzip2_decompress(String str)"));
         tags.add(new Tag(Tag.Category.Compression, "deflate_compress", true, "deflate_compress(String str)"));
-        tags.add(new Tag(Tag.Category.Compression, "deflate_decompress", true, "deflate_decompress(String str)"));
+        tag = new Tag(Tag.Category.Compression, "deflate_decompress", true, "deflate_decompress(String str, Boolean includeHeader)");
+        tag.argument1 = new TagArgument("boolean", "true");
+        tags.add(tag);
         tags.add(new Tag(Tag.Category.Date, "timestamp", false, "timestamp()"));
         tag = new Tag(Tag.Category.Date, "date", false, "date(String format)");
         tag.argument1 = new TagArgument("string", "yyyy-MM-dd HH:mm:ss");
@@ -165,6 +167,7 @@ public class Hackvertor {
         tags.add(new Tag(Tag.Category.Encode, "powershell", true, "powershell(String cmd)"));
         tags.add(new Tag(Tag.Category.Encode, "quoted_printable", true, "quoted_printable(String str)"));
         tags.add(new Tag(Tag.Category.Encode, "js_string", true, "js_string(String str)"));
+        tags.add(new Tag(Tag.Category.Decode, "d_saml", true, "d_saml(String str)"));
         tags.add(new Tag(Tag.Category.Decode, "auto_decode", true, "auto_decode(String str)"));
         tags.add(new Tag(Tag.Category.Decode, "auto_decode_no_decrypt", true, "auto_decode_no_decrypt(String str)"));
         tags.add(new Tag(Tag.Category.Decode, "d_base32", true, "decode_base32(String str)"));

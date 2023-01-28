@@ -24,6 +24,7 @@ import org.apache.commons.compress.compressors.CompressorOutputStream;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.deflate.DeflateCompressorInputStream;
+import org.apache.commons.compress.compressors.deflate.DeflateParameters;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.crypto.digests.*;
@@ -67,8 +68,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
+import java.util.zip.*;
 
 import static burp.BurpExtender.*;
 import static burp.BurpExtender.tagCodeExecutionKey;
@@ -260,10 +260,12 @@ public class Convertors {
                 return bzip2_compress(output);
             case "bzip2_decompress":
                 return bzip2_decompress(output);
+            case "d_saml":
+                return d_saml(output);
             case "deflate_compress":
                 return deflate_compress(output);
             case "deflate_decompress":
-                return deflate_decompress(output);
+                return deflate_decompress(output, getBoolean(arguments, 0));
             case "timestamp":
                 return timestamp();
             case "date":
@@ -1036,21 +1038,23 @@ public class Convertors {
             return helpers.bytesToString(compressed);
         } catch (IOException e) {
             e.printStackTrace();
-            return "Error:" + e.toString();
+            return "Error:" + e;
         }
     }
 
-    static String deflate_decompress(String input) {
+    static String deflate_decompress(String input, Boolean includeHeader) {
         ByteArrayInputStream bis = new ByteArrayInputStream(helpers.stringToBytes(input));
         DeflateCompressorInputStream cis = null;
         byte[] bytes;
         try {
-            cis = new DeflateCompressorInputStream(bis);
+            DeflateParameters params = new DeflateParameters();
+            params.setWithZlibHeader(includeHeader);
+            cis = new DeflateCompressorInputStream(bis, params);
             bytes = IOUtils.toByteArray(cis);
             return new String(bytes);
         } catch (IOException e) {
             e.printStackTrace();
-            return "Error:" + e.toString();
+            return "Error:" + e;
         }
     }
 
@@ -1103,6 +1107,15 @@ public class Convertors {
 
     static String base64urlEncode(String str) {
         return base64Encode(str).replaceAll("\\+", "-").replaceAll("/", "_").replaceAll("=+$", "");
+    }
+
+    static String d_saml(String input) {
+        String decodedUrl = decode_url(input);
+        if(isBase64(decodedUrl, true)) {
+            return deflate_decompress(decode_base64(decodedUrl), false);
+        } else {
+            return deflate_decompress(decode_base64(input), false);
+        }
     }
 
     static String decode_base64url(String str) {
@@ -2570,6 +2583,9 @@ public class Convertors {
         return sortedByValues;
     }
 
+    static Boolean isBase64(String str, Boolean checkStart) {
+        return Pattern.compile((checkStart ? "^" : "") + "[a-zA-Z0-9+/]{4,}=*$", Pattern.CASE_INSENSITIVE).matcher(str).find() && str.length() % 4 == 0;
+    }
     static String auto_decode(String str) {
         return auto_decode_decrypt(str, true);
     }
@@ -2697,7 +2713,7 @@ public class Convertors {
                     return d_jwt_get_header(str) + "\n" + d_jwt_get_payload(str) + "\n" + decode_base64url(parts[2]);
                 }
             }
-            if (Pattern.compile("[a-zA-Z0-9+/]{4,}=*$", Pattern.CASE_INSENSITIVE).matcher(str).find() && str.length() % 4 == 0) {
+            if (isBase64(str, false)) {
                 test = decode_base64(str);
                 if (Pattern.compile("^[\\x00-\\x7f]+$", Pattern.CASE_INSENSITIVE).matcher(test).find()) {
                     str = test;
