@@ -19,7 +19,7 @@ dependencies {
     implementation 'com.auth0:java-jwt:3.4.0'
     implementation 'org.json:json:20190722'
     implementation 'commons-io:commons-io:2.6'
-    implementation 'org.apache.commons:commons-compress:1.19'
+    implementation 'org.apache.commons:commons-compress:1.22'
     implementation 'org.brotli:dec:0.1.2'
     implementation 'org.python:jython-standalone:2.7.0'
     implementation 'bsf:bsf:2.4.0'

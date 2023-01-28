@@ -83,7 +83,9 @@ public class Hackvertor {
         tags.add(new Tag(Tag.Category.Compression, "gzip_decompress", true, "gzip_decompress(String str)"));
         tags.add(new Tag(Tag.Category.Compression, "bzip2_compress", true, "bzip2_compress(String str)"));
         tags.add(new Tag(Tag.Category.Compression, "bzip2_decompress", true, "bzip2_decompress(String str)"));
-        tags.add(new Tag(Tag.Category.Compression, "deflate_compress", true, "deflate_compress(String str)"));
+        tag = new Tag(Tag.Category.Compression, "deflate_compress", true, "deflate_compress(String str, Boolean includeHeader)");
+        tag.argument1 = new TagArgument("boolean", "true");
+        tags.add(tag);
         tag = new Tag(Tag.Category.Compression, "deflate_decompress", true, "deflate_decompress(String str, Boolean includeHeader)");
         tag.argument1 = new TagArgument("boolean", "true");
         tags.add(tag);
@@ -138,6 +140,7 @@ public class Hackvertor {
         tags.add(new Tag(Tag.Category.Encrypt, "is_like_english", true, "is_like_english(String str)"));
         tags.add(new Tag(Tag.Category.Encrypt, "index_of_coincidence", true, "index_of_coincidence(String str)"));
         tags.add(new Tag(Tag.Category.Encrypt, "guess_key_length", true, "guess_key_length(String ciphertext)"));
+        tags.add(new Tag(Tag.Category.Encode, "saml", true, "saml(String str)"));
         tags.add(new Tag(Tag.Category.Encode, "base32", true, "base32_encode(String str)"));
         tags.add(new Tag(Tag.Category.Encode, "base64", true, "base64Encode(String str)"));
         tags.add(new Tag(Tag.Category.Encode, "base64url", true, "base64urlEncode(String str)"));

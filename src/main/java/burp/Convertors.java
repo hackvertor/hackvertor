@@ -24,6 +24,7 @@ import org.apache.commons.compress.compressors.CompressorOutputStream;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.deflate.DeflateCompressorInputStream;
+import org.apache.commons.compress.compressors.deflate.DeflateCompressorOutputStream;
 import org.apache.commons.compress.compressors.deflate.DeflateParameters;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -260,10 +261,12 @@ public class Convertors {
                 return bzip2_compress(output);
             case "bzip2_decompress":
                 return bzip2_decompress(output);
+            case "saml":
+                return saml(output);
             case "d_saml":
                 return d_saml(output);
             case "deflate_compress":
-                return deflate_compress(output);
+                return deflate_compress(output, getBoolean(arguments, 0));
             case "deflate_decompress":
                 return deflate_decompress(output, getBoolean(arguments, 0));
             case "timestamp":
@@ -1020,16 +1023,12 @@ public class Convertors {
         }
     }
 
-    static String deflate_compress(String input) {
+    static String deflate_compress(String input, Boolean includeHeader) {
         ByteArrayOutputStream bos = new ByteArrayOutputStream(input.length());
         CompressorOutputStream cos = null;
-        try {
-            cos = new CompressorStreamFactory()
-                    .createCompressorOutputStream(CompressorStreamFactory.getDeflate(), bos);
-        } catch (CompressorException e) {
-            e.printStackTrace();
-            return "Error creating compressor:" + e.toString();
-        }
+        DeflateParameters params = new DeflateParameters();
+        params.setWithZlibHeader(includeHeader);
+        cos = new DeflateCompressorOutputStream(bos, params);
         try {
             cos.write(input.getBytes());
             cos.close();
@@ -1051,6 +1050,8 @@ public class Convertors {
             params.setWithZlibHeader(includeHeader);
             cis = new DeflateCompressorInputStream(bis, params);
             bytes = IOUtils.toByteArray(cis);
+            cis.close();
+            bis.close();
             return new String(bytes);
         } catch (IOException e) {
             e.printStackTrace();
@@ -1109,6 +1110,9 @@ public class Convertors {
         return base64Encode(str).replaceAll("\\+", "-").replaceAll("/", "_").replaceAll("=+$", "");
     }
 
+    static String saml(String input) {
+        return urlencode(base64Encode(deflate_compress(input, false)));
+    }
     static String d_saml(String input) {
         String decodedUrl = decode_url(input);
         if(isBase64(decodedUrl, true)) {
