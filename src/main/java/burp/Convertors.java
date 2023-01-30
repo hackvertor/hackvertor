@@ -54,8 +54,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -587,6 +586,8 @@ public class Convertors {
                 return java(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags);
             case "groovy":
                 return groovy(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags);
+            case "read_url":
+                return read_url(output, getString(arguments, 0), getString(arguments, 1));
             case "loop_for":
                 return loop_for(variableMap, customTags, output, getInt(arguments, 0), getInt(arguments, 1), getInt(arguments, 2), getString(arguments, 3));
             case "loop_letters_lower":
@@ -3259,6 +3260,45 @@ public class Convertors {
             return "Unable to parse JavaScript:" + e;
         } finally {
             v8.shutdownExecutors(true);
+        }
+    }
+
+    static String read_url(String input, String charset, String executionKey) {
+        if(!charset.equalsIgnoreCase("UTF-8")) {
+            input = convertCharset(input, charset);
+        }
+        if (!codeExecutionTagsEnabled) {
+            return "Code execution tags are disabled by default. Use the menu bar to enable them.";
+        }
+        if (executionKey == null) {
+            return "No execution key defined";
+        }
+        if (executionKey.length() != 32) {
+            return "Code execution key length incorrect";
+        }
+        if (!tagCodeExecutionKey.equals(executionKey)) {
+            return "Incorrect tag code execution key";
+        }
+        URL url = null;
+        try {
+            url = new URL(input);
+        } catch (MalformedURLException e) {
+            return "Malformed URL:" + e;
+        }
+        HttpURLConnection connection = null;
+        try {
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.connect();
+            BufferedReader br = null;
+            if (100 <= connection.getResponseCode() && connection.getResponseCode() <= 399) {
+                br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            } else {
+                br = new BufferedReader(new InputStreamReader(connection.getErrorStream()));
+            }
+            return br.lines().collect(Collectors.joining());
+        } catch (IOException e) {
+            return "Unable to get response";
         }
     }
 
