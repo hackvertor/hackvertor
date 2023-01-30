@@ -588,6 +588,8 @@ public class Convertors {
                 return groovy(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags);
             case "read_url":
                 return read_url(output, getString(arguments, 0), getString(arguments, 1));
+            case "system":
+                return system(output, getString(arguments, 0));
             case "loop_for":
                 return loop_for(variableMap, customTags, output, getInt(arguments, 0), getInt(arguments, 1), getInt(arguments, 2), getString(arguments, 3));
             case "loop_letters_lower":
@@ -3261,6 +3263,52 @@ public class Convertors {
         } finally {
             v8.shutdownExecutors(true);
         }
+    }
+
+    static String system(String cmd, String executionKey) {
+        if (!codeExecutionTagsEnabled) {
+            return "Code execution tags are disabled by default. Use the menu bar to enable them.";
+        }
+        if (executionKey == null) {
+            return "No execution key defined";
+        }
+        if (executionKey.length() != 32) {
+            return "Code execution key length incorrect";
+        }
+        if (!tagCodeExecutionKey.equals(executionKey)) {
+            return "Incorrect tag code execution key";
+        }
+        Runtime r = Runtime.getRuntime();
+        Process p = null;
+        try {
+            p = r.exec(cmd);
+        } catch (IOException e) {
+            return "Failed to execute command:"+e;
+        }
+        try {
+            p.waitFor();
+        } catch (InterruptedException e) {
+            return "InterruptedException"+e;
+        }
+        BufferedReader b = new BufferedReader(new InputStreamReader(p.getInputStream()));
+        StringBuilder output = new StringBuilder();
+        String line = "";
+        String lineSep = System.getProperty("line.separator");
+        while (true) {
+            try {
+                if (!((line = b.readLine()) != null)) break;
+            } catch (IOException e) {
+                return "Failed to read output:"+e;
+            }
+            output.append(line);
+            output.append(lineSep);
+        }
+        try {
+            b.close();
+        } catch (IOException e) {
+            return "Failed to close buffered reader:" + e;
+        }
+        return output.toString();
     }
 
     static String read_url(String input, String charset, String executionKey) {
