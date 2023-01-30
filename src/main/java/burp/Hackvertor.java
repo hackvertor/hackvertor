@@ -461,6 +461,7 @@ public class Hackvertor {
         tag = new Tag(Tag.Category.System, "read_url", true, "real_url(String url, String charset, String codeExecuteKey)");
         tag.argument1 = new TagArgument("string", "UTF-8");
         tag.argument2 = new TagArgument("string", tagCodeExecutionKey);
+        tags.add(tag);
         tag = new Tag(Tag.Category.System, "system", true, "system(String cmd, String arguments, String codeExecuteKey)");
         tag.argument1 = new TagArgument("string", tagCodeExecutionKey);
         tags.add(tag);
