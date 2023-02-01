@@ -3,12 +3,16 @@ package burp;
 import burp.ui.ExtensionPanel;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.fife.ui.rsyntaxtextarea.Theme;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import javax.swing.*;
 import javax.swing.event.*;
+import javax.swing.text.JTextComponent;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
@@ -197,7 +201,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.7.30");
+	            	stdout.println("Hackvertor v1.7.31");
                     loadCustomTags();
                     loadGlobalVariables();
                     registerPayloadProcessors();
@@ -533,7 +537,23 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         createTagPanel.add(tagNameField);
         JLabel languageLabel = new JLabel("Select language");
         languageLabel.setPreferredSize(new Dimension(220, 25));
-        JTextArea codeArea = new JTextArea();
+        JTextComponent.removeKeymap("RTextAreaKeymap");
+        RSyntaxTextArea codeArea = new RSyntaxTextArea();
+        codeArea.setLineWrap(true);
+        UIManager.put("RSyntaxTextAreaUI.actionMap", null);
+        UIManager.put("RSyntaxTextAreaUI.inputMap", null);
+        UIManager.put("RTextAreaUI.actionMap", null);
+        UIManager.put("RTextAreaUI.inputMap", null);
+        if(BurpExtender.isDarkTheme) {
+            try {
+                Theme theme = Theme.load(getClass().getResourceAsStream(
+                        "/org/fife/ui/rsyntaxtextarea/themes/dark.xml"));
+                theme.apply(codeArea);
+            } catch (IOException ioe) {
+                ioe.printStackTrace();
+            }
+        }
+        codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT);
         JScrollPane codeScroll = new JScrollPane(codeArea);
         final int[] changes = {0};
         codeArea.getDocument().addDocumentListener(new DocumentListener() {
@@ -569,6 +589,21 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 code += comment + "output = convert(\"<@customTag('\"+executionKey+\"')>\"+input+\"<@/customTag>\")";
                 codeArea.setText(code);
                 changes[0] = 0;
+
+                switch(index) {
+                    case 0:
+                        codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT);
+                    break;
+                    case 1:
+                        codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_PYTHON);
+                    break;
+                    case 2:
+                        codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
+                    break;
+                    case 3:
+                        codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_GROOVY);
+                    break;
+                }
             }
         });
         languageCombo.setPreferredSize(new Dimension(220, 25));
