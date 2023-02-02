@@ -1,12 +1,16 @@
 package burp.ui;
 
+import burp.BurpExtender;
+import burp.Utils;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+
 import javax.swing.*;
 
 import java.awt.*;
 
 import static burp.BurpExtender.callbacks;
 
-public class HackvertorInput extends JTextArea {
+public class HackvertorInput extends RSyntaxTextArea {
     HackvertorInput() {
         super();
         callbacks.customizeUiComponent(this);

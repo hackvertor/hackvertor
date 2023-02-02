@@ -2,6 +2,8 @@ package burp;
 
 import burp.parser.Element;
 import org.apache.commons.lang3.StringUtils;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.Theme;
 
 import javax.swing.*;
 import javax.swing.text.Highlighter;
@@ -163,4 +165,29 @@ public class Utils {
         }
         return parentMenu;
     }
-}
+
+    public static void applyDarkThemeToRSyntaxTextArea(RSyntaxTextArea area, String themeName) {
+        try {
+            Theme theme = Theme.load(Utils.class.getResourceAsStream(
+                    "/org/fife/ui/rsyntaxtextarea/themes/"+themeName+".xml"));
+            theme.apply(area);
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        }
+    }
+    public static void fixRSyntaxAreaBurp() {
+        UIManager.put("RSyntaxTextAreaUI.actionMap", null);
+        UIManager.put("RSyntaxTextAreaUI.inputMap", null);
+        UIManager.put("RTextAreaUI.actionMap", null);
+        UIManager.put("RTextAreaUI.inputMap", null);
+    }
+
+    public static void configureRSyntaxArea(RSyntaxTextArea area) {
+        area.setLineWrap(true);
+        if(BurpExtender.isDarkTheme) {
+            Utils.applyDarkThemeToRSyntaxTextArea(area, "dark");
+        }
+        callbacks.customizeUiComponent(area);
+        area.setFont(new Font("Courier New", Font.PLAIN, area.getFont().getSize()));
+    }
+ }

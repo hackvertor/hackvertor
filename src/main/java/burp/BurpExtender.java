@@ -201,7 +201,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.7.31");
+	            	stdout.println("Hackvertor v1.7.32");
                     loadCustomTags();
                     loadGlobalVariables();
                     registerPayloadProcessors();
@@ -539,20 +539,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         languageLabel.setPreferredSize(new Dimension(220, 25));
         JTextComponent.removeKeymap("RTextAreaKeymap");
         RSyntaxTextArea codeArea = new RSyntaxTextArea();
-        codeArea.setLineWrap(true);
-        UIManager.put("RSyntaxTextAreaUI.actionMap", null);
-        UIManager.put("RSyntaxTextAreaUI.inputMap", null);
-        UIManager.put("RTextAreaUI.actionMap", null);
-        UIManager.put("RTextAreaUI.inputMap", null);
-        if(BurpExtender.isDarkTheme) {
-            try {
-                Theme theme = Theme.load(getClass().getResourceAsStream(
-                        "/org/fife/ui/rsyntaxtextarea/themes/dark.xml"));
-                theme.apply(codeArea);
-            } catch (IOException ioe) {
-                ioe.printStackTrace();
-            }
-        }
+        Utils.fixRSyntaxAreaBurp();
+        Utils.configureRSyntaxArea(codeArea);
         codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT);
         JScrollPane codeScroll = new JScrollPane(codeArea);
         final int[] changes = {0};

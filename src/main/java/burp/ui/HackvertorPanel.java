@@ -5,10 +5,12 @@ import burp.parser.Element;
 import burp.parser.HackvertorParser;
 import burp.parser.ParseException;
 import org.apache.commons.lang3.StringUtils;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 
 import javax.swing.*;
 import javax.swing.event.*;
 import javax.swing.text.Document;
+import javax.swing.text.JTextComponent;
 import javax.swing.undo.CannotRedoException;
 import javax.swing.undo.CannotUndoException;
 import javax.swing.undo.UndoManager;
@@ -36,9 +38,16 @@ public class HackvertorPanel extends JPanel {
     public HackvertorPanel(Hackvertor hackvertor, boolean showLogo){
         super(new GridBagLayout());
         this.hackvertor = hackvertor;
+        JTextComponent.removeKeymap("RTextAreaKeymap");
         this.inputArea = new HackvertorInput();
         this.outputArea = new HackvertorInput();
-
+        Utils.configureRSyntaxArea(this.inputArea);
+        Utils.configureRSyntaxArea(this.outputArea);
+        Utils.fixRSyntaxAreaBurp();
+        callbacks.customizeUiComponent(this.inputArea);
+        callbacks.customizeUiComponent(this.outputArea);
+        this.inputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
+        this.outputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
         buildPanel(showLogo);
     }
 
@@ -129,7 +138,11 @@ public class HackvertorPanel extends JPanel {
             inputLenLabel.setBackground(Color.decode("#FFF5BF"));
             inputLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
         }
-        final JTextArea outputArea = new HackvertorInput();
+        JTextComponent.removeKeymap("RTextAreaKeymap");
+        final HackvertorInput outputArea = new HackvertorInput();
+        Utils.fixRSyntaxAreaBurp();
+        Utils.configureRSyntaxArea(outputArea);
+        outputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
         DocumentListener documentListener = new DocumentListener() {
             public void changedUpdate(DocumentEvent documentEvent) {
                 updateLen(documentEvent);
