@@ -1,6 +1,7 @@
 package burp;
 
 import burp.ui.ExtensionPanel;
+import burp.ui.HackvertorInput;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
@@ -201,7 +202,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.7.32");
+	            	stdout.println("Hackvertor v1.7.33");
                     loadCustomTags();
                     loadGlobalVariables();
                     registerPayloadProcessors();
@@ -538,7 +539,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         JLabel languageLabel = new JLabel("Select language");
         languageLabel.setPreferredSize(new Dimension(220, 25));
         JTextComponent.removeKeymap("RTextAreaKeymap");
-        RSyntaxTextArea codeArea = new RSyntaxTextArea();
+        HackvertorInput codeArea = new HackvertorInput();
         Utils.fixRSyntaxAreaBurp();
         Utils.configureRSyntaxArea(codeArea);
         codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT);

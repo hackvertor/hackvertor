@@ -41,13 +41,13 @@ public class HackvertorPanel extends JPanel {
         JTextComponent.removeKeymap("RTextAreaKeymap");
         this.inputArea = new HackvertorInput();
         this.outputArea = new HackvertorInput();
-        Utils.configureRSyntaxArea(this.inputArea);
-        Utils.configureRSyntaxArea(this.outputArea);
         Utils.fixRSyntaxAreaBurp();
         callbacks.customizeUiComponent(this.inputArea);
         callbacks.customizeUiComponent(this.outputArea);
         this.inputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
         this.outputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
+        Utils.configureRSyntaxArea(this.inputArea);
+        Utils.configureRSyntaxArea(this.outputArea);
         buildPanel(showLogo);
     }
 
@@ -138,11 +138,6 @@ public class HackvertorPanel extends JPanel {
             inputLenLabel.setBackground(Color.decode("#FFF5BF"));
             inputLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
         }
-        JTextComponent.removeKeymap("RTextAreaKeymap");
-        final HackvertorInput outputArea = new HackvertorInput();
-        Utils.fixRSyntaxAreaBurp();
-        Utils.configureRSyntaxArea(outputArea);
-        outputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
         DocumentListener documentListener = new DocumentListener() {
             public void changedUpdate(DocumentEvent documentEvent) {
                 updateLen(documentEvent);
@@ -479,7 +474,7 @@ public class HackvertorPanel extends JPanel {
         tabs.addTab("Search", new SearchPanel(hackvertor, this));
 
         tabs.setAutoscrolls(true);
-        tabs.setSelectedIndex(4);
+        tabs.setSelectedIndex(tabs.indexOfTab("Encode"));
 
         return tabs;
     }
@@ -510,11 +505,11 @@ public class HackvertorPanel extends JPanel {
         }
     }
 
-    public JTextArea getInputArea() {
+    public HackvertorInput getInputArea() {
         return inputArea;
     }
 
-    public JTextArea getOutputArea() {
+    public HackvertorInput getOutputArea() {
         return outputArea;
     }
 }

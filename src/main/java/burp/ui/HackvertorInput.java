@@ -11,7 +11,7 @@ import java.awt.*;
 import static burp.BurpExtender.callbacks;
 
 public class HackvertorInput extends RSyntaxTextArea {
-    HackvertorInput() {
+    public HackvertorInput() {
         super();
         callbacks.customizeUiComponent(this);
         this.updateFont();
