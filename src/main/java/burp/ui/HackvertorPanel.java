@@ -5,7 +5,11 @@ import burp.parser.Element;
 import burp.parser.HackvertorParser;
 import burp.parser.ParseException;
 import org.apache.commons.lang3.StringUtils;
+import org.fife.ui.autocomplete.*;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import javax.swing.*;
 import javax.swing.event.*;
@@ -19,6 +23,7 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.*;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.stream.Collectors;
@@ -48,11 +53,42 @@ public class HackvertorPanel extends JPanel {
         this.outputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
         Utils.configureRSyntaxArea(this.inputArea);
         Utils.configureRSyntaxArea(this.outputArea);
+        this.inputArea.setCodeFoldingEnabled(true);
+        this.generateAutoCompletion(this.inputArea);
         buildPanel(showLogo);
     }
 
     public JTabbedPane getTabs() {
         return tabs;
+    }
+
+    private void generateAutoCompletion(RSyntaxTextArea input) {
+        DefaultCompletionProvider provider = new DefaultCompletionProvider();
+        provider.setAutoActivationRules(false, "<@_");
+        ArrayList<Tag> tags = hackvertor.getTags();
+        for(Tag tag : tags) {
+            MarkupTagCompletion acTag = new MarkupTagCompletion(provider, tag.name);
+            provider.addCompletion(acTag);
+        }
+        JSONArray customTags = hackvertor.getCustomTags();
+        for (int i = 0; i < customTags.length(); i++) {
+            JSONObject customTag = (JSONObject) hackvertor.getCustomTags().get(i);
+            String tagName = customTag.getString("tagName");
+            MarkupTagCompletion acTag = new MarkupTagCompletion(provider, tagName);
+            provider.addCompletion(acTag);
+        }
+        AutoCompletion ac = new AutoCompletion(provider);
+        ac.setAutoActivationDelay(250);
+        ac.setAutoActivationEnabled(true);
+        ac.install(input);
+//        input.addKeyListener(new KeyAdapter() {
+//            @Override
+//            public void keyReleased(KeyEvent e) {
+//                if(!e.isActionKey() && e.getKeyCode() != KeyEvent.VK_ENTER && e.getKeyCode() != KeyEvent.VK_ESCAPE) {
+//                    ac.doCompletion();
+//                }
+//            }
+//        });
     }
 
     private void buildPanel(boolean showLogo){
