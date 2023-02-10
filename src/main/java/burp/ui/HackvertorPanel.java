@@ -64,31 +64,23 @@ public class HackvertorPanel extends JPanel {
 
     private void generateAutoCompletion(RSyntaxTextArea input) {
         DefaultCompletionProvider provider = new DefaultCompletionProvider();
-        provider.setAutoActivationRules(false, "<@_");
+        provider.setAutoActivationRules(false, "<");
         ArrayList<Tag> tags = hackvertor.getTags();
         for(Tag tag : tags) {
-            MarkupTagCompletion acTag = new MarkupTagCompletion(provider, tag.name);
+            BasicCompletion acTag = new BasicCompletion(provider, tag.name);
             provider.addCompletion(acTag);
         }
         JSONArray customTags = hackvertor.getCustomTags();
         for (int i = 0; i < customTags.length(); i++) {
             JSONObject customTag = (JSONObject) hackvertor.getCustomTags().get(i);
             String tagName = customTag.getString("tagName");
-            MarkupTagCompletion acTag = new MarkupTagCompletion(provider, tagName);
+            BasicCompletion acTag = new BasicCompletion(provider, tagName);
             provider.addCompletion(acTag);
         }
-        AutoCompletion ac = new AutoCompletion(provider);
+        HackvertorTagCompletion ac = new HackvertorTagCompletion(provider);
         ac.setAutoActivationDelay(250);
         ac.setAutoActivationEnabled(true);
         ac.install(input);
-//        input.addKeyListener(new KeyAdapter() {
-//            @Override
-//            public void keyReleased(KeyEvent e) {
-//                if(!e.isActionKey() && e.getKeyCode() != KeyEvent.VK_ENTER && e.getKeyCode() != KeyEvent.VK_ESCAPE) {
-//                    ac.doCompletion();
-//                }
-//            }
-//        });
     }
 
     private void buildPanel(boolean showLogo){
