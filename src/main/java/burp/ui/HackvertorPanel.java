@@ -70,14 +70,7 @@ public class HackvertorPanel extends JPanel {
             BasicCompletion acTag = new BasicCompletion(provider, tag.name);
             provider.addCompletion(acTag);
         }
-        JSONArray customTags = hackvertor.getCustomTags();
-        for (int i = 0; i < customTags.length(); i++) {
-            JSONObject customTag = (JSONObject) hackvertor.getCustomTags().get(i);
-            String tagName = customTag.getString("tagName");
-            BasicCompletion acTag = new BasicCompletion(provider, tagName);
-            provider.addCompletion(acTag);
-        }
-        HackvertorTagCompletion ac = new HackvertorTagCompletion(provider);
+        HackvertorTagCompletion ac = new HackvertorTagCompletion(provider, tags);
         ac.setAutoActivationDelay(250);
         ac.setAutoActivationEnabled(true);
         ac.install(input);

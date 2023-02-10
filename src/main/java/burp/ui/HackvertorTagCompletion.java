@@ -1,6 +1,9 @@
 package burp.ui;
 
+import burp.Convertors;
 import burp.Hackvertor;
+import burp.Tag;
+import burp.Utils;
 import org.fife.ui.autocomplete.AutoCompletion;
 import org.fife.ui.autocomplete.Completion;
 import org.fife.ui.autocomplete.CompletionProvider;
@@ -8,11 +11,15 @@ import org.fife.ui.autocomplete.ParameterizedCompletion;
 
 import javax.swing.text.Caret;
 import javax.swing.text.JTextComponent;
+import java.util.ArrayList;
+import java.util.Optional;
 
 public class HackvertorTagCompletion extends AutoCompletion {
-    private Hackvertor hackvertor;
-    public HackvertorTagCompletion(CompletionProvider provider) {
+    private ArrayList<Tag> tags;
+
+    public HackvertorTagCompletion(CompletionProvider provider, ArrayList<Tag> tagsList) {
         super(provider);
+        this.tags = tagsList;
     }
     protected void insertCompletion(Completion c,
                                     boolean typedParamListStartChar) {
@@ -25,14 +32,19 @@ public class HackvertorTagCompletion extends AutoCompletion {
         int dot = caret.getDot();
         int len = alreadyEntered.length();
         int start = dot - len;
-        String replacement = getReplacementText(c, textComp.getDocument(),
-                start, len);
+        String tagName = getReplacementText(c, textComp.getDocument(), start, len);
 
         caret.setDot(start);
         caret.moveDot(dot);
-        String startTag = "@" + replacement + ">";
-        String endTag = "<@/" + replacement + ">";
-        textComp.replaceSelection(startTag + endTag);
-        caret.moveDot(caret.getDot()-endTag.length());
+        Optional<Tag> tagObj = tags.stream().filter(o -> o.name.equals(tagName)).findFirst();
+        if(tagObj.isPresent()) {
+            String[] tag = Convertors.generateTagStartEnd(tagObj.get());
+            String startTag = tag[0].substring(1);
+            String endTag = tag[1];
+            textComp.replaceSelection(startTag + endTag);
+            int pos = caret.getDot() - endTag.length();
+            caret.moveDot(pos);
+            textComp.select(pos, pos);
+        }
     }
 }
