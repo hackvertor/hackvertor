@@ -589,7 +589,7 @@ public class Convertors {
             case "read_url":
                 return read_url(output, getString(arguments, 0), getString(arguments, 1));
             case "system":
-                return system(output, getString(arguments, 0));
+                return system(output, getBoolean(arguments, 0), getString(arguments, 1));
             case "loop_for":
                 return loop_for(variableMap, customTags, output, getInt(arguments, 0), getInt(arguments, 1), getInt(arguments, 2), getString(arguments, 3));
             case "loop_letters_lower":
@@ -3265,7 +3265,7 @@ public class Convertors {
         }
     }
 
-    static String system(String cmd, String executionKey) {
+    static String system(String cmd, Boolean enabled, String executionKey) {
         if (!codeExecutionTagsEnabled) {
             return "Code execution tags are disabled by default. Use the menu bar to enable them.";
         }
@@ -3277,6 +3277,9 @@ public class Convertors {
         }
         if (!tagCodeExecutionKey.equals(executionKey)) {
             return "Incorrect tag code execution key";
+        }
+        if(!enabled) {
+           return "The system command is disabled until you change the parameter to true.";
         }
         if(cmd.length() == 0) {
             return "No command specified";

@@ -462,8 +462,9 @@ public class Hackvertor {
         tag.argument1 = new TagArgument("string", "UTF-8");
         tag.argument2 = new TagArgument("string", tagCodeExecutionKey);
         tags.add(tag);
-        tag = new Tag(Tag.Category.System, "system", true, "system(String cmd, String arguments, String codeExecuteKey)");
-        tag.argument1 = new TagArgument("string", tagCodeExecutionKey);
+        tag = new Tag(Tag.Category.System, "system", true, "system(String cmd, Boolean enabled, String codeExecuteKey)");
+        tag.argument1 = new TagArgument("boolean", "false");
+        tag.argument2 = new TagArgument("string", tagCodeExecutionKey);
         tags.add(tag);
         for (int j = 0; j < customTags.length(); j++) {
             JSONObject customTag = (JSONObject) customTags.get(j);

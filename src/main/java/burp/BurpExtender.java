@@ -1237,7 +1237,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         List<JMenuItem> menu = new ArrayList<JMenuItem>();
         JMenu submenu = new JMenu("Hackvertor");
         Action hackvertorAction;
-        if (invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE && bounds[0] == bounds[1]) {
+        if (invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE && bounds != null && bounds[0] == bounds[1]) {
             hackvertorAction = new HackvertorAction("Send response body to Hackvertor", extensionPanel, invocation);
         } else {
             hackvertorAction = new HackvertorAction("Send to Hackvertor", extensionPanel, invocation);
