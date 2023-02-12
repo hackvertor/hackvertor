@@ -166,7 +166,7 @@ public class Utils {
         return parentMenu;
     }
 
-    public static void applyDarkThemeToRSyntaxTextArea(RSyntaxTextArea area, String themeName) {
+    public static void applyThemeToRSyntaxTextArea(RSyntaxTextArea area, String themeName) {
         try {
             Theme theme = Theme.load(Utils.class.getResourceAsStream(
                     "/org/fife/ui/rsyntaxtextarea/themes/"+themeName+".xml"));
@@ -185,7 +185,7 @@ public class Utils {
     public static void configureRSyntaxArea(RSyntaxTextArea area) {
         area.setLineWrap(true);
         if(BurpExtender.isDarkTheme) {
-            Utils.applyDarkThemeToRSyntaxTextArea(area, "dark");
+            Utils.applyThemeToRSyntaxTextArea(area, "dark");
         }
         callbacks.customizeUiComponent(area);
         area.setFont(new Font("Courier New", Font.PLAIN, area.getFont().getSize()));

@@ -587,7 +587,7 @@ public class Convertors {
             case "groovy":
                 return groovy(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags);
             case "read_url":
-                return read_url(output, getString(arguments, 0), getString(arguments, 1));
+                return read_url(output, getString(arguments, 0), getBoolean(arguments, 1), getString(arguments, 2));
             case "system":
                 return system(output, getBoolean(arguments, 0), getString(arguments, 1));
             case "loop_for":
@@ -3317,7 +3317,7 @@ public class Convertors {
         return output.toString();
     }
 
-    static String read_url(String input, String charset, String executionKey) {
+    static String read_url(String input, String charset, Boolean enabled, String executionKey) {
         if(!charset.equalsIgnoreCase("UTF-8")) {
             input = convertCharset(input, charset);
         }
@@ -3332,6 +3332,9 @@ public class Convertors {
         }
         if (!tagCodeExecutionKey.equals(executionKey)) {
             return "Incorrect tag code execution key";
+        }
+        if(!enabled) {
+           return "The read url command is disabled until you change the parameter to true.";
         }
         URL url = null;
         try {

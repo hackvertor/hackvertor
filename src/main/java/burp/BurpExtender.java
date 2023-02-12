@@ -54,7 +54,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
     public static boolean isDarkTheme;
     public static String argumentsRegex = "(?:0x[a-fA-F0-9]+|\\d+|'(?:\\\\'|[^']*)'|\"(?:\\\\\"|[^\"]*)\")";
     private List<String> NATIVE_LOOK_AND_FEELS = Arrays.asList("GTK","Windows","Aqua","FlatLaf - Burp Light");
-    private List<String> DARK_THEMES = Arrays.asList("Darcula","FlatLaf - Burp Dark");
+    public static List<String> DARK_THEMES = Arrays.asList("Darcula","FlatLaf - Burp Dark");
 
     private Hackvertor hackvertor;
     private ExtensionPanel extensionPanel;
@@ -202,7 +202,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.7.35");
+	            	stdout.println("Hackvertor v1.7.36");
                     loadCustomTags();
                     loadGlobalVariables();
                     registerPayloadProcessors();
