@@ -202,7 +202,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.7.34");
+	            	stdout.println("Hackvertor v1.7.35");
                     loadCustomTags();
                     loadGlobalVariables();
                     registerPayloadProcessors();
@@ -1226,7 +1226,6 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
 
     public List<JMenuItem> createMenuItems(IContextMenuInvocation invocation) {
         int[] bounds = invocation.getSelectionBounds();
-
         switch (invocation.getInvocationContext()) {
             case IContextMenuInvocation.CONTEXT_INTRUDER_PAYLOAD_POSITIONS:
             case IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST:
@@ -1238,7 +1237,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         List<JMenuItem> menu = new ArrayList<JMenuItem>();
         JMenu submenu = new JMenu("Hackvertor");
         Action hackvertorAction;
-        if (bounds[0] == bounds[1] && invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE) {
+        if (invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE && bounds[0] == bounds[1]) {
             hackvertorAction = new HackvertorAction("Send response body to Hackvertor", extensionPanel, invocation);
         } else {
             hackvertorAction = new HackvertorAction("Send to Hackvertor", extensionPanel, invocation);
