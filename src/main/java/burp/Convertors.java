@@ -3278,6 +3278,9 @@ public class Convertors {
         if (!tagCodeExecutionKey.equals(executionKey)) {
             return "Incorrect tag code execution key";
         }
+        if(cmd.length() == 0) {
+            return "No command specified";
+        }
         Runtime r = Runtime.getRuntime();
         Process p = null;
         try {
