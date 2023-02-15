@@ -29,8 +29,8 @@ dependencies {
     implementation 'com.github.javafaker:javafaker:1.0.2'
     implementation 'com.fifesoft:rsyntaxtextarea:3.2.2'
     implementation 'com.fifesoft:autocomplete:3.3.1'
-    testImplementation 'junit:junit:4.13.1'
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.7.1'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
 }
 
 sourceSets {
@@ -44,6 +44,24 @@ sourceSets {
     }
 }
 
+jar{
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    archivesBaseName = project.name + '-all'
+    from {
+        (configurations.runtimeClasspath).collect { it.isDirectory() ? it : zipTree(it) }
+    }{
+        exclude "META-INF/*.SF"
+        exclude "META-INF/*.DSA"
+        exclude "META-INF/*.RSA"
+        exclude "META-INF/*.txt"
+    }
+}
+
+tasks.withType(Jar) {
+    destinationDirectory = file("$rootDir/releases/")
+}
+
+/*
 task fatJar(type: Jar) {
     baseName = project.name + '-all'
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
@@ -58,6 +76,7 @@ task fatJar(type: Jar) {
     }
     with jar
 }
+*/
 
 /*test {
     useJUnitPlatform()
