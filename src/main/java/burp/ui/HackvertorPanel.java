@@ -5,10 +5,16 @@ import burp.parser.Element;
 import burp.parser.HackvertorParser;
 import burp.parser.ParseException;
 import org.apache.commons.lang3.StringUtils;
+import org.fife.ui.autocomplete.*;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import javax.swing.*;
 import javax.swing.event.*;
 import javax.swing.text.Document;
+import javax.swing.text.JTextComponent;
 import javax.swing.undo.CannotRedoException;
 import javax.swing.undo.CannotUndoException;
 import javax.swing.undo.UndoManager;
@@ -17,6 +23,7 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.*;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.stream.Collectors;
@@ -29,21 +36,44 @@ import static java.awt.GridBagConstraints.BOTH;
 public class HackvertorPanel extends JPanel {
     
     private final Hackvertor hackvertor;
-    private final JTextArea inputArea;
-    private final JTextArea outputArea;
+    private final HackvertorInput inputArea;
+    private final HackvertorInput outputArea;
     private JTabbedPane tabs;
     
     public HackvertorPanel(Hackvertor hackvertor, boolean showLogo){
         super(new GridBagLayout());
         this.hackvertor = hackvertor;
-        this.inputArea = new JTextArea();
-        this.outputArea = new JTextArea();
-
+        JTextComponent.removeKeymap("RTextAreaKeymap");
+        this.inputArea = new HackvertorInput();
+        this.outputArea = new HackvertorInput();
+        Utils.fixRSyntaxAreaBurp();
+        callbacks.customizeUiComponent(this.inputArea);
+        callbacks.customizeUiComponent(this.outputArea);
+        this.inputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
+        this.outputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
+        Utils.configureRSyntaxArea(this.inputArea);
+        Utils.configureRSyntaxArea(this.outputArea);
+        this.inputArea.setCodeFoldingEnabled(true);
+        this.generateAutoCompletion(this.inputArea);
         buildPanel(showLogo);
     }
 
     public JTabbedPane getTabs() {
         return tabs;
+    }
+
+    private void generateAutoCompletion(RSyntaxTextArea input) {
+        DefaultCompletionProvider provider = new DefaultCompletionProvider();
+        provider.setAutoActivationRules(false, "<");
+        ArrayList<Tag> tags = hackvertor.getTags();
+        for(Tag tag : tags) {
+            BasicCompletion acTag = new BasicCompletion(provider, tag.name);
+            provider.addCompletion(acTag);
+        }
+        HackvertorTagCompletion ac = new HackvertorTagCompletion(provider, tags);
+        ac.setAutoActivationDelay(250);
+        ac.setAutoActivationEnabled(true);
+        ac.install(input);
     }
 
     private void buildPanel(boolean showLogo){
@@ -75,7 +105,6 @@ public class HackvertorPanel extends JPanel {
         hexScroll.setPreferredSize(new Dimension(-1, 100));
         hexScroll.setMinimumSize(new Dimension(-1, 100));
         JPanel buttonsPanel = new JPanel(new GridLayout(1, 0, 10, 0));
-        inputArea.setFont(new Font("Courier New", Font.PLAIN, inputArea.getFont().getSize()));
         inputArea.setLineWrap(true);
         inputArea.setRows(0);
         final UndoManager undo = new UndoManager();
@@ -130,24 +159,22 @@ public class HackvertorPanel extends JPanel {
             inputLenLabel.setBackground(Color.decode("#FFF5BF"));
             inputLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
         }
-        final JTextArea outputArea = new JTextArea();
-        outputArea.setFont(new Font("Courier New", Font.PLAIN, outputArea.getFont().getSize()));
         DocumentListener documentListener = new DocumentListener() {
             public void changedUpdate(DocumentEvent documentEvent) {
                 updateLen(documentEvent);
-                outputArea.setText(hackvertor.convert(inputArea.getText()));
+                outputArea.setText(hackvertor.convert(inputArea.getText(), null));
                 outputArea.setCaretPosition(0);
             }
 
             public void insertUpdate(DocumentEvent documentEvent) {
                 updateLen(documentEvent);
-                outputArea.setText(hackvertor.convert(inputArea.getText()));
+                outputArea.setText(hackvertor.convert(inputArea.getText(), null));
                 outputArea.setCaretPosition(0);
             }
 
             public void removeUpdate(DocumentEvent documentEvent) {
                 updateLen(documentEvent);
-                outputArea.setText(hackvertor.convert(inputArea.getText()));
+                outputArea.setText(hackvertor.convert(inputArea.getText(), null));
                 outputArea.setCaretPosition(0);
             }
 
@@ -294,15 +321,7 @@ public class HackvertorPanel extends JPanel {
         clearTagsButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 String input = inputArea.getText();
-                try {
-                    input = HackvertorParser.parse(input).stream()
-                            .filter(element -> element instanceof Element.TextElement)
-                            .map(element -> ((Element.TextElement) element).getContent())
-                            .collect(Collectors.joining());
-                }catch (ParseException ex){
-                    //TODO Better error handling.
-                    ex.printStackTrace();
-                }
+                input = Hackvertor.removeHackvertorTags(input);
                 inputArea.setText(input);
                 inputArea.requestFocus();
             }
@@ -376,7 +395,7 @@ public class HackvertorPanel extends JPanel {
         final JButton convertButton = new JButton("Convert");
         convertButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                outputArea.setText(hackvertor.convert(inputArea.getText()));
+                outputArea.setText(hackvertor.convert(inputArea.getText(), null));
             }
         });
         if (!isNativeTheme && !isDarkTheme) {
@@ -476,7 +495,7 @@ public class HackvertorPanel extends JPanel {
         tabs.addTab("Search", new SearchPanel(hackvertor, this));
 
         tabs.setAutoscrolls(true);
-        tabs.setSelectedIndex(4);
+        tabs.setSelectedIndex(tabs.indexOfTab("Encode"));
 
         return tabs;
     }
@@ -495,7 +514,7 @@ public class HackvertorPanel extends JPanel {
                 } else {
                     code = "<@auto_decode_no_decrypt>" + data + "<@/auto_decode_no_decrypt>";
                 }
-                String converted = Convertors.weakConvert(new HashMap<>(), hackvertor.getCustomTags(), code);
+                String converted = Convertors.weakConvert(new HashMap<>(), hackvertor.getCustomTags(), code, null);
                 if (!data.equals(converted)) {
                     inputArea.setText(code);
                 }
@@ -507,11 +526,11 @@ public class HackvertorPanel extends JPanel {
         }
     }
 
-    public JTextArea getInputArea() {
+    public HackvertorInput getInputArea() {
         return inputArea;
     }
 
-    public JTextArea getOutputArea() {
+    public HackvertorInput getOutputArea() {
         return outputArea;
     }
 }

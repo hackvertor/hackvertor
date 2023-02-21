@@ -1,19 +1,53 @@
 package burp;
 
+import burp.parser.Element;
+import burp.parser.HackvertorParser;
+import burp.parser.ParseException;
+import com.github.javafaker.Faker;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static burp.BurpExtender.*;
 
 public class Hackvertor {
     private ArrayList<Tag> tags = new ArrayList<Tag>();
     private JSONArray customTags = new JSONArray();
-
+    private IRequestInfo analyzedRequest = null;
+    private byte[] request;
     public Hackvertor(){
         init();
+    }
+
+    public void analyzeRequest(byte[] request, IHttpRequestResponse messageInfo) {
+        this.request = request;
+        this.analyzedRequest = helpers.analyzeRequest(messageInfo.getHttpService(), request);
+    }
+
+    public byte[] getRequest() {
+        return request;
+    }
+
+    public static String removeHackvertorTags(String input) {
+        try {
+            input = HackvertorParser.parse(input).stream()
+                    .filter(element -> element instanceof Element.TextElement)
+                    .map(element -> ((Element.TextElement) element).getContent())
+                    .collect(Collectors.joining());
+        }catch (ParseException ex){
+            //TODO Better error handling.
+            ex.printStackTrace();
+        }
+        return input;
+    }
+
+    public IRequestInfo getAnalyzedRequest() {
+        return analyzedRequest;
     }
 
     void init() {
@@ -49,8 +83,12 @@ public class Hackvertor {
         tags.add(new Tag(Tag.Category.Compression, "gzip_decompress", true, "gzip_decompress(String str)"));
         tags.add(new Tag(Tag.Category.Compression, "bzip2_compress", true, "bzip2_compress(String str)"));
         tags.add(new Tag(Tag.Category.Compression, "bzip2_decompress", true, "bzip2_decompress(String str)"));
-        tags.add(new Tag(Tag.Category.Compression, "deflate_compress", true, "deflate_compress(String str)"));
-        tags.add(new Tag(Tag.Category.Compression, "deflate_decompress", true, "deflate_decompress(String str)"));
+        tag = new Tag(Tag.Category.Compression, "deflate_compress", true, "deflate_compress(String str, Boolean includeHeader)");
+        tag.argument1 = new TagArgument("boolean", "true");
+        tags.add(tag);
+        tag = new Tag(Tag.Category.Compression, "deflate_decompress", true, "deflate_decompress(String str, Boolean includeHeader)");
+        tag.argument1 = new TagArgument("boolean", "true");
+        tags.add(tag);
         tags.add(new Tag(Tag.Category.Date, "timestamp", false, "timestamp()"));
         tag = new Tag(Tag.Category.Date, "date", false, "date(String format)");
         tag.argument1 = new TagArgument("string", "yyyy-MM-dd HH:mm:ss");
@@ -102,6 +140,7 @@ public class Hackvertor {
         tags.add(new Tag(Tag.Category.Encrypt, "is_like_english", true, "is_like_english(String str)"));
         tags.add(new Tag(Tag.Category.Encrypt, "index_of_coincidence", true, "index_of_coincidence(String str)"));
         tags.add(new Tag(Tag.Category.Encrypt, "guess_key_length", true, "guess_key_length(String ciphertext)"));
+        tags.add(new Tag(Tag.Category.Encode, "saml", true, "saml(String str)"));
         tags.add(new Tag(Tag.Category.Encode, "base32", true, "base32_encode(String str)"));
         tags.add(new Tag(Tag.Category.Encode, "base64", true, "base64Encode(String str)"));
         tags.add(new Tag(Tag.Category.Encode, "base64url", true, "base64urlEncode(String str)"));
@@ -128,7 +167,10 @@ public class Hackvertor {
         tag.argument1 = new TagArgument("string", "HS256");
         tag.argument2 = new TagArgument("string", "secret");
         tags.add(tag);
+        tags.add(new Tag(Tag.Category.Encode, "powershell", true, "powershell(String cmd)"));
         tags.add(new Tag(Tag.Category.Encode, "quoted_printable", true, "quoted_printable(String str)"));
+        tags.add(new Tag(Tag.Category.Encode, "js_string", true, "js_string(String str)"));
+        tags.add(new Tag(Tag.Category.Decode, "d_saml", true, "d_saml(String str)"));
         tags.add(new Tag(Tag.Category.Decode, "auto_decode", true, "auto_decode(String str)"));
         tags.add(new Tag(Tag.Category.Decode, "auto_decode_no_decrypt", true, "auto_decode_no_decrypt(String str)"));
         tags.add(new Tag(Tag.Category.Decode, "d_base32", true, "decode_base32(String str)"));
@@ -145,27 +187,30 @@ public class Hackvertor {
         tags.add(new Tag(Tag.Category.Decode, "d_jwt_get_payload", true, "d_jwt_get_payload(String token)"));
         tags.add(new Tag(Tag.Category.Decode, "d_jwt_get_header", true, "d_jwt_get_header(String token)"));
         tags.add(new Tag(Tag.Category.Decode, "d_quoted_printable", true, "d_quoted_printable(String str)"));
+        tag = new Tag(Tag.Category.Decode, "json_parse", true, "json_parse(String json, String properties)");
+        tag.argument1 = new TagArgument("string", "$property $propertyA-$propertyB");
+        tags.add(tag);
         tag = new Tag(Tag.Category.Decode, "d_jwt_verify", true, "d_jwt_verify(String token, String secret)");
         tag.argument1 = new TagArgument("string", "secret");
         tags.add(tag);
         tags.add(new Tag(Tag.Category.Convert, "chunked_dec2hex", true, "chunked_dec2hex(String str)"));
-        tag = new Tag(Tag.Category.Convert, "dec2hex", true, "dec2hex(String str, String splitChar)");
-        tag.argument1 = new TagArgument("string", ",");
+        tag = new Tag(Tag.Category.Convert, "dec2hex", true, "dec2hex(String str, String regex)");
+        tag.argument1 = new TagArgument("string", "(\\d+)");
         tags.add(tag);
-        tag = new Tag(Tag.Category.Convert, "dec2oct", true, "dec2oct(String str, String splitChar)");
-        tag.argument1 = new TagArgument("string", ",");
+        tag = new Tag(Tag.Category.Convert, "dec2oct", true, "dec2oct(String str, String regex)");
+        tag.argument1 = new TagArgument("string", "(\\d+)");
         tags.add(tag);
-        tag = new Tag(Tag.Category.Convert, "dec2bin", true, "dec2bin(String str, String splitChar)");
-        tag.argument1 = new TagArgument("string", ",");
+        tag = new Tag(Tag.Category.Convert, "dec2bin", true, "dec2bin(String str, String regex)");
+        tag.argument1 = new TagArgument("string", "(\\d+)");
         tags.add(tag);
-        tag = new Tag(Tag.Category.Convert, "hex2dec", true, "hex2dec(String str, String splitChar)");
-        tag.argument1 = new TagArgument("string", ",");
+        tag = new Tag(Tag.Category.Convert, "hex2dec", true, "hex2dec(String str, String regex)");
+        tag.argument1 = new TagArgument("string", "((?:0x)?[a-f0-9]+)");
         tags.add(tag);
-        tag = new Tag(Tag.Category.Convert, "oct2dec", true, "oct2dec(String str, String splitChar)");
-        tag.argument1 = new TagArgument("string", ",");
+        tag = new Tag(Tag.Category.Convert, "oct2dec", true, "oct2dec(String str, String regex)");
+        tag.argument1 = new TagArgument("string", "([0-7]+)");
         tags.add(tag);
-        tag = new Tag(Tag.Category.Convert, "bin2dec", true, "bin2dec(String str, String splitChar)");
-        tag.argument1 = new TagArgument("string", ",");
+        tag = new Tag(Tag.Category.Convert, "bin2dec", true, "bin2dec(String str, String regex)");
+        tag.argument1 = new TagArgument("string", "([0-1]+)");
         tags.add(tag);
         tags.add(new Tag(Tag.Category.Convert, "ascii2bin", true, "ascii2bin(String str)"));
         tags.add(new Tag(Tag.Category.Convert, "bin2ascii", true, "bin2ascii(String str)"));
@@ -205,6 +250,50 @@ public class Hackvertor {
         tag.argument1 = new TagArgument("string", "split char");
         tag.argument2 = new TagArgument("string", "join char");
         tags.add(tag);
+
+        Faker faker = new Faker();
+        generateFakeTags(new Object[]{
+                faker.address(),
+                faker.ancient(),
+                faker.animal(),
+                faker.app(),
+                faker.artist(),
+                faker.avatar(),
+                faker.aviation(),
+                faker.book(),
+                faker.bool(),
+                faker.business(),
+                faker.code(),
+                faker.currency(),
+                faker.color(),
+                faker.commerce(),
+                faker.company(),
+                faker.crypto(),
+                faker.date(),
+                faker.demographic(),
+                faker.educator(),
+                faker.file(),
+                faker.finance(),
+                faker.food(),
+                faker.hacker(),
+                faker.idNumber(),
+                faker.internet(),
+                faker.job(),
+                faker.lorem(),
+                faker.music(),
+                faker.name(),
+                faker.nation(),
+                faker.number(),
+                faker.options(),
+                faker.phoneNumber(),
+                faker.slackEmoji(),
+                faker.space(),
+                faker.stock(),
+                faker.team(),
+                faker.university(),
+                faker.weather()
+        });
+
         tag = new Tag(Tag.Category.HMAC, "hmac_md5", true, "hmacmd5(String str, String key)");
         tag.argument1 = new TagArgument("string", "SECRET");
         tags.add(tag);
@@ -273,8 +362,9 @@ public class Hackvertor {
         tag.argument2 = new TagArgument("int", "from");
         tag.argument3 = new TagArgument("int", "to");
         tags.add(tag);
-        tag = new Tag(Tag.Category.Math, "random", true, "random(String chars, int len)");
+        tag = new Tag(Tag.Category.Math, "random", true, "random(String chars, int len, Boolean everyCharOnce)");
         tag.argument1 = new TagArgument("int", "10");
+        tag.argument2 = new TagArgument("boolean", "false");
         tags.add(tag);
         tag = new Tag(Tag.Category.Math, "random_alpha_lower", false, "random_alpha_lower(int len)");
         tag.argument1 = new TagArgument("int", "10");
@@ -323,9 +413,20 @@ public class Hackvertor {
         tags.add(new Tag(Tag.Category.XSS, "template_eval", true, "template_eval(String str)"));
         tags.add(new Tag(Tag.Category.XSS, "throw_eval", true, "throw_eval(String str)"));
         Tag setTag = new Tag(Tag.Category.Variables, "set_variable1", true, "Special tag that lets you store the results of a conversion. Change variable1 to your own variable name. The argument specifies if the variable is global.");
-        setTag.argument1 = new TagArgument("string", "false");
+        setTag.argument1 = new TagArgument("boolean", "false");
         tags.add(setTag);
         tags.add(new Tag(Tag.Category.Variables, "get_variable1", false, "Special tag that lets you get a previously set variable. Change var to your own variable name."));
+        tag = new Tag(Tag.Category.Variables, "context_url", false, "context_url(String properties");
+        tag.argument1 = new TagArgument("string", "$protocol $host $path $file $query $port");
+        tags.add(tag);
+        tag = new Tag(Tag.Category.Variables, "context_body", false, "context_body()");
+        tags.add(tag);
+        tag = new Tag(Tag.Category.Variables, "context_header", false, "context_url(String headerName");
+        tag.argument1 = new TagArgument("string", "$headerName");
+        tags.add(tag);
+        tag = new Tag(Tag.Category.Variables, "context_param", false, "context_url(String paramName");
+        tag.argument1 = new TagArgument("string", "$paramName");
+        tags.add(tag);
         tag = new Tag(Tag.Category.Loops, "loop_for", true, "loop_for(String input, int start, int end, int increment, String i)//Does a for loop. Use a Hackvertor variable inside the tags to retrieve the position in the loop.");
         tag.argument1 = new TagArgument("int", "0");
         tag.argument2 = new TagArgument("int", "10");
@@ -357,12 +458,44 @@ public class Hackvertor {
         tag.argument1 = new TagArgument("string", "output = input.toUpperCase()");
         tag.argument2 = new TagArgument("string", tagCodeExecutionKey);
         tags.add(tag);
+        tag = new Tag(Tag.Category.System, "read_url", true, "real_url(String url, String charset, String codeExecuteKey)");
+        tag.argument1 = new TagArgument("string", "UTF-8");
+        tag.argument2 = new TagArgument("boolean", "false");
+        tag.argument3 = new TagArgument("string", tagCodeExecutionKey);
+        tags.add(tag);
+        tag = new Tag(Tag.Category.System, "system", true, "system(String cmd, Boolean enabled, String codeExecuteKey)");
+        tag.argument1 = new TagArgument("boolean", "false");
+        tag.argument2 = new TagArgument("string", tagCodeExecutionKey);
+        tags.add(tag);
         for (int j = 0; j < customTags.length(); j++) {
             JSONObject customTag = (JSONObject) customTags.get(j);
             tag = generateCustomTag(customTag);
             tags.add(tag);
         }
 
+    }
+
+    public void generateFakeTags(Object[] fakeObjects) {
+        for(int i=0;i<fakeObjects.length;i++) {
+            Object fakeObject = fakeObjects[i];
+            String name = Convertors.lowercaseFirst(fakeObject.getClass().getSimpleName());
+            Tag tag = new Tag(Tag.Category.Fake, "fake_" + name, false, name + "(String properties, String locale)");
+            Method[] methods = fakeObject.getClass().getDeclaredMethods();
+            ArrayList<String> properties = new ArrayList<>();
+            for (Method method : methods) {
+                if (shouldFilterMethod(method)) {
+                    continue;
+                }
+                properties.add('$' + method.getName());
+            }
+            tag.argument1 = new TagArgument("string", String.join(", ", properties));
+            tag.argument2 = new TagArgument("string", "en-GB");
+            tags.add(tag);
+        }
+    }
+
+    public static Boolean shouldFilterMethod(Method method) {
+        return method.getParameterCount() != 0 || !Modifier.isPublic(method.getModifiers());
     }
 
     public JSONArray getCustomTags() {
@@ -373,8 +506,8 @@ public class Hackvertor {
         this.customTags = tags;
     }
 
-    public String convert(String message){
-        return Convertors.weakConvert(new HashMap<>(), customTags, message);
+    public String convert(String message, Hackvertor hackvertor){
+        return Convertors.weakConvert(new HashMap<>(), customTags, message, hackvertor);
     }
 
     public ArrayList<Tag> getTags() {
@@ -384,6 +517,7 @@ public class Hackvertor {
             Tag tag = generateCustomTag(customTag);
             tagsAndCustom.add(tag);
         }
+        tagsAndCustom.sort(Comparator.comparing(o -> o.name));
         return tagsAndCustom;
     }
 }

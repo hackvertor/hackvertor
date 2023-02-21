@@ -1,14 +1,19 @@
 package burp;
 
 import burp.ui.ExtensionPanel;
+import burp.ui.HackvertorInput;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.fife.ui.rsyntaxtextarea.Theme;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import javax.swing.*;
 import javax.swing.event.*;
+import javax.swing.text.JTextComponent;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
@@ -49,7 +54,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
     public static boolean isDarkTheme;
     public static String argumentsRegex = "(?:0x[a-fA-F0-9]+|\\d+|'(?:\\\\'|[^']*)'|\"(?:\\\\\"|[^\"]*)\")";
     private List<String> NATIVE_LOOK_AND_FEELS = Arrays.asList("GTK","Windows","Aqua","FlatLaf - Burp Light");
-    private List<String> DARK_THEMES = Arrays.asList("Darcula","FlatLaf - Burp Dark");
+    public static List<String> DARK_THEMES = Arrays.asList("Darcula","FlatLaf - Burp Dark");
 
     private Hackvertor hackvertor;
     private ExtensionPanel extensionPanel;
@@ -60,9 +65,21 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
     private boolean tagsInScanner = true;
     private boolean tagsInExtensions = true;
     private boolean autoUpdateContentLength = true;
+    public static boolean allowTagCount = false;
+    public static boolean allowAutoConvertClipboard = false;
+    public static HashMap<String, Integer> tagCount = new HashMap<>();
+   public static final HashMap<String, HashMap<String, Integer>> contextTagCount = new HashMap() {
+        {
+            put("GET", new HashMap<>());
+            put("POST", new HashMap<>());
+            put("JSON", new HashMap<>());
+        }
+    };
     private boolean hvShutdown = false;
     private JMenuBar burpMenuBar;
     private JMenu hvMenuBar;
+
+    public static int MAX_POPULAR_TAGS = 10;
 
     public static GridBagConstraints createConstraints(int x, int y, int gridWidth) {
         GridBagConstraints c = new GridBagConstraints();
@@ -159,6 +176,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
 
     public void registerExtenderCallbacks(final IBurpExtenderCallbacks burpCallbacks) {
         callbacks = burpCallbacks;
+        allowTagCount = Boolean.valueOf(callbacks.loadExtensionSetting("allowTagCount"));
+        allowAutoConvertClipboard = Boolean.valueOf(callbacks.loadExtensionSetting("allowAutoConvertClipboard"));
         helpers = callbacks.getHelpers();
         stderr = new PrintWriter(callbacks.getStderr(), true);
         stdout = new PrintWriter(callbacks.getStdout(), true);
@@ -183,7 +202,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.7.2");
+	            	stdout.println("Hackvertor v1.7.37");
                     loadCustomTags();
                     loadGlobalVariables();
                     registerPayloadProcessors();
@@ -276,6 +295,32 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                         }
                     });
                     hvMenuBar.add(fixContentLengthMenu);
+                    final JCheckBoxMenuItem countTagUsageMenu = new JCheckBoxMenuItem(
+                            "Allow Hackvertor to count tag usage", allowTagCount);
+                    countTagUsageMenu.addItemListener(new ItemListener() {
+                        public void itemStateChanged(ItemEvent e) {
+                            if (countTagUsageMenu.getState()) {
+                                allowTagCount = true;
+                            } else {
+                                allowTagCount = false;
+                            }
+                            callbacks.saveExtensionSetting("allowTagCount", String.valueOf(allowTagCount));
+                        }
+                    });
+                    hvMenuBar.add(countTagUsageMenu);
+                    final JCheckBoxMenuItem autoConvertClipboardMenu = new JCheckBoxMenuItem(
+                            "Allow Hackvertor to auto convert clipboard", allowAutoConvertClipboard);
+                    autoConvertClipboardMenu.addItemListener(new ItemListener() {
+                        public void itemStateChanged(ItemEvent e) {
+                            if (autoConvertClipboardMenu.getState()) {
+                                allowAutoConvertClipboard = true;
+                            } else {
+                                allowAutoConvertClipboard = false;
+                            }
+                            callbacks.saveExtensionSetting("allowAutoConvertClipboard", String.valueOf(allowAutoConvertClipboard));
+                        }
+                    });
+                    hvMenuBar.add(autoConvertClipboardMenu);
                     JMenuItem globalVariablesMenu = new JMenuItem("Global variables");
                     globalVariablesMenu.addActionListener(new ActionListener() {
                         @Override
@@ -326,7 +371,6 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
 
     void registerPayloadProcessors() {
         ArrayList<Tag> tags = hackvertor.getTags();
-        tags.sort(Comparator.comparing(o -> o.name));
         for(int i=0;i<tags.size();i++) {
             Tag tag = tags.get(i);
             if(tag.argument1 == null) {
@@ -342,7 +386,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         JPanel createVariablePanel = new JPanel();
         JFrame createVariableWindow = new JFrame("Global variables");
         createVariableWindow.setResizable(false);
-        createVariableWindow.setPreferredSize(new Dimension(500, 600));
+        createVariableWindow.setPreferredSize(new Dimension(500, 200));
 
         JLabel errorMessage = new JLabel();
         errorMessage.setPreferredSize(new Dimension(450, 25));
@@ -494,7 +538,11 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         createTagPanel.add(tagNameField);
         JLabel languageLabel = new JLabel("Select language");
         languageLabel.setPreferredSize(new Dimension(220, 25));
-        JTextArea codeArea = new JTextArea();
+        JTextComponent.removeKeymap("RTextAreaKeymap");
+        HackvertorInput codeArea = new HackvertorInput();
+        Utils.fixRSyntaxAreaBurp();
+        Utils.configureRSyntaxArea(codeArea);
+        codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT);
         JScrollPane codeScroll = new JScrollPane(codeArea);
         final int[] changes = {0};
         codeArea.getDocument().addDocumentListener(new DocumentListener() {
@@ -522,12 +570,28 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 if (changes[0] > 0) {
                     return;
                 }
-                if (index == 0) {
-                    codeArea.setText("output = input.toUpperCase()");
-                    changes[0] = 0;
-                } else if (index == 1) {
-                    codeArea.setText("output = input.upper()");
-                    changes[0] = 0;
+                String code = "output = convert(\"<@base64>\"+input+\"<@/base64>\")\n";
+                String comment = "//";
+                if(index == 1) {
+                    comment = "#";
+                }
+                code += comment + "output = convert(\"<@customTag('\"+executionKey+\"')>\"+input+\"<@/customTag>\")";
+                codeArea.setText(code);
+                changes[0] = 0;
+
+                switch(index) {
+                    case 0:
+                        codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT);
+                    break;
+                    case 1:
+                        codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_PYTHON);
+                    break;
+                    case 2:
+                        codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
+                    break;
+                    case 3:
+                        codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_GROOVY);
+                    break;
                 }
             }
         });
@@ -625,10 +689,11 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         argument2Panel.add(argument2DefaultLabel);
         argument2Panel.add(argument2DefaultValueField);
         createTagPanel.add(argument2Panel);
-
+        JLabel convertLabel = new JLabel("You can now convert Hackvertor tags inside customTags!");
         JLabel codeLabel = new JLabel("Code (if you end the code with .js/.py/.java/.groovy it will read a file)");
         codeLabel.setPreferredSize(new Dimension(450, 25));
         codeScroll.setPreferredSize(new Dimension(450, 300));
+        createTagPanel.add(convertLabel);
         createTagPanel.add(codeLabel);
         createTagPanel.add(codeScroll);
         JButton cancelButton = new JButton("Cancel");
@@ -671,7 +736,6 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
                 String input = JOptionPane.showInputDialog(null, "Enter input for your tag", "test");
                 String output = "";
-
 
                 JSONObject tag = new JSONObject();
                 tag.put("tagName", "_" + tagName);
@@ -723,13 +787,13 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
 
                 try {
                     if (language.equals("JavaScript")) {
-                        output = javascript(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions);
+                        output = javascript(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions, hackvertor.getCustomTags());
                     } else if(language.equals("Python")){
-                        output = python(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions);
+                        output = python(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions, hackvertor.getCustomTags());
                     } else if(language.equals("Java")){
-                        output = java(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions);
+                        output = java(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions, hackvertor.getCustomTags());
                     } else if(language.equals("Groovy")){
-                        output = groovy(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions);
+                        output = groovy(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions, hackvertor.getCustomTags());
                     }
                 }catch (Exception ee){
                     ee.printStackTrace();
@@ -999,7 +1063,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         hvShutdown = true;
         burpMenuBar.remove(hvMenuBar);
         burpMenuBar.repaint();
-        stdout.println("Hackvertor unloaded");
+        callbacks.printOutput("Hackvertor unloaded");
     }
 
     public byte[] fixContentLength(byte[] request) {
@@ -1109,8 +1173,10 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 return;
         }
         byte[] request = messageInfo.getRequest();
-        if (helpers.indexOf(request, helpers.stringToBytes("<@"), true, 0, request.length) > -1) {
-            request = helpers.stringToBytes(hackvertor.convert(helpers.bytesToString(request)));
+        if (helpers.indexOf(request, helpers.stringToBytes("<@"), false, 0, request.length) > -1) {
+            String requestStr = helpers.bytesToString(request);
+            hackvertor.analyzeRequest(helpers.stringToBytes(Hackvertor.removeHackvertorTags(requestStr)), messageInfo);
+            request = helpers.stringToBytes(hackvertor.convert(requestStr, hackvertor));
             if (autoUpdateContentLength) {
                 request = fixContentLength(request);
             }
@@ -1160,7 +1226,6 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
 
     public List<JMenuItem> createMenuItems(IContextMenuInvocation invocation) {
         int[] bounds = invocation.getSelectionBounds();
-
         switch (invocation.getInvocationContext()) {
             case IContextMenuInvocation.CONTEXT_INTRUDER_PAYLOAD_POSITIONS:
             case IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST:
@@ -1172,7 +1237,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         List<JMenuItem> menu = new ArrayList<JMenuItem>();
         JMenu submenu = new JMenu("Hackvertor");
         Action hackvertorAction;
-        if (bounds[0] == bounds[1] && invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE) {
+        if (invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE && bounds != null && bounds[0] == bounds[1]) {
             hackvertorAction = new HackvertorAction("Send response body to Hackvertor", extensionPanel, invocation);
         } else {
             hackvertorAction = new HackvertorAction("Send to Hackvertor", extensionPanel, invocation);
@@ -1187,7 +1252,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
 
         JMenuItem copyUrl = new JMenuItem("Copy URL");
         copyUrl.addActionListener(e -> {
-            String converted = hackvertor.convert(helpers.bytesToString(invocation.getSelectedMessages()[0].getRequest()));
+            String converted = hackvertor.convert(helpers.bytesToString(invocation.getSelectedMessages()[0].getRequest()), null);
             URL url = helpers.analyzeRequest(invocation.getSelectedMessages()[0].getHttpService(), helpers.stringToBytes(converted)).getUrl();
             StringSelection stringSelection = null;
             stringSelection = new StringSelection(buildUrl(url));
@@ -1200,7 +1265,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         convert.addActionListener(e -> {
             if (invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST || invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
                 byte[] message = invocation.getSelectedMessages()[0].getRequest();
-                invocation.getSelectedMessages()[0].setRequest(helpers.stringToBytes(hackvertor.convert(helpers.bytesToString(message))));
+                invocation.getSelectedMessages()[0].setRequest(helpers.stringToBytes(hackvertor.convert(helpers.bytesToString(message), null)));
             }
         });
         submenu.add(convert);
@@ -1226,12 +1291,43 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
             }
         });
-        submenu.add(autodecodeConvert);
-        submenu.addSeparator();
         loadCustomTags();
+        submenu.add(autodecodeConvert);
+        if(allowTagCount) {
+            JMenu contextPopularTags = new JMenu("Popular tags for this context");
+            ArrayList<Tag> tags = hackvertor.getTags();
+            byte[] message = invocation.getSelectedMessages()[0].getRequest();
+            IRequestInfo analyzedRequest = helpers.analyzeRequest(message);
+            String context = Utils.getContext(analyzedRequest);
+            if(contextTagCount.containsKey(context)) {
+                if(contextTagCount.get(context) != null) {
+                    contextTagCount.get(context).entrySet().stream().limit(MAX_POPULAR_TAGS)
+                            .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
+                            .forEach(entry -> {
+                                JMenuItem tagMenuItem = new JMenuItem(entry.getKey() + "(" + entry.getValue() + ")");
+                                Tag tagObj = Utils.getTagByTagName(tags, entry.getKey());
+                                tagMenuItem.addActionListener(Utils.generateTagActionListener(invocation, tagObj));
+                                contextPopularTags.add(tagMenuItem);
+                            });
+                    submenu.add(contextPopularTags);
+                }
+            }
+            JMenu popularTags = new JMenu("Popular tags");
+            tagCount.entrySet().stream().limit(MAX_POPULAR_TAGS)
+                    .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()))
+                    .forEach(entry -> {
+                        JMenuItem tagMenuItem = new JMenuItem(entry.getKey() + "("+entry.getValue()+")");
+                        Tag tagObj = Utils.getTagByTagName(tags, entry.getKey());
+                        tagMenuItem.addActionListener(Utils.generateTagActionListener(invocation, tagObj));
+                        popularTags.add(tagMenuItem);
+                    });
+            submenu.add(popularTags);
+        }
+
+        submenu.addSeparator();
         for (int i = 0; i < Tag.Category.values().length; i++) {
             Tag.Category category = Tag.Category.values()[i];
-            JMenu categoryMenu = Utils.createTagMenuForCategory(hackvertor.getTags(), category, invocation, "", false);
+            JMenu categoryMenu = Utils.createTagMenuForCategory(hackvertor.getTags(), category, invocation, "", false, null);
             submenu.add(categoryMenu);
         }
         menu.add(submenu);
