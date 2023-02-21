@@ -8,6 +8,8 @@ import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.awt.event.HierarchyEvent;
+import java.awt.event.HierarchyListener;
 
 public class HackvertorMessageTab implements IMessageEditorTab {
     private final JPanel hackvertorContainer = new JPanel(new BorderLayout());
@@ -15,27 +17,30 @@ public class HackvertorMessageTab implements IMessageEditorTab {
 
     private byte[] currentMessage;
     private Boolean changed = false;
+    private Boolean interfaceCreated = false;
 
     public HackvertorMessageTab(Hackvertor hackvertor) {
-        hackvertorContainer.addComponentListener(new ComponentAdapter() {
-            @Override
-            public void componentShown(ComponentEvent e) {
-                SwingUtilities.invokeLater(new Runnable() {
-                    public void run() {
+        hackvertorContainer.addHierarchyListener(e -> {
+            if(e.getChangeFlags() == HierarchyEvent.SHOWING_CHANGED) {
+                if(e.getComponent() == hackvertorContainer && hackvertorContainer.isShowing()) {
+                    if(interfaceCreated) {
+                        return;
+                    }
+                    SwingUtilities.invokeLater(() -> {
                         hackvertorPanel = new HackvertorPanel(hackvertor, false);
                         hackvertorPanel.getInputArea().getDocument().addDocumentListener(new DocumentListener() {
                             @Override
-                            public void insertUpdate(DocumentEvent e) {
+                            public void insertUpdate(DocumentEvent e1) {
                                 changed = true;
                             }
 
                             @Override
-                            public void removeUpdate(DocumentEvent e) {
+                            public void removeUpdate(DocumentEvent e1) {
                                 changed = true;
                             }
 
                             @Override
-                            public void changedUpdate(DocumentEvent e) {
+                            public void changedUpdate(DocumentEvent e1) {
                                 changed = true;
                             }
                         });
@@ -43,8 +48,9 @@ public class HackvertorMessageTab implements IMessageEditorTab {
                         if (currentMessage != null) {
                             hackvertorPanel.getInputArea().setText(BurpExtender.helpers.bytesToString(currentMessage));
                         }
-                    }
-                });
+                        interfaceCreated = true;
+                    });
+                }
             }
         });
     }
