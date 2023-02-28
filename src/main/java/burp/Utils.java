@@ -84,13 +84,16 @@ public class Utils {
     }
 
     public static String getContext(IRequestInfo analyzedRequest) {
+        if(analyzedRequest == null) {
+            return null;
+        }
         if(analyzedRequest.getContentType() == IRequestInfo.CONTENT_TYPE_JSON) {
             return "JSON";
         }
-        if(analyzedRequest.getMethod().equalsIgnoreCase("GET")) {
+        if(analyzedRequest.getMethod() != null && analyzedRequest.getMethod().equalsIgnoreCase("GET")) {
             return "GET";
         }
-        if(analyzedRequest.getMethod().equalsIgnoreCase("POST")) {
+        if(analyzedRequest.getMethod() != null && analyzedRequest.getMethod().equalsIgnoreCase("POST")) {
             return "POST";
         }
         return null;
