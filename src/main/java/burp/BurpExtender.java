@@ -202,7 +202,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.7.38");
+	            	stdout.println("Hackvertor v1.7.39");
                     loadCustomTags();
                     loadGlobalVariables();
                     registerPayloadProcessors();
@@ -1082,9 +1082,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         int end = request.length;
         while (i < end) {
             int line_start = i;
-            while (i < end && request[i++] != ' ') {
+            while (i < end && request[i++] != ':') {
             }
-            byte[] header_name = Arrays.copyOfRange(request, line_start, i - 2);
+            byte[] header_name = Arrays.copyOfRange(request, line_start, i - 1);
             int headerValueStart = i;
             while (i < end && request[i++] != '\n') {
             }
@@ -1095,7 +1095,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
             String header_str = helpers.bytesToString(header_name);
 
             if (header.equals(header_str)) {
-                int[] offsets = {line_start, headerValueStart, i - 2};
+                int[] offsets = {line_start, headerValueStart, i - 1};
                 return offsets;
             }
 
@@ -1111,7 +1111,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try {
             outputStream.write(Arrays.copyOfRange(request, 0, offsets[1]));
-            outputStream.write(helpers.stringToBytes(value));
+            outputStream.write(helpers.stringToBytes(" " + value));
             outputStream.write(Arrays.copyOfRange(request, offsets[2], request.length));
             return outputStream.toByteArray();
         } catch (IOException e) {
