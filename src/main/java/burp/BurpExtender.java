@@ -1095,7 +1095,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
             String header_str = helpers.bytesToString(header_name);
 
             if (header.equals(header_str)) {
-                int[] offsets = {line_start, headerValueStart, i - 1};
+                int[] offsets = {line_start, headerValueStart, i - 2};
                 return offsets;
             }
 
