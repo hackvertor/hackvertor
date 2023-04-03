@@ -558,6 +558,8 @@ public class Convertors {
                 return convert_base(output, getString(arguments, 0), getInt(arguments, 1), getInt(arguments, 2));
             case "zeropad":
                 return zeropad(output, getString(arguments, 0), getInt(arguments, 1));
+            case "uuid":
+                return uuid();
             case "behavior":
                 return behavior(output);
             case "css_expression":
@@ -2962,6 +2964,10 @@ public class Convertors {
             }
         }
         return StringUtils.join(chars, ",");
+    }
+
+    static String uuid() {
+        return UUID.randomUUID().toString();
     }
 
     static String eval_fromcharcode(String str) {

@@ -403,6 +403,8 @@ public class Hackvertor {
         tag.argument1 = new TagArgument("string", ",");
         tag.argument2 = new TagArgument("int", "2");
         tags.add(tag);
+        tag = new Tag(Tag.Category.Math, "uuid", false, "uuid()");
+        tags.add(tag);
         tags.add(new Tag(Tag.Category.XSS, "behavior", true, "behavior(String str)"));
         tags.add(new Tag(Tag.Category.XSS, "css_expression", true, "css_expression(String str)"));
         tags.add(new Tag(Tag.Category.XSS, "datasrc", true, "datasrc(String str)"));
