@@ -228,8 +228,9 @@ public class Hackvertor {
         tags.add(new Tag(Tag.Category.String, "reverse", true, "reverse(String str)"));
         tags.add(new Tag(Tag.Category.String, "length", true, "len(String str)"));
         tags.add(new Tag(Tag.Category.String, "unique", true, "unique(String str)"));
-        tag = new Tag(Tag.Category.String, "find", true, "find(String str, String find)");
+        tag = new Tag(Tag.Category.String, "find", true, "find(String str, String find, int group)");
         tag.argument1 = new TagArgument("string", "find");
+        tag.argument2 = new TagArgument("int", "-1");
         tags.add(tag);
         tag = new Tag(Tag.Category.String, "replace", true, "replace(String str, String find, String replace)");
         tag.argument1 = new TagArgument("string", "find");

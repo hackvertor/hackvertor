@@ -405,7 +405,7 @@ public class Convertors {
             case "length":
                 return len(output);
             case "find":
-                return find(output, getString(arguments, 0));
+                return find(output, getString(arguments, 0), getInt(arguments, 1));
             case "replace":
                 return replace(output, getString(arguments, 0), getString(arguments, 1));
             case "regex_replace":
@@ -2466,12 +2466,16 @@ public class Convertors {
         return Integer.toString(str.length());
     }
 
-    static String find(String str, String find) {
+    static String find(String str, String find, int group) {
         java.util.List<String> allMatches = new ArrayList<String>();
         try {
             Matcher m = Pattern.compile(find).matcher(str);
             while (m.find()) {
-                allMatches.add(m.group());
+                if(group == -1) {
+                    allMatches.add(m.group());
+                } else {
+                    allMatches.add(m.group(group));
+                }
             }
         } catch (PatternSyntaxException e) {
             stderr.println(e.getMessage());
