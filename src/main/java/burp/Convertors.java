@@ -184,13 +184,13 @@ public class Convertors {
                             String language = customTag.getString("language").toLowerCase();
                             String code = customTag.getString("code");
                             if (language.equals("javascript")) {
-                                return javascript(variableMap, output, code, eKey, customTagOptions, customTags);
+                                return javascript(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
                             } else if (language.equals("python")) {
-                                return python(variableMap, output, code, eKey, customTagOptions, customTags);
+                                return python(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
                             } else if (language.equals("java")) {
-                                return java(variableMap, output, code, eKey, customTagOptions, customTags);
+                                return java(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
                             } else if (language.equals("groovy")) {
-                                return groovy(variableMap, output, code, eKey, customTagOptions, customTags);
+                                return groovy(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
                             }
                         }
                     }
@@ -581,13 +581,13 @@ public class Convertors {
             case "throw_eval":
                 return throw_eval(output);
             case "python":
-                return python(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags);
+                return python(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags, null);
             case "javascript":
-                return javascript(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags);
+                return javascript(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags, null);
             case "java":
-                return java(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags);
+                return java(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags, null);
             case "groovy":
-                return groovy(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags);
+                return groovy(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags, null);
             case "read_url":
                 return read_url(output, getString(arguments, 0), getBoolean(arguments, 1), getString(arguments, 2));
             case "system":
@@ -3020,7 +3020,7 @@ public class Convertors {
         return "eval(`" + str.replaceAll("(.)", "$1\\${[]}") + "`)";
     }
 
-    static String python(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions, JSONArray customTags) {
+    static String python(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions, JSONArray customTags, Hackvertor hackvertor) {
         if (!codeExecutionTagsEnabled) {
             return "Code execution tags are disabled by default. Use the menu bar to enable them.";
         }
@@ -3074,7 +3074,7 @@ public class Convertors {
                 "sys.stdout = StreamWrapper(orig_stdout)\n" +
                 "from burp import Convertors\n" +
                 "def convert(input):\n" +
-                "   return Convertors.convert(variableMap, customTags, input)\n" +
+                "   return Convertors.weakConvert(variableMap, customTags, input, hackvertor)\n" +
                 "\n";
 
                 pythonInterpreter.exec(initCode + code);
@@ -3092,7 +3092,7 @@ public class Convertors {
         }
     }
 
-    static String java(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions, JSONArray customTags) {
+    static String java(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions, JSONArray customTags, Hackvertor hackvertor) {
         if (!codeExecutionTagsEnabled) {
             return "Code execution tags are disabled by default. Use the menu bar to enable them.";
         }
@@ -3113,8 +3113,10 @@ public class Convertors {
             javaInterpreter.set("customTags", customTags);
             String initCode = "import burp.Convertors;\n" +
                     "public String convert(String input) {\n" +
-                    "   return Convertors.convert(variableMap, customTags, input);\n" +
+                    "   return Convertors.weakConvert(variableMap, customTags, input, hackvertor);\n" +
                     "}\n";
+
+
             for (Map.Entry<String, String> entry : variableMap.entrySet()) {
                 String name = entry.getKey();
                 Object value = entry.getValue();
@@ -3147,7 +3149,7 @@ public class Convertors {
             return "Unable to parse Java:" + e.toString();
         }
     }
-    static String groovy(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions, JSONArray customTags) {
+    static String groovy(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions, JSONArray customTags, Hackvertor hackvertor) {
         if (!codeExecutionTagsEnabled) {
             return "Code execution tags are disabled by default. Use the menu bar to enable them.";
         }
@@ -3168,7 +3170,7 @@ public class Convertors {
         data.setVariable("customTags", customTags);
         String initCode = "import burp.Convertors;\n" +
                 "public String convert(String input) {\n" +
-                "   return Convertors.convert(variableMap, customTags, input);\n" +
+                "   return Convertors.weakConvert(variableMap, customTags, input, hackvertor);\n" +
                 "}\n";
         try {
             if (code.endsWith(".groovy")) {
@@ -3181,7 +3183,7 @@ public class Convertors {
         }
         return shell.getVariable("output").toString();
     }
-    static String javascript(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions, JSONArray customTags) {
+    static String javascript(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions, JSONArray customTags, Hackvertor hackvertor) {
         if (!codeExecutionTagsEnabled) {
             return "Code execution tags are disabled by default. Use the menu bar to enable them.";
         }
@@ -3207,7 +3209,7 @@ public class Convertors {
             public String invoke(final V8Object receiver, final V8Array parameters) {
                 if (parameters.length() > 0) {
                     Object input = parameters.get(0);
-                    String output = convert(variableMap, customTags, input.toString());
+                    String output = Convertors.weakConvert(variableMap, customTags, input.toString(), hackvertor);
                     if (input instanceof Releasable) {
                         ((Releasable) input).release();
                     }

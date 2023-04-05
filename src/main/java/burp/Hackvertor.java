@@ -33,6 +33,10 @@ public class Hackvertor {
         return request;
     }
 
+    public void setRequest(byte[] request) {
+        this.request = request;
+    }
+
     public static String removeHackvertorTags(String input) {
         try {
             input = HackvertorParser.parse(input).stream()
