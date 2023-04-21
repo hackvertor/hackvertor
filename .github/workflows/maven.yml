@@ -38,7 +38,7 @@ jobs:
           path: ./releases/*.jar
           name: Downloadable Extension File
       - name: Release
-        uses: ncipollo/release-action@v1
+        uses: hackvertor/release-action@v1
         with:
           tag: "latest_builds_by_github"
           allowUpdates: true
