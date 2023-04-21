@@ -4,6 +4,7 @@ bin/
 build/
 target/
 out/
+/releases/
 #intellij
 .idea/
 .classpath/
