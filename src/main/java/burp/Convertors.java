@@ -362,6 +362,10 @@ public class Convertors {
                 return base32_encode(output);
             case "d_base32":
                 return decode_base32(output);
+            case "base58":
+                return base58_encode(output);
+            case "d_base58":
+                return decode_base58(output);
             case "base64":
                 return base64Encode(output);
             case "d_base64":
@@ -1096,6 +1100,14 @@ public class Convertors {
     static String decode_base32(String str) {
         Base32 base32 = new Base32();
         return new String(base32.decode(str.getBytes()));
+    }
+
+    static String base58_encode(String str) {
+        return Base58.encode(helpers.stringToBytes(str));
+    }
+
+    static String decode_base58(String str) {
+        return helpers.bytesToString(Base58.decode(str));
     }
 
     static String base64Encode(String str) {

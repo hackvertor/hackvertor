@@ -8,6 +8,6 @@ MinPlatformVersion: 0
 ProOnly: False
 Author: Portswigger Web Security - Gareth Heyes
 ShortDescription: Converts data using a tag-based configuration to apply various encoding and escaping operations.
-EntryPoint: build/libs/hackvertor-all.jar
+EntryPoint: releases/hackvertor-all.jar
 BuildCommand: ./gradlew fatJar
 SupportedProducts: Pro, Community

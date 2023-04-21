@@ -146,6 +146,7 @@ public class Hackvertor {
         tags.add(new Tag(Tag.Category.Encrypt, "guess_key_length", true, "guess_key_length(String ciphertext)"));
         tags.add(new Tag(Tag.Category.Encode, "saml", true, "saml(String str)"));
         tags.add(new Tag(Tag.Category.Encode, "base32", true, "base32_encode(String str)"));
+        tags.add(new Tag(Tag.Category.Encode, "base58", true, "base58Encode(String str)"));
         tags.add(new Tag(Tag.Category.Encode, "base64", true, "base64Encode(String str)"));
         tags.add(new Tag(Tag.Category.Encode, "base64url", true, "base64urlEncode(String str)"));
         tags.add(new Tag(Tag.Category.Encode, "html_entities", true, "html_entities(String str)"));
@@ -178,6 +179,7 @@ public class Hackvertor {
         tags.add(new Tag(Tag.Category.Decode, "auto_decode", true, "auto_decode(String str)"));
         tags.add(new Tag(Tag.Category.Decode, "auto_decode_no_decrypt", true, "auto_decode_no_decrypt(String str)"));
         tags.add(new Tag(Tag.Category.Decode, "d_base32", true, "decode_base32(String str)"));
+        tags.add(new Tag(Tag.Category.Decode, "d_base58", true, "decode_base58(String str)"));
         tags.add(new Tag(Tag.Category.Decode, "d_base64", true, "decode_base64(String str)"));
         tags.add(new Tag(Tag.Category.Decode, "d_base64url", true, "decode_base64url(String str)"));
         tags.add(new Tag(Tag.Category.Decode, "d_html_entities", true, "decode_html_entities(String str)"));
