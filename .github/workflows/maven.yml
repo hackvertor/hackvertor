@@ -40,6 +40,6 @@ jobs:
       - name: Release
         uses: hackvertor/release-action@v1.12.0
         with:
-          tag: "Latest Hackvertor release"
+          tag: "Latest_Hackvertor_release"
           allowUpdates: true
           artifacts: "releases/*.jar"
