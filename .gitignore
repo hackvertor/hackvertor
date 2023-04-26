@@ -4,7 +4,10 @@ bin/
 build/
 target/
 out/
+/releases/
 #intellij
 .idea/
 .classpath/
 .project/
+/build/
+/.gradle/

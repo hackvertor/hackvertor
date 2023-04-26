@@ -22,7 +22,7 @@ public class HackvertorPayloadProcessor implements IIntruderPayloadProcessor {
         String input = helpers.bytesToString(currentPayload);
         String tagOutput;
         try {
-            tagOutput = Convertors.callTag(new HashMap<>(), hackvertor.getCustomTags(), this.tag, input, new ArrayList<String>());
+            tagOutput = Convertors.callTag(new HashMap<>(), hackvertor.getCustomTags(), this.tag, input, new ArrayList<String>(), null);
         } catch (ParseException e) {
             return null;
         }

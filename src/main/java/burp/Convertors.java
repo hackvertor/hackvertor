@@ -1,5 +1,7 @@
 package burp;
 
+import bsh.EvalError;
+import bsh.Interpreter;
 import burp.parser.Element;
 import burp.parser.HackvertorParser;
 import burp.parser.ParseException;
@@ -8,6 +10,10 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.eclipsesource.v8.*;
+import com.github.javafaker.Faker;
+import groovy.lang.Binding;
+import groovy.lang.GroovyShell;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.EncoderException;
 import org.apache.commons.codec.binary.Base32;
@@ -18,12 +24,15 @@ import org.apache.commons.compress.compressors.CompressorOutputStream;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.deflate.DeflateCompressorInputStream;
+import org.apache.commons.compress.compressors.deflate.DeflateCompressorOutputStream;
+import org.apache.commons.compress.compressors.deflate.DeflateParameters;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.crypto.digests.*;
 import org.bouncycastle.jcajce.provider.digest.Skein;
 import org.bouncycastle.util.encoders.Hex;
 import org.brotli.dec.BrotliInputStream;
+import org.codehaus.groovy.control.CompilationFailedException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.python.core.PyException;
@@ -38,15 +47,17 @@ import org.unbescape.html.HtmlEscapeType;
 import org.unbescape.javascript.JavaScriptEscape;
 import org.unbescape.javascript.JavaScriptEscapeLevel;
 import org.unbescape.javascript.JavaScriptEscapeType;
+import org.unbescape.json.JsonEscape;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
 import java.io.*;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -57,8 +68,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
+import java.util.zip.*;
 
 import static burp.BurpExtender.*;
 import static burp.BurpExtender.tagCodeExecutionKey;
@@ -91,6 +101,13 @@ public class Convertors {
         return args.get(pos);
     }
 
+    public static Boolean getBoolean(ArrayList<String> args, Integer pos) {
+        if (args.size() < pos + 1) {
+            return false;
+        }
+        return Boolean.valueOf(args.get(pos));
+    }
+
     public static Integer getInt(ArrayList<String> args, Integer pos) {
         Integer output;
         output = 0;
@@ -112,10 +129,20 @@ public class Convertors {
         return output;
     }
 
-    public static String callTag(HashMap<String, String> variableMap, JSONArray customTags, String tag, String output, ArrayList<String> arguments) throws ParseException {
+    public static String callTag(HashMap<String, String> variableMap, JSONArray customTags, String tag, String output, ArrayList<String> arguments, Hackvertor hackvertor) throws ParseException {
+        if(allowTagCount) {
+            int count = tagCount.get(tag) == null ? 0 : tagCount.get(tag);
+            tagCount.put(tag, count + 1);
+        }
+        for(int i=0;i<arguments.size();i++) {
+            arguments.set(i, convert(variableMap, customTags, arguments.get(i)));
+        }
+
         switch (tag) {
             default:
-                if (tag.startsWith("_")) {
+                if (tag.startsWith("fake_")) {
+                    return fake(tag, getString(arguments, 0), getString(arguments, 1));
+                } else if (tag.startsWith("_")) {
                     for (int i = 0; i < customTags.length(); i++) {
                         JSONObject customTag = (JSONObject) customTags.get(i);
                         String customTagName = customTag.getString("tagName");
@@ -157,18 +184,29 @@ public class Convertors {
                             String language = customTag.getString("language").toLowerCase();
                             String code = customTag.getString("code");
                             if (language.equals("javascript")) {
-                                return javascript(variableMap, output, code, eKey, customTagOptions);
-                            } else {
-                                return python(variableMap, output, code, eKey, customTagOptions);
+                                return javascript(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
+                            } else if (language.equals("python")) {
+                                return python(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
+                            } else if (language.equals("java")) {
+                                return java(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
+                            } else if (language.equals("groovy")) {
+                                return groovy(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
                             }
                         }
                     }
                 }else if(tag.startsWith("set_")){ //Backwards compatibility with previous set_VARNAME tag format
                     String varname = tag.replace("set_","");
                     variableMap.put(varname, output);
+                    Boolean global = getBoolean(arguments, 0);
+                    if(global) {
+                        globalVariables.put(varname, output);
+                    }
                     return output;
                 }else if(tag.startsWith("get_")){ //Backwards compatibility with previous get_VARNAME tag format
                     String varname = tag.replace("get_","");
+                    if(globalVariables.containsKey(varname) && !variableMap.containsKey(varname)) {
+                        return globalVariables.getOrDefault(varname, StringUtils.isEmpty(output) ? null : output);
+                    }
                     return variableMap.getOrDefault(varname, StringUtils.isEmpty(output) ? null : output);
                 } else {
                     try {
@@ -178,7 +216,7 @@ public class Convertors {
                         if(tag.matches(".*_\\d+$")) {
                             String tagWithoutID = tag.replaceFirst("_\\d+$", "");
                             try {
-                                return callTag(variableMap, customTags, tagWithoutID, output, arguments);
+                                return callTag(variableMap, customTags, tagWithoutID, output, arguments, null);
                             } catch (ParseException e1) { }
                         }
 
@@ -195,6 +233,14 @@ public class Convertors {
             case "get_var":
             case "get_variable":
                 return variableMap.getOrDefault(getString(arguments,0), StringUtils.isEmpty(output) ? "UNDEFINED" : output);
+            case "context_url":
+                return context_url(getString(arguments,0), hackvertor);
+            case "context_header":
+                return context_header(getString(arguments,0), hackvertor);
+            case "context_body":
+                return context_body(hackvertor);
+            case "context_param":
+                return context_param(getString(arguments,0), hackvertor);
             case "charset_convert": {
                 try {
                     return charset_convert(output, getString(arguments, 0), getString(arguments, 1));
@@ -214,10 +260,14 @@ public class Convertors {
                 return bzip2_compress(output);
             case "bzip2_decompress":
                 return bzip2_decompress(output);
+            case "saml":
+                return saml(output);
+            case "d_saml":
+                return d_saml(output);
             case "deflate_compress":
-                return deflate_compress(output);
+                return deflate_compress(output, getBoolean(arguments, 0));
             case "deflate_decompress":
-                return deflate_decompress(output);
+                return deflate_decompress(output, getBoolean(arguments, 0));
             case "timestamp":
                 return timestamp();
             case "date":
@@ -276,6 +326,10 @@ public class Convertors {
                 return jwt(output, getString(arguments, 0), getString(arguments, 1));
             case "quoted_printable":
                 return quoted_printable(output);
+            case "powershell":
+                return powershell(output);
+            case "js_string":
+                return js_string(output);
             case "d_quoted_printable":
                 return d_quoted_printable(output);
             case "auto_decode":
@@ -308,6 +362,10 @@ public class Convertors {
                 return base32_encode(output);
             case "d_base32":
                 return decode_base32(output);
+            case "base58":
+                return base58_encode(output);
+            case "d_base58":
+                return decode_base58(output);
             case "base64":
                 return base64Encode(output);
             case "d_base64":
@@ -316,6 +374,8 @@ public class Convertors {
                 return base64urlEncode(output);
             case "d_base64url":
                 return decode_base64url(output);
+            case "json_parse":
+                return json_parse(output, getString(arguments, 0));
             case "burp_urlencode":
                 return burp_urlencode(output);
             case "urlencode":
@@ -349,7 +409,7 @@ public class Convertors {
             case "length":
                 return len(output);
             case "find":
-                return find(output, getString(arguments, 0));
+                return find(output, getString(arguments, 0), getInt(arguments, 1));
             case "replace":
                 return replace(output, getString(arguments, 0), getString(arguments, 1));
             case "regex_replace":
@@ -471,7 +531,23 @@ public class Convertors {
             case "whirlpool":
                 return whirlpool(output);
             case "random":
-                return random(output, getInt(arguments, 0));
+                return random(output, getInt(arguments, 0), getBoolean(arguments, 1));
+            case "random_alpha_lower":
+                return random_alpha_lower(getInt(arguments, 0));
+            case "random_alphanum_lower":
+                return random_alphanum_lower(getInt(arguments, 0));
+            case "random_alpha_upper":
+                return random_alpha_upper(getInt(arguments, 0));
+            case "random_alphanum_upper":
+                return random_alphanum_upper(getInt(arguments, 0));
+            case "random_alpha_mixed":
+                return random_alpha_mixed(getInt(arguments, 0));
+            case "random_alphanum_mixed":
+                return random_alphanum_mixed(getInt(arguments, 0));
+            case "random_hex":
+                return random_hex(getInt(arguments, 0));
+            case "random_hex_mixed":
+                return random_hex_mixed(getInt(arguments, 0));
             case "random_num":
                 return random_num(getInt(arguments, 0));
             case "random_unicode":
@@ -486,6 +562,8 @@ public class Convertors {
                 return convert_base(output, getString(arguments, 0), getInt(arguments, 1), getInt(arguments, 2));
             case "zeropad":
                 return zeropad(output, getString(arguments, 0), getInt(arguments, 1));
+            case "uuid":
+                return uuid();
             case "behavior":
                 return behavior(output);
             case "css_expression":
@@ -507,9 +585,17 @@ public class Convertors {
             case "throw_eval":
                 return throw_eval(output);
             case "python":
-                return python(variableMap, output, getString(arguments, 0), getString(arguments, 1), null);
+                return python(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags, null);
             case "javascript":
-                return javascript(variableMap, output, getString(arguments, 0), getString(arguments, 1), null);
+                return javascript(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags, null);
+            case "java":
+                return java(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags, null);
+            case "groovy":
+                return groovy(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags, null);
+            case "read_url":
+                return read_url(output, getString(arguments, 0), getBoolean(arguments, 1), getString(arguments, 2));
+            case "system":
+                return system(output, getBoolean(arguments, 0), getString(arguments, 1));
             case "loop_for":
                 return loop_for(variableMap, customTags, output, getInt(arguments, 0), getInt(arguments, 1), getInt(arguments, 2), getString(arguments, 3));
             case "loop_letters_lower":
@@ -565,12 +651,12 @@ public class Convertors {
     /**
      * Recursive conversion, treating mismatched tags as text
      */
-    public static String weakConvert(HashMap<String, String> variables, JSONArray customTags, String input){
+    public static String weakConvert(HashMap<String, String> variables, JSONArray customTags, String input, Hackvertor hackvertor){
         Queue<Element> tagElements;
         try {
             tagElements = HackvertorParser.parse(input);
             tagElements = weakConvertProcessSetTags(variables, customTags, tagElements);
-            return weakConvert(variables, customTags, new Stack<>(), tagElements);
+            return weakConvert(variables, customTags, new Stack<>(), tagElements, hackvertor);
         }catch (Exception e){
             StringWriter sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
@@ -609,7 +695,7 @@ public class Convertors {
             textBuffer+= ((Element.TextElement) element).getContent();
         }else if(element instanceof Element.SelfClosingTag){ //Self closing tag. Just add its output to textbuffer.
             Element.SelfClosingTag selfClosingTag = (Element.SelfClosingTag) element;
-            String tagOutput = callTag(variables, customTags, selfClosingTag.getIdentifier(), "", selfClosingTag.getArguments());
+            String tagOutput = callTag(variables, customTags, selfClosingTag.getIdentifier(), "", selfClosingTag.getArguments(), null);
             textBuffer+= tagOutput;
         }else if(element instanceof Element.StartTag){ //Start of a conversion.
             stack.push((Element.StartTag) element);
@@ -626,7 +712,7 @@ public class Convertors {
                 throw new ParseException(String.format("Mismatched opening and closing tags, %s and %s.",
                         startTag.getIdentifier(), endTag.getIdentifier()));
             }
-            return callTag(variables, customTags, startTag.getIdentifier(), textBuffer, startTag.getArguments());
+            return callTag(variables, customTags, startTag.getIdentifier(), textBuffer, startTag.getArguments(), null);
         }
 
         return convert(variables, customTags, textBuffer, stack, elements);
@@ -652,7 +738,7 @@ public class Convertors {
                         if(element instanceof Element.EndTag &&
                                 ((Element.EndTag) element).getIdentifier().equalsIgnoreCase(startSetTag.getIdentifier())){
                             //We've got the matching end tag.
-                            String output = weakConvert(variables, customTags, new Stack<>(), setQueue);
+                            String output = weakConvert(variables, customTags, new Stack<>(), setQueue, null);
                             setQueue.clear();
                             elementQueue.add(new Element.TextElement(output));
                             break;
@@ -673,18 +759,18 @@ public class Convertors {
     }
 
     /**
-     *
      * @param variables
      * @param customTags
      * @param stack
      * @param elements
+     * @param hackvertor
      * @return
      * @throws ParseException
      */
     private static String weakConvert(HashMap<String, String> variables,
-                                  JSONArray customTags,
-                                  Stack<Element> stack,
-                                  Queue<Element> elements) throws ParseException{
+                                      JSONArray customTags,
+                                      Stack<Element> stack,
+                                      Queue<Element> elements, Hackvertor hackvertor) throws ParseException{
 
         if(elements.size() == 0) {
             StringBuilder sb = new StringBuilder();
@@ -700,12 +786,12 @@ public class Convertors {
             stack.push((element));
         }else if(element instanceof Element.SelfClosingTag){ //Self closing tag. Add its output as a TextElement to our stack.
             Element.SelfClosingTag selfClosingTag = (Element.SelfClosingTag) element;
-            String tagOutput = callTag(variables, customTags, selfClosingTag.getIdentifier(), "", selfClosingTag.getArguments());
+            String tagOutput = callTag(variables, customTags, selfClosingTag.getIdentifier(), "", selfClosingTag.getArguments(), hackvertor);
             stack.push(new Element.TextElement(tagOutput));
         }else if(element instanceof Element.StartTag){ //Start of a conversion.
             Stack<Element> newStackContext = new Stack<>();
             newStackContext.push(element);
-            stack.push(new Element.TextElement(weakConvert(variables, customTags, newStackContext, elements)));
+            stack.push(new Element.TextElement(weakConvert(variables, customTags, newStackContext, elements, hackvertor)));
         }else if(element instanceof Element.EndTag){ //End of a conversion. Convert and update textbuffer.
             Stack<Element> siftStack = new Stack<>();
 
@@ -726,7 +812,7 @@ public class Convertors {
                 }
 
                 //Now we've matched the tag, convert the textbuffer contents.
-                return callTag(variables, customTags, ((Element.StartTag) startTag).getIdentifier(), sb.toString(), ((Element.StartTag) startTag).getArguments());
+                return callTag(variables, customTags, ((Element.StartTag) startTag).getIdentifier(), sb.toString(), ((Element.StartTag) startTag).getArguments(), hackvertor);
             }catch (EmptyStackException ex){
                 //Looked through the whole stack and didn't find a matching open tag. Must be a rogue close tag instead.
                 //In this case, add items we removed, and the textual representation of the close tag, back to the stack.
@@ -737,7 +823,7 @@ public class Convertors {
             }
         }
 
-        return weakConvert(variables, customTags, stack, elements);
+        return weakConvert(variables, customTags, stack, elements, hackvertor);
     }
 
 
@@ -754,6 +840,85 @@ public class Convertors {
         byte[] inputBytes = input.getBytes();
         byte[] output = new String(inputBytes, from).getBytes(to);
         return helpers.bytesToString(output);
+    }
+
+    static String context_url(String properties, Hackvertor hackvertor) {
+        if(hackvertor == null) {
+            return properties;
+        }
+        IRequestInfo analyzedRequest = hackvertor.getAnalyzedRequest();
+        properties = properties.replace("$protocol", analyzedRequest.getUrl().getProtocol());
+        properties = properties.replace("$host", analyzedRequest.getUrl().getHost());
+        properties = properties.replace("$path", analyzedRequest.getUrl().getPath());
+        properties = properties.replace("$file", analyzedRequest.getUrl().getFile());
+        properties = properties.replace("$query", analyzedRequest.getUrl().getQuery());
+        properties = properties.replace("$port", String.valueOf(analyzedRequest.getUrl().getPort()));
+        return properties;
+    }
+
+    static String context_header(String properties, Hackvertor hackvertor) {
+        if(hackvertor == null) {
+            return properties;
+        }
+        IRequestInfo analyzedRequest = hackvertor.getAnalyzedRequest();
+        List<String> headers = analyzedRequest.getHeaders();
+        for(String header : headers) {
+            String[] nameValue = header.split(":");
+            if(nameValue.length > 1) {
+                properties = properties.replace("$" + nameValue[0].trim(), nameValue[1].trim());
+            }
+        }
+        return properties;
+    }
+    static String context_param(String properties, Hackvertor hackvertor) {
+        if(hackvertor == null) {
+            return properties;
+        }
+        IRequestInfo analyzedRequest = hackvertor.getAnalyzedRequest();
+        List<IParameter> params = analyzedRequest.getParameters();
+        for(IParameter param : params) {
+            properties = properties.replace("$"+param.getName(), param.getValue());
+        }
+        return properties;
+    }
+
+    static String context_body(Hackvertor hackvertor) {
+        if(hackvertor == null) {
+            return "";
+        }
+        IRequestInfo analyzedRequest = hackvertor.getAnalyzedRequest();
+        int bodyOffset = analyzedRequest.getBodyOffset();
+        byte[] req = hackvertor.getRequest();
+        return helpers.bytesToString(Arrays.copyOfRange(req, bodyOffset, req.length));
+    }
+
+    static String json_parse(String input, String properties) {
+        input = input.trim();
+        return recursiveTraverse("", new JSONObject(input), properties);
+    }
+
+    private static String recursiveTraverse(String previousKey, JSONObject currentObject, String properties) {
+        for (String currentKey : currentObject.keySet()) {
+            String nextKey = previousKey == null || previousKey.isEmpty() ? currentKey : previousKey + "-" + currentKey;
+            Object value = currentObject.get(currentKey);
+            if (value instanceof JSONObject) {
+                properties = recursiveTraverse(nextKey, (JSONObject) value, properties);
+            } else if (value instanceof JSONArray) {
+                JSONArray array = (JSONArray) value;
+                for (int i = 0; i < array.length(); i++) {
+                    Object object = array.get(i);
+                    if (object instanceof JSONObject) {
+                        JSONObject jsonObject = (JSONObject) object;
+                        properties = recursiveTraverse(nextKey + "." + i, jsonObject, properties);
+                    } else {
+                        properties = properties.replace("$"+nextKey, object.toString());
+                    }
+                }
+            } else {
+                properties = properties.replace("$"+nextKey, value.toString());
+            }
+        }
+        return properties;
     }
 
     static String utf7(String input, String excludeCharacters) {
@@ -874,16 +1039,12 @@ public class Convertors {
         }
     }
 
-    static String deflate_compress(String input) {
+    static String deflate_compress(String input, Boolean includeHeader) {
         ByteArrayOutputStream bos = new ByteArrayOutputStream(input.length());
         CompressorOutputStream cos = null;
-        try {
-            cos = new CompressorStreamFactory()
-                    .createCompressorOutputStream(CompressorStreamFactory.getDeflate(), bos);
-        } catch (CompressorException e) {
-            e.printStackTrace();
-            return "Error creating compressor:" + e.toString();
-        }
+        DeflateParameters params = new DeflateParameters();
+        params.setWithZlibHeader(includeHeader);
+        cos = new DeflateCompressorOutputStream(bos, params);
         try {
             cos.write(input.getBytes());
             cos.close();
@@ -892,21 +1053,25 @@ public class Convertors {
             return helpers.bytesToString(compressed);
         } catch (IOException e) {
             e.printStackTrace();
-            return "Error:" + e.toString();
+            return "Error:" + e;
         }
     }
 
-    static String deflate_decompress(String input) {
+    static String deflate_decompress(String input, Boolean includeHeader) {
         ByteArrayInputStream bis = new ByteArrayInputStream(helpers.stringToBytes(input));
         DeflateCompressorInputStream cis = null;
         byte[] bytes;
         try {
-            cis = new DeflateCompressorInputStream(bis);
+            DeflateParameters params = new DeflateParameters();
+            params.setWithZlibHeader(includeHeader);
+            cis = new DeflateCompressorInputStream(bis, params);
             bytes = IOUtils.toByteArray(cis);
+            cis.close();
+            bis.close();
             return new String(bytes);
         } catch (IOException e) {
             e.printStackTrace();
-            return "Error:" + e.toString();
+            return "Error:" + e;
         }
     }
 
@@ -944,6 +1109,14 @@ public class Convertors {
         return new String(base32.decode(str.getBytes()));
     }
 
+    static String base58_encode(String str) {
+        return Base58.encode(helpers.stringToBytes(str));
+    }
+
+    static String decode_base58(String str) {
+        return helpers.bytesToString(Base58.decode(str));
+    }
+
     static String base64Encode(String str) {
         return helpers.base64Encode(str);
     }
@@ -959,6 +1132,18 @@ public class Convertors {
 
     static String base64urlEncode(String str) {
         return base64Encode(str).replaceAll("\\+", "-").replaceAll("/", "_").replaceAll("=+$", "");
+    }
+
+    static String saml(String input) {
+        return urlencode(base64Encode(deflate_compress(input, false)));
+    }
+    static String d_saml(String input) {
+        String decodedUrl = decode_url(input);
+        if(isBase64(decodedUrl, true)) {
+            return deflate_decompress(decode_base64(decodedUrl), false);
+        } else {
+            return deflate_decompress(decode_base64(input), false);
+        }
     }
 
     static String decode_base64url(String str) {
@@ -1004,7 +1189,7 @@ public class Convertors {
         StringBuilder converted = new StringBuilder();
         for (int i = 0; i < str.length(); i++) {
             int codePoint = Character.codePointAt(str, i);
-            if (codePoint <= 0xff) {
+            if (codePoint <= 0x7f) {
                 converted.append("%" + String.format("%02X", codePoint));
             } else {
                 try {
@@ -1032,15 +1217,58 @@ public class Convertors {
     }
 
     static String random_num(int len) {
-        return random("0123456789", len);
+        return random("0123456789", len, false);
     }
 
-    static String random(String chars, int len) {
+    static String random_alpha_lower(int len) {
+        return random("abcdefghijklmnopqrstuvwxyz", len, false);
+    }
+
+    static String random_alphanum_lower(int len) {
+        return random("0123456789abcdefghijklmnopqrstuvwxyz", len, false);
+    }
+
+    static String random_alpha_upper(int len) {
+        return random("ABCDEFGHIJKLMNOPQRSTUVWXYZ", len, false);
+    }
+
+    static String random_alphanum_upper(int len) {
+        return random("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", len, false);
+    }
+
+    static String random_alpha_mixed(int len) {
+        return random("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", len, false);
+    }
+
+    static String random_alphanum_mixed(int len) {
+        return random("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", len, false);
+    }
+
+    static String random_hex(int len) {
+        return random("0123456789abcdef", len, false);
+    }
+
+    static String random_hex_mixed(int len) {
+        return random("0123456789abcdefABCDEF", len, false);
+    }
+
+    static String random(String chars, int len, Boolean everyCharacterOnce) {
+        Set<Character> usedChars = chars.chars().mapToObj(e->(char)e).collect(Collectors.toSet());
         if (len > 0 && chars.length() > 0) {
             StringBuilder sb = new StringBuilder();
             Random random = new Random();
-            for (int i = 0; i < len; i++) {
-                sb.append(chars.charAt(random.nextInt(chars.length())));
+            int i = 0;
+            while(i < len) {
+                if(everyCharacterOnce && usedChars.size() > 0) {
+                    char chr = usedChars.stream().skip(new Random().nextInt(usedChars.size())).findFirst().orElse(null);
+                    sb.append(chr);
+                    usedChars.remove(chr);
+                } else {
+                    int randomNum = random.nextInt(chars.length());
+                    char chr = chars.charAt(randomNum);
+                    sb.append(chr);
+                }
+                i++;
             }
             return sb.toString();
         }
@@ -1067,6 +1295,10 @@ public class Convertors {
 
     static String lowercase(String str) {
         return StringUtils.lowerCase(str);
+    }
+
+    static String lowercaseFirst(String str) {
+        return Character.toLowerCase(str.charAt(0)) + str.substring(1);
     }
 
     static String unique(String str) {
@@ -1221,6 +1453,14 @@ public class Convertors {
         } catch (EncoderException e) {
             return "Error encoding:"+e.toString();
         }
+    }
+
+    static String powershell(String cmd) {
+        return base64Encode(convertCharset(cmd, "UTF-16LE"));
+    }
+
+    static String js_string(String str) {
+        return JsonEscape.escapeJson(str);
     }
 
     static String d_quoted_printable(String str) {
@@ -1739,21 +1979,22 @@ public class Convertors {
         return CssEscape.unescapeCss(str);
     }
 
-    static String dec2hex(String str, String splitChar) {
-        String[] chars = {};
-        try {
-            chars = str.split(splitChar);
-        } catch (PatternSyntaxException e) {
-            stderr.println(e.getMessage());
-        }
-        for (int i = 0; i < chars.length; i++) {
+    static String dec2hex(String str, String regex) {
+        StringBuffer result = new StringBuffer();
+        Pattern pattern = Pattern.compile(regex);
+        Matcher regexMatcher = pattern.matcher(str);
+        while (regexMatcher.find()) {
             try {
-                chars[i] = zeropad(Integer.toHexString(Integer.parseInt(chars[i])), ",", 2);
+                String hex = Integer.toHexString(Integer.parseInt(regexMatcher.group()));
+                if(hex.length() == 1) {
+                    hex = "0" + hex;
+                }
+                regexMatcher.appendReplacement(result, hex);
             } catch (NumberFormatException e) {
                 stderr.println(e.getMessage());
             }
         }
-        return StringUtils.join(chars, ",");
+        return regexMatcher.appendTail(result).toString();
     }
 
     static String chunked_dec2hex(String str) {
@@ -1764,89 +2005,76 @@ public class Convertors {
         }
     }
 
-    static String dec2oct(String str, String splitChar) {
-        String[] chars = {};
-        try {
-            chars = str.split(splitChar);
-        } catch (PatternSyntaxException e) {
-            stderr.println(e.getMessage());
-        }
-        for (int i = 0; i < chars.length; i++) {
+    static String dec2oct(String str, String regex) {
+        StringBuffer result = new StringBuffer();
+        Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        Matcher regexMatcher = pattern.matcher(str);
+        while (regexMatcher.find()) {
             try {
-                chars[i] = Integer.toOctalString(Integer.parseInt(chars[i]));
+                String oct = Integer.toOctalString(Integer.parseInt(regexMatcher.group()));
+                regexMatcher.appendReplacement(result, oct);
             } catch (NumberFormatException e) {
                 stderr.println(e.getMessage());
             }
         }
-        return StringUtils.join(chars, ",");
+        return regexMatcher.appendTail(result).toString();
     }
 
-    static String dec2bin(String str, String splitChar) {
-        String[] chars = {};
-        try {
-            chars = str.split(splitChar);
-        } catch (PatternSyntaxException e) {
-            stderr.println(e.getMessage());
-        }
-        for (int i = 0; i < chars.length; i++) {
+    static String dec2bin(String str, String regex) {
+        StringBuffer result = new StringBuffer();
+        Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        Matcher regexMatcher = pattern.matcher(str);
+        while (regexMatcher.find()) {
             try {
-                chars[i] = Integer.toBinaryString(Integer.parseInt(chars[i]));
+                String bin = Integer.toBinaryString(Integer.parseInt(regexMatcher.group()));
+                regexMatcher.appendReplacement(result, bin);
             } catch (NumberFormatException e) {
                 stderr.println(e.getMessage());
             }
         }
-        return StringUtils.join(chars, ",");
+        return regexMatcher.appendTail(result).toString();
     }
 
-    static String hex2dec(String str, String splitChar) {
-        String[] chars = {};
-        try {
-            chars = str.split(splitChar);
-        } catch (PatternSyntaxException e) {
-            stderr.println(e.getMessage());
-        }
-        for (int i = 0; i < chars.length; i++) {
+    static String hex2dec(String str, String regex) {
+        StringBuffer result = new StringBuffer();
+        Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        Matcher regexMatcher = pattern.matcher(str);
+        while (regexMatcher.find()) {
             try {
-                chars[i] = Integer.toString(Integer.parseInt(chars[i], 16));
+                regexMatcher.appendReplacement(result, Integer.toString(Integer.parseInt(regexMatcher.group().replaceFirst("^0[xX]",""), 16)));
             } catch (NumberFormatException e) {
                 stderr.println(e.getMessage());
             }
         }
-        return StringUtils.join(chars, ",");
+        return regexMatcher.appendTail(result).toString();
     }
 
-    static String oct2dec(String str, String splitChar) {
-        String[] chars = {};
-        try {
-            chars = str.split(splitChar);
-        } catch (PatternSyntaxException e) {
-            stderr.println(e.getMessage());
-        }
-        for (int i = 0; i < chars.length; i++) {
+    static String oct2dec(String str, String regex) {
+        StringBuffer result = new StringBuffer();
+        Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        Matcher regexMatcher = pattern.matcher(str);
+        while (regexMatcher.find()) {
             try {
-                chars[i] = Integer.toString(Integer.parseInt(chars[i], 8));
+                regexMatcher.appendReplacement(result, Integer.toString(Integer.parseInt(regexMatcher.group(), 8)));
             } catch (NumberFormatException e) {
                 stderr.println(e.getMessage());
             }
         }
-        return StringUtils.join(chars, ",");
+        return regexMatcher.appendTail(result).toString();
     }
 
-    static String bin2dec(String str, String splitChar) {
-        String[] chars = {};
-        try {
-            chars = str.split(splitChar);
-        } catch (PatternSyntaxException e) {
-            stderr.println(e.getMessage());
-        }
-        for (int i = 0; i < chars.length; i++) {
+    static String bin2dec(String str, String regex) {
+        StringBuffer result = new StringBuffer();
+        Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        Matcher regexMatcher = pattern.matcher(str);
+        while (regexMatcher.find()) {
             try {
-                chars[i] = Integer.toString(Integer.parseInt(chars[i], 2));
+                regexMatcher.appendReplacement(result, Integer.toString(Integer.parseInt(regexMatcher.group(), 2)));
             } catch (NumberFormatException e) {
                 stderr.println(e.getMessage());
             }
         }
-        return StringUtils.join(chars, ",");
+        return regexMatcher.appendTail(result).toString();
     }
 
     static String from_charcode(String str) {
@@ -1982,6 +2210,47 @@ public class Convertors {
 
     static String hmacsha512(String str, String key) {
         return hmac(str, key, "HmacSHA512");
+    }
+
+    static String fake(String name, String properties, String locale) {
+        Faker faker = new Faker(new Locale(locale));
+        name = name.replaceFirst("^fake_", "");
+        name = name.replaceAll("[^\\w]+","");
+        Method[] methods = faker.getClass().getDeclaredMethods();;
+        for(Method method : methods) {
+            if(Hackvertor.shouldFilterMethod(method)) {
+                continue;
+            }
+            if(!method.getName().equals(name)) {
+                continue;
+            }
+            try {
+                Object obj = method.invoke(faker);
+                return replaceProperties(obj, replaceProperties(obj, properties));
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            } catch (InvocationTargetException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return "";
+    }
+
+    private static String replaceProperties(Object obj, String properties) {
+        Method[] methods = obj.getClass().getDeclaredMethods();
+        for(Method method : methods) {
+            if(Hackvertor.shouldFilterMethod(method)) {
+                continue;
+            }
+            try {
+                properties = properties.replaceAll("\\$"+method.getName(), method.invoke(obj).toString());
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            } catch (InvocationTargetException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return properties;
     }
 
     static String sha1(String str) {
@@ -2218,12 +2487,16 @@ public class Convertors {
         return Integer.toString(str.length());
     }
 
-    static String find(String str, String find) {
+    static String find(String str, String find, int group) {
         java.util.List<String> allMatches = new ArrayList<String>();
         try {
             Matcher m = Pattern.compile(find).matcher(str);
             while (m.find()) {
-                allMatches.add(m.group());
+                if(group == -1) {
+                    allMatches.add(m.group());
+                } else {
+                    allMatches.add(m.group(group));
+                }
             }
         } catch (PatternSyntaxException e) {
             stderr.println(e.getMessage());
@@ -2339,6 +2612,9 @@ public class Convertors {
         return sortedByValues;
     }
 
+    static Boolean isBase64(String str, Boolean checkStart) {
+        return Pattern.compile((checkStart ? "^" : "") + "[a-zA-Z0-9+/]{4,}=*$", Pattern.CASE_INSENSITIVE).matcher(str).find() && str.length() % 4 == 0;
+    }
     static String auto_decode(String str) {
         return auto_decode_decrypt(str, true);
     }
@@ -2466,7 +2742,7 @@ public class Convertors {
                     return d_jwt_get_header(str) + "\n" + d_jwt_get_payload(str) + "\n" + decode_base64url(parts[2]);
                 }
             }
-            if (Pattern.compile("[a-zA-Z0-9+/]{4,}=*$", Pattern.CASE_INSENSITIVE).matcher(str).find() && str.length() % 4 == 0) {
+            if (isBase64(str, false)) {
                 test = decode_base64(str);
                 if (Pattern.compile("^[\\x00-\\x7f]+$", Pattern.CASE_INSENSITIVE).matcher(test).find()) {
                     str = test;
@@ -2706,6 +2982,10 @@ public class Convertors {
         return StringUtils.join(chars, ",");
     }
 
+    static String uuid() {
+        return UUID.randomUUID().toString();
+    }
+
     static String eval_fromcharcode(String str) {
         return "eval(String.fromCharCode(" + to_charcode(str) + "))";
     }
@@ -2756,7 +3036,7 @@ public class Convertors {
         return "eval(`" + str.replaceAll("(.)", "$1\\${[]}") + "`)";
     }
 
-    static String python(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions) {
+    static String python(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions, JSONArray customTags, Hackvertor hackvertor) {
         if (!codeExecutionTagsEnabled) {
             return "Code execution tags are disabled by default. Use the menu bar to enable them.";
         }
@@ -2772,6 +3052,9 @@ public class Convertors {
         try {
             PythonInterpreter pythonInterpreter = new PythonInterpreter();
             pythonInterpreter.set("input", input);
+            pythonInterpreter.set("executionKey", executionKey);
+            pythonInterpreter.set("variableMap", variableMap);
+            pythonInterpreter.set("customTags", customTags);
             for (Map.Entry<String, String> entry : variableMap.entrySet()) {
                 String name = entry.getKey();
                 Object value = entry.getValue();
@@ -2804,7 +3087,12 @@ public class Convertors {
                 "   def write(self, text):\n" +
                 "       BurpExtender.print(text)\n" +
                 "orig_stdout = sys.stdout\n" +
-                "sys.stdout = StreamWrapper(orig_stdout)\n";
+                "sys.stdout = StreamWrapper(orig_stdout)\n" +
+                "from burp import Convertors\n" +
+                "def convert(input):\n" +
+                "   return Convertors.weakConvert(variableMap, customTags, input, hackvertor)\n" +
+                "\n";
+
                 pythonInterpreter.exec(initCode + code);
             }
             PyObject output = pythonInterpreter.get("output");
@@ -2820,7 +3108,7 @@ public class Convertors {
         }
     }
 
-    static String javascript(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions) {
+    static String java(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions, JSONArray customTags, Hackvertor hackvertor) {
         if (!codeExecutionTagsEnabled) {
             return "Code execution tags are disabled by default. Use the menu bar to enable them.";
         }
@@ -2833,42 +3121,269 @@ public class Convertors {
         if (!tagCodeExecutionKey.equals(executionKey)) {
             return "Incorrect tag code execution key";
         }
-        ScriptEngineManager manager = new ScriptEngineManager();
-        ScriptEngine engine = manager.getEngineByName("JavaScript");
-        engine.put("input", input);
+        Interpreter javaInterpreter = new Interpreter();
+        try {
+            javaInterpreter.set("input", input);
+            javaInterpreter.set("variableMap", variableMap);
+            javaInterpreter.set("executionKey", executionKey);
+            javaInterpreter.set("customTags", customTags);
+            String initCode = "import burp.Convertors;\n" +
+                    "public String convert(String input) {\n" +
+                    "   return Convertors.weakConvert(variableMap, customTags, input, hackvertor);\n" +
+                    "}\n";
+
+
+            for (Map.Entry<String, String> entry : variableMap.entrySet()) {
+                String name = entry.getKey();
+                Object value = entry.getValue();
+                if (name.length() > 0) {
+                    javaInterpreter.set(name, value);
+                }
+            }
+            if (customTagOptions != null) {
+                JSONObject customTag = (JSONObject) customTagOptions.get("customTag");
+                int numberOfArgs = customTag.getInt("numberOfArgs");
+                if (numberOfArgs == 1) {
+                    javaInterpreter.set(customTag.getString("argument1"), customTagOptions.get("param1"));
+                }
+                if (numberOfArgs == 2) {
+                    javaInterpreter.set(customTag.getString("argument1"), customTagOptions.get("param1"));
+                    javaInterpreter.set(customTag.getString("argument2"), customTagOptions.get("param2"));
+                }
+            }
+            if (code.endsWith(".java")) {
+                javaInterpreter.source(code);
+            } else {
+                javaInterpreter.eval(initCode + code);
+            }
+            return javaInterpreter.get("output").toString();
+        } catch (EvalError | IOException e) {
+            return "Unable to parse Java:" + e.toString();
+        } catch (NullPointerException e) {
+            return "Unable to get output. Make sure you have defined an output variable:" + e.toString();
+        } catch (Exception | Error e ) {
+            return "Unable to parse Java:" + e.toString();
+        }
+    }
+    static String groovy(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions, JSONArray customTags, Hackvertor hackvertor) {
+        if (!codeExecutionTagsEnabled) {
+            return "Code execution tags are disabled by default. Use the menu bar to enable them.";
+        }
+        if (executionKey == null) {
+            return "No execution key defined";
+        }
+        if (executionKey.length() != 32) {
+            return "Code execution key length incorrect";
+        }
+        if (!tagCodeExecutionKey.equals(executionKey)) {
+            return "Incorrect tag code execution key";
+        }
+        Binding data = new Binding();
+        GroovyShell shell = new GroovyShell(data);
+        data.setProperty("input", input);
+        data.setVariable("variableMap", variableMap);
+        data.setVariable("executionKey", executionKey);
+        data.setVariable("customTags", customTags);
+        String initCode = "import burp.Convertors;\n" +
+                "public String convert(String input) {\n" +
+                "   return Convertors.weakConvert(variableMap, customTags, input, hackvertor);\n" +
+                "}\n";
+        try {
+            if (code.endsWith(".groovy")) {
+                shell.evaluate(new FileReader(code));
+            } else {
+                shell.evaluate(initCode + code);
+            }
+        } catch (FileNotFoundException | CompilationFailedException e) {
+            return "Unable to parse Groovy:" + e.toString();
+        }
+        return shell.getVariable("output").toString();
+    }
+    static String javascript(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions, JSONArray customTags, Hackvertor hackvertor) {
+        if (!codeExecutionTagsEnabled) {
+            return "Code execution tags are disabled by default. Use the menu bar to enable them.";
+        }
+        if (executionKey == null) {
+            return "No execution key defined";
+        }
+        if (executionKey.length() != 32) {
+            return "Code execution key length incorrect";
+        }
+        if (!tagCodeExecutionKey.equals(executionKey)) {
+            return "Incorrect tag code execution key";
+        }
+        V8 v8 = V8.createV8Runtime(null, String.valueOf(j2v8TempDirectory));
+        String declarations = "var input, output, argument1, argument2";
+        Set keySet = variableMap.keySet();
+        if(keySet.size() > 0) {
+            declarations += "," + keySet.stream().collect(Collectors.joining(","));
+        }
+        v8.executeScript(declarations);
+        v8.add("input", input);
+        v8.add("executionKey", executionKey);
+        JavaCallback callback = new JavaCallback() {
+            public String invoke(final V8Object receiver, final V8Array parameters) {
+                if (parameters.length() > 0) {
+                    Object input = parameters.get(0);
+                    String output = Convertors.weakConvert(variableMap, customTags, input.toString(), hackvertor);
+                    if (input instanceof Releasable) {
+                        ((Releasable) input).release();
+                    }
+                    return output;
+                }
+                return "";
+            }
+        };
+        v8.registerJavaMethod(callback, "convert");
         for (Map.Entry<String, String> entry : variableMap.entrySet()) {
             String name = entry.getKey();
-            Object value = entry.getValue();
+            String value = entry.getValue();
             if (name.length() > 0) {
-                engine.put(name, value);
+                if(value.matches("^\\d+$")) {
+                    v8.add(name, Integer.parseInt(value));
+                } else {
+                    v8.add(name, value);
+                }
             }
         }
         if (customTagOptions != null) {
             JSONObject customTag = (JSONObject) customTagOptions.get("customTag");
             int numberOfArgs = customTag.getInt("numberOfArgs");
             if (numberOfArgs == 1) {
-                engine.put(customTag.getString("argument1"), customTagOptions.get("param1"));
+                String name = customTag.getString("argument1");
+                String value = customTagOptions.get("param1").toString();
+                if(value.matches("^\\d+$")) {
+                    v8.add(name, Integer.parseInt(value));
+                } else {
+                    v8.add(name, value);
+                }
             }
             if (numberOfArgs == 2) {
-                engine.put(customTag.getString("argument1"), customTagOptions.get("param1"));
-                engine.put(customTag.getString("argument2"), customTagOptions.get("param2"));
+                String argument1Name = customTag.getString("argument1");
+                String param1Value = customTagOptions.get("param1").toString();
+                if(param1Value.matches("^\\d+$")) {
+                    v8.add(argument1Name, Integer.parseInt(param1Value));
+                } else {
+                    v8.add(argument1Name, param1Value);
+                }
+                String argument2Name = customTag.getString("argument2");
+                String param2Value = customTagOptions.get("param2").toString();
+                if(param2Value.matches("^\\d+$")) {
+                    v8.add(argument2Name, Integer.parseInt(param2Value));
+                } else {
+                    v8.add(argument2Name, param2Value);
+                }
             }
         }
         try {
             if (code.endsWith(".js")) {
-                engine.eval(new FileReader(code));
+                v8.executeScript(new String(Files.readAllBytes(Paths.get(code)), StandardCharsets.UTF_8));
             } else {
-                engine.eval(code);
+                v8.executeScript(code);
             }
-            return engine.get("output").toString();
-        } catch (ScriptException | IllegalArgumentException e) {
-            return "Invalid JavaScript:" + e.toString();
+            return v8.get("output").toString();
         } catch (FileNotFoundException e) {
-            return "Unable to find JavaScript file:" + e.toString();
+            return "Unable to find JavaScript file:" + e;
         } catch (NullPointerException e) {
             return "Unable to get output. Make sure you have defined an output variable:" + e.toString();
         } catch (AssertionError | Exception e) {
-            return "Unable to parse JavaScript:" + e.toString();
+            return "Unable to parse JavaScript:" + e;
+        } finally {
+            v8.shutdownExecutors(true);
+        }
+    }
+
+    static String system(String cmd, Boolean enabled, String executionKey) {
+        if (!codeExecutionTagsEnabled) {
+            return "Code execution tags are disabled by default. Use the menu bar to enable them.";
+        }
+        if (executionKey == null) {
+            return "No execution key defined";
+        }
+        if (executionKey.length() != 32) {
+            return "Code execution key length incorrect";
+        }
+        if (!tagCodeExecutionKey.equals(executionKey)) {
+            return "Incorrect tag code execution key";
+        }
+        if(!enabled) {
+           return "The system command is disabled until you change the parameter to true.";
+        }
+        if(cmd.length() == 0) {
+            return "No command specified";
+        }
+        Runtime r = Runtime.getRuntime();
+        Process p = null;
+        try {
+            p = r.exec(cmd);
+        } catch (IOException e) {
+            return "Failed to execute command:"+e;
+        }
+        try {
+            p.waitFor();
+        } catch (InterruptedException e) {
+            return "InterruptedException"+e;
+        }
+        BufferedReader b = new BufferedReader(new InputStreamReader(p.getInputStream()));
+        StringBuilder output = new StringBuilder();
+        String line = "";
+        String lineSep = System.getProperty("line.separator");
+        while (true) {
+            try {
+                if (!((line = b.readLine()) != null)) break;
+            } catch (IOException e) {
+                return "Failed to read output:"+e;
+            }
+            output.append(line);
+            output.append(lineSep);
+        }
+        try {
+            b.close();
+        } catch (IOException e) {
+            return "Failed to close buffered reader:" + e;
+        }
+        return output.toString();
+    }
+
+    static String read_url(String input, String charset, Boolean enabled, String executionKey) {
+        if(!charset.equalsIgnoreCase("UTF-8")) {
+            input = convertCharset(input, charset);
+        }
+        if (!codeExecutionTagsEnabled) {
+            return "Code execution tags are disabled by default. Use the menu bar to enable them.";
+        }
+        if (executionKey == null) {
+            return "No execution key defined";
+        }
+        if (executionKey.length() != 32) {
+            return "Code execution key length incorrect";
+        }
+        if (!tagCodeExecutionKey.equals(executionKey)) {
+            return "Incorrect tag code execution key";
+        }
+        if(!enabled) {
+           return "The read url command is disabled until you change the parameter to true.";
+        }
+        URL url = null;
+        try {
+            url = new URL(input);
+        } catch (MalformedURLException e) {
+            return "Malformed URL:" + e;
+        }
+        HttpURLConnection connection = null;
+        try {
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.connect();
+            BufferedReader br = null;
+            if (100 <= connection.getResponseCode() && connection.getResponseCode() <= 399) {
+                br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            } else {
+                br = new BufferedReader(new InputStreamReader(connection.getErrorStream()));
+            }
+            return br.lines().collect(Collectors.joining());
+        } catch (IOException e) {
+            return "Unable to get response";
         }
     }
 
