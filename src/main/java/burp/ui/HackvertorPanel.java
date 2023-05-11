@@ -161,9 +161,6 @@ public class HackvertorPanel extends JPanel {
             inputLenLabel.setBackground(Color.decode("#FFF5BF"));
             inputLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
         }
-        final JTextArea outputArea = new JTextArea();
-        outputArea.setFont(new Font("Courier New", Font.PLAIN, 12));
-
         DocumentListener documentListener = new DocumentListener() {
             LinkedBlockingQueue queue = new LinkedBlockingQueue<>(1);
             ExecutorService executorService = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
@@ -171,7 +168,7 @@ public class HackvertorPanel extends JPanel {
 
             public void scheduleUpdate(){
                 executorService.submit(() -> {
-                    String output = hackvertor.convert(inputArea.getText());
+                    String output = hackvertor.convert(inputArea.getText(), null);
                     try {
                         outputArea.getDocument().remove(0, outputArea.getDocument().getLength());
                         outputArea.getDocument().insertString(0, output, null);

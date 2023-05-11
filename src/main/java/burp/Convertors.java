@@ -135,7 +135,7 @@ public class Convertors {
             tagCount.put(tag, count + 1);
         }
         for(int i=0;i<arguments.size();i++) {
-            arguments.set(i, convert(variableMap, customTags, arguments.get(i)));
+            arguments.set(i, weakConvert(variableMap, customTags, arguments.get(i), hackvertor));
         }
 
         switch (tag) {
@@ -636,11 +636,11 @@ public class Convertors {
      * Recursive conversion, ensuring tags are properly matched.
      * Does not treat mismatched tags as text.
      */
-    public static String convert(HashMap<String, String> variables, JSONArray customTags, String input){
+    public static String strictConvert(HashMap<String, String> variables, JSONArray customTags, String input, Hackvertor hackvertor){
         Queue<Element> tagElements;
         try {
             tagElements = HackvertorParser.parse(input);
-            return convert(variables, customTags, "", new Stack<>(), tagElements);
+            return strictConvert(variables, customTags, "", new Stack<>(), tagElements, hackvertor);
         }catch (Exception e){
             StringWriter sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
@@ -655,7 +655,7 @@ public class Convertors {
         Queue<Element> tagElements;
         try {
             tagElements = HackvertorParser.parse(input);
-            tagElements = weakConvertProcessSetTags(variables, customTags, tagElements);
+            tagElements = weakConvertPreProcessSetTags(variables, customTags, tagElements);
             return weakConvert(variables, customTags, new Stack<>(), tagElements, hackvertor);
         }catch (Exception e){
             StringWriter sw = new StringWriter();
@@ -666,7 +666,7 @@ public class Convertors {
 
     /**
      * Recursive conversion, ensuring tags are properly matched.
-     * Does not treat mismatched tags as text.
+     * Does not treat mismatched tags as text. Will throw an error instead.
      * @param variables
      * @param customTags
      * @param textBuffer
@@ -675,11 +675,11 @@ public class Convertors {
      * @return
      * @throws ParseException
      */
-    private static String convert(HashMap<String, String> variables,
-                                  JSONArray customTags,
-                                  String textBuffer,
-                                  Stack<Element.StartTag> stack,
-                                  Queue<Element> elements) throws ParseException{
+    private static String strictConvert(HashMap<String, String> variables,
+                                        JSONArray customTags,
+                                        String textBuffer,
+                                        Stack<Element.StartTag> stack,
+                                        Queue<Element> elements, Hackvertor hackvertor) throws ParseException{
         if(elements.size() == 0) {
             if(stack.size() > 0){
                 String error = String.format("Unclosed tag%s - %s",stack.size()>1?"s":"",
@@ -695,11 +695,11 @@ public class Convertors {
             textBuffer+= ((Element.TextElement) element).getContent();
         }else if(element instanceof Element.SelfClosingTag){ //Self closing tag. Just add its output to textbuffer.
             Element.SelfClosingTag selfClosingTag = (Element.SelfClosingTag) element;
-            String tagOutput = callTag(variables, customTags, selfClosingTag.getIdentifier(), "", selfClosingTag.getArguments(), null);
+            String tagOutput = callTag(variables, customTags, selfClosingTag.getIdentifier(), "", selfClosingTag.getArguments(), hackvertor);
             textBuffer+= tagOutput;
         }else if(element instanceof Element.StartTag){ //Start of a conversion.
             stack.push((Element.StartTag) element);
-            textBuffer+= convert(variables, customTags, "", stack, elements);
+            textBuffer+= strictConvert(variables, customTags, "", stack, elements, hackvertor);
         }else if(element instanceof Element.EndTag){ //End of a conversion. Convert and update textbuffer.
             Element.StartTag startTag;
             Element.EndTag endTag = (Element.EndTag) element;
@@ -712,15 +712,23 @@ public class Convertors {
                 throw new ParseException(String.format("Mismatched opening and closing tags, %s and %s.",
                         startTag.getIdentifier(), endTag.getIdentifier()));
             }
-            return callTag(variables, customTags, startTag.getIdentifier(), textBuffer, startTag.getArguments(), null);
+            return callTag(variables, customTags, startTag.getIdentifier(), textBuffer, startTag.getArguments(), hackvertor);
         }
 
-        return convert(variables, customTags, textBuffer, stack, elements);
+        return strictConvert(variables, customTags, textBuffer, stack, elements, hackvertor);
     }
 
-    private static Queue<Element> weakConvertProcessSetTags(HashMap<String, String> variables,
-                                                            JSONArray customTags,
-                                                            Queue<Element> elements) throws ParseException{
+    /**
+     * Process all variable setting tags in a list of tokens, and update the variables map with their values
+     * @param variables The map of variables and their values
+     * @param customTags Any custom tags to be processed
+     * @param elements A list of lexical tokens
+     * @return
+     * @throws ParseException
+     */
+    private static Queue<Element> weakConvertPreProcessSetTags(HashMap<String, String> variables,
+                                                               JSONArray customTags,
+                                                               Queue<Element> elements) throws ParseException{
         Queue<Element> elementQueue = new LinkedList<>();
         Iterator<Element> iter = elements.iterator();
         while(iter.hasNext()) {
@@ -3391,7 +3399,7 @@ public class Convertors {
         String output = "";
         for (int i = start; i < end; i += increment) {
             variableMap.put(variable, Integer.toString(i));
-            output += convert(variableMap, customTags, input);
+            output += weakConvert(variableMap, customTags, input, null);
         }
         return output;
     }
@@ -3400,7 +3408,7 @@ public class Convertors {
         String output = "";
         for (char letter = 'a'; letter <= 'z'; letter++) {
             variableMap.put(variable, Character.toString(letter));
-            output += convert(variableMap, customTags, input);;
+            output += weakConvert(variableMap, customTags, input, null);
         }
         return output;
     }
@@ -3409,7 +3417,7 @@ public class Convertors {
         String output = "";
         for (char letter = 'A'; letter <= 'Z'; letter++) {
             variableMap.put(variable, Character.toString(letter));
-            output += convert(variableMap, customTags, input);
+            output += weakConvert(variableMap, customTags, input, null);
         }
         return output;
     }
@@ -3418,7 +3426,7 @@ public class Convertors {
         String output = "";
         for (char num = '0'; num <= '9'; num++) {
             variableMap.put(variable, Character.toString(num));
-            output += convert(variableMap, customTags, input);
+            output += weakConvert(variableMap, customTags, input, null);
         }
         return output;
     }

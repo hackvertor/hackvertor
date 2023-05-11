@@ -30,6 +30,6 @@ public class HackvertorInput extends RSyntaxTextArea {
         this.updateFont();
     }
     public void updateFont() {
-        this.setFont(new Font("Courier New", Font.PLAIN, this.getFont().getSize()));
+        this.setFont(new Font("Courier New", Font.PLAIN, this.getFont() != null ? this.getFont().getSize() : 11));
     }
 }
