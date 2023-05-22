@@ -1094,12 +1094,12 @@ public class Convertors {
 
     static String base32_encode(String str) {
         Base32 base32 = new Base32();
-        return new String(base32.encode(str.getBytes()));
+        return helpers.bytesToString(base32.encode(helpers.stringToBytes(str)));
     }
 
     static String decode_base32(String str) {
         Base32 base32 = new Base32();
-        return new String(base32.decode(str.getBytes()));
+        return helpers.bytesToString(base32.decode(str.getBytes()));
     }
 
     static String base58_encode(String str) {

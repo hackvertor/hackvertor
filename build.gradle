@@ -12,7 +12,7 @@ repositories {
 
 dependencies {
     implementation 'net.portswigger.burp.extender:burp-extender-api:1.7.22'
-    implementation 'commons-codec:commons-codec:1.10'
+    implementation 'commons-codec:commons-codec:1.15'
     implementation 'org.apache.commons:commons-lang3:3.7'
     implementation 'org.unbescape:unbescape:1.1.5.RELEASE'
     implementation 'org.bouncycastle:bcpkix-jdk15on:1.60'
