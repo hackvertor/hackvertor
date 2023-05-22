@@ -858,7 +858,8 @@ public class Convertors {
         for(String header : headers) {
             String[] nameValue = header.split(":");
             if(nameValue.length > 1) {
-                properties = properties.replace("$" + nameValue[0].trim(), nameValue[1].trim());
+                properties = properties.replace("$" + nameValue[0].trim(), nameValue[1].trim()
+                        + (nameValue.length > 2 ? ":" + String.join(":",  Arrays.copyOfRange(nameValue, 2, nameValue.length)) : ""));
             }
         }
         return properties;
