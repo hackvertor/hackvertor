@@ -426,6 +426,10 @@ public class Convertors {
                 return Double.toString(index_of_coincidence(output));
             case "guess_key_length":
                 return Integer.toString(guess_key_length(output));
+            case "if_regex":
+                return if_regex(output, getString(arguments, 0), getString(arguments, 1));
+            case "if_not_regex":
+                return if_not_regex(output, getString(arguments, 0), getString(arguments, 1));
             case "chunked_dec2hex":
                 return chunked_dec2hex(output);
             case "dec2hex":
@@ -596,14 +600,6 @@ public class Convertors {
                 return read_url(output, getString(arguments, 0), getBoolean(arguments, 1), getString(arguments, 2));
             case "system":
                 return system(output, getBoolean(arguments, 0), getString(arguments, 1));
-            case "loop_for":
-                return loop_for(variableMap, customTags, output, getInt(arguments, 0), getInt(arguments, 1), getInt(arguments, 2), getString(arguments, 3));
-            case "loop_letters_lower":
-                return loop_letters_lower(variableMap, customTags, output, getString(arguments, 0));
-            case "loop_letters_upper":
-                return loop_letters_upper(variableMap, customTags, output, getString(arguments, 0));
-            case "loop_numbers":
-                return loop_letters_numbers(variableMap, customTags, output, getString(arguments, 0));
         }
     }
 
@@ -1991,6 +1987,22 @@ public class Convertors {
         return regexMatcher.appendTail(result).toString();
     }
 
+    static String if_regex(String str, String regex, String value) {
+        Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        Matcher regexMatcher = pattern.matcher(value);
+        if(regexMatcher.find()) {
+            return str;
+        }
+        return "";
+    }
+    static String if_not_regex(String str, String regex, String value) {
+        Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        Matcher regexMatcher = pattern.matcher(value);
+        if(!regexMatcher.find()) {
+            return str;
+        }
+        return "";
+    }
     static String chunked_dec2hex(String str) {
         try {
             return Integer.toHexString(Integer.parseInt(str));
@@ -3382,41 +3394,5 @@ public class Convertors {
         } catch (IOException e) {
             return "Unable to get response";
         }
-    }
-
-    static String loop_for(HashMap<String, String> variableMap, JSONArray customTags, String input, int start, int end, int increment, String variable) {
-        String output = "";
-        for (int i = start; i < end; i += increment) {
-            variableMap.put(variable, Integer.toString(i));
-            output += convert(variableMap, customTags, input);
-        }
-        return output;
-    }
-
-    static String loop_letters_lower(HashMap<String, String> variableMap, JSONArray customTags, String input, String variable) {
-        String output = "";
-        for (char letter = 'a'; letter <= 'z'; letter++) {
-            variableMap.put(variable, Character.toString(letter));
-            output += convert(variableMap, customTags, input);;
-        }
-        return output;
-    }
-
-    static String loop_letters_upper(HashMap<String, String> variableMap, JSONArray customTags, String input, String variable) {
-        String output = "";
-        for (char letter = 'A'; letter <= 'Z'; letter++) {
-            variableMap.put(variable, Character.toString(letter));
-            output += convert(variableMap, customTags, input);
-        }
-        return output;
-    }
-
-    static String loop_letters_numbers(HashMap<String, String> variableMap, JSONArray customTags, String input, String variable) {
-        String output = "";
-        for (char num = '0'; num <= '9'; num++) {
-            variableMap.put(variable, Character.toString(num));
-            output += convert(variableMap, customTags, input);
-        }
-        return output;
     }
 }
