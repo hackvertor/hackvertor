@@ -1,4 +1,4 @@
-import burp.BurpExtender;
+import hackvertor.HackvertorExtension;
 
 import javax.swing.*;
 import java.awt.*;
@@ -12,8 +12,8 @@ public class TestExtension {
         jFrame.setPreferredSize(new Dimension(900,800));
         JMenuBar menuBar = new JMenuBar();
         jFrame.setJMenuBar(menuBar);
-        BurpExtender burpExtender = new BurpExtender();
-        burpExtender.registerExtenderCallbacks(new StubCallbacks(jFrame));
+        HackvertorExtension hackvertorExtension = new HackvertorExtension();
+        hackvertorExtension.registerExtenderCallbacks(new StubCallbacks(jFrame));
         jFrame.pack();
         jFrame.setVisible(true);
     }
