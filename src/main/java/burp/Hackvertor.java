@@ -432,6 +432,16 @@ public class Hackvertor {
         Tag setTag = new Tag(Tag.Category.Variables, "set_variable1", true, "Special tag that lets you store the results of a conversion. Change variable1 to your own variable name. The argument specifies if the variable is global.");
         setTag.argument1 = new TagArgument("boolean", "false");
         tags.add(setTag);
+        tag = new Tag(Tag.Category.Variables, "increment_var", false, "increment_var(int start, String variableName, Boolean enabled)//This tag allows you to declare a variable and initialize it and then every subsequent conversion increments it.");
+        tag.argument1 = new TagArgument("number", "0");
+        tag.argument2 = new TagArgument("string", "variable");
+        tag.argument3 = new TagArgument("boolean", "false");
+        tags.add(tag);
+        tag = new Tag(Tag.Category.Variables, "decrement_var", false, "decrement_var(int start, String variableName, Boolean enabled)//This tag allows you to declare a variable and initialize it and then every subsequent conversion decrements it.");
+        tag.argument1 = new TagArgument("number", "0");
+        tag.argument2 = new TagArgument("string", "variable");
+        tag.argument3 = new TagArgument("boolean", "false");
+        tags.add(tag);
         tags.add(new Tag(Tag.Category.Variables, "get_variable1", false, "Special tag that lets you get a previously set variable. Change var to your own variable name."));
         tag = new Tag(Tag.Category.Variables, "context_url", false, "context_url(String properties");
         tag.argument1 = new TagArgument("string", "$protocol $host $path $file $query $port");

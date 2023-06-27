@@ -233,6 +233,10 @@ public class Convertors {
             case "get_var":
             case "get_variable":
                 return variableMap.getOrDefault(getString(arguments,0), StringUtils.isEmpty(output) ? "UNDEFINED" : output);
+            case "increment_var":
+                return increment_var(globalVariables, getInt(arguments, 0), getString(arguments, 1), getBoolean(arguments, 2));
+            case "decrement_var":
+                return decrement_var(globalVariables, getInt(arguments, 0), getString(arguments, 1), getBoolean(arguments, 2));
             case "context_url":
                 return context_url(getString(arguments,0), hackvertor);
             case "context_header":
@@ -870,6 +874,36 @@ public class Convertors {
             properties = properties.replace("$"+param.getName(), param.getValue());
         }
         return properties;
+    }
+
+    static String increment_var(HashMap<String, String> variableMap, int start, String variableName, Boolean enabled) {
+        if(!enabled) {
+          return "This tag is disabled until you enable it in the tag params to prevent unintentional variable declaration.";
+        }
+        int value = 0;
+        if(variableMap.containsKey(variableName)) {
+            value = Integer.parseInt(variableMap.get(variableName));
+        } else {
+            value = start;
+        }
+        String returnValue = String.valueOf(value);
+        variableMap.put(variableName, String.valueOf(value+1));
+        return returnValue;
+    }
+
+    static String decrement_var(HashMap<String, String> variableMap, int start, String variableName, Boolean enabled) {
+        if(!enabled) {
+          return "This tag is disabled until you enable it in the tag params to prevent unintentional variable declaration.";
+        }
+        int value = 0;
+        if(variableMap.containsKey(variableName)) {
+            value = Integer.parseInt(variableMap.get(variableName));
+        } else {
+            value = start;
+        }
+        String returnValue = String.valueOf(value);
+        variableMap.put(variableName, String.valueOf(value-1));
+        return returnValue;
     }
 
     static String context_body(Hackvertor hackvertor) {
