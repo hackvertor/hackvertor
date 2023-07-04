@@ -2,6 +2,7 @@ package burp;
 
 import burp.parser.Element;
 import burp.ui.HackvertorInput;
+import burp.ui.MenuScroller;
 import org.apache.commons.lang3.StringUtils;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.Theme;

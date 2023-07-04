@@ -2,6 +2,7 @@ package burp;
 
 import burp.ui.ExtensionPanel;
 import burp.ui.HackvertorInput;
+import burp.ui.HackvertorMessageTab;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
@@ -200,7 +201,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.7.48");
+	            	stdout.println("Hackvertor v1.7.49");
                     loadCustomTags();
                     loadGlobalVariables();
                     registerPayloadProcessors();
@@ -1060,6 +1061,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
     public void extensionUnloaded() {
         hvShutdown = true;
         burpMenuBar.remove(hvMenuBar);
+        burpMenuBar.revalidate();
         burpMenuBar.repaint();
         callbacks.printOutput("Hackvertor unloaded");
     }

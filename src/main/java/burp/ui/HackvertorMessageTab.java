@@ -1,5 +1,8 @@
-package burp;
+package burp.ui;
 
+import burp.BurpExtender;
+import burp.Hackvertor;
+import burp.IMessageEditorTab;
 import burp.ui.HackvertorPanel;
 
 import javax.swing.*;

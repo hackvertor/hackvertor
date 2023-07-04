@@ -47,8 +47,6 @@ public class HackvertorPanel extends JPanel {
         this.inputArea = new HackvertorInput();
         this.outputArea = new HackvertorInput();
         Utils.fixRSyntaxAreaBurp();
-        callbacks.customizeUiComponent(this.inputArea);
-        callbacks.customizeUiComponent(this.outputArea);
         this.inputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
         this.outputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
         Utils.configureRSyntaxArea(this.inputArea);
