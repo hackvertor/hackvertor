@@ -6,8 +6,12 @@ name: Java CI with Maven
 on:
   push:
     branches: [ master ]
+    tags:
+      - 'v*'
   pull_request:
     branches: [ master ]
+    tags:
+      - 'v*'
 
 jobs:
   build:
@@ -15,10 +19,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up JDK 1.8
-      uses: actions/setup-java@v1
-      with:
-        java-version: 1.8
-    - name: Build with Maven
-      run: mvn -B package --file pom.xml
+      - uses: actions/checkout@v3
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'oracle'
+          java-version: '17'
+          cache: 'gradle'
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+      - name: Build with Gradle
+        run: ./gradlew build
+      - name: Creating the jar file
+        run: ./gradlew jar
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          path: ./releases/*.jar
+          name: Downloadable Extension File
+      - name: Release
+        uses: hackvertor/release-action@v1.12.0
+        with:
+          tag: "latest_hackvertor_release"
+          allowUpdates: true
+          artifacts: "releases/*.jar"

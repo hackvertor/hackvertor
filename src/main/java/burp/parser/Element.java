@@ -32,7 +32,7 @@ public class Element {
                 for (int i = 0; i < arguments.size(); i++) {
                     if(i != 0) sb.append(",");
                     String argument = arguments.get(i);
-                    if(StringUtils.isNumeric(argument) || argument.equals("true") || argument.equals("false"))
+                    if((argument.startsWith("-") && StringUtils.isNumeric(argument.substring(1))) || StringUtils.isNumeric(argument) || argument.equals("true") || argument.equals("false"))
                         sb.append(argument);
                     else
                         sb.append("'" + JavaEscape.escapeJava(argument) + "'");
@@ -57,9 +57,10 @@ public class Element {
                 sb.append("(");
                 for (int i = 0; i < arguments.size(); i++) {
                     if(i != 0) sb.append(",");
-                    if(StringUtils.isNumeric(arguments.get(i))){
-                        sb.append(arguments.get(i));
-                    }else {
+                    String argument = arguments.get(i);
+                    if((argument.startsWith("-") && StringUtils.isNumeric(argument.substring(1))) || StringUtils.isNumeric(argument) || argument.equals("true") || argument.equals("false")) {
+                        sb.append(argument);
+                    } else {
                         sb.append("\"").append(arguments.get(i)).append("\"");
                     }
                 }

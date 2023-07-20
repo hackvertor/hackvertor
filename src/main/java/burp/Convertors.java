@@ -184,13 +184,13 @@ public class Convertors {
                             String language = customTag.getString("language").toLowerCase();
                             String code = customTag.getString("code");
                             if (language.equals("javascript")) {
-                                return javascript(variableMap, output, code, eKey, customTagOptions, customTags);
+                                return javascript(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
                             } else if (language.equals("python")) {
-                                return python(variableMap, output, code, eKey, customTagOptions, customTags);
+                                return python(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
                             } else if (language.equals("java")) {
-                                return java(variableMap, output, code, eKey, customTagOptions, customTags);
+                                return java(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
                             } else if (language.equals("groovy")) {
-                                return groovy(variableMap, output, code, eKey, customTagOptions, customTags);
+                                return groovy(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
                             }
                         }
                     }
@@ -233,6 +233,10 @@ public class Convertors {
             case "get_var":
             case "get_variable":
                 return variableMap.getOrDefault(getString(arguments,0), StringUtils.isEmpty(output) ? "UNDEFINED" : output);
+            case "increment_var":
+                return increment_var(globalVariables, getInt(arguments, 0), getString(arguments, 1), getBoolean(arguments, 2));
+            case "decrement_var":
+                return decrement_var(globalVariables, getInt(arguments, 0), getString(arguments, 1), getBoolean(arguments, 2));
             case "context_url":
                 return context_url(getString(arguments,0), hackvertor);
             case "context_header":
@@ -362,6 +366,10 @@ public class Convertors {
                 return base32_encode(output);
             case "d_base32":
                 return decode_base32(output);
+            case "base58":
+                return base58_encode(output);
+            case "d_base58":
+                return decode_base58(output);
             case "base64":
                 return base64Encode(output);
             case "d_base64":
@@ -405,7 +413,7 @@ public class Convertors {
             case "length":
                 return len(output);
             case "find":
-                return find(output, getString(arguments, 0));
+                return find(output, getString(arguments, 0), getInt(arguments, 1));
             case "replace":
                 return replace(output, getString(arguments, 0), getString(arguments, 1));
             case "regex_replace":
@@ -422,6 +430,10 @@ public class Convertors {
                 return Double.toString(index_of_coincidence(output));
             case "guess_key_length":
                 return Integer.toString(guess_key_length(output));
+            case "if_regex":
+                return if_regex(output, getString(arguments, 0), getString(arguments, 1));
+            case "if_not_regex":
+                return if_not_regex(output, getString(arguments, 0), getString(arguments, 1));
             case "chunked_dec2hex":
                 return chunked_dec2hex(output);
             case "dec2hex":
@@ -558,6 +570,8 @@ public class Convertors {
                 return convert_base(output, getString(arguments, 0), getInt(arguments, 1), getInt(arguments, 2));
             case "zeropad":
                 return zeropad(output, getString(arguments, 0), getInt(arguments, 1));
+            case "uuid":
+                return uuid();
             case "behavior":
                 return behavior(output);
             case "css_expression":
@@ -579,25 +593,17 @@ public class Convertors {
             case "throw_eval":
                 return throw_eval(output);
             case "python":
-                return python(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags);
+                return python(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags, null);
             case "javascript":
-                return javascript(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags);
+                return javascript(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags, null);
             case "java":
-                return java(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags);
+                return java(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags, null);
             case "groovy":
-                return groovy(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags);
+                return groovy(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags, null);
             case "read_url":
                 return read_url(output, getString(arguments, 0), getBoolean(arguments, 1), getString(arguments, 2));
             case "system":
                 return system(output, getBoolean(arguments, 0), getString(arguments, 1));
-            case "loop_for":
-                return loop_for(variableMap, customTags, output, getInt(arguments, 0), getInt(arguments, 1), getInt(arguments, 2), getString(arguments, 3));
-            case "loop_letters_lower":
-                return loop_letters_lower(variableMap, customTags, output, getString(arguments, 0));
-            case "loop_letters_upper":
-                return loop_letters_upper(variableMap, customTags, output, getString(arguments, 0));
-            case "loop_numbers":
-                return loop_letters_numbers(variableMap, customTags, output, getString(arguments, 0));
         }
     }
 
@@ -852,7 +858,8 @@ public class Convertors {
         for(String header : headers) {
             String[] nameValue = header.split(":");
             if(nameValue.length > 1) {
-                properties = properties.replace("$" + nameValue[0].trim(), nameValue[1].trim());
+                properties = properties.replace("$" + nameValue[0].trim(), nameValue[1].trim()
+                        + (nameValue.length > 2 ? ":" + String.join(":",  Arrays.copyOfRange(nameValue, 2, nameValue.length)) : ""));
             }
         }
         return properties;
@@ -867,6 +874,36 @@ public class Convertors {
             properties = properties.replace("$"+param.getName(), param.getValue());
         }
         return properties;
+    }
+
+    static String increment_var(HashMap<String, String> variableMap, int start, String variableName, Boolean enabled) {
+        if(!enabled) {
+          return "This tag is disabled until you enable it in the tag params to prevent unintentional variable declaration.";
+        }
+        int value = 0;
+        if(variableMap.containsKey(variableName)) {
+            value = Integer.parseInt(variableMap.get(variableName));
+        } else {
+            value = start;
+        }
+        String returnValue = String.valueOf(value);
+        variableMap.put(variableName, String.valueOf(value+1));
+        return returnValue;
+    }
+
+    static String decrement_var(HashMap<String, String> variableMap, int start, String variableName, Boolean enabled) {
+        if(!enabled) {
+          return "This tag is disabled until you enable it in the tag params to prevent unintentional variable declaration.";
+        }
+        int value = 0;
+        if(variableMap.containsKey(variableName)) {
+            value = Integer.parseInt(variableMap.get(variableName));
+        } else {
+            value = start;
+        }
+        String returnValue = String.valueOf(value);
+        variableMap.put(variableName, String.valueOf(value-1));
+        return returnValue;
     }
 
     static String context_body(Hackvertor hackvertor) {
@@ -1088,12 +1125,20 @@ public class Convertors {
 
     static String base32_encode(String str) {
         Base32 base32 = new Base32();
-        return new String(base32.encode(str.getBytes()));
+        return helpers.bytesToString(base32.encode(helpers.stringToBytes(str)));
     }
 
     static String decode_base32(String str) {
         Base32 base32 = new Base32();
-        return new String(base32.decode(str.getBytes()));
+        return helpers.bytesToString(base32.decode(str.getBytes()));
+    }
+
+    static String base58_encode(String str) {
+        return Base58.encode(helpers.stringToBytes(str));
+    }
+
+    static String decode_base58(String str) {
+        return helpers.bytesToString(Base58.decode(str));
     }
 
     static String base64Encode(String str) {
@@ -1976,6 +2021,22 @@ public class Convertors {
         return regexMatcher.appendTail(result).toString();
     }
 
+    static String if_regex(String str, String regex, String value) {
+        Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        Matcher regexMatcher = pattern.matcher(value);
+        if(regexMatcher.find()) {
+            return str;
+        }
+        return "";
+    }
+    static String if_not_regex(String str, String regex, String value) {
+        Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        Matcher regexMatcher = pattern.matcher(value);
+        if(!regexMatcher.find()) {
+            return str;
+        }
+        return "";
+    }
     static String chunked_dec2hex(String str) {
         try {
             return Integer.toHexString(Integer.parseInt(str));
@@ -2466,12 +2527,16 @@ public class Convertors {
         return Integer.toString(str.length());
     }
 
-    static String find(String str, String find) {
+    static String find(String str, String find, int group) {
         java.util.List<String> allMatches = new ArrayList<String>();
         try {
             Matcher m = Pattern.compile(find).matcher(str);
             while (m.find()) {
-                allMatches.add(m.group());
+                if(group == -1) {
+                    allMatches.add(m.group());
+                } else {
+                    allMatches.add(m.group(group));
+                }
             }
         } catch (PatternSyntaxException e) {
             stderr.println(e.getMessage());
@@ -2960,6 +3025,10 @@ public class Convertors {
         return StringUtils.join(chars, ",");
     }
 
+    static String uuid() {
+        return UUID.randomUUID().toString();
+    }
+
     static String eval_fromcharcode(String str) {
         return "eval(String.fromCharCode(" + to_charcode(str) + "))";
     }
@@ -3010,7 +3079,7 @@ public class Convertors {
         return "eval(`" + str.replaceAll("(.)", "$1\\${[]}") + "`)";
     }
 
-    static String python(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions, JSONArray customTags) {
+    static String python(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions, JSONArray customTags, Hackvertor hackvertor) {
         if (!codeExecutionTagsEnabled) {
             return "Code execution tags are disabled by default. Use the menu bar to enable them.";
         }
@@ -3064,7 +3133,7 @@ public class Convertors {
                 "sys.stdout = StreamWrapper(orig_stdout)\n" +
                 "from burp import Convertors\n" +
                 "def convert(input):\n" +
-                "   return Convertors.convert(variableMap, customTags, input)\n" +
+                "   return Convertors.weakConvert(variableMap, customTags, input, hackvertor)\n" +
                 "\n";
 
                 pythonInterpreter.exec(initCode + code);
@@ -3082,7 +3151,7 @@ public class Convertors {
         }
     }
 
-    static String java(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions, JSONArray customTags) {
+    static String java(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions, JSONArray customTags, Hackvertor hackvertor) {
         if (!codeExecutionTagsEnabled) {
             return "Code execution tags are disabled by default. Use the menu bar to enable them.";
         }
@@ -3103,8 +3172,10 @@ public class Convertors {
             javaInterpreter.set("customTags", customTags);
             String initCode = "import burp.Convertors;\n" +
                     "public String convert(String input) {\n" +
-                    "   return Convertors.convert(variableMap, customTags, input);\n" +
+                    "   return Convertors.weakConvert(variableMap, customTags, input, hackvertor);\n" +
                     "}\n";
+
+
             for (Map.Entry<String, String> entry : variableMap.entrySet()) {
                 String name = entry.getKey();
                 Object value = entry.getValue();
@@ -3137,7 +3208,7 @@ public class Convertors {
             return "Unable to parse Java:" + e.toString();
         }
     }
-    static String groovy(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions, JSONArray customTags) {
+    static String groovy(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions, JSONArray customTags, Hackvertor hackvertor) {
         if (!codeExecutionTagsEnabled) {
             return "Code execution tags are disabled by default. Use the menu bar to enable them.";
         }
@@ -3158,7 +3229,7 @@ public class Convertors {
         data.setVariable("customTags", customTags);
         String initCode = "import burp.Convertors;\n" +
                 "public String convert(String input) {\n" +
-                "   return Convertors.convert(variableMap, customTags, input);\n" +
+                "   return Convertors.weakConvert(variableMap, customTags, input, hackvertor);\n" +
                 "}\n";
         try {
             if (code.endsWith(".groovy")) {
@@ -3171,7 +3242,7 @@ public class Convertors {
         }
         return shell.getVariable("output").toString();
     }
-    static String javascript(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions, JSONArray customTags) {
+    static String javascript(HashMap<String, String> variableMap, String input, String code, String executionKey, JSONObject customTagOptions, JSONArray customTags, Hackvertor hackvertor) {
         if (!codeExecutionTagsEnabled) {
             return "Code execution tags are disabled by default. Use the menu bar to enable them.";
         }
@@ -3197,7 +3268,7 @@ public class Convertors {
             public String invoke(final V8Object receiver, final V8Array parameters) {
                 if (parameters.length() > 0) {
                     Object input = parameters.get(0);
-                    String output = convert(variableMap, customTags, input.toString());
+                    String output = Convertors.weakConvert(variableMap, customTags, input.toString(), hackvertor);
                     if (input instanceof Releasable) {
                         ((Releasable) input).release();
                     }
@@ -3357,41 +3428,5 @@ public class Convertors {
         } catch (IOException e) {
             return "Unable to get response";
         }
-    }
-
-    static String loop_for(HashMap<String, String> variableMap, JSONArray customTags, String input, int start, int end, int increment, String variable) {
-        String output = "";
-        for (int i = start; i < end; i += increment) {
-            variableMap.put(variable, Integer.toString(i));
-            output += convert(variableMap, customTags, input);
-        }
-        return output;
-    }
-
-    static String loop_letters_lower(HashMap<String, String> variableMap, JSONArray customTags, String input, String variable) {
-        String output = "";
-        for (char letter = 'a'; letter <= 'z'; letter++) {
-            variableMap.put(variable, Character.toString(letter));
-            output += convert(variableMap, customTags, input);;
-        }
-        return output;
-    }
-
-    static String loop_letters_upper(HashMap<String, String> variableMap, JSONArray customTags, String input, String variable) {
-        String output = "";
-        for (char letter = 'A'; letter <= 'Z'; letter++) {
-            variableMap.put(variable, Character.toString(letter));
-            output += convert(variableMap, customTags, input);
-        }
-        return output;
-    }
-
-    static String loop_letters_numbers(HashMap<String, String> variableMap, JSONArray customTags, String input, String variable) {
-        String output = "";
-        for (char num = '0'; num <= '9'; num++) {
-            variableMap.put(variable, Character.toString(num));
-            output += convert(variableMap, customTags, input);
-        }
-        return output;
     }
 }

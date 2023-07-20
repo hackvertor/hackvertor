@@ -2,11 +2,10 @@ package burp;
 
 import burp.ui.ExtensionPanel;
 import burp.ui.HackvertorInput;
+import burp.ui.HackvertorMessageTab;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.fife.ui.rsyntaxtextarea.Theme;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -202,7 +201,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.7.38");
+	            	stdout.println("Hackvertor v1.7.49");
                     loadCustomTags();
                     loadGlobalVariables();
                     registerPayloadProcessors();
@@ -787,13 +786,13 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
 
                 try {
                     if (language.equals("JavaScript")) {
-                        output = javascript(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions, hackvertor.getCustomTags());
+                        output = javascript(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions, hackvertor.getCustomTags(), null);
                     } else if(language.equals("Python")){
-                        output = python(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions, hackvertor.getCustomTags());
+                        output = python(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions, hackvertor.getCustomTags(), null);
                     } else if(language.equals("Java")){
-                        output = java(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions, hackvertor.getCustomTags());
+                        output = java(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions, hackvertor.getCustomTags(), null);
                     } else if(language.equals("Groovy")){
-                        output = groovy(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions, hackvertor.getCustomTags());
+                        output = groovy(new HashMap<>(), input, code, tagCodeExecutionKey, customTagOptions, hackvertor.getCustomTags(), null);
                     }
                 }catch (Exception ee){
                     ee.printStackTrace();
@@ -1062,6 +1061,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
     public void extensionUnloaded() {
         hvShutdown = true;
         burpMenuBar.remove(hvMenuBar);
+        burpMenuBar.revalidate();
         burpMenuBar.repaint();
         callbacks.printOutput("Hackvertor unloaded");
     }
@@ -1082,9 +1082,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         int end = request.length;
         while (i < end) {
             int line_start = i;
-            while (i < end && request[i++] != ' ') {
+            while (i < end && request[i++] != ':') {
             }
-            byte[] header_name = Arrays.copyOfRange(request, line_start, i - 2);
+            byte[] header_name = Arrays.copyOfRange(request, line_start, i - 1);
             int headerValueStart = i;
             while (i < end && request[i++] != '\n') {
             }
@@ -1111,7 +1111,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try {
             outputStream.write(Arrays.copyOfRange(request, 0, offsets[1]));
-            outputStream.write(helpers.stringToBytes(value));
+            outputStream.write(helpers.stringToBytes(" " + value));
             outputStream.write(Arrays.copyOfRange(request, offsets[2], request.length));
             return outputStream.toByteArray();
         } catch (IOException e) {

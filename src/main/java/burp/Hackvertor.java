@@ -33,6 +33,10 @@ public class Hackvertor {
         return request;
     }
 
+    public void setRequest(byte[] request) {
+        this.request = request;
+    }
+
     public static String removeHackvertorTags(String input) {
         try {
             input = HackvertorParser.parse(input).stream()
@@ -142,6 +146,7 @@ public class Hackvertor {
         tags.add(new Tag(Tag.Category.Encrypt, "guess_key_length", true, "guess_key_length(String ciphertext)"));
         tags.add(new Tag(Tag.Category.Encode, "saml", true, "saml(String str)"));
         tags.add(new Tag(Tag.Category.Encode, "base32", true, "base32_encode(String str)"));
+        tags.add(new Tag(Tag.Category.Encode, "base58", true, "base58Encode(String str)"));
         tags.add(new Tag(Tag.Category.Encode, "base64", true, "base64Encode(String str)"));
         tags.add(new Tag(Tag.Category.Encode, "base64url", true, "base64urlEncode(String str)"));
         tags.add(new Tag(Tag.Category.Encode, "html_entities", true, "html_entities(String str)"));
@@ -174,6 +179,7 @@ public class Hackvertor {
         tags.add(new Tag(Tag.Category.Decode, "auto_decode", true, "auto_decode(String str)"));
         tags.add(new Tag(Tag.Category.Decode, "auto_decode_no_decrypt", true, "auto_decode_no_decrypt(String str)"));
         tags.add(new Tag(Tag.Category.Decode, "d_base32", true, "decode_base32(String str)"));
+        tags.add(new Tag(Tag.Category.Decode, "d_base58", true, "decode_base58(String str)"));
         tags.add(new Tag(Tag.Category.Decode, "d_base64", true, "decode_base64(String str)"));
         tags.add(new Tag(Tag.Category.Decode, "d_base64url", true, "decode_base64url(String str)"));
         tags.add(new Tag(Tag.Category.Decode, "d_html_entities", true, "decode_html_entities(String str)"));
@@ -192,6 +198,14 @@ public class Hackvertor {
         tags.add(tag);
         tag = new Tag(Tag.Category.Decode, "d_jwt_verify", true, "d_jwt_verify(String token, String secret)");
         tag.argument1 = new TagArgument("string", "secret");
+        tags.add(tag);
+        tag = new Tag(Tag.Category.Conditions, "if_regex", true, "if_regex(String str, String regex, String value)");
+        tag.argument1 = new TagArgument("string", "regex");
+        tag.argument2 = new TagArgument("string", "value");
+        tags.add(tag);
+        tag = new Tag(Tag.Category.Conditions, "if_not_regex", true, "if_not_regex(String str, String regex, String value)");
+        tag.argument1 = new TagArgument("string", "regex");
+        tag.argument2 = new TagArgument("string", "value");
         tags.add(tag);
         tags.add(new Tag(Tag.Category.Convert, "chunked_dec2hex", true, "chunked_dec2hex(String str)"));
         tag = new Tag(Tag.Category.Convert, "dec2hex", true, "dec2hex(String str, String regex)");
@@ -228,8 +242,9 @@ public class Hackvertor {
         tags.add(new Tag(Tag.Category.String, "reverse", true, "reverse(String str)"));
         tags.add(new Tag(Tag.Category.String, "length", true, "len(String str)"));
         tags.add(new Tag(Tag.Category.String, "unique", true, "unique(String str)"));
-        tag = new Tag(Tag.Category.String, "find", true, "find(String str, String find)");
+        tag = new Tag(Tag.Category.String, "find", true, "find(String str, String find, int group)");
         tag.argument1 = new TagArgument("string", "find");
+        tag.argument2 = new TagArgument("int", "-1");
         tags.add(tag);
         tag = new Tag(Tag.Category.String, "replace", true, "replace(String str, String find, String replace)");
         tag.argument1 = new TagArgument("string", "find");
@@ -402,6 +417,8 @@ public class Hackvertor {
         tag.argument1 = new TagArgument("string", ",");
         tag.argument2 = new TagArgument("int", "2");
         tags.add(tag);
+        tag = new Tag(Tag.Category.Math, "uuid", false, "uuid()");
+        tags.add(tag);
         tags.add(new Tag(Tag.Category.XSS, "behavior", true, "behavior(String str)"));
         tags.add(new Tag(Tag.Category.XSS, "css_expression", true, "css_expression(String str)"));
         tags.add(new Tag(Tag.Category.XSS, "datasrc", true, "datasrc(String str)"));
@@ -415,6 +432,16 @@ public class Hackvertor {
         Tag setTag = new Tag(Tag.Category.Variables, "set_variable1", true, "Special tag that lets you store the results of a conversion. Change variable1 to your own variable name. The argument specifies if the variable is global.");
         setTag.argument1 = new TagArgument("boolean", "false");
         tags.add(setTag);
+        tag = new Tag(Tag.Category.Variables, "increment_var", false, "increment_var(int start, String variableName, Boolean enabled)//This tag allows you to declare a variable and initialize it and then every subsequent conversion increments it.");
+        tag.argument1 = new TagArgument("number", "0");
+        tag.argument2 = new TagArgument("string", "variable");
+        tag.argument3 = new TagArgument("boolean", "false");
+        tags.add(tag);
+        tag = new Tag(Tag.Category.Variables, "decrement_var", false, "decrement_var(int start, String variableName, Boolean enabled)//This tag allows you to declare a variable and initialize it and then every subsequent conversion decrements it.");
+        tag.argument1 = new TagArgument("number", "0");
+        tag.argument2 = new TagArgument("string", "variable");
+        tag.argument3 = new TagArgument("boolean", "false");
+        tags.add(tag);
         tags.add(new Tag(Tag.Category.Variables, "get_variable1", false, "Special tag that lets you get a previously set variable. Change var to your own variable name."));
         tag = new Tag(Tag.Category.Variables, "context_url", false, "context_url(String properties");
         tag.argument1 = new TagArgument("string", "$protocol $host $path $file $query $port");
@@ -426,21 +453,6 @@ public class Hackvertor {
         tags.add(tag);
         tag = new Tag(Tag.Category.Variables, "context_param", false, "context_url(String paramName");
         tag.argument1 = new TagArgument("string", "$paramName");
-        tags.add(tag);
-        tag = new Tag(Tag.Category.Loops, "loop_for", true, "loop_for(String input, int start, int end, int increment, String i)//Does a for loop. Use a Hackvertor variable inside the tags to retrieve the position in the loop.");
-        tag.argument1 = new TagArgument("int", "0");
-        tag.argument2 = new TagArgument("int", "10");
-        tag.argument3 = new TagArgument("int", "1");
-        tag.argument4 = new TagArgument("string", "i");
-        tags.add(tag);
-        tag = new Tag(Tag.Category.Loops, "loop_letters_lower", true, "loop_letters_lower(String input, String variable)//Loops through all lowecase letters. Use a Hackvertor variable inside the tags to retrieve the letter");
-        tag.argument1 = new TagArgument("string", "letter");
-        tags.add(tag);
-        tag = new Tag(Tag.Category.Loops, "loop_letters_upper", true, "loop_letters_upper(String input, String variable)//Loops through all uppercase letters. Use a Hackvertor variable inside the tags to retrieve the letter");
-        tag.argument1 = new TagArgument("string", "letter");
-        tags.add(tag);
-        tag = new Tag(Tag.Category.Loops, "loop_numbers", true, "loop_numbers(String input, String variable)//Loops through all numbers. Use a Hackvertor variable inside the tags to retrieve the number");
-        tag.argument1 = new TagArgument("string", "number");
         tags.add(tag);
         tag = new Tag(Tag.Category.Languages, "python", true, "python(String input, String code, String codeExecuteKey)");
         tag.argument1 = new TagArgument("string", "output = input.upper()");
