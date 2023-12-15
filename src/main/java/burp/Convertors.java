@@ -61,6 +61,7 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.text.Normalizer;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -334,6 +335,8 @@ public class Convertors {
                 return powershell(output);
             case "js_string":
                 return js_string(output);
+            case "unicode_alternatives":
+                return unicode_alternatives(output);
             case "d_quoted_printable":
                 return d_quoted_printable(output);
             case "auto_decode":
@@ -1487,7 +1490,42 @@ public class Convertors {
         return JsonEscape.escapeJson(str);
     }
 
+    static String unicode_alternatives(String input) {
+        StringBuilder output = new StringBuilder();
+        HashMap<Character,StringBuilder> cache = new HashMap<>();
+        int len = input.length();
+        for (int i = 0; i < len; i++) {
+            char originalChr = input.charAt(i);
+            if(input.codePointAt(i) > 0x7f) {
+                output.append(originalChr);
+                continue;
+            }
+            boolean foundVariant = false;
+            StringBuilder unicodeCharacters = new StringBuilder();
+            if(cache.containsKey(originalChr)) {
+                output.append(cache.get(originalChr));
+                continue;
+            }
+            for(int j=0x7f;j<0xffff;j++) {
+                String chr = new StringBuilder().appendCodePoint(j).toString();
+                String normalized = Normalizer.normalize(chr, Normalizer.Form.NFKC);
+                if(normalized.equals(String.valueOf(originalChr))) {
+                    unicodeCharacters.append(chr);
+                    foundVariant = true;
+                }
+            }
+            if(!foundVariant) {
+                output.append(originalChr);
+            } else {
+                output.append(unicodeCharacters);
+                cache.put(originalChr, unicodeCharacters);
+            }
+        }
+        return output.toString();
+    }
+
     static String d_quoted_printable(String str) {
+        str = str.replace("=\n","");
         QuotedPrintableCodec codec = new QuotedPrintableCodec();
         try {
             return codec.decode(str);

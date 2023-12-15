@@ -11,7 +11,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.event.*;
+import javax.swing.table.DefaultTableModel;
 import javax.swing.text.JTextComponent;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
@@ -19,10 +21,8 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.*;
+import java.io.*;
 import java.net.*;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -80,16 +80,16 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
 
     public static int MAX_POPULAR_TAGS = 10;
 
-    public static GridBagConstraints createConstraints(int x, int y, int gridWidth) {
+    public static GridBagConstraints createConstraints(int x, int y, int gridWidth, int fill, double weightx, double weighty, int ipadx, int ipady) {
         GridBagConstraints c = new GridBagConstraints();
-        c.fill = GridBagConstraints.HORIZONTAL;
-        c.weightx = 0;
-        c.weighty = 0;
+        c.fill = fill;
         c.gridx = x;
         c.gridy = y;
-        c.ipadx = 0;
-        c.ipady = 0;
+        c.ipadx = ipadx;
+        c.ipady = ipady;
         c.gridwidth = gridWidth;
+        c.weightx = weightx;
+        c.weighty = weighty;
         return c;
     }
 
@@ -201,7 +201,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.7.49");
+	            	stdout.println("Hackvertor v1.8.4");
                     loadCustomTags();
                     loadGlobalVariables();
                     registerPayloadProcessors();
@@ -341,19 +341,20 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                             showListTagsDialog();
                         }
                     });
+                    JMenuItem tagStoreMenu = new JMenuItem("View tag store");
+                    tagStoreMenu.addActionListener(new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            showTagStore();
+                        }
+                    });
                     hvMenuBar.add(globalVariablesMenu);
                     hvMenuBar.add(createCustomTagsMenu);
                     hvMenuBar.add(listCustomTagsMenu);
+                    hvMenuBar.add(tagStoreMenu);
                     JMenuItem reportBugMenu = new JMenuItem("Report bug/request feature");
                     reportBugMenu.addActionListener(e -> {
-                        if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-                            try {
-                                Desktop.getDesktop().browse(new URI("https://github.com/hackvertor/hackvertor/issues/new"));
-                            } catch (IOException ioException) {
-                            } catch (URISyntaxException uriSyntaxException) {
-
-                            }
-                        }
+                        Utils.openUrl("https://github.com/hackvertor/hackvertor/issues/new");
                     });
                     hvMenuBar.add(reportBugMenu);
                     burpMenuBar.add(hvMenuBar);
@@ -505,7 +506,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         createVariableWindow.setVisible(true);
     }
     public void showCreateEditTagDialog(boolean edit, String editTagName) {
-        JPanel createTagPanel = new JPanel();
+        JPanel createTagPanel = new JPanel(new GridBagLayout());
+        createTagPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         JFrame createTagWindow;
         JSONObject customTag = null;
         if (edit) {
@@ -522,21 +524,18 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
             }
         }
-
-        createTagWindow.setResizable(false);
-        createTagWindow.setPreferredSize(new Dimension(500, 600));
+        createTagWindow.setResizable(true);
+        createTagWindow.setPreferredSize(new Dimension(800, 600));
+        createTagPanel.setPreferredSize(new Dimension(800, 600));
         JLabel tagLabel = new JLabel("Tag name");
-        tagLabel.setPreferredSize(new Dimension(220, 25));
         JTextField tagNameField = new JTextField();
         if (edit && customTag != null && customTag.has("tagName")) {
             tagNameField.setText(customTag.getString("tagName"));
             tagNameField.setEditable(false);
         }
-        tagNameField.setPreferredSize(new Dimension(220, 30));
-        createTagPanel.add(tagLabel);
-        createTagPanel.add(tagNameField);
+        createTagPanel.add(tagLabel, createConstraints(0, 0, 1, GridBagConstraints.BOTH, 1, 0, 5, 5));
+        createTagPanel.add(tagNameField, createConstraints(1, 0, 1, GridBagConstraints.BOTH, 1, 0, 5, 5));
         JLabel languageLabel = new JLabel("Select language");
-        languageLabel.setPreferredSize(new Dimension(220, 25));
         JTextComponent.removeKeymap("RTextAreaKeymap");
         HackvertorInput codeArea = new HackvertorInput();
         Utils.fixRSyntaxAreaBurp();
@@ -569,11 +568,12 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 if (changes[0] > 0) {
                     return;
                 }
-                String code = "output = convert(\"<@base64>\"+input+\"<@/base64>\")\n";
                 String comment = "//";
                 if(index == 1) {
                     comment = "#";
                 }
+                String code = "output = input\n";
+                code += comment + "output = convert(\"<@base64>\"+input+\"<@/base64>\")\n";
                 code += comment + "output = convert(\"<@customTag('\"+executionKey+\"')>\"+input+\"<@/customTag>\")";
                 codeArea.setText(code);
                 changes[0] = 0;
@@ -594,7 +594,6 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
             }
         });
-        languageCombo.setPreferredSize(new Dimension(220, 25));
         languageCombo.addItem("JavaScript");
         languageCombo.addItem("Python");
         languageCombo.addItem("Java");
@@ -607,7 +606,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 languageCombo.setSelectedIndex(1);
             } else if (customTag.getString("language").equals("Java")) {
                 languageCombo.setSelectedIndex(2);
-            } else if (customTag.getString("language").equals("groovy")) {
+            } else if (customTag.getString("language").equals("Groovy")) {
                 languageCombo.setSelectedIndex(3);
             }
         }
@@ -615,10 +614,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
             codeArea.setText(customTag.getString("code"));
         }
         Container pane = createTagWindow.getContentPane();
-        createTagPanel.add(languageLabel);
-        createTagPanel.add(languageCombo);
+        createTagPanel.add(languageLabel, createConstraints(0, 1, 1, GridBagConstraints.BOTH, 0, 0, 5, 5));
+        createTagPanel.add(languageCombo, createConstraints(1, 1, 1, GridBagConstraints.BOTH, 0, 0, 5, 5));
         JLabel argument1Label = new JLabel("Argument1");
-        argument1Label.setPreferredSize(new Dimension(100, 25));
         JComboBox<String> argument1Combo = new JComboBox<String>();
         argument1Combo.addItem("None");
         argument1Combo.addItem("String");
@@ -635,27 +633,25 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         if (edit && customTag != null && customTag.has("argument1")) {
             argument1NameField.setText(customTag.getString("argument1"));
         }
-        argument1NameField.setPreferredSize(new Dimension(100, 25));
         JLabel argument1DefaultLabel = new JLabel("Default value");
-        argument1DefaultLabel.setPreferredSize(new Dimension(100, 25));
         JTextField argument1DefaultValueField = new JTextField();
         if (edit && customTag != null && customTag.has("argument1Default")) {
             argument1DefaultValueField.setText(customTag.getString("argument1Default"));
         }
-        argument1DefaultValueField.setPreferredSize(new Dimension(100, 25));
         JPanel argument1Panel = new JPanel();
-        argument1Panel.setLayout(new GridLayout(0, 2));
-        argument1Panel.add(argument1Label);
-        argument1Panel.add(argument1Combo);
-        argument1Panel.add(argument1NameLabel);
-        argument1Panel.add(argument1NameField);
-        argument1Panel.add(argument1DefaultLabel);
-        argument1Panel.add(argument1DefaultValueField);
-        createTagPanel.add(argument1Panel);
+        argument1Panel.setBorder(new EmptyBorder(0, 0, 0, 10));
+        argument1Panel.setPreferredSize(new Dimension(400, 300));
+        argument1Panel.setLayout(new GridBagLayout());
+        argument1Panel.add(argument1Label, createConstraints(0, 0, 1, GridBagConstraints.BOTH, 1, 0, 5, 5));
+        argument1Panel.add(argument1Combo, createConstraints(1, 0, 1, GridBagConstraints.BOTH, 1, 0, 5, 5));
+        argument1Panel.add(argument1NameLabel, createConstraints(0, 1, 1, GridBagConstraints.BOTH, 1, 0, 5, 5));
+        argument1Panel.add(argument1NameField, createConstraints(1, 1, 1, GridBagConstraints.BOTH, 1, 0, 5, 5));
+        argument1Panel.add(argument1DefaultLabel, createConstraints(0, 2, 1, GridBagConstraints.BOTH, 1, 0, 5, 5));
+        argument1Panel.add(argument1DefaultValueField, createConstraints(1, 2, 1, GridBagConstraints.BOTH, 1, 0, 5, 5));
+        createTagPanel.add(argument1Panel, createConstraints(0, 2, 1, GridBagConstraints.BOTH, 1, 0, 5, 5));
 
         JLabel argument2NameLabel = new JLabel("Param Name");
         JLabel argument2Label = new JLabel("Argument2");
-        argument2Label.setPreferredSize(new Dimension(100, 25));
         JComboBox<String> argument2Combo = new JComboBox<String>();
         argument2Combo.addItem("None");
         argument2Combo.addItem("String");
@@ -671,30 +667,26 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         if (edit && customTag != null && customTag.has("argument2")) {
             argument2NameField.setText(customTag.getString("argument2"));
         }
-        argument2NameField.setPreferredSize(new Dimension(100, 25));
         JLabel argument2DefaultLabel = new JLabel("Default value");
-        argument2DefaultLabel.setPreferredSize(new Dimension(100, 25));
         JTextField argument2DefaultValueField = new JTextField();
         if (edit && customTag != null && customTag.has("argument2Default")) {
             argument2DefaultValueField.setText(customTag.getString("argument2Default"));
         }
-        argument2DefaultValueField.setPreferredSize(new Dimension(100, 25));
         JPanel argument2Panel = new JPanel();
-        argument2Panel.setLayout(new GridLayout(0, 2));
-        argument2Panel.add(argument2Label);
-        argument2Panel.add(argument2Combo);
-        argument2Panel.add(argument2NameLabel);
-        argument2Panel.add(argument2NameField);
-        argument2Panel.add(argument2DefaultLabel);
-        argument2Panel.add(argument2DefaultValueField);
-        createTagPanel.add(argument2Panel);
+        argument2Panel.setPreferredSize(new Dimension(400, 300));
+        argument2Panel.setLayout(new GridBagLayout());
+        argument2Panel.add(argument2Label, createConstraints(0, 0, 1, GridBagConstraints.BOTH, 1, 0, 5, 5));
+        argument2Panel.add(argument2Combo, createConstraints(1, 0, 1, GridBagConstraints.BOTH, 1, 0, 5, 5));
+        argument2Panel.add(argument2NameLabel, createConstraints(0, 1, 1, GridBagConstraints.BOTH, 1, 0, 5, 5));
+        argument2Panel.add(argument2NameField, createConstraints(1, 1, 1, GridBagConstraints.BOTH, 1, 0, 5, 5));
+        argument2Panel.add(argument2DefaultLabel, createConstraints(0, 2, 1, GridBagConstraints.BOTH, 1, 0, 5, 5));
+        argument2Panel.add(argument2DefaultValueField, createConstraints(1, 2, 1, GridBagConstraints.BOTH, 1, 0, 5, 5));
+        createTagPanel.add(argument2Panel, createConstraints(1, 2, 1, GridBagConstraints.BOTH, 1, 0, 5, 5));
         JLabel convertLabel = new JLabel("You can now convert Hackvertor tags inside customTags!");
         JLabel codeLabel = new JLabel("Code (if you end the code with .js/.py/.java/.groovy it will read a file)");
-        codeLabel.setPreferredSize(new Dimension(450, 25));
-        codeScroll.setPreferredSize(new Dimension(450, 300));
-        createTagPanel.add(convertLabel);
-        createTagPanel.add(codeLabel);
-        createTagPanel.add(codeScroll);
+        createTagPanel.add(convertLabel, createConstraints(0, 3, 2, GridBagConstraints.BOTH, 0, 0, 5, 5));
+        createTagPanel.add(codeLabel, createConstraints(0, 4, 2, GridBagConstraints.BOTH, 0, 0, 5, 5));
+        createTagPanel.add(codeScroll, createConstraints(0, 5, 2, GridBagConstraints.BOTH, 1, 1, 5, 5));
         JButton cancelButton = new JButton("Cancel");
         if (!isNativeTheme && !isDarkTheme) {
             cancelButton.setBackground(Color.decode("#005a70"));
@@ -707,9 +699,38 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
             }
         });
         JLabel errorMessage = new JLabel();
-        errorMessage.setPreferredSize(new Dimension(450, 25));
         errorMessage.setForeground(Color.red);
         JButton createButton = new JButton("Create tag");
+        JButton exportButton = new JButton("Export to tag store");
+        JSONObject finalCustomTag = customTag;
+        exportButton.addActionListener(e -> {
+            loadCustomTags();
+            for (int i = 0; i < hackvertor.getCustomTags().length(); i++) {
+                JSONObject savedCustomTag = (JSONObject) hackvertor.getCustomTags().get(i);
+                if (finalCustomTag.getString("tagName").equals(savedCustomTag.getString("tagName"))) {
+                    JSONObject customTagCopy = new JSONObject(savedCustomTag, JSONObject.getNames(savedCustomTag));
+                    customTagCopy.remove("code");
+                    customTagCopy.put("tagName", customTagCopy.get("tagName").toString().replaceFirst("^_",""));
+                    String author = JOptionPane.showInputDialog(null, "Enter your github username", "");
+                    if(author == null || author.isEmpty()) {
+                        return;
+                    }
+                    String description = JOptionPane.showInputDialog(null, "Enter a description of your tag", "");
+                    if(description.isEmpty()) {
+                        return;
+                    }
+                    customTagCopy.put("author",author);
+                    customTagCopy.put("description",description);
+                    Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+                    StringSelection customTagCopyJSON = new StringSelection(customTagCopy.toString(3));
+                    clipboard.setContents(customTagCopyJSON, null);
+                    alert("Copied JSON data to clipboard.");
+                    Utils.openUrl("https://github.com/hackvertor/hackvertor/tag-store/README.md");
+                    return;
+                }
+            }
+            alert("Unable to find tag");
+        });
         if (edit) {
             createButton.setText("Update tag");
         }
@@ -717,7 +738,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         testButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String tagName = tagNameField.getText().replaceAll("[^\\w+]", "");
+                String tagName = Utils.sanitizeTagName(tagNameField.getText());
                 String language = languageCombo.getSelectedItem().toString();
                 String code = codeArea.getText();
                 String argument1 = argument1NameField.getText();
@@ -766,7 +787,6 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                         args.add(argument1DefaultValue);
                         customTagOptions.put("param1", getInt(args, 0));
                     }
-
                 } else if (numberOfArgs == 2) {
                     int pos = 0;
                     if (argument1Type.equals("String")) {
@@ -803,42 +823,41 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         createButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String tagName = tagNameField.getText().replaceAll("[^\\w+]", "");
+                String tagName = Utils.sanitizeTagName(tagNameField.getText());
                 String language = languageCombo.getSelectedItem().toString();
                 String code = codeArea.getText();
                 String argument1 = argument1NameField.getText();
                 String argument1DefaultValue = argument1DefaultValueField.getText();
                 String argument2 = argument2NameField.getText();
                 String argument2DefaultValue = argument2DefaultValueField.getText();
-                String paramRegex = "^[a-zA-Z_]\\w{0,10}$";
-                String numberRegex = "^(?:0x[a-fA-F0-9]+|\\d+)$";
+
                 int numberOfArgs = 0;
-                if (tagName.length() < 1) {
+                if (!Utils.validateTagName(tagName)) {
                     errorMessage.setText("Invalid tag name. Use a-zA-Z_0-9 for tag names");
                     return;
                 }
-                if (code.length() < 1) {
-                    errorMessage.setText("Please enter some code");
+                if (!Utils.validateCode(code)) {
+                    errorMessage.setText("Please enter some code. Code cannot be blank or exceed " + Utils.MAX_TAG_CODE_LEN + " bytes");
                     return;
                 }
-                if (argument1Combo.getSelectedIndex() > 0 && !argument1.matches(paramRegex)) {
-                    errorMessage.setText("Invalid param name. For argument1. Use " + paramRegex);
+                if (argument1Combo.getSelectedIndex() > 0 && !Utils.validateParam(argument1)) {
+                    errorMessage.setText("Invalid param name. For argument1. Use " + Utils.paramRegex);
                     return;
                 }
-                if (argument1Combo.getSelectedItem().toString().equals("Number") && !argument1DefaultValue.matches(numberRegex)) {
-                    errorMessage.setText("Invalid default value for argument1. Use " + numberRegex);
+                if (argument1Combo.getSelectedItem().equals("Number") && !Utils.validateTagParamNumber(argument1DefaultValue)) {
+                    errorMessage.setText("Invalid default value for argument1. Use " + Utils.numberRegex);
                     return;
                 }
-                if (argument2Combo.getSelectedIndex() > 0 && !argument2.matches(paramRegex)) {
-                    errorMessage.setText("Invalid param name for argument2. Use " + paramRegex);
+                if (argument2Combo.getSelectedIndex() > 0 && !Utils.validateParam(argument2)) {
+                    errorMessage.setText("Invalid param name for argument2. Use " + Utils.paramRegex);
                     return;
                 }
                 if (argument2Combo.getSelectedIndex() > 0 && argument1Combo.getSelectedIndex() == 0) {
                     errorMessage.setText("You have selected two arguments but not defined the first.");
                     return;
                 }
-                if (argument2Combo.getSelectedItem().toString().equals("Number") && !argument2DefaultValue.matches(numberRegex)) {
-                    errorMessage.setText("Invalid default value for argument2. Use " + numberRegex);
+                if (argument2Combo.getSelectedItem().toString().equals("Number") && !Utils.validateTagParamNumber(argument2DefaultValue)) {
+                    errorMessage.setText("Invalid default value for argument2. Use " + Utils.numberRegex);
                     return;
                 }
                 if (argument1Combo.getSelectedIndex() > 0) {
@@ -861,15 +880,250 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
             createButton.setForeground(Color.white);
             testButton.setBackground(Color.decode("#005a70"));
             testButton.setForeground(Color.white);
+            exportButton.setBackground(Color.decode("#005a70"));
+            exportButton.setForeground(Color.white);
         }
-        createTagPanel.add(cancelButton);
-        createTagPanel.add(testButton);
-        createTagPanel.add(createButton);
-        createTagPanel.add(errorMessage);
+        JPanel buttonsPanel = new JPanel(new GridBagLayout());
+        buttonsPanel.add(cancelButton, createConstraints(0, 0, 1, GridBagConstraints.NONE, 0, 0, 5, 5));
+        if(edit) {
+            buttonsPanel.add(exportButton, createConstraints(1, 0, 1, GridBagConstraints.NONE, 0, 0, 5, 5));
+        }
+        buttonsPanel.add(testButton, createConstraints(2, 0, 1, GridBagConstraints.NONE, 0, 0, 5, 5));
+        buttonsPanel.add(createButton, createConstraints(3, 0, 1, GridBagConstraints.NONE, 0, 0, 5, 5));
+        buttonsPanel.add(errorMessage, createConstraints(4, 0, 1, GridBagConstraints.NONE, 0, 0, 5, 5));
+        createTagPanel.add(buttonsPanel,createConstraints(0, 6, 2, GridBagConstraints.NONE, 1, 0, 5, 5)) ;
         pane.add(createTagPanel);
         createTagWindow.pack();
         createTagWindow.setLocationRelativeTo(null);
         createTagWindow.setVisible(true);
+    }
+
+    public void showTagStore() {
+        final String TAG_STORE_URL = "https://raw.githubusercontent.com/hackvertor/hackvertor/master/tag-store/";
+        //final String TAG_STORE_URL = "http://127.0.0.1:4000/";
+        String jsonResponse = makeHttpRequest(TAG_STORE_URL + "tag-store.json", "GET");
+        if(jsonResponse == null) {
+            callbacks.printError("Unable to load tag store JSON");
+            alert("Unable to load the tag store. Store may be down.");
+            return;
+        }
+        JSONArray tagStore;
+        try {
+            tagStore = new JSONArray(jsonResponse);
+        } catch (JSONException ex) {
+            alert("Unable to load the tag store. Store may be down.");
+            callbacks.printError("Invalid JSON");
+            return;
+        }
+
+        if(tagStore.isEmpty()) {
+            alert("Unable to load the tag store. Tag store JSON not found.");
+            callbacks.printError("Unable to retrieve JSON");
+            return;
+        }
+        HashMap<String, String> storeCode = new HashMap<>();
+        JFrame tagStoreWindow = new JFrame("Hackvertor tag store");
+        JPanel optionsPanel = new JPanel(new BorderLayout());
+        Utils.setMarginAndPadding(optionsPanel, 10);
+        optionsPanel.setVisible(false);
+        JLabel title = new JLabel("Title here");
+        Utils.setMarginAndPadding(title, 10);
+        title.setFont(new Font("Arial",Font.BOLD,30));
+        title.putClientProperty("html.disable", Boolean.TRUE);
+        JPanel buttonsPanel = new JPanel(new BorderLayout());
+        Utils.setMarginAndPadding(buttonsPanel, 10);
+        JButton installButton = new JButton("Install tag");
+        JButton closeButton = new JButton("Close");
+        buttonsPanel.add(closeButton, BorderLayout.WEST);
+        buttonsPanel.add(installButton, BorderLayout.EAST);
+        closeButton.addActionListener(e -> {
+            tagStoreWindow.dispose();
+        });
+        Utils.setMarginAndPadding(closeButton, 10);
+        Utils.setMarginAndPadding(installButton, 10);
+        optionsPanel.add(title, BorderLayout.NORTH);
+        JTextComponent.removeKeymap("RTextAreaKeymap");
+        HackvertorInput codeArea = new HackvertorInput();
+        codeArea.setEditable(false);
+        codeArea.setText("Code goes here");
+        Utils.fixRSyntaxAreaBurp();
+        Utils.configureRSyntaxArea(codeArea);
+        codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT);
+        JScrollPane codeScroller = new JScrollPane(codeArea);
+        Utils.setMarginAndPadding(codeScroller, 10);
+        JTextArea description = new JTextArea("Description goes here");
+        description.setEditable(false);
+        description.putClientProperty("html.disable", Boolean.TRUE);
+        JScrollPane descScroller = new JScrollPane(description, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        Utils.setMarginAndPadding(descScroller, 10);
+        JPanel centerPanel = new JPanel(new BorderLayout());
+        centerPanel.add(descScroller, BorderLayout.NORTH);
+        centerPanel.add(codeScroller, BorderLayout.CENTER);
+        optionsPanel.add(centerPanel, BorderLayout.CENTER);
+        optionsPanel.add(buttonsPanel, BorderLayout.SOUTH);
+        JPanel tagStorePanel = new JPanel(new BorderLayout());
+        String[] columnNames = {"Tag name", "Author", "Language"};
+        DefaultTableModel tagStoreModel = new DefaultTableModel(columnNames, 0);
+        HashMap<String, JSONObject> storeTags = new HashMap();
+        for(int i=0;i<tagStore.length();i++) {
+            JSONObject tag = (JSONObject) tagStore.get(i);
+            String tagName = tag.getString("tagName");
+            String author = tag.getString("author");
+            String language = tag.getString("language");
+            tagStoreModel.addRow(new Object[]{tagName,author,language});
+            storeTags.put(tagName, tag);
+        }
+        JTable storeTable = new JTable(tagStoreModel);
+        storeTable.setDefaultEditor(Object.class, null);
+        storeTable.putClientProperty("html.disable", Boolean.TRUE);
+        storeTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        ListSelectionModel selectionModel = storeTable.getSelectionModel();
+        installButton.addActionListener(e -> {
+            alert("Custom tags can compromise your system. Please ensure you've evaluated the code before you install it.");
+            int confirm = JOptionPane.showConfirmDialog(null, "Are you sure you want to install this custom tag?");
+            if(confirm == 0) {
+                int selectedRow = storeTable.getSelectedRow();
+                String tagName = (String) storeTable.getValueAt(selectedRow, 0);
+                if (!Utils.validateTagName(tagName)) {
+                    alert("Invalid tag name. Use a-zA-Z_0-9 for tag names");
+                    return;
+                }
+                String code = storeCode.get(tagName);
+                JSONObject tag = storeTags.get(tagName);
+                int numberOfArgs = tag.getInt("numberOfArgs");
+                String language = tag.getString("language");
+                if (!Utils.validateCode(code)) {
+                    alert("Invalid code unable to install tag. Code cannot be blank or exceed " + Utils.MAX_TAG_CODE_LEN + " bytes");
+                    return;
+                }
+                String argument1 = null;
+                String argument1Type = null;
+                String argument1Default = null;
+                String argument2 = null;
+                String argument2Type = null;
+                String argument2Default = null;
+                if(numberOfArgs > 0) {
+                    argument1 = tag.getString("argument1");
+                    argument1Type = tag.getString("argument1Type");
+                    argument1Default = tag.getString("argument1Default");
+                    argument2 = tag.getString("argument2");
+                    argument2Type = tag.getString("argument2Type");
+                    argument2Default = tag.getString("argument2Default");
+                    if (!Utils.validateParam(argument1)) {
+                        alert("Invalid param name. For argument1. Use " + Utils.paramRegex);
+                        return;
+                    }
+                    if (argument1Type.equals("Number") && !Utils.validateTagParamNumber(argument1Default)) {
+                        alert("Invalid default value for argument1. Use " + Utils.numberRegex);
+                        return;
+                    }
+                    if (!Utils.validateParam(argument2)) {
+                        alert("Invalid param name for argument2. Use " + Utils.paramRegex);
+                        return;
+                    }
+                    if (argument2Type.equals("Number") && !Utils.validateTagParamNumber(argument2Default)) {
+                        alert("Invalid default value for argument2. Use " + Utils.numberRegex);
+                        return;
+                    }
+                }
+                loadCustomTags();
+                if(hackvertor.hasCustomTag(tagName)) {
+                    updateCustomTag("_" + tagName, language, code, argument1, argument1Type, argument1Default, argument2, argument2Type, argument2Default, numberOfArgs);
+                } else {
+                    createCustomTag(tagName, language, code, argument1, argument1Type, argument1Default, argument2, argument2Type, argument2Default, numberOfArgs);
+                }
+                loadCustomTags();
+                alert("Successfully installed the tag");
+            }
+        });
+        selectionModel.addListSelectionListener(e -> {
+            if(e.getValueIsAdjusting()) {
+                return;
+            }
+            int selectedRow = storeTable.getSelectedRow();
+            String tagName = (String) storeTable.getValueAt(selectedRow, 0);
+            tagName = Utils.sanitizeTagName(tagName);
+            String code = null;
+            loadCustomTags();
+            if(hackvertor.hasCustomTag(tagName)) {
+                installButton.setEnabled(false);
+            } else {
+                installButton.setEnabled(true);
+            }
+
+            if(storeCode.containsKey(tagName)) {
+                code = storeCode.get(tagName);
+            } else {
+                code = makeHttpRequest(TAG_STORE_URL+tagName+"/"+tagName+Utils.getExtensionFromLanguage(storeTags.get(tagName).getString("language")), "GET");
+                if(code == null) {
+                    callbacks.printError("Unable get retrieve code for tag:"+tagName);
+                    return;
+                }
+                storeCode.put(tagName, code);
+            }
+            title.setText(tagName);
+            description.setText(storeTags.get(tagName).getString("description"));
+            String language = storeTags.get(tagName).getString("language");
+
+            switch(language) {
+                case "JavaScript":
+                    codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT);
+                    break;
+                case "Python":
+                    codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_PYTHON);
+                    break;
+                case "Java":
+                    codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
+                    break;
+                case "Groovy":
+                    codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_GROOVY);
+                    break;
+            }
+            codeArea.setTabSize(3);
+            codeArea.setText(code);
+            codeArea.setCaretPosition(0);
+            optionsPanel.setVisible(true);
+        });
+        JScrollPane scrollPane = new JScrollPane(storeTable);
+        tagStorePanel.add(scrollPane, BorderLayout.WEST);
+        tagStorePanel.add(optionsPanel, BorderLayout.CENTER);
+        tagStoreWindow.add(tagStorePanel);
+        tagStoreWindow.setResizable(true);
+        tagStoreWindow.setPreferredSize(new Dimension(1000, 700));
+        tagStoreWindow.pack();
+        tagStoreWindow.setLocationRelativeTo(null);
+        tagStoreWindow.setVisible(true);
+    }
+
+    public String makeHttpRequest(String requestUrl, String method) {
+        HttpURLConnection connection = null;
+
+        try {
+            URL url = new URI(requestUrl).toURL();
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestProperty("Content-Type", "application/json");
+            connection.setUseCaches(false);
+            connection.setDoOutput(true);
+            connection.setRequestMethod(method);
+            InputStream is = connection.getInputStream();
+            BufferedReader rd = new BufferedReader(new InputStreamReader(is));
+            StringBuilder response = new StringBuilder();
+            String line;
+            while ((line = rd.readLine()) != null) {
+                response.append(line);
+                response.append(System.lineSeparator());
+            }
+            rd.close();
+            return response.toString();
+        } catch (Exception e) {
+            callbacks.printError("Error making HTTP request:" + e);
+            e.printStackTrace();
+            return null;
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
     }
 
     public void showListTagsDialog() {
