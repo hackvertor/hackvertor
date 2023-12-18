@@ -10,6 +10,10 @@ Tags also support arguments. The find tag allows you to find a string by regex a
 
 # Changelog
 
+**1.8.5  2023-11-1**
+
+- Fixed bug where hex default value for custom tag would be quoted
+
 **1.8.4  2023-11-1**
 
 - Continued improvements on create tag window.
