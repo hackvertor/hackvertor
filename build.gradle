@@ -25,12 +25,13 @@ dependencies {
     implementation 'bsf:bsf:2.4.0'
     implementation 'org.apache-extras.beanshell:bsh:2.0b6'
     implementation 'org.codehaus.groovy:groovy-all:3.0.16'
-    implementation 'com.eclipsesource.j2v8:j2v8_macosx_x86_64:4.6.0'
     implementation 'com.github.javafaker:javafaker:1.0.2'
     implementation 'com.fifesoft:rsyntaxtextarea:3.3.1'
     implementation 'com.fifesoft:autocomplete:3.3.1'
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
+    implementation 'org.graalvm.js:js:23.0.2'
+    implementation 'org.graalvm.js:js-scriptengine:23.1.1'
 }
 
 sourceSets {

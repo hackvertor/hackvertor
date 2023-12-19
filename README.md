@@ -10,7 +10,11 @@ Tags also support arguments. The find tag allows you to find a string by regex a
 
 # Changelog
 
-**1.8.5  2023-11-1**
+**1.8.6  2023-12-19**
+
+- Added full support for JavaScript in custom tags
+
+**1.8.5  2023-12-18**
 
 - Fixed bug where hex default value for custom tag would be quoted
 
