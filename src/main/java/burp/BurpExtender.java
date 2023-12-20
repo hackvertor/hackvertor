@@ -6,6 +6,7 @@ import burp.ui.HackvertorMessageTab;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.fife.ui.rtextarea.RTextScrollPane;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -201,7 +202,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.8.6");
+	            	stdout.println("Hackvertor v1.8.7");
                     loadCustomTags();
                     loadGlobalVariables();
                     registerPayloadProcessors();
@@ -541,7 +542,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         Utils.fixRSyntaxAreaBurp();
         Utils.configureRSyntaxArea(codeArea);
         codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT);
-        JScrollPane codeScroll = new JScrollPane(codeArea);
+        RTextScrollPane codeScroll = new RTextScrollPane(codeArea);
+        codeScroll.setLineNumbersEnabled(true);
         final int[] changes = {0};
         codeArea.getDocument().addDocumentListener(new DocumentListener() {
 
