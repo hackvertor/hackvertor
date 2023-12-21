@@ -404,6 +404,8 @@ public class Convertors {
                 return lowercase(output);
             case "unique":
                 return unique(output);
+            case "remove_output":
+                return remove_output(output);
             case "capitalise":
                 return capitalise(output);
             case "uncapitalise":
@@ -1335,6 +1337,9 @@ public class Convertors {
         return String.join(" ", result);
     }
 
+    static String remove_output(String input) {
+        return "";
+    }
     static String capitalise(String str) {
         return StringUtils.capitalize(str);
     }

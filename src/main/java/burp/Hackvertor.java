@@ -279,6 +279,7 @@ public class Hackvertor {
         tag.argument1 = new TagArgument("string", "split char");
         tag.argument2 = new TagArgument("string", "join char");
         tags.add(tag);
+        tags.add(new Tag(Tag.Category.String, "remove_output", true, "remove_output(String str)"));
 
         Faker faker = new Faker();
         generateFakeTags(new Object[]{

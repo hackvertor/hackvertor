@@ -10,6 +10,10 @@ Tags also support arguments. The find tag allows you to find a string by regex a
 
 # Changelog
 
+**1.8.8  2023-12-20**
+
+- Added remove output tag
+
 **1.8.6  2023-12-20**
 
 - Added line numbers to custom tag editor
