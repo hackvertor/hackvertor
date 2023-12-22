@@ -10,6 +10,10 @@ Tags also support arguments. The find tag allows you to find a string by regex a
 
 # Changelog
 
+**1.8.9 2023-12-22**
+
+- Fixed #79 No contextual menu entries for requests in Proxy History and Sitemap 
+
 **1.8.8  2023-12-20**
 
 - Added remove output tag
