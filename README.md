@@ -13,6 +13,8 @@ Tags also support arguments. The find tag allows you to find a string by regex a
 **1.8.8  2023-12-20**
 
 - Added remove output tag
+- Added load from json file
+- Added save to json file
 
 **1.8.6  2023-12-20**
 

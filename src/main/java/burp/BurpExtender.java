@@ -4,6 +4,7 @@ import burp.ui.ExtensionPanel;
 import burp.ui.HackvertorInput;
 import burp.ui.HackvertorMessageTab;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.FileUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rtextarea.RTextScrollPane;
@@ -14,6 +15,7 @@ import org.json.JSONObject;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.*;
+import javax.swing.filechooser.FileFilter;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.text.JTextComponent;
 import java.awt.*;
@@ -25,8 +27,10 @@ import java.awt.event.*;
 import java.io.*;
 import java.net.*;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.Security;
@@ -1156,6 +1160,128 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         JButton deleteButton = new JButton("Delete tag");
         JButton loadButton = new JButton("Load tags from clipboard");
         JButton exportButton = new JButton("Export all my tags to clipboard");
+        JButton loadFromJsonButton = new JButton("Load from JSON file");
+        JButton exportToJsonButton = new JButton("Export all my tags to JSON file");
+        exportToJsonButton.addActionListener(e -> {
+            String customTagsJSON = hackvertor.getCustomTags().toString();
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setFileFilter(new FileFilter() {
+                @Override
+                public boolean accept(File f) {
+                    return f.getPath().endsWith(".json") || f.isDirectory();
+                }
+
+                @Override
+                public String getDescription() {
+                    return "JSON only";
+                }
+            });
+            fileChooser.setDialogTitle("Specify a JSON file to save");
+            int userSelection = fileChooser.showSaveDialog(listTagsWindow);
+            if (userSelection == JFileChooser.APPROVE_OPTION) {
+                File fileToSave = fileChooser.getSelectedFile();
+                if(fileToSave != null && fileToSave.getAbsolutePath().endsWith(".json")) {
+                    BufferedWriter writer = null;
+                    try {
+                        writer = new BufferedWriter(new FileWriter(fileToSave.getAbsolutePath()));
+                    } catch (IOException ex) {
+                        alert("Unable to open file to write:" + ex);
+                        return;
+                    }
+                    try {
+                        writer.write(customTagsJSON);
+                    } catch (IOException ex) {
+                        alert("Failed to write file:" + ex);
+                        return;
+                    }
+                    try {
+                        writer.close();
+                    } catch (IOException ex) {
+                        alert("Failed to close file:" + ex);
+                    }
+                }
+            }
+        });
+        loadFromJsonButton.addActionListener(e -> {
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setFileFilter(new FileFilter() {
+                @Override
+                public boolean accept(File f) {
+                    return f.getPath().endsWith(".json") || f.isDirectory();
+                }
+
+                @Override
+                public String getDescription() {
+                    return "JSON only";
+                }
+            });
+            fileChooser.setCurrentDirectory(new File(System.getProperty("user.home")));
+            int result = fileChooser.showOpenDialog(listTagsWindow);
+            if (result == JFileChooser.APPROVE_OPTION) {
+                File selectedFile = fileChooser.getSelectedFile();
+                if(selectedFile != null && selectedFile.getAbsolutePath().endsWith(".json")) {
+                    try {
+                        String json = FileUtils.readFileToString(selectedFile, "UTF-8");
+                        if (json != null && !json.isEmpty()) {
+                            try {
+                                JSONArray tags = new JSONArray(json);
+                                for(int i=0;i<tags.length();i++) {
+                                    JSONObject tag = tags.getJSONObject(i);
+                                    if (!Utils.validateCode(tag.getString("code"))) {
+                                        alert("Invalid code unable to install tag. Code cannot be blank or exceed " + Utils.MAX_TAG_CODE_LEN + " bytes");
+                                        return;
+                                    }
+                                    String argument1 = null;
+                                    String argument1Type = null;
+                                    String argument1Default = null;
+                                    String argument2 = null;
+                                    String argument2Type = null;
+                                    String argument2Default = null;
+                                    int numberOfArgs = tag.getInt("numberOfArgs");
+                                    if(numberOfArgs > 0) {
+                                        argument1 = tag.getString("argument1");
+                                        argument1Type = tag.getString("argument1Type");
+                                        argument1Default = tag.getString("argument1Default");
+                                        if (!Utils.validateParam(argument1)) {
+                                            alert("Invalid param name. For argument1. Use " + Utils.paramRegex);
+                                            return;
+                                        }
+                                        if (argument1Type.equals("Number") && !Utils.validateTagParamNumber(argument1Default)) {
+                                            alert("Invalid default value for argument1. Use " + Utils.numberRegex);
+                                            return;
+                                        }
+                                        if(numberOfArgs == 2) {
+                                            argument2 = tag.getString("argument2");
+                                            argument2Type = tag.getString("argument2Type");
+                                            argument2Default = tag.getString("argument2Default");
+
+                                            if (!Utils.validateParam(argument2)) {
+                                                alert("Invalid param name for argument2. Use " + Utils.paramRegex);
+                                                return;
+                                            }
+                                            if (argument2Type.equals("Number") && !Utils.validateTagParamNumber(argument2Default)) {
+                                                alert("Invalid default value for argument2. Use " + Utils.numberRegex);
+                                                return;
+                                            }
+                                        }
+                                    }
+                                }
+                                hackvertor.setCustomTags(tags);
+                                alert("All your tags have been replaced from the file");
+                                saveCustomTags();
+                                listTagsWindow.dispose();
+                                showListTagsDialog();
+                            } catch (JSONException ex) {
+                                alert("Invalid JSON: " + ex);
+                            }
+                        }
+                    } catch (IOException ex) {
+                        alert("Unable to load JSON: " + ex);
+                    }
+
+                }
+            }
+        });
         exportButton.addActionListener(e -> {
             Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
             StringSelection customTagsJSON = new StringSelection(hackvertor.getCustomTags().toString());
@@ -1168,7 +1294,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
             }
             try {
                 String tagsJSON = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
-                if (tagsJSON != null && tagsJSON.length() > 0) {
+                if (tagsJSON != null && !tagsJSON.isEmpty()) {
                     try {
                         JSONArray tags = new JSONArray(tagsJSON);
                         hackvertor.setCustomTags(tags);
@@ -1181,7 +1307,6 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                     }
                 }
             } catch (UnsupportedFlavorException unsupportedFlavorException) {
-                unsupportedFlavorException.printStackTrace();
                 alert("Invalid JSON");
             } catch (IOException ioException) {
                 ioException.printStackTrace();
@@ -1221,6 +1346,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         listTagsPanel.add(deleteButton);
         listTagsPanel.add(loadButton);
         listTagsPanel.add(exportButton);
+        listTagsPanel.add(loadFromJsonButton);
+        listTagsPanel.add(exportToJsonButton);
         listTagsWindow.add(listTagsPanel);
         listTagsWindow.pack();
         listTagsWindow.setLocationRelativeTo(null);
