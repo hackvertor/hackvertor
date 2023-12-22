@@ -206,7 +206,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.8.8");
+	            	stdout.println("Hackvertor v1.8.9");
                     loadCustomTags();
                     loadGlobalVariables();
                     registerPayloadProcessors();
@@ -1612,7 +1612,11 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         switch (invocation.getInvocationContext()) {
             case IContextMenuInvocation.CONTEXT_INTRUDER_PAYLOAD_POSITIONS:
             case IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST:
+            case IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST:
             case IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE:
+            case IContextMenuInvocation.CONTEXT_TARGET_SITE_MAP_TREE:
+            case IContextMenuInvocation.CONTEXT_TARGET_SITE_MAP_TABLE:
+            case IContextMenuInvocation.CONTEXT_PROXY_HISTORY:
                 break;
             default:
                 return null;
@@ -1628,9 +1632,14 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         JMenuItem sendToHackvertor = new JMenuItem(hackvertorAction);
         submenu.add(sendToHackvertor);
 
-        if (invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE) {
-            menu.add(submenu);
-            return menu;
+        switch(invocation.getInvocationContext()) {
+            case IContextMenuInvocation.CONTEXT_TARGET_SITE_MAP_TREE:
+            case IContextMenuInvocation.CONTEXT_TARGET_SITE_MAP_TABLE:
+            case IContextMenuInvocation.CONTEXT_PROXY_HISTORY:
+            case IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST:
+            case IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE:
+                menu.add(submenu);
+                return menu;
         }
 
         JMenuItem copyUrl = new JMenuItem("Copy URL");
