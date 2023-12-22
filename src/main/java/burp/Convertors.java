@@ -10,7 +10,6 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import com.eclipsesource.v8.*;
 import com.github.javafaker.Faker;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
@@ -33,6 +32,8 @@ import org.bouncycastle.jcajce.provider.digest.Skein;
 import org.bouncycastle.util.encoders.Hex;
 import org.brotli.dec.BrotliInputStream;
 import org.codehaus.groovy.control.CompilationFailedException;
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.HostAccess;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.python.core.PyException;
@@ -61,6 +62,7 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.text.Normalizer;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -233,6 +235,10 @@ public class Convertors {
             case "get_var":
             case "get_variable":
                 return variableMap.getOrDefault(getString(arguments,0), StringUtils.isEmpty(output) ? "UNDEFINED" : output);
+            case "increment_var":
+                return increment_var(globalVariables, getInt(arguments, 0), getString(arguments, 1), getBoolean(arguments, 2));
+            case "decrement_var":
+                return decrement_var(globalVariables, getInt(arguments, 0), getString(arguments, 1), getBoolean(arguments, 2));
             case "context_url":
                 return context_url(getString(arguments,0), hackvertor);
             case "context_header":
@@ -330,6 +336,8 @@ public class Convertors {
                 return powershell(output);
             case "js_string":
                 return js_string(output);
+            case "unicode_alternatives":
+                return unicode_alternatives(output);
             case "d_quoted_printable":
                 return d_quoted_printable(output);
             case "auto_decode":
@@ -396,6 +404,8 @@ public class Convertors {
                 return lowercase(output);
             case "unique":
                 return unique(output);
+            case "remove_output":
+                return remove_output(output);
             case "capitalise":
                 return capitalise(output);
             case "uncapitalise":
@@ -426,6 +436,10 @@ public class Convertors {
                 return Double.toString(index_of_coincidence(output));
             case "guess_key_length":
                 return Integer.toString(guess_key_length(output));
+            case "if_regex":
+                return if_regex(output, getString(arguments, 0), getString(arguments, 1));
+            case "if_not_regex":
+                return if_not_regex(output, getString(arguments, 0), getString(arguments, 1));
             case "chunked_dec2hex":
                 return chunked_dec2hex(output);
             case "dec2hex":
@@ -596,21 +610,6 @@ public class Convertors {
                 return read_url(output, getString(arguments, 0), getBoolean(arguments, 1), getString(arguments, 2));
             case "system":
                 return system(output, getBoolean(arguments, 0), getString(arguments, 1));
-            case "loop_for":
-                return loop_for(variableMap, customTags, output, getInt(arguments, 0), getInt(arguments, 1), getInt(arguments, 2), getString(arguments, 3));
-            case "loop_letters_lower":
-                return loop_letters_lower(variableMap, customTags, output, getString(arguments, 0));
-            case "loop_letters_upper":
-                return loop_letters_upper(variableMap, customTags, output, getString(arguments, 0));
-            case "loop_numbers":
-                return loop_letters_numbers(variableMap, customTags, output, getString(arguments, 0));
-            case "sleep":
-                try {
-                    Thread.sleep(2000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                return "";
         }
     }
 
@@ -873,7 +872,8 @@ public class Convertors {
         for(String header : headers) {
             String[] nameValue = header.split(":");
             if(nameValue.length > 1) {
-                properties = properties.replace("$" + nameValue[0].trim(), nameValue[1].trim());
+                properties = properties.replace("$" + nameValue[0].trim(), nameValue[1].trim()
+                        + (nameValue.length > 2 ? ":" + String.join(":",  Arrays.copyOfRange(nameValue, 2, nameValue.length)) : ""));
             }
         }
         return properties;
@@ -888,6 +888,36 @@ public class Convertors {
             properties = properties.replace("$"+param.getName(), param.getValue());
         }
         return properties;
+    }
+
+    static String increment_var(HashMap<String, String> variableMap, int start, String variableName, Boolean enabled) {
+        if(!enabled) {
+          return "This tag is disabled until you enable it in the tag params to prevent unintentional variable declaration.";
+        }
+        int value = 0;
+        if(variableMap.containsKey(variableName)) {
+            value = Integer.parseInt(variableMap.get(variableName));
+        } else {
+            value = start;
+        }
+        String returnValue = String.valueOf(value);
+        variableMap.put(variableName, String.valueOf(value+1));
+        return returnValue;
+    }
+
+    static String decrement_var(HashMap<String, String> variableMap, int start, String variableName, Boolean enabled) {
+        if(!enabled) {
+          return "This tag is disabled until you enable it in the tag params to prevent unintentional variable declaration.";
+        }
+        int value = 0;
+        if(variableMap.containsKey(variableName)) {
+            value = Integer.parseInt(variableMap.get(variableName));
+        } else {
+            value = start;
+        }
+        String returnValue = String.valueOf(value);
+        variableMap.put(variableName, String.valueOf(value-1));
+        return returnValue;
     }
 
     static String context_body(Hackvertor hackvertor) {
@@ -1109,12 +1139,12 @@ public class Convertors {
 
     static String base32_encode(String str) {
         Base32 base32 = new Base32();
-        return new String(base32.encode(str.getBytes()));
+        return helpers.bytesToString(base32.encode(helpers.stringToBytes(str)));
     }
 
     static String decode_base32(String str) {
         Base32 base32 = new Base32();
-        return new String(base32.decode(str.getBytes()));
+        return helpers.bytesToString(base32.decode(str.getBytes()));
     }
 
     static String base58_encode(String str) {
@@ -1315,6 +1345,9 @@ public class Convertors {
         return String.join(" ", result);
     }
 
+    static String remove_output(String input) {
+        return "";
+    }
     static String capitalise(String str) {
         return StringUtils.capitalize(str);
     }
@@ -1471,7 +1504,42 @@ public class Convertors {
         return JsonEscape.escapeJson(str);
     }
 
+    static String unicode_alternatives(String input) {
+        StringBuilder output = new StringBuilder();
+        HashMap<Character,StringBuilder> cache = new HashMap<>();
+        int len = input.length();
+        for (int i = 0; i < len; i++) {
+            char originalChr = input.charAt(i);
+            if(input.codePointAt(i) > 0x7f) {
+                output.append(originalChr);
+                continue;
+            }
+            boolean foundVariant = false;
+            StringBuilder unicodeCharacters = new StringBuilder();
+            if(cache.containsKey(originalChr)) {
+                output.append(cache.get(originalChr));
+                continue;
+            }
+            for(int j=0x7f;j<0xffff;j++) {
+                String chr = new StringBuilder().appendCodePoint(j).toString();
+                String normalized = Normalizer.normalize(chr, Normalizer.Form.NFKC);
+                if(normalized.equals(String.valueOf(originalChr))) {
+                    unicodeCharacters.append(chr);
+                    foundVariant = true;
+                }
+            }
+            if(!foundVariant) {
+                output.append(originalChr);
+            } else {
+                output.append(unicodeCharacters);
+                cache.put(originalChr, unicodeCharacters);
+            }
+        }
+        return output.toString();
+    }
+
     static String d_quoted_printable(String str) {
+        str = str.replace("=\n","");
         QuotedPrintableCodec codec = new QuotedPrintableCodec();
         try {
             return codec.decode(str);
@@ -2005,6 +2073,22 @@ public class Convertors {
         return regexMatcher.appendTail(result).toString();
     }
 
+    static String if_regex(String str, String regex, String value) {
+        Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        Matcher regexMatcher = pattern.matcher(value);
+        if(regexMatcher.find()) {
+            return str;
+        }
+        return "";
+    }
+    static String if_not_regex(String str, String regex, String value) {
+        Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
+        Matcher regexMatcher = pattern.matcher(value);
+        if(!regexMatcher.find()) {
+            return str;
+        }
+        return "";
+    }
     static String chunked_dec2hex(String str) {
         try {
             return Integer.toHexString(Integer.parseInt(str));
@@ -3220,87 +3304,64 @@ public class Convertors {
         if (!tagCodeExecutionKey.equals(executionKey)) {
             return "Incorrect tag code execution key";
         }
-        V8 v8 = V8.createV8Runtime(null, String.valueOf(j2v8TempDirectory));
-        String declarations = "var input, output, argument1, argument2";
-        Set keySet = variableMap.keySet();
-        if(keySet.size() > 0) {
-            declarations += "," + keySet.stream().collect(Collectors.joining(","));
-        }
-        v8.executeScript(declarations);
-        v8.add("input", input);
-        v8.add("executionKey", executionKey);
-        JavaCallback callback = new JavaCallback() {
-            public String invoke(final V8Object receiver, final V8Array parameters) {
-                if (parameters.length() > 0) {
-                    Object input = parameters.get(0);
-                    String output = Convertors.weakConvert(variableMap, customTags, input.toString(), hackvertor);
-                    if (input instanceof Releasable) {
-                        ((Releasable) input).release();
-                    }
-                    return output;
-                }
-                return "";
-            }
-        };
-        v8.registerJavaMethod(callback, "convert");
-        for (Map.Entry<String, String> entry : variableMap.entrySet()) {
-            String name = entry.getKey();
-            String value = entry.getValue();
-            if (name.length() > 0) {
-                if(value.matches("^\\d+$")) {
-                    v8.add(name, Integer.parseInt(value));
-                } else {
-                    v8.add(name, value);
-                }
-            }
-        }
-        if (customTagOptions != null) {
-            JSONObject customTag = (JSONObject) customTagOptions.get("customTag");
-            int numberOfArgs = customTag.getInt("numberOfArgs");
-            if (numberOfArgs == 1) {
-                String name = customTag.getString("argument1");
-                String value = customTagOptions.get("param1").toString();
-                if(value.matches("^\\d+$")) {
-                    v8.add(name, Integer.parseInt(value));
-                } else {
-                    v8.add(name, value);
-                }
-            }
-            if (numberOfArgs == 2) {
-                String argument1Name = customTag.getString("argument1");
-                String param1Value = customTagOptions.get("param1").toString();
-                if(param1Value.matches("^\\d+$")) {
-                    v8.add(argument1Name, Integer.parseInt(param1Value));
-                } else {
-                    v8.add(argument1Name, param1Value);
-                }
-                String argument2Name = customTag.getString("argument2");
-                String param2Value = customTagOptions.get("param2").toString();
-                if(param2Value.matches("^\\d+$")) {
-                    v8.add(argument2Name, Integer.parseInt(param2Value));
-                } else {
-                    v8.add(argument2Name, param2Value);
-                }
-            }
-        }
         try {
-            if (code.endsWith(".js")) {
-                v8.executeScript(new String(Files.readAllBytes(Paths.get(code)), StandardCharsets.UTF_8));
-            } else {
-                v8.executeScript(code);
+            Context context = Context.newBuilder("js").allowIO(true).allowHostAccess(HostAccess.ALL).build();
+            context.getBindings("js").putMember("input", input);
+            context.getBindings("js").putMember("executionKey", executionKey);
+            context.getBindings("js").putMember("convert", (EmitReturn<String>) (tagInput) -> Convertors.weakConvert(variableMap, customTags, tagInput, hackvertor));
+
+            for (Map.Entry<String, String> entry : variableMap.entrySet()) {
+                String name = entry.getKey();
+                String value = entry.getValue();
+                if (name.length() > 0) {
+                    if (value.matches("^\\d+$") || value.matches("^0x[0-9a-fA-F]+$")) {
+                        context.getBindings("js").putMember(name, Integer.parseInt(value));
+                    } else {
+                        context.getBindings("js").putMember(name, value);
+                    }
+                }
             }
-            return v8.get("output").toString();
-        } catch (FileNotFoundException e) {
-            return "Unable to find JavaScript file:" + e;
-        } catch (NullPointerException e) {
-            return "Unable to get output. Make sure you have defined an output variable:" + e.toString();
-        } catch (AssertionError | Exception e) {
-            return "Unable to parse JavaScript:" + e;
-        } finally {
-            v8.shutdownExecutors(true);
+
+            if (customTagOptions != null) {
+                JSONObject customTag = (JSONObject) customTagOptions.get("customTag");
+                int numberOfArgs = customTag.getInt("numberOfArgs");
+                if (numberOfArgs == 1) {
+                    String name = customTag.getString("argument1");
+                    String value = customTagOptions.get("param1").toString();
+                    if (value.matches("^\\d+$") || value.matches("^0x[0-9a-fA-F]+$")) {
+                        context.getBindings("js").putMember(name, Integer.parseInt(value));
+                    } else {
+                        context.getBindings("js").putMember(name, value);
+                    }
+                }
+                if (numberOfArgs == 2) {
+                    String argument1Name = customTag.getString("argument1");
+                    String param1Value = customTagOptions.get("param1").toString();
+                    if (param1Value.matches("^\\d+$") || param1Value.matches("^0x[0-9a-fA-F]+$")) {
+                        context.getBindings("js").putMember(argument1Name, Integer.parseInt(param1Value));
+                    } else {
+                        context.getBindings("js").putMember(argument1Name, param1Value);
+                    }
+                    String argument2Name = customTag.getString("argument2");
+                    String param2Value = customTagOptions.get("param2").toString();
+                    if (param2Value.matches("^\\d+$") || param2Value.matches("^0x[0-9a-fA-F]+$")) {
+                        context.getBindings("js").putMember(argument2Name, Integer.parseInt(param2Value));
+                    } else {
+                        context.getBindings("js").putMember(argument2Name, param2Value);
+                    }
+                }
+            }
+
+            if (code.endsWith(".js")) {
+                return context.eval("js", new String(Files.readAllBytes(Paths.get(code)), StandardCharsets.UTF_8)).toString();
+            } else {
+                return context.eval("js", code).toString();
+            }
+
+        } catch (Exception e) {
+            return "Exception:" + e;
         }
     }
-
     static String system(String cmd, Boolean enabled, String executionKey) {
         if (!codeExecutionTagsEnabled) {
             return "Code execution tags are disabled by default. Use the menu bar to enable them.";
@@ -3353,6 +3414,12 @@ public class Convertors {
         return output.toString();
     }
 
+    @FunctionalInterface
+    public interface EmitReturn<T> {
+        @HostAccess.Export
+        String emit(T type);
+    }
+
     static String read_url(String input, String charset, Boolean enabled, String executionKey) {
         if(!charset.equalsIgnoreCase("UTF-8")) {
             input = convertCharset(input, charset);
@@ -3393,41 +3460,5 @@ public class Convertors {
         } catch (IOException e) {
             return "Unable to get response";
         }
-    }
-
-    static String loop_for(HashMap<String, String> variableMap, JSONArray customTags, String input, int start, int end, int increment, String variable) {
-        String output = "";
-        for (int i = start; i < end; i += increment) {
-            variableMap.put(variable, Integer.toString(i));
-            output += weakConvert(variableMap, customTags, input, null);
-        }
-        return output;
-    }
-
-    static String loop_letters_lower(HashMap<String, String> variableMap, JSONArray customTags, String input, String variable) {
-        String output = "";
-        for (char letter = 'a'; letter <= 'z'; letter++) {
-            variableMap.put(variable, Character.toString(letter));
-            output += weakConvert(variableMap, customTags, input, null);
-        }
-        return output;
-    }
-
-    static String loop_letters_upper(HashMap<String, String> variableMap, JSONArray customTags, String input, String variable) {
-        String output = "";
-        for (char letter = 'A'; letter <= 'Z'; letter++) {
-            variableMap.put(variable, Character.toString(letter));
-            output += weakConvert(variableMap, customTags, input, null);
-        }
-        return output;
-    }
-
-    static String loop_letters_numbers(HashMap<String, String> variableMap, JSONArray customTags, String input, String variable) {
-        String output = "";
-        for (char num = '0'; num <= '9'; num++) {
-            variableMap.put(variable, Character.toString(num));
-            output += weakConvert(variableMap, customTags, input, null);
-        }
-        return output;
     }
 }

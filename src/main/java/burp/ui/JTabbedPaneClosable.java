@@ -1,7 +1,6 @@
-package burp;
+package burp.ui;
 
 import javax.swing.*;
-import javax.swing.plaf.metal.MetalIconFactory;
 import java.awt.*;
 import java.awt.event.*;
 

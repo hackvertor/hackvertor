@@ -1,17 +1,25 @@
 package burp;
 
 import burp.parser.Element;
+import burp.ui.HackvertorInput;
+import burp.ui.MenuScroller;
+import com.github.javafaker.Bool;
 import org.apache.commons.lang3.StringUtils;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.Theme;
 
 import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
 import javax.swing.text.Highlighter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -21,7 +29,10 @@ import java.util.stream.Collectors;
 import static burp.BurpExtender.*;
 
 public class Utils {
-
+    public static String paramRegex = "^[a-zA-Z_]\\w{0,10}$";
+    public static String numberRegex = "^(?:0x[a-fA-F0-9]+|\\d+)$";
+    public static String tagNameRegex = "[^\\w]";
+    public static final int MAX_TAG_CODE_LEN = 1337;
     public static JScrollPane createButtons(List<Tag> tags, final JTextArea inputArea, Tag.Category displayCategory, String searchTag, Boolean regex) {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JScrollPane scrollFrame = new JScrollPane(panel, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -185,12 +196,65 @@ public class Utils {
         UIManager.put("RTextAreaUI.inputMap", null);
     }
 
-    public static void configureRSyntaxArea(RSyntaxTextArea area) {
+    public static void configureRSyntaxArea(HackvertorInput area) {
         area.setLineWrap(true);
         if(BurpExtender.isDarkTheme) {
             Utils.applyThemeToRSyntaxTextArea(area, "dark");
         }
         callbacks.customizeUiComponent(area);
-        area.setFont(new Font("Courier New", Font.PLAIN, area.getFont().getSize()));
+    }
+
+    public static void setMarginAndPadding(JComponent comp, int amount) {
+        Border margin = new EmptyBorder(amount,amount,amount,amount);
+        comp.setBorder(margin);
+    }
+
+    public static String sanitizeTagName(String tagName) {
+        return tagName.replaceAll(tagNameRegex, "");
+    }
+
+    public static Boolean validateParam(String param) {
+        return param.matches(paramRegex);
+    }
+
+    public static Boolean validateCode(String code) {
+        return !code.isEmpty() && code.length() <= MAX_TAG_CODE_LEN;
+    }
+
+    public static Boolean validateTagName(String code) {
+        code = sanitizeTagName(code);
+        return !code.isEmpty();
+    }
+
+    public static Boolean validateTagParamNumber(String tagParamNumber) {
+        return tagParamNumber.matches(numberRegex);
+    }
+
+    public static String getExtensionFromLanguage(String language) {
+        switch (language) {
+            case "Python":
+                return ".py";
+            case "JavaScript":
+                return ".js";
+            case "Java":
+                return ".java";
+            case "Groovy":
+                return ".groovy";
+            default:
+                return null;
+        }
+    }
+
+    public static void openUrl(String url) {
+        if(url.startsWith("https://")) {
+            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                try {
+                    Desktop.getDesktop().browse(new URI(url));
+                } catch (IOException ioException) {
+                } catch (URISyntaxException uriSyntaxException) {
+
+                }
+            }
+        }
     }
  }

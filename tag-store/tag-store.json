@@ -1,0 +1,29 @@
+[
+  {
+    "tagName": "base62_encode",
+    "description": "Performs a base62 encode.",
+    "author": "H1v0lt4g3",
+    "numberOfArgs": 0,
+    "language": "Python"
+  },
+  {
+    "tagName": "base62_decode",
+    "description": "Performs a base62 decode.",
+    "author": "H1v0lt4g3",
+    "numberOfArgs": 0,
+    "language": "Python"
+  },
+  {
+    "tagName": "hello_world",
+    "description": "An example tag that shows the JSON structure.",
+    "author": "hackvertor",
+    "numberOfArgs": 2,
+    "argument1": "strHello",
+    "argument1Type": "String",
+    "argument1Default": "Hello world",
+    "argument2": "intTest",
+    "argument2Type": "Number",
+    "argument2Default": "1337",
+    "language": "Python"
+  }
+]
