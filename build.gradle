@@ -1,4 +1,7 @@
-apply plugin: 'java'
+plugins {
+    id 'java'
+    id "org.javacc.javacc" version "3.0.2"
+}
 
 targetCompatibility = JavaVersion.VERSION_17
 sourceCompatibility = JavaVersion.VERSION_17
@@ -37,12 +40,14 @@ dependencies {
 sourceSets {
     main {
         java {
-            srcDir 'src'
-        }
-        resources {
-            srcDir 'src'
+            srcDir compileJavacc.outputDirectory
         }
     }
+}
+
+compileJavacc {
+    inputDirectory = file('src/main/javacc')
+    include '**/*.java'
 }
 
 jar{
