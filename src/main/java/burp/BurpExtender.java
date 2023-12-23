@@ -1733,4 +1733,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
     public Component getUiComponent() {
         return extensionPanel;
     }
+
+    //Used in tests
+    public static void setHelpers(IExtensionHelpers helpers) {
+        BurpExtender.helpers = helpers;
+    }
 }

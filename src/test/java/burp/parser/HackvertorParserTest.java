@@ -1,6 +1,8 @@
 package burp.parser;
 import org.junit.jupiter.api.Test;
 
+import java.util.LinkedList;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class HackvertorParserTest {
