@@ -25,4 +25,15 @@ public class ConvertorTests {
         String converted = hackvertor.convert(spaceInContent, hackvertor);
         assertEquals("IA==", converted);
     }
+
+    //Test for #92.
+    @Test
+    void testSpaceInAttribute(){
+        String plaintext = "<@ascii2hex('')>abcd<@/ascii2hex>";
+        assertEquals("61626364", hackvertor.convert(plaintext, hackvertor));
+        plaintext = "<@ascii2hex(' ')>abcd<@/ascii2hex>";
+        assertEquals("61 62 63 64", hackvertor.convert(plaintext, hackvertor));
+        plaintext = "<@ascii2hex('  ')>abcd<@/ascii2hex>";
+        assertEquals("61  62  63  64", hackvertor.convert(plaintext, hackvertor));
+    }
 }
