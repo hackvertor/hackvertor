@@ -11,6 +11,7 @@ import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 
 import javax.swing.*;
 import javax.swing.event.*;
+import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import javax.swing.text.JTextComponent;
 import javax.swing.undo.CannotRedoException;
@@ -24,6 +25,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 import static burp.BurpExtender.*;
 import static burp.Convertors.*;
@@ -155,25 +158,40 @@ public class HackvertorPanel extends JPanel {
             inputLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
         }
         DocumentListener documentListener = new DocumentListener() {
+            LinkedBlockingQueue queue = new LinkedBlockingQueue<>(1);
+            ExecutorService executorService = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
+                    queue, new ThreadPoolExecutor.DiscardOldestPolicy());
+
+            public void scheduleUpdate(){
+                executorService.submit(() -> {
+                    String output = hackvertor.convert(inputArea.getText(), null);
+                    try {
+                        outputArea.getDocument().remove(0, outputArea.getDocument().getLength());
+                        outputArea.getDocument().insertString(0, output, null);
+                    } catch (BadLocationException e) {
+                        e.printStackTrace();
+                    }
+                    outputArea.setCaretPosition(0);
+                });
+            }
+
+
             public void changedUpdate(DocumentEvent documentEvent) {
-                updateLen(documentEvent);
-                outputArea.setText(hackvertor.convert(inputArea.getText(), null));
-                outputArea.setCaretPosition(0);
+                updateLen();
+                scheduleUpdate();
             }
 
             public void insertUpdate(DocumentEvent documentEvent) {
-                updateLen(documentEvent);
-                outputArea.setText(hackvertor.convert(inputArea.getText(), null));
-                outputArea.setCaretPosition(0);
+                updateLen();
+                scheduleUpdate();
             }
 
             public void removeUpdate(DocumentEvent documentEvent) {
-                updateLen(documentEvent);
-                outputArea.setText(hackvertor.convert(inputArea.getText(), null));
-                outputArea.setCaretPosition(0);
+                updateLen();
+                scheduleUpdate();
             }
 
-            private void updateLen(DocumentEvent documentEvent) {
+            private void updateLen() {
                 int len = inputArea.getText().length();
                 int realLen = calculateRealLen(inputArea.getText());
                 inputLenLabel.setText("" + len);

@@ -1,7 +1,10 @@
-apply plugin: 'java'
+plugins {
+    id 'java'
+    id "org.javacc.javacc" version "3.0.2"
+}
 
-targetCompatibility = 1.8
-sourceCompatibility = 1.8
+targetCompatibility = JavaVersion.VERSION_17
+sourceCompatibility = JavaVersion.VERSION_17
 
 compileJava.options.encoding = 'UTF-8'
 compileTestJava.options.encoding = 'UTF-8'
@@ -37,12 +40,14 @@ dependencies {
 sourceSets {
     main {
         java {
-            srcDir 'src'
-        }
-        resources {
-            srcDir 'src'
+            srcDir compileJavacc.outputDirectory
         }
     }
+}
+
+compileJavacc {
+    inputDirectory = file('src/main/javacc')
+    include '**/*.java'
 }
 
 jar{
@@ -60,4 +65,8 @@ jar{
 
 tasks.withType(Jar) {
     destinationDirectory = file("$rootDir/releases/")
+}
+
+test {
+    useJUnitPlatform()
 }
