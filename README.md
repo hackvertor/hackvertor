@@ -3,10 +3,10 @@
 # Hackvertor
 
 Hackvertor is a tag based conversion tool written in Java implemented as a Burp Suite extension. Tags are constructed as follows:
-<@base64_0><@/base64_0> the @ symbol is used as an identifier that it's a Hackvertor tag followed by the name of the tag in this case base64, the name is then followed by an underscore and a unique tag number.
+<@base64><@/base64> the @ symbol is used as an identifier that it's a Hackvertor tag followed by the name of the tag in this case base64.
 
-Tags also support arguments. The find tag allows you to find a string by regex and has parenthesis after the unique tag number:
-<@find_0("\\w")>abc<@/find_0> this indicates it supports arguments. The argument in this case is the regex string to find on the text inbetween the tags. Hackvertor allows you to use two types of arguments either strings (double, single) or numbers (including hex).
+Tags also support arguments. The find tag allows you to find a string by regex and has parenthesis after the tag name:
+<@find("\\w")>abc<@/find> this indicates it supports arguments. The argument in this case is the regex string to find on the text in-between the tags. Hackvertor allows you to use three types of arguments either strings (double, single), boolean (true, false) or numbers (including hex).
 
 # Changelog
 
