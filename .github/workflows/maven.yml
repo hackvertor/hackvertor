@@ -41,4 +41,5 @@ jobs:
         uses: hackvertor/release-action@v1.12.0
         with:
           allowUpdates: true
+          name: 'latest'
           artifacts: "releases/*.jar"
