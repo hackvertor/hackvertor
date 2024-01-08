@@ -404,6 +404,10 @@ public class Convertors {
                 return lowercase(output);
             case "unique":
                 return unique(output);
+            case "space":
+                return " ";
+            case "newline":
+                return "\n";
             case "remove_output":
                 return remove_output(output);
             case "capitalise":
