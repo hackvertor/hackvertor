@@ -25,5 +25,12 @@
     "argument2Type": "Number",
     "argument2Default": "1337",
     "language": "Python"
+  },
+  {
+    "tagName": "ean13",
+    "description": "EAN13 checksum",
+    "author": "pentagridsec",
+    "numberOfArgs": 0,
+    "language": "Python"
   }
 ]

@@ -1,0 +1,1 @@
+z=input;y=z.replace('.','');output=z+str(10-(sum([3*int(x) for x in y[1:][::-2]])+sum([int(x) for x in y[::-1][1::2]]))%10)[-1]

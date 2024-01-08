@@ -13,6 +13,7 @@ Tags also support arguments. The find tag allows you to find a string by regex a
 **1.8.10 2024-01-08**
 
 - Added new line and space tags
+- Added ean13 tag to the tag store
 
 **1.8.9 2023-12-22**
 
