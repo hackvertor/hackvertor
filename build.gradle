@@ -1,7 +1,10 @@
-apply plugin: 'java'
+plugins {
+    id 'java'
+    id "org.javacc.javacc" version "3.0.2"
+}
 
-targetCompatibility = 1.8
-sourceCompatibility = 1.8
+targetCompatibility = JavaVersion.VERSION_17
+sourceCompatibility = JavaVersion.VERSION_17
 
 compileJava.options.encoding = 'UTF-8'
 compileTestJava.options.encoding = 'UTF-8'
@@ -25,23 +28,26 @@ dependencies {
     implementation 'bsf:bsf:2.4.0'
     implementation 'org.apache-extras.beanshell:bsh:2.0b6'
     implementation 'org.codehaus.groovy:groovy-all:3.0.16'
-    implementation 'com.eclipsesource.j2v8:j2v8_macosx_x86_64:4.6.0'
     implementation 'com.github.javafaker:javafaker:1.0.2'
-    implementation 'com.fifesoft:rsyntaxtextarea:3.3.1'
+    implementation 'com.fifesoft:rsyntaxtextarea:3.3.4'
     implementation 'com.fifesoft:autocomplete:3.3.1'
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
+    implementation 'org.graalvm.js:js:23.0.2'
+    implementation 'org.graalvm.js:js-scriptengine:23.1.1'
 }
 
 sourceSets {
     main {
         java {
-            srcDir 'src'
-        }
-        resources {
-            srcDir 'src'
+            srcDir compileJavacc.outputDirectory
         }
     }
+}
+
+compileJavacc {
+    inputDirectory = file('src/main/javacc')
+    include '**/*.java'
 }
 
 jar{
@@ -59,4 +65,8 @@ jar{
 
 tasks.withType(Jar) {
     destinationDirectory = file("$rootDir/releases/")
+}
+
+test {
+    useJUnitPlatform()
 }

@@ -1,0 +1,1 @@
+output = input + strHello + str(intTest)
