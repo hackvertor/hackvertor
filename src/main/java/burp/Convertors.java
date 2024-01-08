@@ -2607,7 +2607,7 @@ public class Convertors {
     static String regex_replace(String str, String find, String replace) {
         String output = "";
         try {
-            output = str.replaceAll(find, replace.replace("\\", "\\\\").replace("$", "\\$"));
+            output = str.replaceAll(find, replace.replace("\\", "\\\\"));
         } catch (PatternSyntaxException e) {
             stderr.println(e.getMessage());
         }
