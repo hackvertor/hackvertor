@@ -32,5 +32,12 @@
     "author": "pentagridsec",
     "numberOfArgs": 0,
     "language": "Python"
-  }
+  },
+  {
+    "tagName": "ip",
+    "description": "Generates a random IP",
+    "author": "Techbrunch",
+    "numberOfArgs": 0,
+    "language": "JavaScript"
+ }
 ]
