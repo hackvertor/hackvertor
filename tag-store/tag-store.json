@@ -39,5 +39,15 @@
     "author": "Techbrunch",
     "numberOfArgs": 0,
     "language": "JavaScript"
+  },
+  {
+    "argument1Default": "4",
+    "author": "Techbrunch",
+    "argument1Type": "String",
+    "numberOfArgs": 1,
+    "argument1": "version",
+    "description": "Generates a UUID",
+    "language": "Python",
+    "tagName": "uuid"
  }
 ]
