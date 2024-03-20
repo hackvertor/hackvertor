@@ -34,6 +34,13 @@
     "language": "Python"
   },
   {
+    "tagName": "ip",
+    "description": "Generates a random IP",
+    "author": "Techbrunch",
+    "numberOfArgs": 0,
+    "language": "JavaScript"
+  },
+  {
     "argument1Default": "4",
     "author": "Techbrunch",
     "argument1Type": "String",
