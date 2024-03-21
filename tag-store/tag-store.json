@@ -30,7 +30,10 @@
     "tagName": "ean13",
     "description": "EAN13 checksum",
     "author": "pentagridsec",
-    "numberOfArgs": 0,
+    "numberOfArgs": 1,
+    "argument1": "append",
+    "argument2Type": "Number",
+    "argument2Default": "1",
     "language": "Python"
   }
 ]
