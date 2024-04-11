@@ -37,6 +37,13 @@
     "language": "Python"
   },
   {
+    "tagName": "totp",
+    "description": "Create Time-based OTPs on the fly, secret as input",
+    "author": "pentagridsec",
+    "numberOfArgs": 0,
+    "language": "Python"
+  },
+  {
     "tagName": "ip",
     "description": "Generates a random IP",
     "author": "Techbrunch",
