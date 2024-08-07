@@ -51,6 +51,76 @@
     "argument1": "version",
     "description": "Generates a UUID",
     "language": "Python",
-    "tagName": "uuid"
- }
+    "tagName": "uuid",
+    "argument2": "notused",
+    "argument2Type": "String",
+    "argument2Default": ""
+ },
+  {
+    "argument1Default": "0x100",
+    "author": "hackvertor",
+    "argument1Type": "Number",
+    "numberOfArgs": 1,
+    "argument1": "mask",
+    "description": "This tag creates a unicode overflow.",
+    "language": "JavaScript",
+    "tagName": "unicode_overflow",
+    "argument2": "notused",
+    "argument2Type": "String",
+    "argument2Default": ""
+  },
+  {
+    "argument1Default": "0xfff",
+    "author": "hackvertor",
+    "argument1Type": "Number",
+    "numberOfArgs": 1,
+    "argument1": "max",
+    "description": "This tag created multiple unicode overflows",
+    "language": "JavaScript",
+    "tagName": "unicode_overflow_variations",
+    "argument2": "notused",
+    "argument2Type": "String",
+    "argument2Default": ""
+  },
+  {
+    "description": "Encodes Q encoded word",
+    "language": "JavaScript",
+    "tagName": "encoded_word_encode",
+    "author": "hackvertor",
+    "numberOfArgs": 0
+  },
+  {
+    "description": "Decode Q encoded word",
+    "language": "JavaScript",
+    "tagName": "encoded_word_decode",
+    "author": "hackvertor",
+    "numberOfArgs": 0
+  },
+  {
+    "description": "UTF-7 email encoder",
+    "language": "Groovy",
+    "tagName": "email_utf7",
+    "author": "hackvertor",
+    "numberOfArgs": 0
+  },
+  {
+    "argument1Default": "iso-8859-1",
+    "author": "hackvertor",
+    "argument1Type": "String",
+    "numberOfArgs": 1,
+    "argument1": "charset",
+    "description": "Creates encoded word meta data",
+    "language": "JavaScript",
+    "tagName": "encode_word_meta",
+    "argument2": "notused",
+    "argument2Type": "String",
+    "argument2Default": ""
+  },
+  {
+    "description": "Decodes email based UTF-7",
+    "language": "Groovy",
+    "tagName": "email_utf7_decode",
+    "author": "hackvertor",
+    "numberOfArgs": 0
+  }
 ]

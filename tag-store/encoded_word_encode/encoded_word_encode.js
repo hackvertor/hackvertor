@@ -1,0 +1,1 @@
+output = input.split('').map(chr => '=' + chr.codePointAt().toString(16).padStart(2, '0')).join('')
