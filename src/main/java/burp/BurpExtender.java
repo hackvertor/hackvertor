@@ -1463,6 +1463,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
     public int[] getHeaderOffsets(byte[] request, String header) {
         int i = 0;
         int end = request.length;
+        while (i < end && request[i++] != '\n') {
+        }
         while (i < end) {
             int line_start = i;
             while (i < end && request[i++] != ':') {
