@@ -33,8 +33,8 @@ dependencies {
     implementation 'com.fifesoft:autocomplete:3.3.1'
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
-    implementation 'org.graalvm.js:js:23.0.2'
-    implementation 'org.graalvm.js:js-scriptengine:23.1.1'
+    implementation 'org.graalvm.js:js-community:24.1.1'
+    implementation 'org.graalvm.js:js-scriptengine:24.1.1'
 }
 
 sourceSets {

@@ -218,7 +218,7 @@ public class Utils {
     }
 
     public static Boolean validateCode(String code) {
-        return !code.isEmpty() && code.length() <= MAX_TAG_CODE_LEN;
+        return !code.isEmpty();
     }
 
     public static Boolean validateTagName(String code) {

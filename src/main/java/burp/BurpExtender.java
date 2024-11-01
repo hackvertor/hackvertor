@@ -206,7 +206,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.8.10");
+	            	stdout.println("Hackvertor v1.8.11");
                     loadCustomTags();
                     loadGlobalVariables();
                     registerPayloadProcessors();
@@ -843,7 +843,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                     return;
                 }
                 if (!Utils.validateCode(code)) {
-                    errorMessage.setText("Please enter some code. Code cannot be blank or exceed " + Utils.MAX_TAG_CODE_LEN + " bytes");
+                    errorMessage.setText("Please enter some code.");
                     return;
                 }
                 if (argument1Combo.getSelectedIndex() > 0 && !Utils.validateParam(argument1)) {
@@ -999,7 +999,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 int numberOfArgs = tag.getInt("numberOfArgs");
                 String language = tag.getString("language");
                 if (!Utils.validateCode(code)) {
-                    alert("Invalid code unable to install tag. Code cannot be blank or exceed " + Utils.MAX_TAG_CODE_LEN + " bytes");
+                    alert("Invalid code unable to install tag.");
                     return;
                 }
                 String argument1 = null;
@@ -1228,7 +1228,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                                 for(int i=0;i<tags.length();i++) {
                                     JSONObject tag = tags.getJSONObject(i);
                                     if (!Utils.validateCode(tag.getString("code"))) {
-                                        alert("Invalid code unable to install tag. Code cannot be blank or exceed " + Utils.MAX_TAG_CODE_LEN + " bytes");
+                                        alert("Invalid code unable to install tag.");
                                         return;
                                     }
                                     String argument1 = null;
