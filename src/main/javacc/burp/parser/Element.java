@@ -32,7 +32,7 @@ public class Element {
                 for (int i = 0; i < arguments.size(); i++) {
                     if(i != 0) sb.append(",");
                     String argument = arguments.get(i);
-                    if((argument.startsWith("-") && StringUtils.isNumeric(argument.substring(1))) || StringUtils.isNumeric(argument) || argument.equals("true") || argument.equals("false"))
+                    if((argument.startsWith("0x") && argument.matches("^0x[0-9a-fA-F]+$")) || (argument.startsWith("-") && StringUtils.isNumeric(argument.substring(1))) || StringUtils.isNumeric(argument) || argument.equals("true") || argument.equals("false"))
                         sb.append(argument);
                     else
                         sb.append("'" + JavaEscape.escapeJava(argument) + "'");

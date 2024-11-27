@@ -3,10 +3,59 @@
 # Hackvertor
 
 Hackvertor is a tag based conversion tool written in Java implemented as a Burp Suite extension. Tags are constructed as follows:
-<@base64_0><@/base64_0> the @ symbol is used as an identifier that it's a Hackvertor tag followed by the name of the tag in this case base64, the name is then followed by an underscore and a unique tag number.
+<@base64><@/base64> the @ symbol is used as an identifier that it's a Hackvertor tag followed by the name of the tag in this case base64.
 
-Tags also support arguments. The find tag allows you to find a string by regex and has parenthesis after the unique tag number:
-<@find_0("\\w")>abc<@/find_0> this indicates it supports arguments. The argument in this case is the regex string to find on the text inbetween the tags. Hackvertor allows you to use two types of arguments either strings (double, single) or numbers (including hex).
+Tags also support arguments. The find tag allows you to find a string by regex and has parenthesis after the tag name:
+<@find("\\w")>abc<@/find> this indicates it supports arguments. The argument in this case is the regex string to find on the text in-between the tags. Hackvertor allows you to use three types of arguments either strings (double, single), boolean (true, false) or numbers (including hex).
+
+# Changelog
+
+**1.8.10 2024-01-08**
+
+- Added new line and space tags
+- Added ean13 tag to the tag store
+- Allowed regex replace to use capture groups
+
+**1.8.9 2023-12-22**
+
+- Fixed #79 No contextual menu entries for requests in Proxy History and Sitemap 
+
+**1.8.8  2023-12-20**
+
+- Added remove output tag
+- Added load from json file
+- Added save to json file
+
+**1.8.6  2023-12-20**
+
+- Added line numbers to custom tag editor
+
+**1.8.6  2023-12-19**
+
+- Added full support for JavaScript in custom tags
+
+**1.8.5  2023-12-18**
+
+- Fixed bug where hex default value for custom tag would be quoted
+
+**1.8.4  2023-11-1**
+
+- Continued improvements on create tag window.
+
+**1.8.3  2023-11-1**
+
+- Disabled install button when tag is installed
+- Started work on create new tag to make more room
+
+**1.8.2  2023-10-31**
+- Fixed editing tags without producing duplicates
+- Added export to tag store
+
+**1.8.1  2023-10-30**
+- Fixed bug when installing a tag from the tag store with the same name.
+
+**1.8  2023-10-26**
+- Implemented tag store. Installable tags from Github.
 
 # Installation
 

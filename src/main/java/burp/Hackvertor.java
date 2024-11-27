@@ -37,6 +37,19 @@ public class Hackvertor {
         this.request = request;
     }
 
+    public boolean hasCustomTag(String tagName) {
+        tagName = "_" + tagName;
+        JSONArray customTags = this.getCustomTags();
+        int len = customTags.length();
+        for (int i = 0; i < len; i++) {
+            JSONObject customTag = (JSONObject) customTags.get(i);
+            if (tagName.equals(customTag.getString("tagName"))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static String removeHackvertorTags(String input) {
         try {
             input = HackvertorParser.parse(input).stream()
@@ -175,6 +188,7 @@ public class Hackvertor {
         tags.add(new Tag(Tag.Category.Encode, "powershell", true, "powershell(String cmd)"));
         tags.add(new Tag(Tag.Category.Encode, "quoted_printable", true, "quoted_printable(String str)"));
         tags.add(new Tag(Tag.Category.Encode, "js_string", true, "js_string(String str)"));
+        tags.add(new Tag(Tag.Category.Encode, "unicode_alternatives", true, "unicode_alteratives(String str)"));
         tags.add(new Tag(Tag.Category.Decode, "d_saml", true, "d_saml(String str)"));
         tags.add(new Tag(Tag.Category.Decode, "auto_decode", true, "auto_decode(String str)"));
         tags.add(new Tag(Tag.Category.Decode, "auto_decode_no_decrypt", true, "auto_decode_no_decrypt(String str)"));
@@ -242,6 +256,8 @@ public class Hackvertor {
         tags.add(new Tag(Tag.Category.String, "reverse", true, "reverse(String str)"));
         tags.add(new Tag(Tag.Category.String, "length", true, "len(String str)"));
         tags.add(new Tag(Tag.Category.String, "unique", true, "unique(String str)"));
+        tags.add(new Tag(Tag.Category.String, "space", false, "space()"));
+        tags.add(new Tag(Tag.Category.String, "newline", false, "newline()"));
         tag = new Tag(Tag.Category.String, "find", true, "find(String str, String find, int group)");
         tag.argument1 = new TagArgument("string", "find");
         tag.argument2 = new TagArgument("int", "-1");
@@ -265,6 +281,7 @@ public class Hackvertor {
         tag.argument1 = new TagArgument("string", "split char");
         tag.argument2 = new TagArgument("string", "join char");
         tags.add(tag);
+        tags.add(new Tag(Tag.Category.String, "remove_output", true, "remove_output(String str)"));
 
         Faker faker = new Faker();
         generateFakeTags(new Object[]{

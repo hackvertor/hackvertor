@@ -1,0 +1,1 @@
+output = "=?"+charset+"?q?"+input+"?=";

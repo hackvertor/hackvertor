@@ -8,11 +8,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.fife.ui.autocomplete.*;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import javax.swing.*;
 import javax.swing.event.*;
+import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import javax.swing.text.JTextComponent;
 import javax.swing.undo.CannotRedoException;
@@ -26,6 +25,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static burp.BurpExtender.*;
@@ -158,25 +158,40 @@ public class HackvertorPanel extends JPanel {
             inputLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
         }
         DocumentListener documentListener = new DocumentListener() {
+            LinkedBlockingQueue queue = new LinkedBlockingQueue<>(1);
+            ExecutorService executorService = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
+                    queue, new ThreadPoolExecutor.DiscardOldestPolicy());
+
+            public void scheduleUpdate(){
+                executorService.submit(() -> {
+                    String output = hackvertor.convert(inputArea.getText(), null);
+                    try {
+                        outputArea.getDocument().remove(0, outputArea.getDocument().getLength());
+                        outputArea.getDocument().insertString(0, output, null);
+                    } catch (BadLocationException e) {
+                        e.printStackTrace();
+                    }
+                    outputArea.setCaretPosition(0);
+                });
+            }
+
+
             public void changedUpdate(DocumentEvent documentEvent) {
-                updateLen(documentEvent);
-                outputArea.setText(hackvertor.convert(inputArea.getText(), null));
-                outputArea.setCaretPosition(0);
+                updateLen();
+                scheduleUpdate();
             }
 
             public void insertUpdate(DocumentEvent documentEvent) {
-                updateLen(documentEvent);
-                outputArea.setText(hackvertor.convert(inputArea.getText(), null));
-                outputArea.setCaretPosition(0);
+                updateLen();
+                scheduleUpdate();
             }
 
             public void removeUpdate(DocumentEvent documentEvent) {
-                updateLen(documentEvent);
-                outputArea.setText(hackvertor.convert(inputArea.getText(), null));
-                outputArea.setCaretPosition(0);
+                updateLen();
+                scheduleUpdate();
             }
 
-            private void updateLen(DocumentEvent documentEvent) {
+            private void updateLen() {
                 int len = inputArea.getText().length();
                 int realLen = calculateRealLen(inputArea.getText());
                 inputLenLabel.setText("" + len);
@@ -407,65 +422,65 @@ public class HackvertorPanel extends JPanel {
         buttonsPanel.add(selectOutputButton);
         buttonsPanel.add(pasteInsideButton);
         buttonsPanel.add(convertButton);
-        GridBagConstraints c = createConstraints(1, 0, 1);
+        GridBagConstraints c = createConstraints(1, 0, 1, GridBagConstraints.NONE, 0, 0, 0, 0);
         c.anchor = FIRST_LINE_END;
         c.ipadx = 20;
         c.ipady = 20;
         topBar.add(logoLabel, c);
-        c = createConstraints(0, 0, 1);
+        c = createConstraints(0, 0, 1, GridBagConstraints.NONE, 0, 0, 0, 0);
         c.anchor = FIRST_LINE_START;
         c.fill = BOTH;
         c.weightx = 1.0;
         c.weighty = 1;
         topBar.add(tabs, c);
-        c = createConstraints(0, 0, 2);
+        c = createConstraints(0, 0, 2, GridBagConstraints.NONE, 0, 0, 0, 0);
         c.anchor = FIRST_LINE_START;
         c.fill = BOTH;
         c.weightx = 1.0;
         this.add(topBar, c);
         JPanel inputLabelsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        c = createConstraints(0, 0, 1);
+        c = createConstraints(0, 0, 1, GridBagConstraints.NONE, 0, 0, 0, 0);
         c.insets = new Insets(5, 5, 5, 5);
         c.anchor = GridBagConstraints.WEST;
         inputLabelsPanel.add(inputLabel, c);
-        c = createConstraints(1, 1, 1);
+        c = createConstraints(1, 1, 1, GridBagConstraints.NONE, 0, 0, 0, 0);
         c.insets = new Insets(5, 5, 5, 5);
         c.anchor = GridBagConstraints.WEST;
         inputLabelsPanel.add(inputLenLabel, c);
-        c = createConstraints(2, 1, 1);
+        c = createConstraints(2, 1, 1, GridBagConstraints.NONE, 0, 0, 0, 0);
         c.insets = new Insets(5, 5, 5, 5);
         c.anchor = GridBagConstraints.WEST;
         inputLabelsPanel.add(inputRealLenLabel, c);
-        this.add(inputLabelsPanel, createConstraints(0, 2, 1));
-        c = createConstraints(0, 3, 1);
+        this.add(inputLabelsPanel, createConstraints(0, 2, 1, GridBagConstraints.NONE, 0, 0, 0, 0));
+        c = createConstraints(0, 3, 1, GridBagConstraints.NONE, 0, 0, 0, 0);
         c.anchor = FIRST_LINE_START;
         c.fill = BOTH;
         c.weightx = 0.5;
         c.weighty = 1.0;
         this.add(inputScroll, c);
         JPanel outputLabelsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        c = createConstraints(0, 1, 1);
+        c = createConstraints(0, 1, 1, GridBagConstraints.NONE, 0, 0, 0, 0);
         c.insets = new Insets(5, 5, 5, 5);
         outputLabelsPanel.add(outputLabel, c);
-        c = createConstraints(1, 1, 1);
+        c = createConstraints(1, 1, 1, GridBagConstraints.NONE, 0, 0, 0, 0);
         c.insets = new Insets(5, 5, 5, 5);
         outputLabelsPanel.add(outputLenLabel, c);
-        c = createConstraints(2, 1, 1);
+        c = createConstraints(2, 1, 1, GridBagConstraints.NONE, 0, 0, 0, 0);
         c.insets = new Insets(5, 5, 5, 5);
         outputLabelsPanel.add(outputRealLenLabel, c);
-        this.add(outputLabelsPanel, createConstraints(1, 2, 1));
-        c = createConstraints(1, 3, 1);
+        this.add(outputLabelsPanel, createConstraints(1, 2, 1, GridBagConstraints.NONE, 0, 0, 0, 0));
+        c = createConstraints(1, 3, 1, GridBagConstraints.NONE, 0, 0, 0, 0);
         c.anchor = FIRST_LINE_START;
         c.fill = BOTH;
         c.weightx = 0.5;
         c.weighty = 1.0;
         this.add(outputScroll, c);
-        c = createConstraints(0, 4, 2);
+        c = createConstraints(0, 4, 2, GridBagConstraints.NONE, 0, 0, 0, 0);
         c.anchor = GridBagConstraints.SOUTH;
         c.fill = BOTH;
         c.weightx = 1.0;
         this.add(buttonsPanel, c);
-        c = createConstraints(0, 5, 2);
+        c = createConstraints(0, 5, 2, GridBagConstraints.NONE, 0, 0, 0, 0);
         c.insets = new Insets(5, 5, 5, 5);
         c.anchor = LAST_LINE_START;
         c.fill = BOTH;
