@@ -36,7 +36,7 @@
     "argument1Default": "1",
     "argument2": "notused",
     "argument2Type": "String",
-    "argument2Default": ""
+    "argument2Default": "",
     "language": "Python"
   },
   {
