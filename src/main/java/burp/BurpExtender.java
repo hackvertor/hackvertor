@@ -6,8 +6,6 @@ import burp.ui.HackvertorMessageTab;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.fife.ui.rtextarea.RTextScrollPane;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -17,7 +15,6 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.event.*;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.text.JTextComponent;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
@@ -27,10 +24,8 @@ import java.awt.event.*;
 import java.io.*;
 import java.net.*;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.Security;
@@ -187,11 +182,6 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         stdout = new PrintWriter(callbacks.getStdout(), true);
         hvShutdown = false;
         tagCodeExecutionKey = generateRandomCodeExecutionKey();
-        try {
-            ngrams = new Ngrams("/quadgrams.txt");
-        } catch (IOException e) {
-            stderr.println(e.getMessage());
-        }
         callbacks.setExtensionName("Hackvertor");
         callbacks.registerContextMenuFactory(this);
         callbacks.registerHttpListener(this);
@@ -206,7 +196,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.8.11");
+	            	stdout.println("Hackvertor v1.8.12");
                     loadCustomTags();
                     loadGlobalVariables();
                     registerPayloadProcessors();
@@ -541,13 +531,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         createTagPanel.add(tagLabel, createConstraints(0, 0, 1, GridBagConstraints.BOTH, 1, 0, 5, 5));
         createTagPanel.add(tagNameField, createConstraints(1, 0, 1, GridBagConstraints.BOTH, 1, 0, 5, 5));
         JLabel languageLabel = new JLabel("Select language");
-        JTextComponent.removeKeymap("RTextAreaKeymap");
         HackvertorInput codeArea = new HackvertorInput();
-        Utils.fixRSyntaxAreaBurp();
-        Utils.configureRSyntaxArea(codeArea);
-        codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT);
-        RTextScrollPane codeScroll = new RTextScrollPane(codeArea);
-        codeScroll.setLineNumbersEnabled(true);
+        Utils.configureTextArea(codeArea);
+        JScrollPane codeScroll = new JScrollPane(codeArea);
         final int[] changes = {0};
         codeArea.getDocument().addDocumentListener(new DocumentListener() {
 
@@ -583,21 +569,6 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 code += comment + "output = convert(\"<@customTag('\"+executionKey+\"')>\"+input+\"<@/customTag>\")";
                 codeArea.setText(code);
                 changes[0] = 0;
-
-                switch(index) {
-                    case 0:
-                        codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT);
-                    break;
-                    case 1:
-                        codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_PYTHON);
-                    break;
-                    case 2:
-                        codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
-                    break;
-                    case 3:
-                        codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_GROOVY);
-                    break;
-                }
             }
         });
         languageCombo.addItem("JavaScript");
@@ -948,13 +919,10 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         Utils.setMarginAndPadding(closeButton, 10);
         Utils.setMarginAndPadding(installButton, 10);
         optionsPanel.add(title, BorderLayout.NORTH);
-        JTextComponent.removeKeymap("RTextAreaKeymap");
         HackvertorInput codeArea = new HackvertorInput();
         codeArea.setEditable(false);
         codeArea.setText("Code goes here");
-        Utils.fixRSyntaxAreaBurp();
-        Utils.configureRSyntaxArea(codeArea);
-        codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT);
+        Utils.configureTextArea(codeArea);
         JScrollPane codeScroller = new JScrollPane(codeArea);
         Utils.setMarginAndPadding(codeScroller, 10);
         JTextArea description = new JTextArea("Description goes here");
@@ -1070,21 +1038,6 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
             title.setText(tagName);
             description.setText(storeTags.get(tagName).getString("description"));
             String language = storeTags.get(tagName).getString("language");
-
-            switch(language) {
-                case "JavaScript":
-                    codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT);
-                    break;
-                case "Python":
-                    codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_PYTHON);
-                    break;
-                case "Java":
-                    codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
-                    break;
-                case "Groovy":
-                    codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_GROOVY);
-                    break;
-            }
             codeArea.setTabSize(3);
             codeArea.setText(code);
             codeArea.setCaretPosition(0);
@@ -1443,6 +1396,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
 
     public void extensionUnloaded() {
         hvShutdown = true;
+        ngrams = null;
         burpMenuBar.remove(hvMenuBar);
         burpMenuBar.revalidate();
         burpMenuBar.repaint();

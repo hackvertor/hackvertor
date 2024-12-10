@@ -2221,7 +2221,7 @@ public class Convertors {
     }
 
     public static String ascii2hex(String str, String separator) {
-        String output = "";
+        StringBuilder output = new StringBuilder();
         String hex = "";
         for (int i = 0; i < str.length(); i++) {
             try {
@@ -2229,15 +2229,15 @@ public class Convertors {
                 if (hex.length() % 2 != 0) {
                     hex = "0" + hex;
                 }
-                output += hex;
-                if (separator.length() > 0 && i < str.length() - 1) {
-                    output += separator;
+                output.append(hex);
+                if (!separator.isEmpty() && i < str.length() - 1) {
+                    output.append(separator);
                 }
             } catch (NumberFormatException e) {
                 stderr.println(e.getMessage());
             }
         }
-        return output;
+        return output.toString();
     }
 
     static String ascii2reverse_hex(String str, String separator) {
@@ -2640,6 +2640,13 @@ public class Convertors {
     }
 
     static double is_like_english(String str) {
+        if(ngrams == null) {
+            try {
+                ngrams = new Ngrams("/quadgrams.txt");
+            } catch (IOException e) {
+                stderr.println(e.getMessage());
+            }
+        }
         ngrams.setInput(str);
         return ngrams.getScore();
     }

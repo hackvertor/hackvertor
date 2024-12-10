@@ -3,14 +3,10 @@ package burp;
 import burp.parser.Element;
 import burp.ui.HackvertorInput;
 import burp.ui.MenuScroller;
-import com.github.javafaker.Bool;
 import org.apache.commons.lang3.StringUtils;
-import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
-import org.fife.ui.rsyntaxtextarea.Theme;
 
 import javax.swing.*;
 import javax.swing.border.Border;
-import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.text.Highlighter;
 import java.awt.*;
@@ -180,27 +176,8 @@ public class Utils {
         return parentMenu;
     }
 
-    public static void applyThemeToRSyntaxTextArea(RSyntaxTextArea area, String themeName) {
-        try {
-            Theme theme = Theme.load(Utils.class.getResourceAsStream(
-                    "/org/fife/ui/rsyntaxtextarea/themes/"+themeName+".xml"));
-            theme.apply(area);
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
-        }
-    }
-    public static void fixRSyntaxAreaBurp() {
-        UIManager.put("RSyntaxTextAreaUI.actionMap", null);
-        UIManager.put("RSyntaxTextAreaUI.inputMap", null);
-        UIManager.put("RTextAreaUI.actionMap", null);
-        UIManager.put("RTextAreaUI.inputMap", null);
-    }
-
-    public static void configureRSyntaxArea(HackvertorInput area) {
+    public static void configureTextArea(HackvertorInput area) {
         area.setLineWrap(true);
-        if(BurpExtender.isDarkTheme) {
-            Utils.applyThemeToRSyntaxTextArea(area, "dark");
-        }
         callbacks.customizeUiComponent(area);
     }
 
