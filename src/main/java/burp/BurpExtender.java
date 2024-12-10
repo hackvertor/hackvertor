@@ -196,7 +196,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 }
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.8.12");
+	            	stdout.println("Hackvertor v1.8.13");
                     loadCustomTags();
                     loadGlobalVariables();
                     registerPayloadProcessors();
@@ -467,6 +467,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 String key = variableCombo.getSelectedItem().toString();
                 variableNameField.setText(key);
                 variableValueField.setText(globalVariables.get(key));
+                saveGlobalVariables();
             }
         });
         JButton deleteButton = new JButton("Delete");
@@ -481,6 +482,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                 for (String variable : globalVariables.keySet()) {
                     variableCombo.addItem(variable);
                 }
+                saveGlobalVariables();
             }
         });
         createVariablePanel.add(copyButton);
