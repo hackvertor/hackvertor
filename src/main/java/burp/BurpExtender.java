@@ -43,7 +43,6 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
     public static Ngrams ngrams;
     public static PrintWriter stderr;
     public static PrintWriter stdout;
-    public static Path j2v8TempDirectory;
     public static HashMap<String,String>globalVariables = new HashMap<>();
     /**
      * Native theme will not have the same color scheme as the default Nimbus L&F.
@@ -190,13 +189,8 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 try {
-                    j2v8TempDirectory = Files.createTempDirectory("j2v8");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.8.13");
+	            	stdout.println("Hackvertor v1.8.14");
                     loadCustomTags();
                     loadGlobalVariables();
                     registerPayloadProcessors();
