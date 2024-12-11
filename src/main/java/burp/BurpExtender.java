@@ -24,13 +24,13 @@ import java.awt.event.*;
 import java.io.*;
 import java.net.*;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static burp.Convertors.*;
 
@@ -195,9 +195,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                     loadGlobalVariables();
                     registerPayloadProcessors();
                     extensionPanel = new ExtensionPanel(hackvertor);
-
                     callbacks.addSuiteTab(BurpExtender.this);
-                    burpMenuBar = getBurpFrame().getJMenuBar();
                     hvMenuBar = new JMenu("Hackvertor");
                     final JCheckBoxMenuItem codeExecutionMenu = new JCheckBoxMenuItem(
                             "Allow code execution tags", tagsInProxy);
@@ -346,8 +344,26 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                         Utils.openUrl("https://github.com/hackvertor/hackvertor/issues/new");
                     });
                     hvMenuBar.add(reportBugMenu);
-                    burpMenuBar.add(hvMenuBar);
                     callbacks.registerMessageEditorTabFactory(BurpExtender.this);
+                    ExecutorService service = Executors.newSingleThreadExecutor();
+                    try (Closeable close = service::shutdown) {
+                        service.submit(() -> {
+                            burpMenuBar = null;
+                            while(burpMenuBar == null) {
+                                burpMenuBar = Objects.requireNonNull(getBurpFrame()).getJMenuBar();
+                                try {
+                                    Thread.sleep(200);
+                                } catch (InterruptedException e) {
+                                    break;
+                                }
+                            }
+                            burpMenuBar.add(hvMenuBar);
+                        });
+                    } catch (IOException ex) {
+                        throw new RuntimeException(ex);
+                    } finally {
+                        service.shutdown();
+                    }
                 }catch (Exception e){
                     e.printStackTrace();
                 }
@@ -1393,9 +1409,18 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
     public void extensionUnloaded() {
         hvShutdown = true;
         ngrams = null;
-        burpMenuBar.remove(hvMenuBar);
-        burpMenuBar.revalidate();
-        burpMenuBar.repaint();
+        SwingUtilities.invokeLater(() -> {
+            for (int i = 0; i < burpMenuBar.getMenuCount(); i++) {
+                JMenu menu = burpMenuBar.getMenu(i);
+                if (menu != null && "Hackvertor".equals(menu.getText())) {
+                    burpMenuBar.remove(menu);
+                    break;
+                }
+            }
+            burpMenuBar.revalidate();
+            burpMenuBar.repaint();
+            burpMenuBar = null;
+        });
         callbacks.printOutput("Hackvertor unloaded");
     }
 

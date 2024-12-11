@@ -120,13 +120,14 @@ public class Convertors {
             try {
                 return Integer.parseInt(args.get(pos).replaceAll("^0x", ""), 16);
             } catch (NumberFormatException e) {
-                stderr.println(e.getMessage());
+                throw new NumberFormatException(e.toString());
             }
         }
         try {
             output = Integer.parseInt(args.get(pos));
         } catch (NumberFormatException e) {
             stderr.println(e.getMessage());
+            throw new NumberFormatException(e.toString());
         }
         return output;
     }
@@ -148,52 +149,55 @@ public class Convertors {
                     for (int i = 0; i < customTags.length(); i++) {
                         JSONObject customTag = (JSONObject) customTags.get(i);
                         String customTagName = customTag.getString("tagName");
-                        int numberOfArgs = 0;
-                        if (customTag.has("numberOfArgs")) {
-                            numberOfArgs = customTag.getInt("numberOfArgs");
-                        }
-                        String eKey;
-                        JSONObject customTagOptions = new JSONObject();
-                        customTagOptions.put("customTag", customTag);
-                        if (numberOfArgs == 0) {
-                            eKey = getString(arguments, 0);
-                            customTagOptions = null;
-                        } else if (numberOfArgs == 1) {
-                            if (customTag.getString("argument1Type").equals("String")) {
-                                customTagOptions.put("param1", getString(arguments, 0));
-                            } else if (customTag.getString("argument1Type").equals("Number")) {
-                                customTagOptions.put("param1", getInt(arguments, 0));
+                        if(customTagName.equals(tag)) {
+                            int numberOfArgs = 0;
+                            if (customTag.has("numberOfArgs")) {
+                                numberOfArgs = customTag.getInt("numberOfArgs");
                             }
-                            eKey = getString(arguments, 1);
+                            String eKey;
+                            JSONObject customTagOptions = new JSONObject();
+                            customTagOptions.put("customTag", customTag);
+                            if (numberOfArgs == 0) {
+                                eKey = getString(arguments, 0);
+                                customTagOptions = null;
+                            } else if (numberOfArgs == 1) {
+                                if (customTag.getString("argument1Type").equals("String")) {
+                                    customTagOptions.put("param1", getString(arguments, 0));
+                                } else if (customTag.getString("argument1Type").equals("Number")) {
+                                    customTagOptions.put("param1", getInt(arguments, 0));
+                                }
+                                eKey = getString(arguments, 1);
 
-                        } else if (numberOfArgs == 2) {
-                            if (customTag.getString("argument1Type").equals("String")) {
-                                customTagOptions.put("param1", getString(arguments, 0));
-                            } else if (customTag.getString("argument1Type").equals("Number")) {
-                                customTagOptions.put("param1", getInt(arguments, 0));
+                            } else if (numberOfArgs == 2) {
+                                if (customTag.getString("argument1Type").equals("String")) {
+                                    customTagOptions.put("param1", getString(arguments, 0));
+                                } else if (customTag.getString("argument1Type").equals("Number")) {
+                                    customTagOptions.put("param1", getInt(arguments, 0));
+                                }
+                                if (customTag.getString("argument2Type").equals("String")) {
+                                    customTagOptions.put("param2", getString(arguments, 1));
+                                } else if (customTag.getString("argument2Type").equals("Number")) {
+                                    customTagOptions.put("param2", getInt(arguments, 1));
+                                }
+                                eKey = getString(arguments, 2);
+                            } else {
+                                eKey = getString(arguments, 0);
                             }
-                            if (customTag.getString("argument2Type").equals("String")) {
-                                customTagOptions.put("param2", getString(arguments, 1));
-                            } else if (customTag.getString("argument2Type").equals("Number")) {
-                                customTagOptions.put("param2", getInt(arguments, 1));
-                            }
-                            eKey = getString(arguments, 2);
-                        } else {
-                            eKey = getString(arguments, 0);
-                        }
 
-                        if (customTagName.equals(tag)) {
-                            String language = customTag.getString("language").toLowerCase();
-                            String code = customTag.getString("code");
-                            if (language.equals("javascript")) {
-                                return javascript(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
-                            } else if (language.equals("python")) {
-                                return python(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
-                            } else if (language.equals("java")) {
-                                return java(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
-                            } else if (language.equals("groovy")) {
-                                return groovy(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
+                            if (customTagName.equals(tag)) {
+                                String language = customTag.getString("language").toLowerCase();
+                                String code = customTag.getString("code");
+                                if (language.equals("javascript")) {
+                                    return javascript(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
+                                } else if (language.equals("python")) {
+                                    return python(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
+                                } else if (language.equals("java")) {
+                                    return java(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
+                                } else if (language.equals("groovy")) {
+                                    return groovy(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
+                                }
                             }
+                            break;
                         }
                     }
                 }else if(tag.startsWith("set_")){ //Backwards compatibility with previous set_VARNAME tag format
