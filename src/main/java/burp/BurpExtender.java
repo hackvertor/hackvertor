@@ -1703,7 +1703,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         return menu;
     }
 
-    public void alert(String msg) {
+    public static void alert(String msg) {
         JOptionPane.showMessageDialog(null, msg);
     }
 

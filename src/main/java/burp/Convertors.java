@@ -3372,8 +3372,9 @@ public class Convertors {
             } else {
                 return context.eval("js", code).toString();
             }
-
-        } catch (Exception e) {
+        } catch(UnsatisfiedLinkError | NoClassDefFoundError | InternalError e) {
+            return "Unfortunately you have to restart Burp now to make JavaScript tags work. This happens when reloading the extension.";
+        } catch (Throwable e) {
             return "Exception:" + e;
         }
     }
