@@ -32,8 +32,18 @@
     "author": "pentagridsec",
     "numberOfArgs": 1,
     "argument1": "append",
-    "argument2Type": "Number",
-    "argument2Default": "1",
+    "argument1Type": "Number",
+    "argument1Default": "1",
+    "argument2": "notused",
+    "argument2Type": "String",
+    "argument2Default": "",
+    "language": "Python"
+  },
+  {
+    "tagName": "totp",
+    "description": "Create Time-based OTPs on the fly, secret as input",
+    "author": "pentagridsec",
+    "numberOfArgs": 0,
     "language": "Python"
   },
   {

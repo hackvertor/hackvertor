@@ -541,6 +541,10 @@ public class Hackvertor {
 
     public ArrayList<Tag> getTags() {
         ArrayList<Tag> tagsAndCustom = new ArrayList<>(tags);
+        for (String variable : globalVariables.keySet()) {
+            Tag variableTag = new Tag(Tag.Category.Globals, "get_" + variable, false, variable);
+            tagsAndCustom.add(variableTag);
+        }
         for (int j = 0; j < customTags.length(); j++) {
             JSONObject customTag = (JSONObject) customTags.get(j);
             Tag tag = generateCustomTag(customTag);
