@@ -120,13 +120,14 @@ public class Convertors {
             try {
                 return Integer.parseInt(args.get(pos).replaceAll("^0x", ""), 16);
             } catch (NumberFormatException e) {
-                stderr.println(e.getMessage());
+                throw new NumberFormatException(e.toString());
             }
         }
         try {
             output = Integer.parseInt(args.get(pos));
         } catch (NumberFormatException e) {
             stderr.println(e.getMessage());
+            throw new NumberFormatException(e.toString());
         }
         return output;
     }
@@ -148,52 +149,55 @@ public class Convertors {
                     for (int i = 0; i < customTags.length(); i++) {
                         JSONObject customTag = (JSONObject) customTags.get(i);
                         String customTagName = customTag.getString("tagName");
-                        int numberOfArgs = 0;
-                        if (customTag.has("numberOfArgs")) {
-                            numberOfArgs = customTag.getInt("numberOfArgs");
-                        }
-                        String eKey;
-                        JSONObject customTagOptions = new JSONObject();
-                        customTagOptions.put("customTag", customTag);
-                        if (numberOfArgs == 0) {
-                            eKey = getString(arguments, 0);
-                            customTagOptions = null;
-                        } else if (numberOfArgs == 1) {
-                            if (customTag.getString("argument1Type").equals("String")) {
-                                customTagOptions.put("param1", getString(arguments, 0));
-                            } else if (customTag.getString("argument1Type").equals("Number")) {
-                                customTagOptions.put("param1", getInt(arguments, 0));
+                        if(customTagName.equals(tag)) {
+                            int numberOfArgs = 0;
+                            if (customTag.has("numberOfArgs")) {
+                                numberOfArgs = customTag.getInt("numberOfArgs");
                             }
-                            eKey = getString(arguments, 1);
+                            String eKey;
+                            JSONObject customTagOptions = new JSONObject();
+                            customTagOptions.put("customTag", customTag);
+                            if (numberOfArgs == 0) {
+                                eKey = getString(arguments, 0);
+                                customTagOptions = null;
+                            } else if (numberOfArgs == 1) {
+                                if (customTag.getString("argument1Type").equals("String")) {
+                                    customTagOptions.put("param1", getString(arguments, 0));
+                                } else if (customTag.getString("argument1Type").equals("Number")) {
+                                    customTagOptions.put("param1", getInt(arguments, 0));
+                                }
+                                eKey = getString(arguments, 1);
 
-                        } else if (numberOfArgs == 2) {
-                            if (customTag.getString("argument1Type").equals("String")) {
-                                customTagOptions.put("param1", getString(arguments, 0));
-                            } else if (customTag.getString("argument1Type").equals("Number")) {
-                                customTagOptions.put("param1", getInt(arguments, 0));
+                            } else if (numberOfArgs == 2) {
+                                if (customTag.getString("argument1Type").equals("String")) {
+                                    customTagOptions.put("param1", getString(arguments, 0));
+                                } else if (customTag.getString("argument1Type").equals("Number")) {
+                                    customTagOptions.put("param1", getInt(arguments, 0));
+                                }
+                                if (customTag.getString("argument2Type").equals("String")) {
+                                    customTagOptions.put("param2", getString(arguments, 1));
+                                } else if (customTag.getString("argument2Type").equals("Number")) {
+                                    customTagOptions.put("param2", getInt(arguments, 1));
+                                }
+                                eKey = getString(arguments, 2);
+                            } else {
+                                eKey = getString(arguments, 0);
                             }
-                            if (customTag.getString("argument2Type").equals("String")) {
-                                customTagOptions.put("param2", getString(arguments, 1));
-                            } else if (customTag.getString("argument2Type").equals("Number")) {
-                                customTagOptions.put("param2", getInt(arguments, 1));
-                            }
-                            eKey = getString(arguments, 2);
-                        } else {
-                            eKey = getString(arguments, 0);
-                        }
 
-                        if (customTagName.equals(tag)) {
-                            String language = customTag.getString("language").toLowerCase();
-                            String code = customTag.getString("code");
-                            if (language.equals("javascript")) {
-                                return javascript(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
-                            } else if (language.equals("python")) {
-                                return python(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
-                            } else if (language.equals("java")) {
-                                return java(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
-                            } else if (language.equals("groovy")) {
-                                return groovy(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
+                            if (customTagName.equals(tag)) {
+                                String language = customTag.getString("language").toLowerCase();
+                                String code = customTag.getString("code");
+                                if (language.equals("javascript")) {
+                                    return javascript(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
+                                } else if (language.equals("python")) {
+                                    return python(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
+                                } else if (language.equals("java")) {
+                                    return java(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
+                                } else if (language.equals("groovy")) {
+                                    return groovy(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
+                                }
                             }
+                            break;
                         }
                     }
                 }else if(tag.startsWith("set_")){ //Backwards compatibility with previous set_VARNAME tag format
@@ -2221,7 +2225,7 @@ public class Convertors {
     }
 
     public static String ascii2hex(String str, String separator) {
-        String output = "";
+        StringBuilder output = new StringBuilder();
         String hex = "";
         for (int i = 0; i < str.length(); i++) {
             try {
@@ -2229,15 +2233,15 @@ public class Convertors {
                 if (hex.length() % 2 != 0) {
                     hex = "0" + hex;
                 }
-                output += hex;
-                if (separator.length() > 0 && i < str.length() - 1) {
-                    output += separator;
+                output.append(hex);
+                if (!separator.isEmpty() && i < str.length() - 1) {
+                    output.append(separator);
                 }
             } catch (NumberFormatException e) {
                 stderr.println(e.getMessage());
             }
         }
-        return output;
+        return output.toString();
     }
 
     static String ascii2reverse_hex(String str, String separator) {
@@ -2640,6 +2644,13 @@ public class Convertors {
     }
 
     static double is_like_english(String str) {
+        if(ngrams == null) {
+            try {
+                ngrams = new Ngrams("/quadgrams.txt");
+            } catch (IOException e) {
+                stderr.println(e.getMessage());
+            }
+        }
         ngrams.setInput(str);
         return ngrams.getScore();
     }
@@ -3361,8 +3372,9 @@ public class Convertors {
             } else {
                 return context.eval("js", code).toString();
             }
-
-        } catch (Exception e) {
+        } catch(UnsatisfiedLinkError | NoClassDefFoundError | InternalError e) {
+            return "Unfortunately you have to restart Burp now to make JavaScript tags work. This happens when reloading the extension.";
+        } catch (Throwable e) {
             return "Exception:" + e;
         }
     }

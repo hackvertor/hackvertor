@@ -1,6 +1,7 @@
 plugins {
     id 'java'
-    id "org.javacc.javacc" version "3.0.2"
+    id "org.javacc.javacc" version "3.0.3"
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
 targetCompatibility = JavaVersion.VERSION_17
@@ -21,7 +22,7 @@ dependencies {
     implementation 'org.bouncycastle:bcpkix-jdk15on:1.70'
     implementation 'com.auth0:java-jwt:4.3.0'
     implementation 'org.json:json:20230227'
-    implementation 'commons-io:commons-io:2.11.0'
+    implementation 'commons-io:commons-io:2.14.0'
     implementation 'org.apache.commons:commons-compress:1.22'
     implementation 'org.brotli:dec:0.1.2'
     implementation 'org.python:jython-standalone:2.7.3b1'
@@ -29,7 +30,6 @@ dependencies {
     implementation 'org.apache-extras.beanshell:bsh:2.0b6'
     implementation 'org.codehaus.groovy:groovy-all:3.0.16'
     implementation 'com.github.javafaker:javafaker:1.0.2'
-    implementation 'com.fifesoft:rsyntaxtextarea:3.3.4'
     implementation 'com.fifesoft:autocomplete:3.3.1'
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
@@ -50,11 +50,12 @@ compileJavacc {
     include '**/*.java'
 }
 
-jar{
+jar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     archivesBaseName = project.name + '-all'
     from {
-        (configurations.runtimeClasspath).collect { it.isDirectory() ? it : zipTree(it) }
+        configurations.runtimeClasspath.findAll { it.isDirectory() || it.name.endsWith('.jar') }
+                .collect { it.isDirectory() ? it : zipTree(it) }
     }{
         exclude "META-INF/*.SF"
         exclude "META-INF/*.DSA"
@@ -69,4 +70,11 @@ tasks.withType(Jar) {
 
 test {
     useJUnitPlatform()
+}
+
+shadowJar {
+    archiveClassifier.set('')
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    configurations = [project.configurations.runtimeClasspath]
+    mergeServiceFiles()
 }

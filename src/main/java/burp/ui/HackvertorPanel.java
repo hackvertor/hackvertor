@@ -5,15 +5,11 @@ import burp.parser.Element;
 import burp.parser.HackvertorParser;
 import burp.parser.ParseException;
 import org.apache.commons.lang3.StringUtils;
-import org.fife.ui.autocomplete.*;
-import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
-import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 
 import javax.swing.*;
 import javax.swing.event.*;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
-import javax.swing.text.JTextComponent;
 import javax.swing.undo.CannotRedoException;
 import javax.swing.undo.CannotUndoException;
 import javax.swing.undo.UndoManager;
@@ -22,11 +18,9 @@ import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.*;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.concurrent.*;
-import java.util.stream.Collectors;
 
 import static burp.BurpExtender.*;
 import static burp.Convertors.*;
@@ -43,35 +37,15 @@ public class HackvertorPanel extends JPanel {
     public HackvertorPanel(Hackvertor hackvertor, boolean showLogo){
         super(new GridBagLayout());
         this.hackvertor = hackvertor;
-        JTextComponent.removeKeymap("RTextAreaKeymap");
         this.inputArea = new HackvertorInput();
         this.outputArea = new HackvertorInput();
-        Utils.fixRSyntaxAreaBurp();
-        this.inputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
-        this.outputArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_XML);
-        Utils.configureRSyntaxArea(this.inputArea);
-        Utils.configureRSyntaxArea(this.outputArea);
-        this.inputArea.setCodeFoldingEnabled(true);
-        this.generateAutoCompletion(this.inputArea);
+        Utils.configureTextArea(this.inputArea);
+        Utils.configureTextArea(this.outputArea);
         buildPanel(showLogo);
     }
 
     public JTabbedPane getTabs() {
         return tabs;
-    }
-
-    private void generateAutoCompletion(RSyntaxTextArea input) {
-        DefaultCompletionProvider provider = new DefaultCompletionProvider();
-        provider.setAutoActivationRules(false, "<");
-        ArrayList<Tag> tags = hackvertor.getTags();
-        for(Tag tag : tags) {
-            BasicCompletion acTag = new BasicCompletion(provider, tag.name);
-            provider.addCompletion(acTag);
-        }
-        HackvertorTagCompletion ac = new HackvertorTagCompletion(provider, tags);
-        ac.setAutoActivationDelay(250);
-        ac.setAutoActivationEnabled(true);
-        ac.install(input);
     }
 
     private void buildPanel(boolean showLogo){
@@ -501,6 +475,9 @@ public class HackvertorPanel extends JPanel {
                 int tabIndex = tabs.getSelectedIndex();
                 if (tabs.getTitleAt(tabIndex).equals("Custom")) {
                     tabs.setComponentAt(tabIndex, Utils.createButtons(hackvertor.getTags(), inputArea, Tag.Category.Custom, null, false));
+                } else if(tabs.getTitleAt(tabIndex).equals("Globals")) {
+                    tabs.setComponentAt(tabIndex, Utils.createButtons(hackvertor.getTags(), inputArea, Tag.Category.Globals, null, false));
+
                 }
             }
         });
