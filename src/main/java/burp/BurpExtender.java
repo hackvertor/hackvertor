@@ -194,7 +194,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
             public void run() {
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.8.17");
+	            	stdout.println("Hackvertor v1.8.18");
                     loadCustomTags();
                     loadGlobalVariables();
                     registerPayloadProcessors();

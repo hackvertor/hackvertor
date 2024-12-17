@@ -35,6 +35,7 @@ public class Utils {
 
         for (final Tag tagObj : tags) {
             final JButton btn = new JButton(tagObj.name);
+            btn.setFocusable(false);
             btn.setToolTipText(tagObj.tooltip);
 
             ActionListener actionListener;
@@ -44,38 +45,38 @@ public class Utils {
                     btn.setForeground(Color.white);
                 }
                 btn.putClientProperty("tag", tagObj);
-
-                actionListener = new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        String selectedText = inputArea.getSelectedText();
-                        if (selectedText == null) {
-                            selectedText = "";
-                        }
-                        String[] tagStartEnd = Convertors.generateTagStartEnd(tagObj);
-                        String tagStart = tagStartEnd[0];
-                        String tagEnd = tagStartEnd[1];
-                        inputArea.replaceSelection(tagStart + selectedText + tagEnd);
-                        Highlighter.Highlight[] highlights = inputArea.getHighlighter().getHighlights();
-                        if (highlights.length > 0) {
-                            for (Highlighter.Highlight highlight : highlights) {
-                                inputArea.select(highlight.getStartOffset(), highlight.getEndOffset());
-                                selectedText = inputArea.getSelectedText();
-                                if (selectedText != null) {
-                                    tagStartEnd = Convertors.generateTagStartEnd(tagObj);
-                                    tagStart = tagStartEnd[0];
-                                    tagEnd = tagStartEnd[1];
-                                    inputArea.replaceSelection(tagStart + selectedText + tagEnd);
-                                }
-                            }
-                        }
-                        //TODO Auto convert input
-//                    outputArea.setText(convert(inputArea.getText()));
-//                    outputArea.selectAll();
+                btn.addActionListener(e -> {
+                    String selectedText = inputArea.getSelectedText();
+                    if (selectedText == null) {
+                        selectedText = "";
                     }
-                };
-
-                btn.addActionListener(actionListener);
+                    String[] tagStartEnd = Convertors.generateTagStartEnd(tagObj);
+                    String tagStart = tagStartEnd[0];
+                    String tagEnd = tagStartEnd[1];
+                    String replacedText = tagStart + selectedText + tagEnd;
+                    int start = inputArea.getSelectionStart();
+                    int end = start + replacedText.length();
+                    inputArea.replaceSelection(replacedText);
+                    inputArea.select(start + tagStart.length(), end - tagEnd.length());
+                    int selectionStart = inputArea.getSelectionStart();
+                    int selectionEnd = inputArea.getSelectionEnd();
+                    Highlighter.Highlight[] highlights = inputArea.getHighlighter().getHighlights();
+                    for (Highlighter.Highlight highlight : highlights) {
+                        int highlightStart = highlight.getStartOffset();
+                        int highlightEnd = highlight.getEndOffset();
+                        if ((highlightStart < selectionEnd && highlightEnd > selectionStart)) {
+                            continue;
+                        }
+                        inputArea.select(highlight.getStartOffset(), highlight.getEndOffset());
+                        selectedText = inputArea.getSelectedText();
+                        if (selectedText != null) {
+                            tagStartEnd = Convertors.generateTagStartEnd(tagObj);
+                            tagStart = tagStartEnd[0];
+                            tagEnd = tagStartEnd[1];
+                            inputArea.replaceSelection(tagStart + selectedText + tagEnd);
+                        }
+                    }
+                });
                 panel.add(btn);
             }
         }

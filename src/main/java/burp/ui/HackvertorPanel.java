@@ -131,48 +131,50 @@ public class HackvertorPanel extends JPanel {
             inputLenLabel.setBackground(Color.decode("#FFF5BF"));
             inputLenLabel.setBorder(BorderFactory.createLineBorder(Color.decode("#FF9900"), 1));
         }
-        DocumentListener documentListener = new DocumentListener() {
-            LinkedBlockingQueue queue = new LinkedBlockingQueue<>(1);
-            ExecutorService executorService = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
-                    queue, new ThreadPoolExecutor.DiscardOldestPolicy());
+        if(!hideOutput) {
+            DocumentListener documentListener = new DocumentListener() {
+                LinkedBlockingQueue queue = new LinkedBlockingQueue<>(1);
+                ExecutorService executorService = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
+                        queue, new ThreadPoolExecutor.DiscardOldestPolicy());
 
-            public void scheduleUpdate(){
-                executorService.submit(() -> {
-                    String output = hackvertor.convert(inputArea.getText(), null);
-                    try {
-                        outputArea.getDocument().remove(0, outputArea.getDocument().getLength());
-                        outputArea.getDocument().insertString(0, output, null);
-                    } catch (BadLocationException e) {
-                        e.printStackTrace();
-                    }
-                    outputArea.setCaretPosition(0);
-                });
-            }
+                public void scheduleUpdate() {
+                    executorService.submit(() -> {
+                        String output = hackvertor.convert(inputArea.getText(), null);
+                        try {
+                            outputArea.getDocument().remove(0, outputArea.getDocument().getLength());
+                            outputArea.getDocument().insertString(0, output, null);
+                        } catch (BadLocationException e) {
+                            e.printStackTrace();
+                        }
+                        outputArea.setCaretPosition(0);
+                    });
+                }
 
 
-            public void changedUpdate(DocumentEvent documentEvent) {
-                updateLen();
-                scheduleUpdate();
-            }
+                public void changedUpdate(DocumentEvent documentEvent) {
+                    updateLen();
+                    scheduleUpdate();
+                }
 
-            public void insertUpdate(DocumentEvent documentEvent) {
-                updateLen();
-                scheduleUpdate();
-            }
+                public void insertUpdate(DocumentEvent documentEvent) {
+                    updateLen();
+                    scheduleUpdate();
+                }
 
-            public void removeUpdate(DocumentEvent documentEvent) {
-                updateLen();
-                scheduleUpdate();
-            }
+                public void removeUpdate(DocumentEvent documentEvent) {
+                    updateLen();
+                    scheduleUpdate();
+                }
 
-            private void updateLen() {
-                int len = inputArea.getText().length();
-                int realLen = calculateRealLen(inputArea.getText());
-                inputLenLabel.setText("" + len);
-                inputRealLenLabel.setText("" + realLen);
-            }
-        };
-        inputArea.getDocument().addDocumentListener(documentListener);
+                private void updateLen() {
+                    int len = inputArea.getText().length();
+                    int realLen = calculateRealLen(inputArea.getText());
+                    inputLenLabel.setText("" + len);
+                    inputRealLenLabel.setText("" + realLen);
+                }
+            };
+            inputArea.getDocument().addDocumentListener(documentListener);
+        }
         inputArea.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
