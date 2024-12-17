@@ -27,6 +27,7 @@ public class HackvertorMessageTab implements IMessageEditorTab {
             if(e.getChangeFlags() == HierarchyEvent.SHOWING_CHANGED) {
                 if(e.getComponent() == hackvertorContainer && hackvertorContainer.isShowing()) {
                     if(interfaceCreated) {
+                        hackvertorPanel.getInputArea().setCaretPosition(0);
                         return;
                     }
                     SwingUtilities.invokeLater(() -> {
@@ -50,6 +51,7 @@ public class HackvertorMessageTab implements IMessageEditorTab {
                         hackvertorContainer.add(hackvertorPanel);
                         if (currentMessage != null) {
                             hackvertorPanel.getInputArea().setText(BurpExtender.helpers.bytesToString(currentMessage));
+                            hackvertorPanel.getInputArea().setCaretPosition(0);
                         }
                         interfaceCreated = true;
                     });
