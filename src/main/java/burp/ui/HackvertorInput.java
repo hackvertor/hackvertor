@@ -1,6 +1,8 @@
 package burp.ui;
 
 import burp.BurpExtender;
+import burp.IParameter;
+import burp.IRequestInfo;
 import burp.Utils;
 
 import javax.swing.*;
@@ -8,13 +10,37 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.List;
 
 import static burp.BurpExtender.callbacks;
+import static burp.BurpExtender.helpers;
 
 public class HackvertorInput extends JTextArea {
     public HackvertorInput() {
         super();
         HackvertorInput that = this;
+        this.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) { // Detect double-click
+                    int clickPos = that.viewToModel(e.getPoint());
+                    String text = that.getText();
+                    IRequestInfo analyzedRequest = helpers.analyzeRequest(helpers.stringToBytes(text));
+                    List<IParameter> params = analyzedRequest.getParameters();
+
+                    for (IParameter param : params) {
+                        int start = param.getValueStart();
+                        int end = param.getValueEnd();
+
+                        if (clickPos >= start && clickPos <= end) {
+                            that.select(start, end);
+                        }
+                    }
+                }
+            }
+        });
         this.addKeyListener(new KeyListener() {
             @Override
             public void keyTyped(KeyEvent e) {
