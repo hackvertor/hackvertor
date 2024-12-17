@@ -34,25 +34,25 @@ public class HackvertorPanel extends JPanel {
     private final HackvertorInput outputArea;
     private JTabbedPane tabs;
     
-    public HackvertorPanel(Hackvertor hackvertor, boolean showLogo){
+    public HackvertorPanel(Hackvertor hackvertor, boolean showLogo, boolean hideOutput){
         super(new GridBagLayout());
         this.hackvertor = hackvertor;
         this.inputArea = new HackvertorInput();
         this.outputArea = new HackvertorInput();
         Utils.configureTextArea(this.inputArea);
         Utils.configureTextArea(this.outputArea);
-        buildPanel(showLogo);
+        buildPanel(showLogo, hideOutput);
     }
 
     public JTabbedPane getTabs() {
         return tabs;
     }
 
-    private void buildPanel(boolean showLogo){
-        tabs = buildTabbedPane();
+    private void buildPanel(boolean showLogo, boolean hideOutput){
+        tabs = buildTabbedPane(hideOutput);
         JPanel topBar = new JPanel(new GridBagLayout());
-        topBar.setPreferredSize(new Dimension(-1, 110));
-        topBar.setMinimumSize(new Dimension(-1, 110));
+        topBar.setPreferredSize(new Dimension(-1, 70));
+        topBar.setMinimumSize(new Dimension(-1, 70));
         JLabel logoLabel;
         if (isDarkTheme) {
             logoLabel = new JLabel(createImageIcon("/images/logo-dark.png", "logo"));
@@ -391,11 +391,15 @@ public class HackvertorPanel extends JPanel {
         }
         buttonsPanel.add(clearButton);
         buttonsPanel.add(clearTagsButton);
-        buttonsPanel.add(swapButton);
+        if(!hideOutput) {
+            buttonsPanel.add(swapButton);
+        }
         buttonsPanel.add(selectInputButton);
-        buttonsPanel.add(selectOutputButton);
-        buttonsPanel.add(pasteInsideButton);
-        buttonsPanel.add(convertButton);
+        if(!hideOutput) {
+            buttonsPanel.add(selectOutputButton);
+            buttonsPanel.add(pasteInsideButton);
+            buttonsPanel.add(convertButton);
+        }
         GridBagConstraints c = createConstraints(1, 0, 1, GridBagConstraints.NONE, 0, 0, 0, 0);
         c.anchor = FIRST_LINE_END;
         c.ipadx = 20;
@@ -442,13 +446,17 @@ public class HackvertorPanel extends JPanel {
         c = createConstraints(2, 1, 1, GridBagConstraints.NONE, 0, 0, 0, 0);
         c.insets = new Insets(5, 5, 5, 5);
         outputLabelsPanel.add(outputRealLenLabel, c);
-        this.add(outputLabelsPanel, createConstraints(1, 2, 1, GridBagConstraints.NONE, 0, 0, 0, 0));
+        if(!hideOutput) {
+            this.add(outputLabelsPanel, createConstraints(1, 2, 1, GridBagConstraints.NONE, 0, 0, 0, 0));
+        }
         c = createConstraints(1, 3, 1, GridBagConstraints.NONE, 0, 0, 0, 0);
         c.anchor = FIRST_LINE_START;
         c.fill = BOTH;
         c.weightx = 0.5;
         c.weighty = 1.0;
-        this.add(outputScroll, c);
+        if(!hideOutput) {
+            this.add(outputScroll, c);
+        }
         c = createConstraints(0, 4, 2, GridBagConstraints.NONE, 0, 0, 0, 0);
         c.anchor = GridBagConstraints.SOUTH;
         c.fill = BOTH;
@@ -459,11 +467,13 @@ public class HackvertorPanel extends JPanel {
         c.anchor = LAST_LINE_START;
         c.fill = BOTH;
         c.weightx = 1.0;
-        this.add(hexScroll, c);
+        if(!hideOutput) {
+            this.add(hexScroll, c);
+        }
     }
 
-    public JTabbedPane buildTabbedPane(){
-        JTabbedPane tabs = new JTabbedPane();
+    public JTabbedPane buildTabbedPane(boolean hideSearch){
+        JTabbedPane tabs = new JTabbedPane(JTabbedPane.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
 
         for (int i = 0; i < Tag.Category.values().length; i++) {
             tabs.addTab(Tag.Category.values()[i].name(), Utils.createButtons(hackvertor.getTags(), inputArea, Tag.Category.values()[i], null, false));
@@ -481,9 +491,9 @@ public class HackvertorPanel extends JPanel {
                 }
             }
         });
-
-        tabs.addTab("Search", new SearchPanel(hackvertor, this));
-
+        if(!hideSearch) {
+            tabs.addTab("Search", new SearchPanel(hackvertor, this));
+        }
         tabs.setAutoscrolls(true);
         tabs.setSelectedIndex(tabs.indexOfTab("Encode"));
 

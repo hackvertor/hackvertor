@@ -65,6 +65,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
     private boolean autoUpdateContentLength = true;
     public static boolean allowTagCount = false;
     public static boolean allowAutoConvertClipboard = false;
+    public static boolean hideOutputInMessageEditor = true;
     public static HashMap<String, Integer> tagCount = new HashMap<>();
    public static final HashMap<String, HashMap<String, Integer>> contextTagCount = new HashMap() {
         {
@@ -100,7 +101,9 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
     public static ImageIcon createImageIcon(String path, String description) {
         java.net.URL imgURL = BurpExtender.class.getResource(path);
         if (imgURL != null) {
-            return new ImageIcon(imgURL, description);
+            ImageIcon img = new ImageIcon(imgURL, description);
+            Image resizedImage = img.getImage().getScaledInstance(80, 80, Image.SCALE_SMOOTH);
+            return new ImageIcon(resizedImage);
         } else {
             stderr.println("Couldn't find file: " + path);
             return null;
@@ -176,6 +179,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         callbacks = burpCallbacks;
         allowTagCount = Boolean.valueOf(callbacks.loadExtensionSetting("allowTagCount"));
         allowAutoConvertClipboard = Boolean.valueOf(callbacks.loadExtensionSetting("allowAutoConvertClipboard"));
+        hideOutputInMessageEditor = callbacks.loadExtensionSetting("hideOutputInMessageEditor") == null || Boolean.valueOf(callbacks.loadExtensionSetting("hideOutputInMessageEditor"));
         helpers = callbacks.getHelpers();
         stderr = new PrintWriter(callbacks.getStderr(), true);
         stdout = new PrintWriter(callbacks.getStdout(), true);
@@ -190,7 +194,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
             public void run() {
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.8.14");
+	            	stdout.println("Hackvertor v1.8.15");
                     loadCustomTags();
                     loadGlobalVariables();
                     registerPayloadProcessors();
@@ -307,6 +311,22 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
                         }
                     });
                     hvMenuBar.add(autoConvertClipboardMenu);
+
+
+                    final JCheckBoxMenuItem hideOutputInMessageEditorMenu = new JCheckBoxMenuItem(
+                            "Hide output in HTTP message editor", hideOutputInMessageEditor);
+                    hideOutputInMessageEditorMenu.addItemListener(new ItemListener() {
+                        public void itemStateChanged(ItemEvent e) {
+                            if (hideOutputInMessageEditorMenu.getState()) {
+                                hideOutputInMessageEditor = true;
+                            } else {
+                                hideOutputInMessageEditor = false;
+                            }
+                            callbacks.saveExtensionSetting("hideOutputInMessageEditor", String.valueOf(hideOutputInMessageEditor));
+                        }
+                    });
+                    hvMenuBar.add(hideOutputInMessageEditorMenu);
+
                     JMenuItem globalVariablesMenu = new JMenuItem("Global variables");
                     globalVariablesMenu.addActionListener(new ActionListener() {
                         @Override

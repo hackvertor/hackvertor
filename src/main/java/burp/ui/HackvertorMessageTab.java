@@ -30,7 +30,7 @@ public class HackvertorMessageTab implements IMessageEditorTab {
                         return;
                     }
                     SwingUtilities.invokeLater(() -> {
-                        hackvertorPanel = new HackvertorPanel(hackvertor, false);
+                        hackvertorPanel = new HackvertorPanel(hackvertor, false, BurpExtender.hideOutputInMessageEditor);
                         hackvertorPanel.getInputArea().getDocument().addDocumentListener(new DocumentListener() {
                             @Override
                             public void insertUpdate(DocumentEvent e1) {
