@@ -93,6 +93,11 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
         return c;
     }
 
+    public static GridBagConstraints addMarginToGbc(GridBagConstraints gbc, int top, int left, int bottom, int right) {
+        gbc.insets = new Insets(top, left, bottom, right);
+        return gbc;
+    }
+
     @Override
     public IMessageEditorTab createNewInstance(IMessageEditorController controller, boolean editable) {
         return new HackvertorMessageTab(hackvertor);
@@ -194,7 +199,7 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
             public void run() {
                 try {
                     hackvertor = new Hackvertor();
-	            	stdout.println("Hackvertor v1.8.18");
+	            	stdout.println("Hackvertor v1.8.19");
                     loadCustomTags();
                     loadGlobalVariables();
                     registerPayloadProcessors();
@@ -893,13 +898,13 @@ public class BurpExtender implements IBurpExtender, ITab, IContextMenuFactory, I
             exportButton.setForeground(Color.white);
         }
         JPanel buttonsPanel = new JPanel(new GridBagLayout());
-        buttonsPanel.add(cancelButton, createConstraints(0, 0, 1, GridBagConstraints.NONE, 0, 0, 5, 5));
+        buttonsPanel.add(cancelButton, addMarginToGbc(createConstraints(0, 0, 1, GridBagConstraints.NONE, 0, 0, 5, 5),5, 5, 5, 5));
         if(edit) {
-            buttonsPanel.add(exportButton, createConstraints(1, 0, 1, GridBagConstraints.NONE, 0, 0, 5, 5));
+            buttonsPanel.add(exportButton, addMarginToGbc(createConstraints(1, 0, 1, GridBagConstraints.NONE, 0, 0, 5, 5), 5, 5, 5, 5));
         }
-        buttonsPanel.add(testButton, createConstraints(2, 0, 1, GridBagConstraints.NONE, 0, 0, 5, 5));
-        buttonsPanel.add(createButton, createConstraints(3, 0, 1, GridBagConstraints.NONE, 0, 0, 5, 5));
-        buttonsPanel.add(errorMessage, createConstraints(4, 0, 1, GridBagConstraints.NONE, 0, 0, 5, 5));
+        buttonsPanel.add(testButton, addMarginToGbc(createConstraints(2, 0, 1, GridBagConstraints.NONE, 0, 0, 5, 5), 5, 5, 5, 5));
+        buttonsPanel.add(createButton, addMarginToGbc(createConstraints(3, 0, 1, GridBagConstraints.NONE, 0, 0, 5, 5), 5, 5, 5, 5));
+        buttonsPanel.add(errorMessage, addMarginToGbc(createConstraints(4, 0, 1, GridBagConstraints.NONE, 0, 0, 5, 5), 5, 5, 5, 5));
         createTagPanel.add(buttonsPanel,createConstraints(0, 6, 2, GridBagConstraints.NONE, 1, 0, 5, 5)) ;
         pane.add(createTagPanel);
         createTagWindow.pack();

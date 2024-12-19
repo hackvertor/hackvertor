@@ -10,7 +10,6 @@ import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.text.Highlighter;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -38,7 +37,6 @@ public class Utils {
             btn.setFocusable(false);
             btn.setToolTipText(tagObj.tooltip);
 
-            ActionListener actionListener;
             if ((displayCategory != null && displayCategory.equals(tagObj.category)) || (StringUtils.isNotEmpty(searchTag) && (regex ? tagObj.name.matches(searchTag) : tagObj.name.contains(searchTag)))) {
                 if (!isNativeTheme && !isDarkTheme) {
                     btn.setBackground(Color.decode("#005a70"));
