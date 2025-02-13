@@ -65,7 +65,7 @@ TOKEN_MGR_DECLS : {
 
 <*> TOKEN : {
     <TAG_START: "<@" >: StartTag
-  | <ENDTAG_START: "<@/" >: StartTag
+  | <ENDTAG_START: "</@" >: StartTag
 }
 
 <DEFAULT> TOKEN: {

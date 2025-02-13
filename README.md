@@ -3,12 +3,24 @@
 # Hackvertor
 
 Hackvertor is a tag based conversion tool written in Java implemented as a Burp Suite extension. Tags are constructed as follows:
-<@base64><@/base64> the @ symbol is used as an identifier that it's a Hackvertor tag followed by the name of the tag in this case base64.
+<@base64></@base64> the @ symbol is used as an identifier that it's a Hackvertor tag followed by the name of the tag in this case base64.
 
 Tags also support arguments. The find tag allows you to find a string by regex and has parenthesis after the tag name:
-<@find("\\w")>abc<@/find> this indicates it supports arguments. The argument in this case is the regex string to find on the text in-between the tags. Hackvertor allows you to use three types of arguments either strings (double, single), boolean (true, false) or numbers (including hex).
+<@find("\\w")>abc</@find> this indicates it supports arguments. The argument in this case is the regex string to find on the text in-between the tags. Hackvertor allows you to use three types of arguments either strings (double, single), boolean (true, false) or numbers (including hex).
 
 # Changelog
+
+**2.0.0 2025-01-08**
+
+- Added tag execution key rehydrate button
+- Made HTTP request editor more compact
+- Added smart decode feature
+- Changed style of tags to </@name> instead <@/name> to help with autocompletion in future
+- Added AI features!
+    - Learn from repeater! Hackvertor will attempt to learn the encoding from repeater requests and generate Python custom tags automatically.
+    - Summarise custom code tags. When a custom tag is created Hackvertor will use AI to summarise what it does.
+    - AI custom tags. You can now use prompts in custom tags.
+    - Use AI to generate code. Hackvertor will generate a custom tag for you if you give it some input/ouput and instructions
 
 **1.8.10 2024-01-08**
 
