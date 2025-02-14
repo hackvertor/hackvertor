@@ -16,7 +16,7 @@ Tags also support arguments. The find tag allows you to find a string by regex a
   - Learn from repeater! Hackvertor will attempt to learn the encoding from repeater requests and generate Python custom tags automatically.
   - Summarise custom code tags. When a custom tag is created Hackvertor will use AI to summarise what it does.
   - AI custom tags. You can now use prompts in custom tags.
-  - Use AI to generate code. Hackvertor will generate a custom tag for you if you give it some input/ouput and instructions
+  - Use AI to generate code. Hackvertor will generate a custom tag for you if you give it some input/output and instructions
 
 **2.0.0 2025-01-08**
 
