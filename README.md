@@ -10,7 +10,7 @@ Tags also support arguments. The find tag allows you to find a string by regex a
 
 # Changelog
 
-**2.0.12 2025-02-13
+**2.0.12 2025-02-13**
 
 - Added AI features!
   - Learn from repeater! Hackvertor will attempt to learn the encoding from repeater requests and generate Python custom tags automatically.
