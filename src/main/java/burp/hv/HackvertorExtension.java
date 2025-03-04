@@ -4,6 +4,9 @@ import burp.*;
 import burp.api.montoya.BurpExtension;
 import burp.api.montoya.EnhancedCapability;
 import burp.api.montoya.MontoyaApi;
+import burp.api.montoya.http.message.requests.HttpRequest;
+import burp.api.montoya.ui.contextmenu.MessageEditorHttpRequestResponse;
+import burp.api.montoya.ui.hotkey.HotKeyContext;
 import burp.hv.settings.Settings;
 import burp.hv.tags.CustomTags;
 import burp.hv.tags.Tag;
@@ -23,11 +26,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static burp.hv.Convertors.*;
+import static burp.hv.HackvertorExtension.montoyaApi;
 
 public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, IExtensionStateListener, IMessageEditorTabFactory {
     //TODO Unset on unload
     public static String extensionName = "Hackvertor";
-    public static String version = "v2.0.12";
+    public static String version = "v2.0.13";
     public static JFrame HackvertorFrame = null;
     public static IBurpExtenderCallbacks callbacks;
     public static IExtensionHelpers helpers;
@@ -108,27 +112,6 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
                 registerPayloadProcessors();
                 extensionPanel = new ExtensionPanel(hackvertor);
                 callbacks.addSuiteTab(this);
-                if(montoyaApi == null) {
-                    ExecutorService service = Executors.newSingleThreadExecutor();
-                    try (Closeable close = service::shutdown) {
-                        service.submit(() -> {
-                            burpMenuBar = null;
-                            while(burpMenuBar == null) {
-                                burpMenuBar = Objects.requireNonNull(getBurpFrame()).getJMenuBar();
-                                try {
-                                    Thread.sleep(200);
-                                } catch (InterruptedException e) {
-                                    break;
-                                }
-                            }
-                            burpMenuBar.add(Utils.generateHackvertorMenuBar());
-                        });
-                    } catch (IOException ex) {
-                        throw new RuntimeException(ex);
-                    } finally {
-                        service.shutdown();
-                    }
-                }
                 callbacks.registerMessageEditorTabFactory(HackvertorExtension.this);
                 callbacks.registerContextMenuFactory(new ContextMenu());
                 callbacks.registerHttpListener(new HttpListener());
@@ -163,30 +146,7 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
         }
         executorService.shutdownNow();
         ngrams = null;
-        if(montoyaApi == null) {
-            SwingUtilities.invokeLater(() -> {
-                for (int i = 0; i < burpMenuBar.getMenuCount(); i++) {
-                    JMenu menu = burpMenuBar.getMenu(i);
-                    if (menu != null && extensionName.equals(menu.getText())) {
-                        burpMenuBar.remove(menu);
-                        break;
-                    }
-                }
-                burpMenuBar.revalidate();
-                burpMenuBar.repaint();
-                burpMenuBar = null;
-            });
-        }
         callbacks.printOutput(extensionName + " unloaded");
-    }
-
-    private static JFrame getBurpFrame() {
-        for (Frame f : Frame.getFrames()) {
-            if (f.isVisible() && f.getTitle().startsWith(("Burp Suite"))) {
-                return (JFrame) f;
-            }
-        }
-        return null;
     }
 
     public String getTabCaption() {
@@ -210,5 +170,24 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
     public void initialize(MontoyaApi montoyaApi) {
         HackvertorExtension.montoyaApi = montoyaApi;
         montoyaApi.userInterface().menuBar().registerMenu(Utils.generateHackvertorMenuBar());
+        Burp burp = new Burp(montoyaApi.burpSuite().version());
+        if(burp.hasCapability(Burp.Capability.REGISTER_HOTKEY)) {
+            montoyaApi.userInterface().registerHotKeyHandler(HotKeyContext.HTTP_MESSAGE_EDITOR,
+                    "Ctrl+Alt+D",
+                    event -> {
+                        if (event.messageEditorRequestResponse().isEmpty()) {
+                            return;
+                        }
+                        MessageEditorHttpRequestResponse requestResponse = event.messageEditorRequestResponse().get();
+                        if(requestResponse.selectionOffsets().isPresent() && requestResponse.selectionContext().toString().equalsIgnoreCase("request")) {
+                            String request = requestResponse.requestResponse().request().toString();
+                            int start = requestResponse.selectionOffsets().get().startIndexInclusive();
+                            int end = requestResponse.selectionOffsets().get().endIndexExclusive();
+                            String selectionWithTags = auto_decode_no_decrypt(request.substring(start, end));
+                            String modifiedRequest = request.substring(0, start) + selectionWithTags + request.substring(end);
+                            requestResponse.setRequest(HttpRequest.httpRequest(requestResponse.requestResponse().httpService(), modifiedRequest));
+                        }
+                    });
+        }
     }
 }

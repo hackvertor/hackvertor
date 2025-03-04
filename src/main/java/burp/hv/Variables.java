@@ -121,6 +121,7 @@ public class Variables {
                 for (String variable : HackvertorExtension.globalVariables.keySet()) {
                     variableCombo.addItem(variable);
                 }
+                saveGlobalVariables();
             }
         });
         createVariablePanel.add(copyButton);

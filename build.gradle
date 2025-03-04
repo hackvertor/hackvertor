@@ -15,6 +15,7 @@ repositories {
 }
 
 dependencies {
+    implementation files("libs/montoya-api-2025.3.6.jar")
     compileOnly 'net.portswigger.burp.extender:burp-extender-api:1.7.22'
     compileOnly 'net.portswigger.burp.extensions:montoya-api:2025.2'
     implementation 'commons-codec:commons-codec:1.15'

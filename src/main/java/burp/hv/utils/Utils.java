@@ -148,4 +148,14 @@ public class Utils {
         area.setLineWrap(true);
         callbacks.customizeUiComponent(area);
     }
+
+    public static boolean hasApiMethod(Object obj, String methodName) {
+        try {
+            Class<?> clazz = obj.getClass();
+            clazz.getMethod(methodName);
+            return true;
+        } catch(NoSuchMethodException e){
+            return false;
+        }
+    }
  }

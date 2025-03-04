@@ -3,6 +3,8 @@ package burp.hv.ai;
 import burp.api.montoya.ai.chat.Message;
 import burp.api.montoya.ai.chat.PromptOptions;
 import burp.api.montoya.ai.chat.PromptResponse;
+import burp.hv.utils.Utils;
+import jdk.jshell.execution.Util;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -40,20 +42,11 @@ public class AI {
     }
 
     public static boolean isAiSupported() {
-        return montoyaApi != null && hasApiMethod(montoyaApi, "ai") && montoyaApi.ai().isEnabled();
+        return montoyaApi != null && Utils.hasApiMethod(montoyaApi, "ai") && montoyaApi.ai().isEnabled();
     }
 
     public String getSystemMessage() {
         return this.systemMessage;
-    }
-    public static boolean hasApiMethod(Object obj, String methodName) {
-         try {
-             Class<?> clazz = obj.getClass();
-             clazz.getMethod(methodName);
-             return true;
-         } catch(NoSuchMethodException e){
-             return false;
-         }
     }
 
     public static String getHash(String input) throws NoSuchAlgorithmException {

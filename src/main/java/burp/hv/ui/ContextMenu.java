@@ -110,7 +110,13 @@ public class ContextMenu implements IContextMenuFactory {
             }
         });
         submenu.add(learnFromThisRequest);
-        JMenuItem autodecodeConvert = new JMenuItem("Smart decode");
+        JMenuItem autodecodeConvert;
+        Burp burp = new Burp(montoyaApi.burpSuite().version());
+        if(burp.hasCapability(Burp.Capability.REGISTER_HOTKEY)) {
+            autodecodeConvert = new JMenuItem("Smart decode (CTRL+Alt+D)");
+        } else {
+            autodecodeConvert = new JMenuItem("Smart decode");
+        }
         autodecodeConvert.setEnabled(bounds != null && bounds[0] != bounds[1]);
         autodecodeConvert.addActionListener(e -> {
             if (invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST || invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
