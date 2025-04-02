@@ -18,6 +18,8 @@ import org.json.JSONObject;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.text.JTextComponent;
 import java.awt.*;
@@ -27,6 +29,8 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.io.*;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -126,7 +130,6 @@ public class CustomTags {
         createTagPanel.add(tagLabel, GridbagUtils.createConstraints(0, 0, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, CENTER));
         createTagPanel.add(tagNameField, GridbagUtils.createConstraints(1, 0, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, CENTER));
         JLabel languageLabel = new JLabel("Select language");
-        JTextComponent.removeKeymap("RTextAreaKeymap");
         HackvertorInput codeArea = new HackvertorInput();
         JScrollPane codeScroll = new JScrollPane(codeArea);
         JComboBox<String> argument1Combo = new JComboBox<String>();
@@ -136,6 +139,21 @@ public class CustomTags {
         JComboBox<String> languageCombo = new JComboBox<String>();
         JTextField argument1NameField = new JTextField();
         JTextField argument1DefaultValueField = new JTextField();
+        languageCombo.addItem("AI");
+        languageCombo.addItem("JavaScript");
+        languageCombo.addItem("Python");
+        languageCombo.addItem("Java");
+        languageCombo.addItem("Groovy");
+        if (edit && customTag != null && customTag.has("code")) {
+            codeArea.setText(customTag.getString("code"));
+        }
+        final boolean[] hasEditedCode = {false};
+        codeArea.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                hasEditedCode[0] = true;
+            }
+        });
         languageCombo.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -161,19 +179,11 @@ public class CustomTags {
                         argument1DefaultValueField.setText("");
                     }
                 }
-
-                codeArea.setText(code);
+                if(!hasEditedCode[0]) {
+                    codeArea.setText(code);
+                }
             }
         });
-        languageCombo.addItem("AI");
-        languageCombo.addItem("JavaScript");
-        languageCombo.addItem("Python");
-        languageCombo.addItem("Java");
-        languageCombo.addItem("Groovy");
-        if(!AI.isAiSupported()) {
-            languageCombo.setSelectedIndex(1);
-        }
-
         if (edit && customTag != null && customTag.has("language")) {
             if (customTag.getString("language").equals("AI")) {
                 languageCombo.setSelectedIndex(0);
@@ -187,9 +197,12 @@ public class CustomTags {
                 languageCombo.setSelectedIndex(4);
             }
         }
-        if (edit && customTag != null && customTag.has("code")) {
-            codeArea.setText(customTag.getString("code"));
+        if(!AI.isAiSupported()) {
+            languageCombo.setSelectedIndex(1);
+        } else {
+            languageCombo.setSelectedIndex(0);
         }
+
         Container pane = createTagWindow.getContentPane();
         createTagPanel.add(languageLabel, GridbagUtils.createConstraints(0, 1, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, CENTER));
         createTagPanel.add(languageCombo, GridbagUtils.createConstraints(1, 1, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, CENTER));
@@ -582,6 +595,7 @@ public class CustomTags {
                                 variables += ")";
                                 generatedCode = CodeConversion.promptToCode(language, aiPrompt, additionalInstructions) + variables;
                                 codeArea.setText(generatedCode);
+                                hasEditedCode[0] = true;
                             } catch(Throwable ex) {
                                 alert(ex.toString());
                                 throw new RuntimeException(ex);
