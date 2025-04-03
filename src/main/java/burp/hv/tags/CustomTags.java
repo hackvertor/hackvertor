@@ -197,10 +197,13 @@ public class CustomTags {
                 languageCombo.setSelectedIndex(4);
             }
         }
-        if(!AI.isAiSupported()) {
-            languageCombo.setSelectedIndex(1);
-        } else {
-            languageCombo.setSelectedIndex(0);
+
+        if(!edit) {
+            if (!AI.isAiSupported()) {
+                languageCombo.setSelectedIndex(1);
+            } else {
+                languageCombo.setSelectedIndex(0);
+            }
         }
 
         Container pane = createTagWindow.getContentPane();
