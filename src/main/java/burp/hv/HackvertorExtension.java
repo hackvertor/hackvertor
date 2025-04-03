@@ -196,7 +196,6 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
                 hasHotKey = true;
             } else {
                 montoyaApi.logging().logToError("Failed to register hotkey handler");
-                hasHotKey = false;
             }
         }
     }

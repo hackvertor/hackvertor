@@ -111,7 +111,7 @@ public class ContextMenu implements IContextMenuFactory {
         submenu.add(learnFromThisRequest);
         JMenuItem autodecodeConvert;
         Burp burp = new Burp(montoyaApi.burpSuite().version());
-        if(hasHotKey && burp.hasCapability(Burp.Capability.REGISTER_HOTKEY)) {
+        if(hasHotKey) {
             autodecodeConvert = new JMenuItem("Smart decode (CTRL+Alt+D)");
         } else {
             autodecodeConvert = new JMenuItem("Smart decode");
