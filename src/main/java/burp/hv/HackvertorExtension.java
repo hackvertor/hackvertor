@@ -54,6 +54,7 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
 
     public static final ExecutorService executorService = Executors.newSingleThreadExecutor();
     public static int requestHistoryPos = 0;
+    public static boolean hasHotKey = false;
     public static ArrayList<IRequestInfo> requestHistory = new ArrayList<>();
     public static HashMap<String, Integer> tagCount = new HashMap<>();
     public static final HashMap<String, HashMap<String, Integer>> contextTagCount = new HashMap() {
@@ -192,8 +193,10 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
             });
             if(registration.isRegistered()) {
                 montoyaApi.logging().logToOutput("Successfully registered hotkey handler");
+                hasHotKey = true;
             } else {
                 montoyaApi.logging().logToError("Failed to register hotkey handler");
+                hasHotKey = false;
             }
         }
     }
