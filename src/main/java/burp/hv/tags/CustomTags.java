@@ -144,9 +144,6 @@ public class CustomTags {
         languageCombo.addItem("Python");
         languageCombo.addItem("Java");
         languageCombo.addItem("Groovy");
-        if (edit && customTag != null && customTag.has("code")) {
-            codeArea.setText(customTag.getString("code"));
-        }
         final boolean[] hasEditedCode = {false};
         codeArea.addKeyListener(new KeyAdapter() {
             @Override
@@ -204,6 +201,10 @@ public class CustomTags {
             } else {
                 languageCombo.setSelectedIndex(0);
             }
+        }
+
+        if (edit && customTag != null && customTag.has("code")) {
+            codeArea.setText(customTag.getString("code"));
         }
 
         Container pane = createTagWindow.getContentPane();
