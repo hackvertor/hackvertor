@@ -132,5 +132,12 @@
     "tagName": "email_utf7_decode",
     "author": "hackvertor",
     "numberOfArgs": 0
+  },
+  {
+    "description": "Makes a request through Burp",
+    "language": "Python",
+    "tagName": "read_url_burp",
+    "author": "hackvertor",
+    "numberOfArgs": 0
   }
 ]
