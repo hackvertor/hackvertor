@@ -19,8 +19,8 @@ public class Variables {
         createVariableWindow.getContentPane().removeAll();
         createVariableWindow.getContentPane().setLayout(new BorderLayout());
         createVariableWindow.setTitle("Global variables");
-        createVariableWindow.setResizable(false);
-        createVariableWindow.setPreferredSize(new Dimension(500, 200));
+        createVariableWindow.setResizable(true);
+        createVariableWindow.setPreferredSize(new Dimension(500, 300));
         createVariableWindow.setVisible(true);
         JLabel errorMessage = new JLabel();
         errorMessage.setPreferredSize(new Dimension(450, 25));
