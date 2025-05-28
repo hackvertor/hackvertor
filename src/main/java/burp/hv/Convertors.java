@@ -1412,10 +1412,7 @@ public class Convertors {
                 return "Unsupported algorithm";
             }
             String message = "";
-            String header = "{\n" +
-                    "  \"alg\": \"" + algo + "\",\n" +
-                    "  \"typ\": \"JWT\"\n" +
-                    "}";
+            String header = "{\"alg\":\"" + algo + "\",\"type\":\"JWT\"}";
             message = base64urlEncode(header) + "." + base64urlEncode(payload);
             if (!algoName.equals("none")) {
                 Mac hashMac = Mac.getInstance(algoName);
