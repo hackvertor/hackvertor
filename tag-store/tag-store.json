@@ -153,5 +153,12 @@
    "tagName": "JSON_string_unescape",
    "author": "noraj",
    "numberOfArgs": 0
+  },
+  {
+   "description": "zlib_compress",
+   "language": "Python",
+   "tagName": "zlib_compress",
+   "author": "mwalkowski",
+   "numberOfArgs": 0
   }
 ]
