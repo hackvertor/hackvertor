@@ -139,5 +139,26 @@
     "tagName": "read_url_burp",
     "author": "hackvertor",
     "numberOfArgs": 0
+  },
+  {
+   "description": "Escape a string so it can be included in a JSON string",
+   "language": "JavaScript",
+   "tagName": "JSON_string_escape",
+   "author": "noraj",
+   "numberOfArgs": 0
+  },
+  {
+   "description": "Unescape a JSON escaped string",
+   "language": "JavaScript",
+   "tagName": "JSON_string_unescape",
+   "author": "noraj",
+   "numberOfArgs": 0
+  },
+  {
+   "description": "zlib_compress",
+   "language": "Python",
+   "tagName": "zlib_compress",
+   "author": "mwalkowski",
+   "numberOfArgs": 0
   }
 ]
