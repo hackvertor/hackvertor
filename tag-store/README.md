@@ -6,12 +6,11 @@ Welcome to the Hackvertor tag store. This repository allows Hackvertor users to 
 
 1. Only one tag per pull request is allowed.
 2. There should only be one file with your code you cannot import multiple files.
-3. The maximum size of your code is 1337 bytes.
-4. You should create a folder with your tag name and the file should also have the same name.
-5. The author property should reflect your github username.
-6. Any form of obfuscation will be rejected.
-7. Any form of malicious code is obviously not allowed.
-8. You must test your tag before submission
+3. You should create a folder with your tag name and the file should also have the same name.
+4. The author property should reflect your github username.
+5. Any form of obfuscation will be rejected.
+6. Any form of malicious code is obviously not allowed.
+7. You must test your tag before submission
 
 ## How to submit your custom tag
 
