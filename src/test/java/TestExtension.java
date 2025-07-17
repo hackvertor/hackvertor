@@ -10,7 +10,7 @@ public class TestExtension {
         JFrame jFrame = new JFrame("Burp Suite - Hackvertor");
         jFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         jFrame.setContentPane(new JPanel(new BorderLayout()));
-        jFrame.setPreferredSize(new Dimension(900,800));
+        jFrame.setPreferredSize(new Dimension(1200,1000));
         JMenuBar menuBar = new JMenuBar();
         jFrame.setJMenuBar(menuBar);
         HackvertorExtension hackvertorExtension = new HackvertorExtension();

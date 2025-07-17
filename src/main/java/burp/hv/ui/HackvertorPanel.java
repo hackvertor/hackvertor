@@ -60,8 +60,8 @@ public class HackvertorPanel extends JPanel {
     private void buildPanel(boolean showLogo, boolean hideOutput){
         tabs = buildTabbedPane(hideOutput);
         JPanel topBar = new JPanel(new GridBagLayout());
-        topBar.setPreferredSize(new Dimension(-1, 70));
-        topBar.setMinimumSize(new Dimension(-1, 70));
+        topBar.setPreferredSize(new Dimension(-1, 100));
+        topBar.setMinimumSize(new Dimension(-1, 100));
         JLabel logoLabel;
         if (isDarkTheme) {
             logoLabel = new JLabel(createImageIcon("/images/logo-dark.png", "logo"));

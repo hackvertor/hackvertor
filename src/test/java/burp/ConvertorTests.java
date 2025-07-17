@@ -2,7 +2,6 @@ package burp;
 import burp.hv.Hackvertor;
 import burp.hv.HackvertorExtension;
 import burp.stubs.StubExtensionHelpers;
-import hv.parser.ParseException;
 import org.junit.jupiter.api.Test;
 
 import javax.swing.*;
@@ -22,13 +21,19 @@ public class ConvertorTests {
     }
 
     @Test
-    void convertSpaceInTag() throws ParseException {
+    void convertSpaceInTag() {
         String spaceInContent = "<@base64> </@base64>";
         String converted = hackvertor.convert(spaceInContent, hackvertor);
         assertEquals("IA==", converted);
     }
 
-    //Test for #92.
+    @Test
+    void testBase64Encoding() {
+        String input = "<@base64>test</@base64>";
+        String converted = hackvertor.convert(input, hackvertor);
+        assertEquals("dGVzdA==", converted);
+    }
+
     @Test
     void testSpaceInAttribute(){
         String plaintext = "<@ascii2hex('')>abcd</@ascii2hex>";

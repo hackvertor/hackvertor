@@ -1,8 +1,7 @@
 package burp.stubs;
 
 import burp.*;
-import org.python.apache.xerces.impl.dv.util.Base64;
-
+import java.util.Base64;
 import java.net.URL;
 import java.util.List;
 
@@ -54,22 +53,22 @@ public class StubExtensionHelpers implements IExtensionHelpers {
 
     @Override
     public byte[] base64Decode(String data) {
-        return new byte[0];
+        return Base64.getDecoder().decode(data);
     }
 
     @Override
     public byte[] base64Decode(byte[] data) {
-        return base64Decode(data);
+        return Base64.getDecoder().decode(data);
     }
 
     @Override
     public String base64Encode(String data) {
-        return Base64.encode(data.getBytes());
+        return Base64.getEncoder().encodeToString(data.getBytes());
     }
 
     @Override
     public String base64Encode(byte[] data) {
-        return null;
+        return Base64.getEncoder().encodeToString(data);
     }
 
     @Override
