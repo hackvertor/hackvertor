@@ -11,6 +11,7 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -108,12 +109,12 @@ public class StubCallbacks implements IBurpExtenderCallbacks {
 
             @Override
             public byte[] stringToBytes(String s) {
-                return s.getBytes();
+                return s.getBytes(StandardCharsets.ISO_8859_1);
             }
 
             @Override
             public String bytesToString(byte[] bytes) {
-                return new String(bytes, Charset.defaultCharset());
+                return new String(bytes, StandardCharsets.ISO_8859_1);
             }
 
             @Override
