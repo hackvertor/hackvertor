@@ -15,8 +15,9 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'net.portswigger.burp.extender:burp-extender-api:1.7.22'
-    compileOnly 'net.portswigger.burp.extensions:montoya-api:2025.3'
+    // I use implementation for burp-extender and montoya so the tests work
+    implementation 'net.portswigger.burp.extender:burp-extender-api:1.7.22'
+    implementation 'net.portswigger.burp.extensions:montoya-api:2025.3'
     implementation 'commons-codec:commons-codec:1.15'
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'org.unbescape:unbescape:1.1.6.RELEASE'
