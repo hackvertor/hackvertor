@@ -280,7 +280,7 @@ public class ConvertorTests extends BaseHackvertorTest {
     void testHex2Ascii() {
         String input = "<@hex2ascii>414243</@hex2ascii>";
         String converted = hackvertor.convert(input, hackvertor);
-        assertEquals("ABCD", converted);
+        assertEquals("ABC", converted);
     }
 
     // Encryption/Decryption Tests
