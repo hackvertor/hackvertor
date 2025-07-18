@@ -3,6 +3,7 @@ package burp.stubs;
 import burp.*;
 import java.util.Base64;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class StubExtensionHelpers implements IExtensionHelpers {
@@ -73,12 +74,16 @@ public class StubExtensionHelpers implements IExtensionHelpers {
 
     @Override
     public byte[] stringToBytes(String data) {
-        return new byte[0];
+        if (data == null) return new byte[0];
+        // In Burp, this returns the raw bytes - treating the string as ISO-8859-1
+        return data.getBytes(StandardCharsets.ISO_8859_1);
     }
 
     @Override
     public String bytesToString(byte[] data) {
-        return null;
+        if (data == null) return null;
+        // In Burp, this returns a string using ISO-8859-1 encoding to preserve binary data
+        return new String(data, StandardCharsets.ISO_8859_1);
     }
 
     @Override

@@ -1909,33 +1909,37 @@ public class Convertors {
     }
 
     static String atbash_encrypt(String message) {
-        message = message.toLowerCase();
-        String encoded = "";
-        String key = "ZYXWVUTSRQPONMLKJIHGFEDCBA".toLowerCase();
+        StringBuilder encoded = new StringBuilder();
+        String keyUpper = "ZYXWVUTSRQPONMLKJIHGFEDCBA";
+        String keyLower = keyUpper.toLowerCase();
         for (int i = 0; i < message.length(); i++) {
             char chr = message.charAt(i);
-            if (Character.isLowerCase(chr)) {
-                encoded += key.charAt(message.codePointAt(i) - 97);
+            if (Character.isUpperCase(chr)) {
+                encoded.append(keyUpper.charAt(message.codePointAt(i) - 65));
+            } else if (Character.isLowerCase(chr)) {
+                encoded.append(keyLower.charAt(message.codePointAt(i) - 97));
             } else {
-                encoded += chr;
+                encoded.append(chr);
             }
         }
-        return encoded;
+        return encoded.toString();
     }
 
     static String atbash_decrypt(String ciphertext) {
-        ciphertext = ciphertext.toLowerCase();
-        String plaintext = "";
-        String key = "ZYXWVUTSRQPONMLKJIHGFEDCBA".toLowerCase();
+        StringBuilder plaintext = new StringBuilder();
+        String keyUpper = "ZYXWVUTSRQPONMLKJIHGFEDCBA";
+        String keyLower = keyUpper.toLowerCase();
         for (int i = 0; i < ciphertext.length(); i++) {
             char chr = ciphertext.charAt(i);
-            if (Character.isLowerCase(chr)) {
-                plaintext += (char) (key.indexOf(ciphertext.charAt(i)) + 97);
+            if (Character.isUpperCase(chr)) {
+                plaintext.append((char) (keyUpper.indexOf(ciphertext.charAt(i)) + 65));
+            } else if (Character.isLowerCase(chr)) {
+                plaintext.append((char) (keyLower.indexOf(ciphertext.charAt(i)) + 97));
             } else {
-                plaintext += chr;
+                plaintext.append(chr);
             }
         }
-        return plaintext;
+        return plaintext.toString();
     }
 
     static String rotN_bruteforce(String str) {
