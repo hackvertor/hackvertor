@@ -209,6 +209,79 @@ public class HackvertorUiTest {
         Assertions.assertEquals("dGVzdA==", outputText, "Output should contain base64 encoded 'test'");
     }
 
+    @Test
+    void testSmartDecode() throws Exception {
+        // Wait for UI to be ready
+        window.robot().waitForIdle();
+        Thread.sleep(500);
+        
+        // Find the input and output HackvertorInput areas
+        Component[] allTextAreas = window.robot().finder()
+                .findAll(window.target(), component -> component instanceof JTextArea)
+                .toArray(new Component[0]);
+        
+        JTextArea inputArea = null;
+        JTextArea outputArea = null;
+        int hackvertorInputCount = 0;
+        
+        for (Component component : allTextAreas) {
+            if (component.getClass().getName().equals("burp.hv.ui.HackvertorInput")) {
+                if (hackvertorInputCount == 0) {
+                    inputArea = (JTextArea) component;
+                } else if (hackvertorInputCount == 1) {
+                    outputArea = (JTextArea) component;
+                }
+                hackvertorInputCount++;
+            }
+        }
+        
+        Assertions.assertNotNull(inputArea, "Input area should be found");
+        Assertions.assertNotNull(outputArea, "Output area should be found");
+        
+        // Set the encoded input
+        String encodedInput = "JTVDMTM0JTVDMTcwJTVDNjYlNUM2NiU1QzEzNCU1QzE3MCU1QzY2JTVDMTA2JTVDMTM0JTVDMTcwJTVDNjYlNUMxMDYlNUMxMzQlNUMxNzAlNUM2NiU1QzYyJTVDMTM0JTVDMTcwJTVDNjYlNUM2MSU1QzEzNCU1QzE3MCU1QzY3JTVDNjI=";
+        
+        window.robot().click(inputArea);
+        window.robot().waitForIdle();
+        
+        final JTextArea finalInputArea = inputArea;
+        GuiActionRunner.execute(() -> finalInputArea.setText(encodedInput));
+        window.robot().waitForIdle();
+        
+        // Select all text
+        GuiActionRunner.execute(() -> finalInputArea.selectAll());
+        window.robot().waitForIdle();
+        
+        // Find the Smart Decode button
+        Component smartDecodeButton = window.robot().finder().find(
+                window.target(),
+                c -> c instanceof JButton && 
+                     ((JButton) c).getText() != null &&
+                     ((JButton) c).getText().contains("Smart Decode") &&
+                     c.isEnabled() &&
+                     c.isShowing()
+        );
+        
+        Assertions.assertNotNull(smartDecodeButton, "Smart Decode button should be found and enabled");
+        
+        // Click the Smart Decode button
+        JButton button = (JButton) smartDecodeButton;
+        GuiActionRunner.execute(() -> button.doClick());
+        
+        // Wait for processing
+        window.robot().waitForIdle();
+        Thread.sleep(2000); // Give more time for smart decode processing
+        
+        // Check the input area contains the decoded tags
+        String inputText = inputArea.getText();
+        String expectedInput = "<@base64><@urlencode_not_plus><@octal_escapes><@hex_escapes>foobar</@hex_escapes></@octal_escapes></@urlencode_not_plus></@base64>";
+        Assertions.assertEquals(expectedInput, inputText, "Input should contain the smart decoded tags");
+        
+        // Check that output area contains the original encoded value
+        String outputText = outputArea.getText();
+        Assertions.assertEquals(encodedInput, outputText, "Output should contain the original encoded value");
+    }
+
     @AfterEach
     void tearDown() {
         if (window != null) {
