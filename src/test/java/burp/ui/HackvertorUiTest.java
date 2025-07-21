@@ -134,6 +134,81 @@ public class HackvertorUiTest {
         Assertions.assertTrue(foundBase64Tag, "base64 tag should be added to a JTextArea after clicking the button");
     }
 
+    @Test
+    void testBase64EncodingWithText() throws Exception {
+        // Wait for UI to be ready
+        window.robot().waitForIdle();
+        Thread.sleep(500);
+        
+        // Find the input and output HackvertorInput areas
+        Component[] allTextAreas = window.robot().finder()
+                .findAll(window.target(), component -> component instanceof JTextArea)
+                .toArray(new Component[0]);
+        
+        JTextArea inputArea = null;
+        JTextArea outputArea = null;
+        int hackvertorInputCount = 0;
+        
+        for (Component component : allTextAreas) {
+            if (component.getClass().getName().equals("burp.hv.ui.HackvertorInput")) {
+                if (hackvertorInputCount == 0) {
+                    inputArea = (JTextArea) component;
+                } else if (hackvertorInputCount == 1) {
+                    outputArea = (JTextArea) component;
+                }
+                hackvertorInputCount++;
+            }
+        }
+        
+        Assertions.assertNotNull(inputArea, "Input area should be found");
+        Assertions.assertNotNull(outputArea, "Output area should be found");
+        
+        // Type "test" in the input area
+        window.robot().click(inputArea);
+        window.robot().waitForIdle();
+        
+        final JTextArea finalInputArea = inputArea;
+        GuiActionRunner.execute(() -> finalInputArea.setText("test"));
+        window.robot().waitForIdle();
+        
+        // Select all text
+        GuiActionRunner.execute(() -> finalInputArea.selectAll());
+        window.robot().waitForIdle();
+        
+        // Find the tabbed pane and base64 button
+        List<JTabbedPane> tabPanes = window.robot().finder().findAll(
+                        c -> c instanceof JTabbedPane && c.isShowing()
+                ).stream()
+                .map(c -> (JTabbedPane) c)
+                .toList();
+
+        JTabbedPane innerTabs = tabPanes.get(0);
+        Component selectedTabContent = GuiActionRunner.execute(innerTabs::getSelectedComponent);
+
+        // Find and click the base64 button
+        Component base64Button = window.robot().finder().find(
+                (Container) selectedTabContent,
+                c -> c instanceof JButton &&
+                        "base64".equals(((JButton) c).getText()) &&
+                        c.isShowing()
+        );
+        
+        JButton button = (JButton) base64Button;
+        GuiActionRunner.execute(() -> button.doClick());
+        
+        // Wait for processing
+        window.robot().waitForIdle();
+        Thread.sleep(1000); // Give time for conversion to happen
+        
+        // Check that input area contains the tags around "test"
+        String inputText = inputArea.getText();
+        Assertions.assertEquals("<@base64>test</@base64>", inputText, "Input should have base64 tags around 'test'");
+        
+        // Check that output area contains the base64 encoded value of "test"
+        String outputText = outputArea.getText();
+        Assertions.assertEquals("dGVzdA==", outputText, "Output should contain base64 encoded 'test'");
+    }
+
     @AfterEach
     void tearDown() {
         if (window != null) {
