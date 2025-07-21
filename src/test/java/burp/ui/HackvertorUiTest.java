@@ -3,11 +3,13 @@ package burp.ui;
 import burp.hv.HackvertorExtension;
 import burp.stubs.StubCallbacks;
 import org.assertj.swing.edt.FailOnThreadViolationRepaintManager;
+import org.assertj.swing.edt.GuiActionRunner;
 import org.assertj.swing.fixture.FrameFixture;
 import org.junit.jupiter.api.*;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.List;
 
 public class HackvertorUiTest {
 
@@ -51,6 +53,85 @@ public class HackvertorUiTest {
         window.requireTitle("Burp Suite - Hackvertor");
         Assertions.assertEquals(1200, window.target().getWidth());
         Assertions.assertEquals(1000, window.target().getHeight());
+    }
+
+    @Test
+    void testClickBase64Button() throws Exception {
+        // Wait for UI to be ready
+        window.robot().waitForIdle();
+        
+        // First, focus on the first HackvertorInput (input area) to ensure cursor is there
+        Component[] allTextAreas = window.robot().finder()
+                .findAll(window.target(), component -> component instanceof JTextArea)
+                .toArray(new Component[0]);
+        
+        JTextArea inputArea = null;
+        for (Component component : allTextAreas) {
+            if (component.getClass().getName().equals("burp.hv.ui.HackvertorInput")) {
+                inputArea = (JTextArea) component;
+                break; // Get the first HackvertorInput (which should be the input area)
+            }
+        }
+        
+        if (inputArea != null) {
+            // Click on the input area to give it focus
+            window.robot().click(inputArea);
+            window.robot().waitForIdle();
+        }
+        
+        // Find all tab panes
+        List<JTabbedPane> tabPanes = window.robot().finder().findAll(
+                        c -> c instanceof JTabbedPane && c.isShowing()
+                ).stream()
+                .map(c -> (JTabbedPane) c)
+                .toList();
+
+        // Get the inner tabs (tag categories)
+        JTabbedPane innerTabs = tabPanes.get(0);
+        
+        // The Encode tab should already be selected by default
+        // No need to switch tabs as per HackvertorPanel.buildTabbedPane() line 565:
+        // tabs.setSelectedIndex(tabs.indexOfTab("Encode"));
+        
+        // Get the selected tab content (should be Encode tab now)
+        Component selectedTabContent = GuiActionRunner.execute(innerTabs::getSelectedComponent);
+
+        // Find the base64 button
+        Component base64Button = window.robot().finder().find(
+                (Container) selectedTabContent,
+                c -> c instanceof JButton &&
+                        "base64".equals(((JButton) c).getText()) &&
+                        c.isShowing()
+        );
+
+        // Click the button using different approaches
+        JButton button = (JButton) base64Button;
+        
+        // Try clicking using GuiActionRunner to ensure it runs on EDT
+        GuiActionRunner.execute(() -> button.doClick());
+
+        // Give the UI time to update
+        window.robot().waitForIdle();
+        Thread.sleep(500);
+        
+        // Check all JTextAreas to see if the base64 tag has been added
+        Component[] components = window.robot().finder()
+                .findAll(window.target(), component -> component instanceof JTextArea)
+                .toArray(new Component[0]);
+        
+        boolean foundBase64Tag = false;
+        for (Component component : components) {
+            JTextArea textArea = (JTextArea) component;
+            String text = textArea.getText();
+            
+            // Check for the base64 tags
+            if (text.contains("<@base64>") && text.contains("</@base64>")) {
+                foundBase64Tag = true;
+                break;
+            }
+        }
+        
+        Assertions.assertTrue(foundBase64Tag, "base64 tag should be added to a JTextArea after clicking the button");
     }
 
     @AfterEach
