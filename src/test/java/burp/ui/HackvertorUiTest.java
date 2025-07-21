@@ -112,7 +112,6 @@ public class HackvertorUiTest {
 
         // Give the UI time to update
         window.robot().waitForIdle();
-        Thread.sleep(500);
         
         // Check all JTextAreas to see if the base64 tag has been added
         Component[] components = window.robot().finder()
@@ -138,7 +137,6 @@ public class HackvertorUiTest {
     void testBase64EncodingWithText() throws Exception {
         // Wait for UI to be ready
         window.robot().waitForIdle();
-        Thread.sleep(500);
         
         // Find the input and output HackvertorInput areas
         Component[] allTextAreas = window.robot().finder()
@@ -198,7 +196,6 @@ public class HackvertorUiTest {
         
         // Wait for processing
         window.robot().waitForIdle();
-        Thread.sleep(1000); // Give time for conversion to happen
         
         // Check that input area contains the tags around "test"
         String inputText = inputArea.getText();
@@ -213,7 +210,6 @@ public class HackvertorUiTest {
     void testSmartDecode() throws Exception {
         // Wait for UI to be ready
         window.robot().waitForIdle();
-        Thread.sleep(500);
         
         // Find the input and output HackvertorInput areas
         Component[] allTextAreas = window.robot().finder()
@@ -270,7 +266,6 @@ public class HackvertorUiTest {
         
         // Wait for processing
         window.robot().waitForIdle();
-        Thread.sleep(2000); // Give more time for smart decode processing
         
         // Check the input area contains the decoded tags
         String inputText = inputArea.getText();
@@ -286,7 +281,6 @@ public class HackvertorUiTest {
     void testClearButton() throws Exception {
         // Wait for UI to be ready
         window.robot().waitForIdle();
-        Thread.sleep(500);
         
         // Find the input and output areas
         Component[] allTextAreas = window.robot().finder()
@@ -314,7 +308,6 @@ public class HackvertorUiTest {
             finalInputArea.setText("test input");
         });
         window.robot().waitForIdle();
-        Thread.sleep(500); // Wait for automatic conversion
         
         // Verify text is present
         Assertions.assertEquals("test input", inputArea.getText());
@@ -332,7 +325,6 @@ public class HackvertorUiTest {
         JButton button = (JButton) clearButton;
         GuiActionRunner.execute(() -> button.doClick());
         window.robot().waitForIdle();
-        Thread.sleep(500);
         
         // Verify both areas are now empty
         Assertions.assertEquals("", inputArea.getText(), "Input area should be empty after Clear");
@@ -343,7 +335,6 @@ public class HackvertorUiTest {
     void testClearTagsButton() throws Exception {
         // Wait for UI to be ready
         window.robot().waitForIdle();
-        Thread.sleep(500);
         
         // Find the input area
         Component[] allTextAreas = window.robot().finder()
@@ -374,7 +365,6 @@ public class HackvertorUiTest {
         JButton button = (JButton) clearTagsButton;
         GuiActionRunner.execute(() -> button.doClick());
         window.robot().waitForIdle();
-        Thread.sleep(500);
         
         // Verify tags are removed but content remains
         String result = inputArea.getText();
@@ -389,7 +379,6 @@ public class HackvertorUiTest {
     void testSwapButton() throws Exception {
         // Wait for UI to be ready
         window.robot().waitForIdle();
-        Thread.sleep(500);
         
         // Find the input and output areas
         Component[] allTextAreas = window.robot().finder()
@@ -417,7 +406,6 @@ public class HackvertorUiTest {
             finalInputArea.setText("<@base64>test</@base64>");
         });
         window.robot().waitForIdle();
-        Thread.sleep(500); // Wait for automatic conversion
         
         // Find and click the Swap button
         Component swapButton = window.robot().finder().find(
@@ -430,13 +418,11 @@ public class HackvertorUiTest {
         JButton button = (JButton) swapButton;
         GuiActionRunner.execute(() -> button.doClick());
         window.robot().waitForIdle();
-        Thread.sleep(500);
         
         // Verify swap occurred - input should have the base64 encoded value
         Assertions.assertEquals("dGVzdA==", inputArea.getText(), "Input should contain base64 encoded value after swap");
         // Note: Due to automatic conversion, output will immediately show "dGVzdA==" again
         // Let's wait a bit and check
-        Thread.sleep(500);
         Assertions.assertEquals("dGVzdA==", outputArea.getText(), "Output should show the same value due to automatic conversion");
     }
 
@@ -444,7 +430,6 @@ public class HackvertorUiTest {
     void testSelectInputButton() throws Exception {
         // Wait for UI to be ready
         window.robot().waitForIdle();
-        Thread.sleep(500);
         
         // Find the input area
         Component[] allTextAreas = window.robot().finder()
@@ -479,7 +464,6 @@ public class HackvertorUiTest {
         JButton button = (JButton) selectInputButton;
         GuiActionRunner.execute(() -> button.doClick());
         window.robot().waitForIdle();
-        Thread.sleep(500);
         
         // Verify text is selected
         String selectedText = inputArea.getSelectedText();
@@ -491,7 +475,6 @@ public class HackvertorUiTest {
     void testSelectOutputButton() throws Exception {
         // Wait for UI to be ready
         window.robot().waitForIdle();
-        Thread.sleep(500);
         
         // Find the output area
         Component[] allTextAreas = window.robot().finder()
@@ -531,7 +514,6 @@ public class HackvertorUiTest {
         JButton button = (JButton) selectOutputButton;
         GuiActionRunner.execute(() -> button.doClick());
         window.robot().waitForIdle();
-        Thread.sleep(500);
         
         // Verify text is selected
         String selectedText = outputArea.getSelectedText();
@@ -543,7 +525,6 @@ public class HackvertorUiTest {
     void testConvertButton() throws Exception {
         // Wait for UI to be ready
         window.robot().waitForIdle();
-        Thread.sleep(500);
         
         // Find the input and output areas
         Component[] allTextAreas = window.robot().finder()
@@ -586,7 +567,6 @@ public class HackvertorUiTest {
         JButton button = (JButton) convertButton;
         GuiActionRunner.execute(() -> button.doClick());
         window.robot().waitForIdle();
-        Thread.sleep(1000); // Give time for conversion
         
         // Verify output contains base64 encoded result
         String outputText = outputArea.getText();
@@ -597,7 +577,6 @@ public class HackvertorUiTest {
     void testPasteInsideTagsButton() throws Exception {
         // Wait for UI to be ready
         window.robot().waitForIdle();
-        Thread.sleep(500);
         
         // Find the input area
         Component[] allTextAreas = window.robot().finder()
@@ -639,7 +618,6 @@ public class HackvertorUiTest {
         JButton button = (JButton) pasteInsideButton;
         GuiActionRunner.execute(() -> button.doClick());
         window.robot().waitForIdle();
-        Thread.sleep(500);
         
         // Verify clipboard content was pasted inside the empty tag
         String result = inputArea.getText();
