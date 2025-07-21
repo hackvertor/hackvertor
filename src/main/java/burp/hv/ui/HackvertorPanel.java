@@ -363,7 +363,7 @@ public class HackvertorPanel extends JPanel {
                     for (int i = 0; i < inputElements.size(); i++) {
                         Element curr = inputElements.get(i);
                         Element next = i != inputElements.size() - 1 ? inputElements.get(i+1) : null;
-                        Element secondNext = i != inputElements.size() - 2 ? inputElements.get(i+2) : null;
+                        Element secondNext = i + 2 < inputElements.size() - 1 ? inputElements.get(i+2) : null;
                         if(curr instanceof Element.StartTag){
                             if(next instanceof Element.EndTag
                                 && ((Element.StartTag) curr).getIdentifier()

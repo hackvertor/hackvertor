@@ -172,7 +172,7 @@ public class HackvertorUiTest {
         window.robot().waitForIdle();
         
         // Select all text
-        GuiActionRunner.execute(() -> finalInputArea.selectAll());
+        GuiActionRunner.execute(finalInputArea::selectAll);
         window.robot().waitForIdle();
         
         // Find the tabbed pane and base64 button
@@ -280,6 +280,371 @@ public class HackvertorUiTest {
         // Check that output area contains the original encoded value
         String outputText = outputArea.getText();
         Assertions.assertEquals(encodedInput, outputText, "Output should contain the original encoded value");
+    }
+
+    @Test
+    void testClearButton() throws Exception {
+        // Wait for UI to be ready
+        window.robot().waitForIdle();
+        Thread.sleep(500);
+        
+        // Find the input and output areas
+        Component[] allTextAreas = window.robot().finder()
+                .findAll(window.target(), component -> component instanceof JTextArea)
+                .toArray(new Component[0]);
+        
+        JTextArea inputArea = null;
+        JTextArea outputArea = null;
+        int hackvertorInputCount = 0;
+        
+        for (Component component : allTextAreas) {
+            if (component.getClass().getName().equals("burp.hv.ui.HackvertorInput")) {
+                if (hackvertorInputCount == 0) {
+                    inputArea = (JTextArea) component;
+                } else if (hackvertorInputCount == 1) {
+                    outputArea = (JTextArea) component;
+                }
+                hackvertorInputCount++;
+            }
+        }
+        
+        // Add some text to input area
+        final JTextArea finalInputArea = inputArea;
+        GuiActionRunner.execute(() -> {
+            finalInputArea.setText("test input");
+        });
+        window.robot().waitForIdle();
+        Thread.sleep(500); // Wait for automatic conversion
+        
+        // Verify text is present
+        Assertions.assertEquals("test input", inputArea.getText());
+        // Output will be same as input since there are no tags
+        Assertions.assertEquals("test input", outputArea.getText());
+        
+        // Find and click the Clear button
+        Component clearButton = window.robot().finder().find(
+                window.target(),
+                c -> c instanceof JButton && 
+                     "Clear".equals(((JButton) c).getText()) &&
+                     c.isShowing()
+        );
+        
+        JButton button = (JButton) clearButton;
+        GuiActionRunner.execute(() -> button.doClick());
+        window.robot().waitForIdle();
+        Thread.sleep(500);
+        
+        // Verify both areas are now empty
+        Assertions.assertEquals("", inputArea.getText(), "Input area should be empty after Clear");
+        Assertions.assertEquals("", outputArea.getText(), "Output area should be empty after Clear");
+    }
+
+    @Test
+    void testClearTagsButton() throws Exception {
+        // Wait for UI to be ready
+        window.robot().waitForIdle();
+        Thread.sleep(500);
+        
+        // Find the input area
+        Component[] allTextAreas = window.robot().finder()
+                .findAll(window.target(), component -> component instanceof JTextArea)
+                .toArray(new Component[0]);
+        
+        JTextArea inputArea = null;
+        for (Component component : allTextAreas) {
+            if (component.getClass().getName().equals("burp.hv.ui.HackvertorInput")) {
+                inputArea = (JTextArea) component;
+                break;
+            }
+        }
+        
+        // Add text with tags
+        final JTextArea finalInputArea = inputArea;
+        GuiActionRunner.execute(() -> finalInputArea.setText("<@base64>test</@base64> plain text <@hex>more</@hex>"));
+        window.robot().waitForIdle();
+        
+        // Find and click the Clear tags button
+        Component clearTagsButton = window.robot().finder().find(
+                window.target(),
+                c -> c instanceof JButton && 
+                     "Clear tags".equals(((JButton) c).getText()) &&
+                     c.isShowing()
+        );
+        
+        JButton button = (JButton) clearTagsButton;
+        GuiActionRunner.execute(() -> button.doClick());
+        window.robot().waitForIdle();
+        Thread.sleep(500);
+        
+        // Verify tags are removed but content remains
+        String result = inputArea.getText();
+        Assertions.assertFalse(result.contains("<@"), "Should not contain opening tags");
+        Assertions.assertFalse(result.contains("</@"), "Should not contain closing tags");
+        Assertions.assertTrue(result.contains("test"), "Should still contain 'test'");
+        Assertions.assertTrue(result.contains("plain text"), "Should still contain 'plain text'");
+        Assertions.assertTrue(result.contains("more"), "Should still contain 'more'");
+    }
+
+    @Test
+    void testSwapButton() throws Exception {
+        // Wait for UI to be ready
+        window.robot().waitForIdle();
+        Thread.sleep(500);
+        
+        // Find the input and output areas
+        Component[] allTextAreas = window.robot().finder()
+                .findAll(window.target(), component -> component instanceof JTextArea)
+                .toArray(new Component[0]);
+        
+        JTextArea inputArea = null;
+        JTextArea outputArea = null;
+        int hackvertorInputCount = 0;
+        
+        for (Component component : allTextAreas) {
+            if (component.getClass().getName().equals("burp.hv.ui.HackvertorInput")) {
+                if (hackvertorInputCount == 0) {
+                    inputArea = (JTextArea) component;
+                } else if (hackvertorInputCount == 1) {
+                    outputArea = (JTextArea) component;
+                }
+                hackvertorInputCount++;
+            }
+        }
+        
+        // Set text with tags in input - this will generate different output
+        final JTextArea finalInputArea = inputArea;
+        GuiActionRunner.execute(() -> {
+            finalInputArea.setText("<@base64>test</@base64>");
+        });
+        window.robot().waitForIdle();
+        Thread.sleep(500); // Wait for automatic conversion
+        
+        // Find and click the Swap button
+        Component swapButton = window.robot().finder().find(
+                window.target(),
+                c -> c instanceof JButton && 
+                     "Swap".equals(((JButton) c).getText()) &&
+                     c.isShowing()
+        );
+        
+        JButton button = (JButton) swapButton;
+        GuiActionRunner.execute(() -> button.doClick());
+        window.robot().waitForIdle();
+        Thread.sleep(500);
+        
+        // Verify swap occurred - input should have the base64 encoded value
+        Assertions.assertEquals("dGVzdA==", inputArea.getText(), "Input should contain base64 encoded value after swap");
+        // Note: Due to automatic conversion, output will immediately show "dGVzdA==" again
+        // Let's wait a bit and check
+        Thread.sleep(500);
+        Assertions.assertEquals("dGVzdA==", outputArea.getText(), "Output should show the same value due to automatic conversion");
+    }
+
+    @Test
+    void testSelectInputButton() throws Exception {
+        // Wait for UI to be ready
+        window.robot().waitForIdle();
+        Thread.sleep(500);
+        
+        // Find the input area
+        Component[] allTextAreas = window.robot().finder()
+                .findAll(window.target(), component -> component instanceof JTextArea)
+                .toArray(new Component[0]);
+        
+        JTextArea inputArea = null;
+        for (Component component : allTextAreas) {
+            if (component.getClass().getName().equals("burp.hv.ui.HackvertorInput")) {
+                inputArea = (JTextArea) component;
+                break;
+            }
+        }
+        
+        // Add text to input
+        final JTextArea finalInputArea = inputArea;
+        GuiActionRunner.execute(() -> finalInputArea.setText("text to select"));
+        window.robot().waitForIdle();
+        
+        // Clear any selection
+        GuiActionRunner.execute(() -> finalInputArea.setCaretPosition(0));
+        window.robot().waitForIdle();
+        
+        // Find and click the Select input button
+        Component selectInputButton = window.robot().finder().find(
+                window.target(),
+                c -> c instanceof JButton && 
+                     "Select input".equals(((JButton) c).getText()) &&
+                     c.isShowing()
+        );
+        
+        JButton button = (JButton) selectInputButton;
+        GuiActionRunner.execute(() -> button.doClick());
+        window.robot().waitForIdle();
+        Thread.sleep(500);
+        
+        // Verify text is selected
+        String selectedText = inputArea.getSelectedText();
+        Assertions.assertEquals("text to select", selectedText, "All input text should be selected");
+        Assertions.assertTrue(inputArea.hasFocus(), "Input area should have focus");
+    }
+
+    @Test
+    void testSelectOutputButton() throws Exception {
+        // Wait for UI to be ready
+        window.robot().waitForIdle();
+        Thread.sleep(500);
+        
+        // Find the output area
+        Component[] allTextAreas = window.robot().finder()
+                .findAll(window.target(), component -> component instanceof JTextArea)
+                .toArray(new Component[0]);
+        
+        JTextArea outputArea = null;
+        int hackvertorInputCount = 0;
+        
+        for (Component component : allTextAreas) {
+            if (component.getClass().getName().equals("burp.hv.ui.HackvertorInput")) {
+                if (hackvertorInputCount == 1) {
+                    outputArea = (JTextArea) component;
+                    break;
+                }
+                hackvertorInputCount++;
+            }
+        }
+        
+        // Add text to output
+        final JTextArea finalOutputArea = outputArea;
+        GuiActionRunner.execute(() -> finalOutputArea.setText("output to select"));
+        window.robot().waitForIdle();
+        
+        // Clear any selection
+        GuiActionRunner.execute(() -> finalOutputArea.setCaretPosition(0));
+        window.robot().waitForIdle();
+        
+        // Find and click the Select output button
+        Component selectOutputButton = window.robot().finder().find(
+                window.target(),
+                c -> c instanceof JButton && 
+                     "Select output".equals(((JButton) c).getText()) &&
+                     c.isShowing()
+        );
+        
+        JButton button = (JButton) selectOutputButton;
+        GuiActionRunner.execute(() -> button.doClick());
+        window.robot().waitForIdle();
+        Thread.sleep(500);
+        
+        // Verify text is selected
+        String selectedText = outputArea.getSelectedText();
+        Assertions.assertEquals("output to select", selectedText, "All output text should be selected");
+        Assertions.assertTrue(outputArea.hasFocus(), "Output area should have focus");
+    }
+
+    @Test
+    void testConvertButton() throws Exception {
+        // Wait for UI to be ready
+        window.robot().waitForIdle();
+        Thread.sleep(500);
+        
+        // Find the input and output areas
+        Component[] allTextAreas = window.robot().finder()
+                .findAll(window.target(), component -> component instanceof JTextArea)
+                .toArray(new Component[0]);
+        
+        JTextArea inputArea = null;
+        JTextArea outputArea = null;
+        int hackvertorInputCount = 0;
+        
+        for (Component component : allTextAreas) {
+            if (component.getClass().getName().equals("burp.hv.ui.HackvertorInput")) {
+                if (hackvertorInputCount == 0) {
+                    inputArea = (JTextArea) component;
+                } else if (hackvertorInputCount == 1) {
+                    outputArea = (JTextArea) component;
+                }
+                hackvertorInputCount++;
+            }
+        }
+        
+        // Add text with base64 tags to input
+        final JTextArea finalInputArea = inputArea;
+        GuiActionRunner.execute(() -> finalInputArea.setText("<@base64>hello world</@base64>"));
+        window.robot().waitForIdle();
+        
+        // Clear output first
+        final JTextArea finalOutputArea = outputArea;
+        GuiActionRunner.execute(() -> finalOutputArea.setText(""));
+        window.robot().waitForIdle();
+        
+        // Find and click the Convert button
+        Component convertButton = window.robot().finder().find(
+                window.target(),
+                c -> c instanceof JButton && 
+                     "Convert".equals(((JButton) c).getText()) &&
+                     c.isShowing()
+        );
+        
+        JButton button = (JButton) convertButton;
+        GuiActionRunner.execute(() -> button.doClick());
+        window.robot().waitForIdle();
+        Thread.sleep(1000); // Give time for conversion
+        
+        // Verify output contains base64 encoded result
+        String outputText = outputArea.getText();
+        Assertions.assertEquals("aGVsbG8gd29ybGQ=", outputText, "Output should contain base64 encoded 'hello world'");
+    }
+
+    @Test
+    void testPasteInsideTagsButton() throws Exception {
+        // Wait for UI to be ready
+        window.robot().waitForIdle();
+        Thread.sleep(500);
+        
+        // Find the input area
+        Component[] allTextAreas = window.robot().finder()
+                .findAll(window.target(), component -> component instanceof JTextArea)
+                .toArray(new Component[0]);
+        
+        JTextArea inputArea = null;
+        for (Component component : allTextAreas) {
+            if (component.getClass().getName().equals("burp.hv.ui.HackvertorInput")) {
+                inputArea = (JTextArea) component;
+                break;
+            }
+        }
+        
+        // Set up clipboard content
+        String clipboardContent = "pasted content";
+        GuiActionRunner.execute(() -> {
+            java.awt.datatransfer.StringSelection stringSelection = 
+                new java.awt.datatransfer.StringSelection(clipboardContent);
+            java.awt.Toolkit.getDefaultToolkit().getSystemClipboard()
+                .setContents(stringSelection, null);
+        });
+        
+        // Add tags to input area - using a simpler structure to avoid the IndexOutOfBoundsException
+        final JTextArea finalInputArea = inputArea;
+        GuiActionRunner.execute(() -> {
+            finalInputArea.setText("<@base64></@base64>");
+        });
+        window.robot().waitForIdle();
+        
+        // Find and click the Paste inside tags button
+        Component pasteInsideButton = window.robot().finder().find(
+                window.target(),
+                c -> c instanceof JButton && 
+                     "Paste inside tags".equals(((JButton) c).getText()) &&
+                     c.isShowing()
+        );
+        
+        JButton button = (JButton) pasteInsideButton;
+        GuiActionRunner.execute(() -> button.doClick());
+        window.robot().waitForIdle();
+        Thread.sleep(500);
+        
+        // Verify clipboard content was pasted inside the empty tag
+        String result = inputArea.getText();
+        Assertions.assertEquals("<@base64>pasted content</@base64>", result, 
+            "Clipboard content should be pasted inside base64 tags");
     }
 
     @AfterEach
