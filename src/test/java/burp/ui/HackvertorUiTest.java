@@ -625,6 +625,341 @@ public class HackvertorUiTest {
             "Clipboard content should be pasted inside base64 tags");
     }
 
+    @Test
+    void testHexEncodingTag() throws Exception {
+        // Wait for UI to be ready
+        window.robot().waitForIdle();
+        
+        // Find the input and output HackvertorInput areas
+        Component[] allTextAreas = window.robot().finder()
+                .findAll(window.target(), component -> component instanceof JTextArea)
+                .toArray(new Component[0]);
+        
+        JTextArea inputArea = null;
+        JTextArea outputArea = null;
+        int hackvertorInputCount = 0;
+        
+        for (Component component : allTextAreas) {
+            if (component.getClass().getName().equals("burp.hv.ui.HackvertorInput")) {
+                if (hackvertorInputCount == 0) {
+                    inputArea = (JTextArea) component;
+                } else if (hackvertorInputCount == 1) {
+                    outputArea = (JTextArea) component;
+                }
+                hackvertorInputCount++;
+            }
+        }
+        
+        // Type "test" in the input area
+        window.robot().click(inputArea);
+        window.robot().waitForIdle();
+        
+        final JTextArea finalInputArea = inputArea;
+        GuiActionRunner.execute(() -> finalInputArea.setText("test"));
+        window.robot().waitForIdle();
+        
+        // Select all text
+        GuiActionRunner.execute(finalInputArea::selectAll);
+        window.robot().waitForIdle();
+        
+        // Find and click the hex button
+        List<JTabbedPane> tabPanes = window.robot().finder().findAll(
+                        c -> c instanceof JTabbedPane && c.isShowing()
+                ).stream()
+                .map(c -> (JTabbedPane) c)
+                .toList();
+
+        JTabbedPane innerTabs = tabPanes.get(0);
+        Component selectedTabContent = GuiActionRunner.execute(innerTabs::getSelectedComponent);
+
+        Component hexButton = window.robot().finder().find(
+                (Container) selectedTabContent,
+                c -> c instanceof JButton &&
+                        "hex".equals(((JButton) c).getText()) &&
+                        c.isShowing()
+        );
+        
+        JButton button = (JButton) hexButton;
+        GuiActionRunner.execute(() -> button.doClick());
+        window.robot().waitForIdle();
+        
+        // Check that input area contains the tags around "test"
+        String inputText = inputArea.getText();
+        Assertions.assertEquals("<@hex(' ')>test</@hex>", inputText, "Input should have hex tags around 'test'");
+        
+        // Check that output area contains the hex encoded value of "test"
+        String outputText = outputArea.getText();
+        Assertions.assertEquals("74 65 73 74", outputText, "Output should contain hex encoded 'test'");
+    }
+
+    @Test
+    void testUrlencodeTag() throws Exception {
+        // Wait for UI to be ready
+        window.robot().waitForIdle();
+        
+        // Find the input and output HackvertorInput areas
+        Component[] allTextAreas = window.robot().finder()
+                .findAll(window.target(), component -> component instanceof JTextArea)
+                .toArray(new Component[0]);
+        
+        JTextArea inputArea = null;
+        JTextArea outputArea = null;
+        int hackvertorInputCount = 0;
+        
+        for (Component component : allTextAreas) {
+            if (component.getClass().getName().equals("burp.hv.ui.HackvertorInput")) {
+                if (hackvertorInputCount == 0) {
+                    inputArea = (JTextArea) component;
+                } else if (hackvertorInputCount == 1) {
+                    outputArea = (JTextArea) component;
+                }
+                hackvertorInputCount++;
+            }
+        }
+        
+        // Type text with special characters in the input area
+        window.robot().click(inputArea);
+        window.robot().waitForIdle();
+        
+        final JTextArea finalInputArea = inputArea;
+        GuiActionRunner.execute(() -> finalInputArea.setText("hello world!"));
+        window.robot().waitForIdle();
+        
+        // Select all text
+        GuiActionRunner.execute(finalInputArea::selectAll);
+        window.robot().waitForIdle();
+        
+        // Find and click the urlencode button
+        List<JTabbedPane> tabPanes = window.robot().finder().findAll(
+                        c -> c instanceof JTabbedPane && c.isShowing()
+                ).stream()
+                .map(c -> (JTabbedPane) c)
+                .toList();
+
+        JTabbedPane innerTabs = tabPanes.get(0);
+        Component selectedTabContent = GuiActionRunner.execute(innerTabs::getSelectedComponent);
+
+        Component urlencodeButton = window.robot().finder().find(
+                (Container) selectedTabContent,
+                c -> c instanceof JButton &&
+                        "urlencode".equals(((JButton) c).getText()) &&
+                        c.isShowing()
+        );
+        
+        JButton button = (JButton) urlencodeButton;
+        GuiActionRunner.execute(() -> button.doClick());
+        window.robot().waitForIdle();
+        
+        // Check that input area contains the tags
+        String inputText = inputArea.getText();
+        Assertions.assertEquals("<@urlencode>hello world!</@urlencode>", inputText, "Input should have urlencode tags");
+        
+        // Check that output area contains the URL encoded value
+        String outputText = outputArea.getText();
+        Assertions.assertEquals("hello+world%21", outputText, "Output should contain URL encoded text");
+    }
+
+    @Test
+    void testHtmlEntitiesTag() throws Exception {
+        // Wait for UI to be ready
+        window.robot().waitForIdle();
+        
+        // Find the input and output HackvertorInput areas
+        Component[] allTextAreas = window.robot().finder()
+                .findAll(window.target(), component -> component instanceof JTextArea)
+                .toArray(new Component[0]);
+        
+        JTextArea inputArea = null;
+        JTextArea outputArea = null;
+        int hackvertorInputCount = 0;
+        
+        for (Component component : allTextAreas) {
+            if (component.getClass().getName().equals("burp.hv.ui.HackvertorInput")) {
+                if (hackvertorInputCount == 0) {
+                    inputArea = (JTextArea) component;
+                } else if (hackvertorInputCount == 1) {
+                    outputArea = (JTextArea) component;
+                }
+                hackvertorInputCount++;
+            }
+        }
+        
+        // Type HTML characters in the input area
+        window.robot().click(inputArea);
+        window.robot().waitForIdle();
+        
+        final JTextArea finalInputArea = inputArea;
+        GuiActionRunner.execute(() -> finalInputArea.setText("<script>"));
+        window.robot().waitForIdle();
+        
+        // Select all text
+        GuiActionRunner.execute(finalInputArea::selectAll);
+        window.robot().waitForIdle();
+        
+        // Find and click the html_entities button
+        List<JTabbedPane> tabPanes = window.robot().finder().findAll(
+                        c -> c instanceof JTabbedPane && c.isShowing()
+                ).stream()
+                .map(c -> (JTabbedPane) c)
+                .toList();
+
+        JTabbedPane innerTabs = tabPanes.get(0);
+        Component selectedTabContent = GuiActionRunner.execute(innerTabs::getSelectedComponent);
+
+        Component htmlEntitiesButton = window.robot().finder().find(
+                (Container) selectedTabContent,
+                c -> c instanceof JButton &&
+                        "html_entities".equals(((JButton) c).getText()) &&
+                        c.isShowing()
+        );
+        
+        JButton button = (JButton) htmlEntitiesButton;
+        GuiActionRunner.execute(() -> button.doClick());
+        window.robot().waitForIdle();
+        
+        // Check that input area contains the tags
+        String inputText = inputArea.getText();
+        Assertions.assertEquals("<@html_entities><script></@html_entities>", inputText, "Input should have html_entities tags");
+        
+        // Check that output area contains the HTML entity encoded value
+        String outputText = outputArea.getText();
+        Assertions.assertEquals("&lt;script&gt;", outputText, "Output should contain HTML entity encoded text");
+    }
+
+    @Test
+    void testBase32EncodingTag() throws Exception {
+        // Wait for UI to be ready
+        window.robot().waitForIdle();
+        
+        // Find the input and output HackvertorInput areas
+        Component[] allTextAreas = window.robot().finder()
+                .findAll(window.target(), component -> component instanceof JTextArea)
+                .toArray(new Component[0]);
+        
+        JTextArea inputArea = null;
+        JTextArea outputArea = null;
+        int hackvertorInputCount = 0;
+        
+        for (Component component : allTextAreas) {
+            if (component.getClass().getName().equals("burp.hv.ui.HackvertorInput")) {
+                if (hackvertorInputCount == 0) {
+                    inputArea = (JTextArea) component;
+                } else if (hackvertorInputCount == 1) {
+                    outputArea = (JTextArea) component;
+                }
+                hackvertorInputCount++;
+            }
+        }
+        
+        // Type "test" in the input area
+        window.robot().click(inputArea);
+        window.robot().waitForIdle();
+        
+        final JTextArea finalInputArea = inputArea;
+        GuiActionRunner.execute(() -> finalInputArea.setText("test"));
+        window.robot().waitForIdle();
+        
+        // Select all text
+        GuiActionRunner.execute(finalInputArea::selectAll);
+        window.robot().waitForIdle();
+        
+        // Find and click the base32 button
+        List<JTabbedPane> tabPanes = window.robot().finder().findAll(
+                        c -> c instanceof JTabbedPane && c.isShowing()
+                ).stream()
+                .map(c -> (JTabbedPane) c)
+                .toList();
+
+        JTabbedPane innerTabs = tabPanes.get(0);
+        Component selectedTabContent = GuiActionRunner.execute(innerTabs::getSelectedComponent);
+
+        Component base32Button = window.robot().finder().find(
+                (Container) selectedTabContent,
+                c -> c instanceof JButton &&
+                        "base32".equals(((JButton) c).getText()) &&
+                        c.isShowing()
+        );
+        
+        JButton button = (JButton) base32Button;
+        GuiActionRunner.execute(() -> button.doClick());
+        window.robot().waitForIdle();
+        
+        // Check that input area contains the tags
+        String inputText = inputArea.getText();
+        Assertions.assertEquals("<@base32>test</@base32>", inputText, "Input should have base32 tags around 'test'");
+        
+        // Check that output area contains the base32 encoded value
+        String outputText = outputArea.getText();
+        Assertions.assertEquals("ORSXG5A=", outputText, "Output should contain base32 encoded 'test'");
+    }
+
+    @Test
+    void testJsStringEncodingTag() throws Exception {
+        // Wait for UI to be ready
+        window.robot().waitForIdle();
+        
+        // Find the input and output HackvertorInput areas
+        Component[] allTextAreas = window.robot().finder()
+                .findAll(window.target(), component -> component instanceof JTextArea)
+                .toArray(new Component[0]);
+        
+        JTextArea inputArea = null;
+        JTextArea outputArea = null;
+        int hackvertorInputCount = 0;
+        
+        for (Component component : allTextAreas) {
+            if (component.getClass().getName().equals("burp.hv.ui.HackvertorInput")) {
+                if (hackvertorInputCount == 0) {
+                    inputArea = (JTextArea) component;
+                } else if (hackvertorInputCount == 1) {
+                    outputArea = (JTextArea) component;
+                }
+                hackvertorInputCount++;
+            }
+        }
+        
+        // Type text with quotes in the input area
+        window.robot().click(inputArea);
+        window.robot().waitForIdle();
+        
+        final JTextArea finalInputArea = inputArea;
+        GuiActionRunner.execute(() -> finalInputArea.setText("alert('test')"));
+        window.robot().waitForIdle();
+        
+        // Select all text
+        GuiActionRunner.execute(finalInputArea::selectAll);
+        window.robot().waitForIdle();
+        
+        // Find and click the js_string button
+        List<JTabbedPane> tabPanes = window.robot().finder().findAll(
+                        c -> c instanceof JTabbedPane && c.isShowing()
+                ).stream()
+                .map(c -> (JTabbedPane) c)
+                .toList();
+
+        JTabbedPane innerTabs = tabPanes.get(0);
+        Component selectedTabContent = GuiActionRunner.execute(innerTabs::getSelectedComponent);
+
+        Component jsStringButton = window.robot().finder().find(
+                (Container) selectedTabContent,
+                c -> c instanceof JButton &&
+                        "js_string".equals(((JButton) c).getText()) &&
+                        c.isShowing()
+        );
+        
+        JButton button = (JButton) jsStringButton;
+        GuiActionRunner.execute(() -> button.doClick());
+        window.robot().waitForIdle();
+        
+        // Check that input area contains the tags
+        String inputText = inputArea.getText();
+        Assertions.assertEquals("<@js_string>alert('test')</@js_string>", inputText, "Input should have js_string tags");
+        
+        // Check that output area contains the JavaScript string encoded value
+        String outputText = outputArea.getText();
+        Assertions.assertEquals("alert('test')", outputText, "Output should contain JavaScript string encoded text");
+    }
+
     @AfterEach
     void tearDown() {
         if (window != null) {
