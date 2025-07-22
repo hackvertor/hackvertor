@@ -10,67 +10,98 @@ Tags also support arguments. The find tag allows you to find a string by regex a
 
 # Changelog
 
-**2.0.12 2025-02-13**
+## Version v2.0.18 (2025-07-22)
 
-- Added AI features!
-  - Learn from repeater! Hackvertor will attempt to learn the encoding from repeater requests and generate Python custom tags automatically.
-  - Summarise custom code tags. When a custom tag is created Hackvertor will use AI to summarise what it does.
-  - AI custom tags. You can now use prompts in custom tags.
-  - Use AI to generate code. Hackvertor will generate a custom tag for you if you give it some input/output and instructions
+- Fixed global variables bug where when deleting a variable it would be retained when restarting Hackvertor. Added hotkey support to invoke smart decode in repeater.
+- Showed a different context menu when tags in the proxy are disabled, warning you that tags won't work here.
+- Added register hot key check
+- Fixed UX bug when editing text and selecting drop down.
+- Added hasHotKey flag
+- Fixed bug editing tags
+- Added read a URL through Burp.
+- Made global variables window resizeable and longer.
+- Fix: jwt tag
+- Added JSON tags
+- Added JSON_string_escape tag
+- Added zlib compress tag
+- Updated submissions rules to remove maximum length limit
 
-**2.0.0 2025-01-08**
+## Version 2.0.12 (2025-02-13)
 
+### AI Features
+- **Learn from Repeater**: Hackvertor attempts to learn encoding patterns from Repeater requests and generates Python custom tags automatically
+- **Summarize Custom Code Tags**: When a custom tag is created, Hackvertor uses AI to summarize what it does
+- **AI Custom Tags**: You can now use prompts in custom tags
+- **AI Code Generation**: Hackvertor generates custom tags from input/output examples and instructions
+
+## Version 2.0.0 (2025-01-08)
+
+### Improvements
 - Added tag execution key rehydrate button
 - Made HTTP request editor more compact
 - Added smart decode feature
-- Changed style of tags to `</@name>` instead `<@/name>` to help with autocompletion in future
+- Changed tag syntax from `<@/name>` to `</@name>` for better autocompletion support
 
-**1.8.10 2024-01-08**
+## Version 1.8.10 (2024-01-08)
 
+### New Features
 - Added new line and space tags
 - Added ean13 tag to the tag store
 - Allowed regex replace to use capture groups
 
-**1.8.9 2023-12-22**
+## Version 1.8.9 (2023-12-22)
 
-- Fixed #79 No contextual menu entries for requests in Proxy History and Sitemap 
+### Bug Fixes
+- Fixed #79: No contextual menu entries for requests in Proxy History and Sitemap
 
-**1.8.8  2023-12-20**
+## Version 1.8.8 (2023-12-20)
 
+### New Features
 - Added remove output tag
-- Added load from json file
-- Added save to json file
+- Added load from JSON file
+- Added save to JSON file
 
-**1.8.6  2023-12-20**
+## Version 1.8.6 (2023-12-20)
 
+### Improvements
 - Added line numbers to custom tag editor
 
-**1.8.6  2023-12-19**
+## Version 1.8.6 (2023-12-19)
 
+### Major Feature
 - Added full support for JavaScript in custom tags
 
-**1.8.5  2023-12-18**
+## Version 1.8.5 (2023-12-18)
 
+### Bug Fixes
 - Fixed bug where hex default value for custom tag would be quoted
 
-**1.8.4  2023-11-1**
+## Version 1.8.4 (2023-11-01)
 
-- Continued improvements on create tag window.
+### Improvements
+- Continued improvements on create tag window
 
-**1.8.3  2023-11-1**
+## Version 1.8.3 (2023-11-01)
 
+### Improvements
 - Disabled install button when tag is installed
 - Started work on create new tag to make more room
 
-**1.8.2  2023-10-31**
+## Version 1.8.2 (2023-10-31)
+
+### Improvements
 - Fixed editing tags without producing duplicates
 - Added export to tag store
 
-**1.8.1  2023-10-30**
-- Fixed bug when installing a tag from the tag store with the same name.
+## Version 1.8.1 (2023-10-30)
 
-**1.8  2023-10-26**
-- Implemented tag store. Installable tags from Github.
+### Bug Fixes
+- Fixed bug when installing a tag from the tag store with the same name
+
+## Version 1.8 (2023-10-26)
+
+### Major Feature
+- Implemented Tag Store: Installable tags from GitHub
 
 # Installation
 
@@ -118,6 +149,7 @@ Global variables can be used throughout Hackvertor.
 3. Enter variable name and value
 4. Click "Create/Update variable"
 5. 
+
 ## Edit a global variable
 
 1. Go to Hackvertor menubar
