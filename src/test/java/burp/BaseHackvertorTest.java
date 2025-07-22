@@ -37,7 +37,12 @@ public abstract class BaseHackvertorTest {
         HackvertorExtension.stderr = new PrintWriter(callbacks.getStderr(), true);
         HackvertorExtension.stdout = new PrintWriter(callbacks.getStdout(), true);
         HackvertorExtension.tagCodeExecutionKey = CustomTags.generateRandomCodeExecutionKey();
-        
+
+        // Generate Hackvertor menu bar
+        JMenuBar menuBar = new JMenuBar();
+        menuBar.add(Utils.generateHackvertorMenuBar());
+        jFrame.setJMenuBar(menuBar);
+
         // Add security provider
         Security.addProvider(new BouncyCastleProvider());
         
