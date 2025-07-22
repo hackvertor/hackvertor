@@ -13,18 +13,18 @@ import java.util.List;
 
 public class HackvertorUiTest {
 
-    private FrameFixture window;
-    private JFrame frame;
-    private final int width = 1200;
-    private final int height = 1000;
+    private static FrameFixture window;
+    private static JFrame frame;
+    private static final int width = 1200;
+    private static final int height = 1000;
 
     @BeforeAll
     static void installRepaintManager() {
         FailOnThreadViolationRepaintManager.install(); // Ensures all UI access is EDT-safe
     }
 
-    @BeforeEach
-    void setUp() {
+    @BeforeAll
+    static void setUp() {
         SwingUtilities.invokeLater(() -> {
             frame = new JFrame("Burp Suite - Hackvertor");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -962,8 +962,8 @@ public class HackvertorUiTest {
         Assertions.assertEquals("alert('test')", outputText, "Output should contain JavaScript string encoded text");
     }
 
-    @AfterEach
-    void tearDown() {
+    @AfterAll
+    static void tearDown() {
         if (window != null) {
             window.cleanUp();
         }
