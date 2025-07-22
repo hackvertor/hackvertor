@@ -15,6 +15,8 @@ public class HackvertorUiTest {
 
     private FrameFixture window;
     private JFrame frame;
+    private final int width = 1200;
+    private final int height = 1000;
 
     @BeforeAll
     static void installRepaintManager() {
@@ -27,7 +29,7 @@ public class HackvertorUiTest {
             frame = new JFrame("Burp Suite - Hackvertor");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setContentPane(new JPanel(new BorderLayout()));
-            frame.setPreferredSize(new Dimension(1200, 1000));
+            frame.setPreferredSize(new Dimension(width, height));
             JMenuBar menuBar = new JMenuBar();
             frame.setJMenuBar(menuBar);
 
@@ -51,8 +53,8 @@ public class HackvertorUiTest {
     void testWindowTitleAndSize() {
         window.requireVisible();
         window.requireTitle("Burp Suite - Hackvertor");
-        Assertions.assertEquals(1200, window.target().getWidth());
-        Assertions.assertEquals(1000, window.target().getHeight());
+        Assertions.assertEquals(width, window.target().getWidth());
+        Assertions.assertEquals(height, window.target().getHeight());
     }
 
     @Test
