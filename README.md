@@ -87,3 +87,42 @@ To use Hackvertor once it has been installed, click on the Hackvertor tab in the
 # Advanced usage
 
 For more advanced users, you can use tags within repeater tabs. Simply click the repeater tab, right click and select the Hackvertor menu. Then you can use any tag within the repeater tab. Tags will be displayed in the repeater window but when a request is sent they will be converted by Hackvertor and the server will see the converted request. Hackvertor also have a message editor tab, you can select this tab from any request tab in Burp. This will then create the Hackvertor interface inside a request tab, allowing to use the Hackvertor interface to modify a request. 
+
+# Creating custom tags
+
+1. Go to Hackvertor menubar
+2. Click "Create custom tag"
+
+# Editing custom tags
+
+1. Go to Hackvertor menubar
+2. Click "List custom tags"
+3. Select tag to edit
+4. Click "Edit tag"
+
+# Deleting custom tag
+
+1. Go to Hackvertor menubar
+2. Click "List custom tags"
+3. Select tag to delete
+4. Click "Delete tag"
+
+# Global variables
+
+Global variables can be used throughout Hackvertor.
+
+## Create a global variable
+
+1. Go to Hackvertor menubar
+2. Click "Global variables"
+3. Enter variable name and value
+4. Click "Create/Update variable"
+5. 
+## Edit a global variable
+
+1. Go to Hackvertor menubar
+2. Click "Global variables"
+3. Select variable
+4. Click Edit
+5. Update variable
+6. Click "Create/Update variable"
