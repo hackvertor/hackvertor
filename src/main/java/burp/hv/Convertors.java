@@ -3161,7 +3161,9 @@ public class Convertors {
         if(errorMessage != null) {
             return errorMessage;
         }
+
         try {
+            String pythonModulePath = HackvertorExtension.generalSettings.getString("pythonModulePath");
             PythonInterpreter pythonInterpreter = new PythonInterpreter();
             pythonInterpreter.set("hackvertor", hackvertor);
             pythonInterpreter.set("input", input);
@@ -3202,10 +3204,13 @@ public class Convertors {
                 "orig_stdout = sys.stdout\n" +
                 "sys.stdout = StreamWrapper(orig_stdout)\n" +
                 "from burp.hv import Convertors\n" +
+                        (!pythonModulePath.isEmpty() ? "sys.path.insert(0, '"+pythonModulePath.replace("\\", "\\\\")   // backslashes first
+                                .replace("'", "\\'")+"')\n" : "")
+                        +
                 "def convert(input):\n" +
                 "   return Convertors.weakConvert(variableMap, customTags, input, hackvertor)\n" +
                 "\n";
-
+                alert(initCode);
                 pythonInterpreter.exec(initCode + code);
             }
             PyObject output = pythonInterpreter.get("output");
@@ -3215,9 +3220,11 @@ public class Convertors {
                 return "No output variable defined";
             }
         } catch (PyException e) {
-            return "Invalid Python code:" + e.toString();
+            return "Invalid Python code:" + e;
+        } catch (UnregisteredSettingException | InvalidTypeSettingException e) {
+            return "Error loading settings:" + e;
         } catch (Exception e) {
-            return "Unable to parse Python:" + e.toString();
+            return "Unable to parse Python:" + e;
         }
     }
 

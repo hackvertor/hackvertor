@@ -47,6 +47,7 @@ public class Settings {
             columns.put("Statistics", 2);
             columns.put("Misc", 2);
             columns.put("Requests", 2);
+            columns.put("System", 2);
             JPanel settingsInterface = settings.buildInterface(settingsWindow, 200, 25,10, columns, HackvertorExtension.generalSettings);
             settingsInterface.setAutoscrolls(true);
             settingsInterface.setPreferredSize(new Dimension(800, 620));

@@ -33,7 +33,7 @@ import static burp.hv.HackvertorExtension.montoyaApi;
 public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, IExtensionStateListener, IMessageEditorTabFactory {
     //TODO Unset on unload
     public static String extensionName = "Hackvertor";
-    public static String version = "v2.0.19";
+    public static String version = "v2.0.20";
     public static JFrame HackvertorFrame = null;
     public static IBurpExtenderCallbacks callbacks;
     public static IExtensionHelpers helpers;
