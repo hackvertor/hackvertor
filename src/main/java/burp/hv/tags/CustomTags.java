@@ -550,19 +550,6 @@ public class CustomTags {
                                 }
                                 aiPrompt.put("name", tagNameField.getText());
                                 aiPrompt.put("prompt", prompt);
-                                String expectedInput = JOptionPane.showInputDialog(null, "Enter some expected input for your tag", "");
-                                String expectedOutput = JOptionPane.showInputDialog(null, "Enter some expected output for your tag", "");
-                                if (expectedInput == null || expectedOutput == null || expectedInput.isEmpty() || expectedOutput.isEmpty() || language.equals("AI")) {
-                                    HackvertorExtension.alert("You need to supply an expected input and output and choose a programming language.");
-                                    generateCodeButton.setText("Use AI to generate code");
-                                    return;
-                                }
-                                JSONArray tests = new JSONArray();
-                                JSONObject test = new JSONObject();
-                                test.put("input", expectedInput);
-                                test.put("expectedOutput", expectedOutput);
-                                tests.put(test);
-                                aiPrompt.put("tests", tests);
                                 String generatedCode = null;
                                 String additionalInstructions = "";
                                 String argument1 = argument1NameField.getText();

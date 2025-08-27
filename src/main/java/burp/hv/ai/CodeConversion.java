@@ -10,6 +10,11 @@ public class CodeConversion {
 
     private CodeConversion(){}
     public static String promptToCode(String language, JSONObject aiPrompt, String additionalInstructions) {
+        String tests = "";
+        if(aiPrompt.has("tests") && !aiPrompt.getJSONArray("tests").isEmpty()) {
+            tests = """
+                    \nUse the following JSON as a list of tests to run to ensure the function works by using the input of the test and ensure it matches the expected value:""" + " " + aiPrompt.getJSONArray("tests") + " ";
+        }
         AI codeConversionAi = new AI();
         codeConversionAi.setBypassRateLimit(true);
         codeConversionAi.setTemperature(0.0);
@@ -21,8 +26,7 @@ public class CodeConversion {
                 """ + additionalInstructions + """
                 You should not use any external libraries.
                 You are going to get an LLM prompt from the user which you should convert to a""" + " " + language + " " + """
-                function. The function should be called""" + " " + aiPrompt.getString("name") + "." + """
-                \nUse the following JSON as a list of tests to run to ensure the function works by using the input of the test and ensure it matches the expected value:""" + " " +aiPrompt.getJSONArray("tests") + " " + """               
+                function. The function should be called""" + " " + aiPrompt.getString("name") + "." + tests + """              
                 Your code should be clear and concise and you should always return valid""" + " " + language +" function"+ """                                        
                 . DO NOT EMBED THE TESTS IN THE CODE, USE THE TESTS TO VERIFY THE CODE.
                 DO NOT INCLUDE TESTS IN THE FINAL CODE ONLY USE THE TESTS TO VERIFY THE FUNCTION WORKS.
