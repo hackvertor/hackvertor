@@ -14,6 +14,7 @@ jobs:
     outputs:
       version: ${{ steps.extract_version.outputs.version }}
       version_changed: ${{ steps.check_version.outputs.changed }}
+      tag_exists: ${{ steps.check_tag.outputs.tag_exists }}
     
     steps:
       - name: Checkout code
@@ -59,15 +60,16 @@ jobs:
         run: |
           VERSION="${{ steps.extract_version.outputs.version }}"
           if git rev-parse "$VERSION" >/dev/null 2>&1; then
-            echo "Tag $VERSION already exists"
-            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "Tag $VERSION already exists, skipping release"
+            echo "tag_exists=true" >> $GITHUB_OUTPUT
           else
             echo "Tag $VERSION does not exist, proceeding with release"
+            echo "tag_exists=false" >> $GITHUB_OUTPUT
           fi
 
   build-and-release:
     needs: check-version
-    if: needs.check-version.outputs.version_changed == 'true'
+    if: needs.check-version.outputs.version_changed == 'true' && needs.check-version.outputs.tag_exists != 'true'
     runs-on: ubuntu-latest
     
     steps:
@@ -89,20 +91,27 @@ jobs:
       - name: Get JAR filename
         id: get_jar
         run: |
-          JAR_FILE=$(ls build/libs/*-all.jar | head -n 1)
+          JAR_FILE=$(ls build/libs/*-all.jar 2>/dev/null | head -n 1)
+          if [ -z "$JAR_FILE" ]; then
+            echo "Error: No JAR file found in build/libs/"
+            ls -la build/libs/ || echo "build/libs directory not found"
+            exit 1
+          fi
           JAR_NAME=$(basename "$JAR_FILE")
           echo "jar_file=$JAR_FILE" >> $GITHUB_OUTPUT
           echo "jar_name=$JAR_NAME" >> $GITHUB_OUTPUT
-          echo "Found JAR: $JAR_NAME"
+          echo "Found JAR: $JAR_NAME at $JAR_FILE"
       
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Rename JAR for release
+        run: |
+          cp "${{ steps.get_jar.outputs.jar_file }}" "hackvertor-${{ needs.check-version.outputs.version }}.jar"
+          echo "Release JAR created: hackvertor-${{ needs.check-version.outputs.version }}.jar"
+      
+      - name: Create Release and Upload Asset
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ needs.check-version.outputs.version }}
-          release_name: Hackvertor ${{ needs.check-version.outputs.version }}
+          name: Hackvertor ${{ needs.check-version.outputs.version }}
           body: |
             ## Hackvertor ${{ needs.check-version.outputs.version }}
             
@@ -114,13 +123,7 @@ jobs:
             See [commit history](https://github.com/${{ github.repository }}/commits/${{ needs.check-version.outputs.version }}) for details.
           draft: false
           prerelease: false
-      
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
+          files: |
+            hackvertor-${{ needs.check-version.outputs.version }}.jar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ steps.get_jar.outputs.jar_file }}
-          asset_name: hackvertor-${{ needs.check-version.outputs.version }}.jar
-          asset_content_type: application/java-archive
