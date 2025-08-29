@@ -1,0 +1,157 @@
+name: Validate Tag Store
+
+on:
+  pull_request:
+    paths:
+      - 'tag-store/tag-store.json'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+          
+      - name: Validate tag-store.json
+        run: |
+          python -c "
+import json
+import sys
+import os
+
+def validate_tag_store():
+    try:
+        # Read and parse JSON
+        with open('tag-store/tag-store.json', 'r') as f:
+            data = json.load(f)
+        
+        print('✓ Valid JSON syntax')
+        
+        # Check if it's an array
+        if not isinstance(data, list):
+            print('✗ File must contain a JSON array')
+            sys.exit(1)
+        
+        # Required base properties for all tags
+        required_base = ['tagName', 'description', 'author', 'numberOfArgs', 'language']
+        
+        # Validate each tag
+        for i, tag in enumerate(data):
+            print(f'\\nValidating tag {i+1}: {tag.get(\"tagName\", \"UNNAMED\")}')
+            
+            # Check required base properties
+            for prop in required_base:
+                if prop not in tag:
+                    print(f'  ✗ Missing required property: {prop}')
+                    sys.exit(1)
+            
+            # Validate property types
+            if not isinstance(tag['tagName'], str):
+                print(f'  ✗ tagName must be a string')
+                sys.exit(1)
+            
+            if not isinstance(tag['description'], str):
+                print(f'  ✗ description must be a string')
+                sys.exit(1)
+                
+            if not isinstance(tag['author'], str):
+                print(f'  ✗ author must be a string')
+                sys.exit(1)
+                
+            if not isinstance(tag['language'], str):
+                print(f'  ✗ language must be a string')
+                sys.exit(1)
+                
+            if not isinstance(tag['numberOfArgs'], int):
+                print(f'  ✗ numberOfArgs must be an integer')
+                sys.exit(1)
+                
+            num_args = tag['numberOfArgs']
+            
+            # Validate numberOfArgs range
+            if num_args not in [0, 1, 2]:
+                print(f'  ✗ numberOfArgs must be 0, 1, or 2 (got {num_args})')
+                sys.exit(1)
+            
+            # Get all properties in the tag
+            tag_properties = set(tag.keys())
+            base_properties = set(required_base)
+            additional_properties = tag_properties - base_properties
+            
+            # Validate based on numberOfArgs
+            if num_args == 0:
+                # Should not have any additional properties
+                if additional_properties:
+                    print(f'  ✗ Tags with numberOfArgs=0 should not have additional properties')
+                    print(f'    Found: {additional_properties}')
+                    sys.exit(1)
+                print(f'  ✓ Valid tag with 0 arguments')
+                
+            elif num_args == 1:
+                # Should have argument1 properties, argument2 should be 'notused'
+                expected_props = {'argument1', 'argument1Type', 'argument1Default', 
+                                'argument2', 'argument2Type', 'argument2Default'}
+                
+                if additional_properties != expected_props:
+                    print(f'  ✗ Tags with numberOfArgs=1 must have exactly these additional properties:')
+                    print(f'    {expected_props}')
+                    print(f'    Found: {additional_properties}')
+                    sys.exit(1)
+                
+                # Validate all additional properties are strings
+                for prop in expected_props:
+                    if not isinstance(tag[prop], str):
+                        print(f'  ✗ {prop} must be a string')
+                        sys.exit(1)
+                
+                # Check argument2 is 'notused'
+                if tag['argument2'] != 'notused':
+                    print(f'  ✗ For numberOfArgs=1, argument2 must be \"notused\" (got \"{tag[\"argument2\"]}\")')
+                    sys.exit(1)
+                    
+                print(f'  ✓ Valid tag with 1 argument')
+                
+            elif num_args == 2:
+                # Should have all argument properties, argument2 should NOT be 'notused'
+                expected_props = {'argument1', 'argument1Type', 'argument1Default', 
+                                'argument2', 'argument2Type', 'argument2Default'}
+                
+                if additional_properties != expected_props:
+                    print(f'  ✗ Tags with numberOfArgs=2 must have exactly these additional properties:')
+                    print(f'    {expected_props}')
+                    print(f'    Found: {additional_properties}')
+                    sys.exit(1)
+                
+                # Validate all additional properties are strings
+                for prop in expected_props:
+                    if not isinstance(tag[prop], str):
+                        print(f'  ✗ {prop} must be a string')
+                        sys.exit(1)
+                
+                # Check argument2 is NOT 'notused'
+                if tag['argument2'] == 'notused':
+                    print(f'  ✗ For numberOfArgs=2, argument2 should not be \"notused\"')
+                    sys.exit(1)
+                    
+                print(f'  ✓ Valid tag with 2 arguments')
+        
+        print(f'\\n✅ All {len(data)} tags validated successfully!')
+        
+    except json.JSONDecodeError as e:
+        print(f'✗ Invalid JSON: {e}')
+        sys.exit(1)
+    except FileNotFoundError:
+        print('✗ File tag-store/tag-store.json not found')
+        sys.exit(1)
+    except Exception as e:
+        print(f'✗ Unexpected error: {e}')
+        sys.exit(1)
+
+validate_tag_store()
+"
