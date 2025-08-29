@@ -88,13 +88,20 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew shadowJar
       
+      - name: List build artifacts
+        run: |
+          echo "Contents of releases directory:"
+          ls -la releases/ || echo "releases directory not found"
+      
       - name: Get JAR filename
         id: get_jar
         run: |
-          JAR_FILE=$(ls build/libs/*-all.jar 2>/dev/null | head -n 1)
-          if [ -z "$JAR_FILE" ]; then
-            echo "Error: No JAR file found in build/libs/"
-            ls -la build/libs/ || echo "build/libs directory not found"
+          # The JAR is output to releases/ directory according to build.gradle
+          JAR_FILE="releases/hackvertor-all.jar"
+          if [ ! -f "$JAR_FILE" ]; then
+            echo "Error: JAR file not found at $JAR_FILE"
+            echo "Checking releases directory:"
+            ls -la releases/ || echo "releases directory not found"
             exit 1
           fi
           JAR_NAME=$(basename "$JAR_FILE")
