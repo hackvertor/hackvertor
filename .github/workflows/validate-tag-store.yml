@@ -25,6 +25,7 @@ jobs:
           import json
           import sys
           import os
+          import re
           
           def validate_tag_store():
               try:
@@ -64,6 +65,11 @@ jobs:
                       # Validate property types
                       if not isinstance(tag['tagName'], str):
                           print(f'  ✗ tagName must be a string')
+                          sys.exit(1)
+                      
+                      # Validate tagName regex pattern
+                      if not re.match(r'^\w+$', tag['tagName']):
+                          print(f'  ✗ tagName "{tag["tagName"]}" must only contain word characters (letters, digits, underscores)')
                           sys.exit(1)
                       
                       if not isinstance(tag['description'], str):
