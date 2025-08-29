@@ -1412,13 +1412,25 @@ public class Convertors {
                 return "Unsupported algorithm";
             }
             String message = "";
-            String header = "{\"alg\":\"" + algo + "\",\"type\":\"JWT\"}";
-            message = base64urlEncode(header) + "." + base64urlEncode(payload);
+            // Build header JSON manually to ensure consistent field order (alg before typ)
+            String headerJsonStr = "{\"alg\":\"" + algo + "\",\"typ\":\"JWT\"}";
+            JSONObject payloadJson = new JSONObject(payload);
+            message = base64urlEncode(headerJsonStr) + "." + base64urlEncode(payloadJson.toString());
             if (!algoName.equals("none")) {
+                // Handle empty secret case - HMAC requires at least 1 byte
+                byte[] secretBytes = secret.getBytes();
+                if (secretBytes.length == 0) {
+                    // For empty secret, use a single null byte which is the standard behavior
+                    secretBytes = new byte[]{0};
+                }
+                
                 Mac hashMac = Mac.getInstance(algoName);
-                SecretKeySpec secret_key = new SecretKeySpec(secret.getBytes(), algoName);
+                SecretKeySpec secret_key = new SecretKeySpec(secretBytes, algoName);
                 hashMac.init(secret_key);
-                return message + "." + base64urlEncode(helpers.bytesToString(hashMac.doFinal(message.getBytes())));
+                // Encode the raw HMAC bytes directly to base64url, don't convert to string first
+                byte[] signature = hashMac.doFinal(message.getBytes());
+                String encodedSignature = Base64.getUrlEncoder().withoutPadding().encodeToString(signature);
+                return message + "." + encodedSignature;
             } else {
                 return message + ".";
             }
