@@ -628,6 +628,8 @@ public class Convertors {
                 return ai_tag(variableMap, output, getString(arguments, 1), getString(arguments, 2), null, customTags, hackvertor, Double.parseDouble(getString(arguments, 0)), false);
             case "read_url":
                 return read_url(output, getString(arguments, 0), getBoolean(arguments, 1), getString(arguments, 2));
+            case "read_file":
+                return read_file(output, getString(arguments, 0), getBoolean(arguments, 1), getString(arguments, 2));
             case "system":
                 return system(output, getBoolean(arguments, 0), getString(arguments, 1));
         }
@@ -3515,6 +3517,27 @@ public class Convertors {
             return br.lines().collect(Collectors.joining());
         } catch (IOException e) {
             return "Unable to get response";
+        }
+    }
+
+    static String read_file(String input, String charset, Boolean enabled, String executionKey) {
+        String errorMessage = CustomTags.checkTagExecutionPermissions(executionKey);
+        if(errorMessage != null) {
+            return errorMessage;
+        }
+        if(!charset.equalsIgnoreCase("UTF-8")) {
+            input = convertCharset(input, charset);
+        }
+        if(!enabled) {
+           return "The read file command is disabled until you change the parameter to true.";
+        }
+        try {
+            byte[] fileContent = Files.readAllBytes(Paths.get(input));
+            return new String(fileContent, charset);
+        } catch (IOException e) {
+            return "Unable to read file: " + e.getMessage();
+        } catch (Exception e) {
+            return "Error reading file: " + e.getMessage();
         }
     }
 }

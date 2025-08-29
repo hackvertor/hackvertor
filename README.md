@@ -10,6 +10,10 @@ Tags also support arguments. The find tag allows you to find a string by regex a
 
 # Changelog
 
+## Version v2.0.24 (2025-08-29)
+
+- Added read_file tag
+
 ## Version v2.0.23 (2025-08-29)
 
 - Allowed blank JWT secret

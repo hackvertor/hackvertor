@@ -502,6 +502,11 @@ public class Hackvertor {
         tag.argument2 = new TagArgument("boolean", "false");
         tag.argument3 = new TagArgument("string", tagCodeExecutionKey);
         tags.add(tag);
+        tag = new Tag(Tag.Category.System, "read_file", true, "read_file(String filepath, String charset, Boolean enabled, String codeExecuteKey)");
+        tag.argument1 = new TagArgument("string", "UTF-8");
+        tag.argument2 = new TagArgument("boolean", "false");
+        tag.argument3 = new TagArgument("string", tagCodeExecutionKey);
+        tags.add(tag);
         tag = new Tag(Tag.Category.System, "system", true, "system(String cmd, Boolean enabled, String codeExecuteKey)");
         tag.argument1 = new TagArgument("boolean", "false");
         tag.argument2 = new TagArgument("string", tagCodeExecutionKey);
