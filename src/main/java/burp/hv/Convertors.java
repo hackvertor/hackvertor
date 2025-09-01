@@ -3455,8 +3455,13 @@ public class Convertors {
             return "Failed to execute command:"+e;
         }
         try {
-            p.waitFor();
+            boolean finished = p.waitFor(60, java.util.concurrent.TimeUnit.SECONDS);
+            if (!finished) {
+                p.destroyForcibly();
+                return "Command execution timed out after 60 seconds";
+            }
         } catch (InterruptedException e) {
+            p.destroyForcibly();
             return "InterruptedException"+e;
         }
         BufferedReader b = new BufferedReader(new InputStreamReader(p.getInputStream()));
@@ -3507,6 +3512,7 @@ public class Convertors {
         try {
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
+            connection.setReadTimeout(60);
             connection.connect();
             BufferedReader br = null;
             if (100 <= connection.getResponseCode() && connection.getResponseCode() <= 399) {
