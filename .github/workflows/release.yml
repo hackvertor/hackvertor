@@ -134,3 +134,75 @@ jobs:
             hackvertor-${{ needs.check-version.outputs.version }}.jar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  cleanup-old-releases:
+    needs: build-and-release
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Delete old releases
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            
+            // Get all releases sorted by created date (newest first)
+            const releases = await github.rest.repos.listReleases({
+              owner,
+              repo,
+              per_page: 100
+            });
+            
+            console.log(`Found ${releases.data.length} total releases`);
+            
+            // Keep only the 5 most recent releases
+            const maxReleases = 5;
+            
+            if (releases.data.length > maxReleases) {
+              // Sort releases by created_at date (newest first)
+              const sortedReleases = releases.data.sort((a, b) => 
+                new Date(b.created_at) - new Date(a.created_at)
+              );
+              
+              // Get releases to delete (all except the most recent 5)
+              const releasesToDelete = sortedReleases.slice(maxReleases);
+              
+              console.log(`Keeping ${maxReleases} most recent releases`);
+              console.log(`Deleting ${releasesToDelete.length} old releases`);
+              
+              for (const release of releasesToDelete) {
+                try {
+                  console.log(`Deleting release: ${release.name} (${release.tag_name})`);
+                  
+                  // Delete the release
+                  await github.rest.repos.deleteRelease({
+                    owner,
+                    repo,
+                    release_id: release.id
+                  });
+                  
+                  // Delete the associated tag
+                  try {
+                    await github.rest.git.deleteRef({
+                      owner,
+                      repo,
+                      ref: `tags/${release.tag_name}`
+                    });
+                    console.log(`Deleted tag: ${release.tag_name}`);
+                  } catch (tagError) {
+                    console.log(`Could not delete tag ${release.tag_name}: ${tagError.message}`);
+                  }
+                  
+                } catch (error) {
+                  console.error(`Failed to delete release ${release.name}: ${error.message}`);
+                }
+              }
+              
+              console.log('Cleanup completed');
+            } else {
+              console.log(`Only ${releases.data.length} releases exist, no cleanup needed`);
+            }
