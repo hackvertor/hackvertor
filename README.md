@@ -10,6 +10,11 @@ Tags also support arguments. The find tag allows you to find a string by regex a
 
 # Changelog
 
+## Version v2.0.26 (2025-09-02)
+
+- Fixed UTF-7 encoding/decoding
+- Added timeout to system command
+
 ## Version v2.0.24 (2025-08-29)
 
 - Added read_file tag
