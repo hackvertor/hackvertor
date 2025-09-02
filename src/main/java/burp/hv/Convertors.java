@@ -52,6 +52,7 @@ import org.unbescape.css.CssStringEscapeType;
 import org.unbescape.html.HtmlEscape;
 import org.unbescape.html.HtmlEscapeLevel;
 import org.unbescape.html.HtmlEscapeType;
+import org.unbescape.java.JavaEscape;
 import org.unbescape.javascript.JavaScriptEscape;
 import org.unbescape.javascript.JavaScriptEscapeLevel;
 import org.unbescape.javascript.JavaScriptEscapeType;
@@ -106,7 +107,7 @@ public class Convertors {
         if (args.size() < pos + 1) {
             return "";
         }
-        return args.get(pos);
+        return JavaEscape.unescapeJava(args.get(pos));
     }
 
     public static Boolean getBoolean(ArrayList<String> args, Integer pos) {
@@ -268,6 +269,8 @@ public class Convertors {
                     throw new ParseException("Unsupported encoding \"" + e.getCause().getMessage() + "\"");
                 }
             }
+            case "d_utf7":
+                return utf7Decode(output);
             case "utf7":
                 return utf7(output, getString(arguments, 0));
             case "brotli_decompress":
@@ -981,18 +984,106 @@ public class Convertors {
         return properties;
     }
 
-    static String utf7(String input, String excludeCharacters) {
-        String output = "";
+    static String utf7(String input, String excludePattern) {
+        Pattern pattern = (excludePattern == null || excludePattern.isEmpty())
+                ? null
+                : Pattern.compile(excludePattern);
+
+        StringBuilder output = new StringBuilder();
+        StringBuilder toEncode = new StringBuilder();
+        
         for (int i = 0; i < input.length(); i++) {
             char c = input.charAt(i);
-            if (excludeCharacters.indexOf(c) > -1) {
-                output += c;
-                continue;
+            
+            // Check if character should be excluded from encoding (and is ASCII)
+            if (pattern != null && pattern.matcher(String.valueOf(c)).matches() && c < 128) {
+                // If we have accumulated characters to encode, encode them first
+                if (toEncode.length() > 0) {
+                    encodeUtf7Block(toEncode.toString(), output);
+                    toEncode.setLength(0);
+                }
+                // Special handling for plus sign in UTF-7
+                if (c == '+') {
+                    output.append("+-");
+                } else {
+                    output.append(c);
+                }
+            } else {
+                // Accumulate characters that need encoding
+                toEncode.append(c);
             }
-            output += "+" + base64Encode("\u0000" + c).replaceAll("=+$", "") + "-";
-
         }
-        return output;
+        
+        // Encode any remaining characters
+        if (toEncode.length() > 0) {
+            encodeUtf7Block(toEncode.toString(), output);
+        }
+        
+        return output.toString();
+    }
+    
+    private static void encodeUtf7Block(String text, StringBuilder output) {
+        try {
+            // Convert to UTF-16BE bytes for proper UTF-7 encoding
+            byte[] utf16Bytes = text.getBytes("UTF-16BE");
+            // Base64 encode and remove padding
+            String base64 = helpers.base64Encode(utf16Bytes).replaceAll("=+$", "");
+            // UTF-7 uses modified base64 (but we keep / as standard UTF-7)
+            output.append('+').append(base64).append('-');
+        } catch (Exception e) {
+            // Fallback - should not happen
+            for (char c : text.toCharArray()) {
+                output.append('+')
+                      .append(base64Encode("\u0000" + c).replaceAll("=+$", ""))
+                      .append('-');
+            }
+        }
+    }
+
+    public static String utf7Decode(String input) {
+        StringBuilder output = new StringBuilder();
+        int i = 0;
+        while (i < input.length()) {
+            char c = input.charAt(i);
+            if (c == '+') {
+                if (i + 1 < input.length() && input.charAt(i + 1) == '-') {
+                    output.append('+');
+                    i += 2;
+                } else {
+                    int endIndex = input.indexOf('-', i + 1);
+                    if (endIndex == -1) {
+                        endIndex = input.length();
+                    }
+                    if (endIndex > i + 1) {
+                        String base64Part = input.substring(i + 1, endIndex);
+                        base64Part = base64Part.replace(',', '/');
+                        int padding = (4 - base64Part.length() % 4) % 4;
+                        for (int p = 0; p < padding; p++) {
+                            base64Part += "=";
+                        }
+                        try {
+                            byte[] bytes = helpers.base64Decode(base64Part);
+                            for (int b = 0; b < bytes.length - 1; b += 2) {
+                                int high = bytes[b] & 0xFF;
+                                int low = bytes[b + 1] & 0xFF;
+                                char decodedChar = (char) ((high << 8) | low);
+                                output.append(decodedChar);
+                            }
+                        } catch (Exception e) {
+                            output.append(input.substring(i, Math.min(endIndex + 1, input.length())));
+                        }
+                    }
+                    i = endIndex;
+                    if (i < input.length() && input.charAt(i) == '-') {
+                        i++;
+                    }
+                }
+            } else {
+                output.append(c);
+                i++;
+            }
+        }
+        return output.toString();
     }
 
     static byte[] readUniBytes(String uniBytes) {

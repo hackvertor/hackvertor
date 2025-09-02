@@ -154,6 +154,144 @@ public class ConvertorTests extends BaseHackvertorTest {
         assertEquals("Hello World!", converted);
     }
 
+    @Test
+    void testUtf7Decoding() {
+        // Basic text
+        assertEquals("Hello", hackvertor.convert("<@d_utf7>Hello</@d_utf7>", hackvertor));
+        
+        // Special characters
+        assertEquals("£", hackvertor.convert("<@d_utf7>+AKM-</@d_utf7>", hackvertor));
+        assertEquals("€", hackvertor.convert("<@d_utf7>+IKw-</@d_utf7>", hackvertor));
+        assertEquals("Hi Mom ☺", hackvertor.convert("<@d_utf7>Hi Mom +Jjo-</@d_utf7>", hackvertor));
+        assertEquals("日本語", hackvertor.convert("<@d_utf7>+ZeVnLIqe-</@d_utf7>", hackvertor));
+        
+        // Plus sign handling
+        assertEquals("1+1=2", hackvertor.convert("<@d_utf7>1+-1=2</@d_utf7>", hackvertor));
+        
+        // Unicode characters
+        assertEquals("A≢Α", hackvertor.convert("<@d_utf7>A+ImI-+A5E-</@d_utf7>", hackvertor));
+        
+        // ASCII special characters
+        assertEquals("!", hackvertor.convert("<@d_utf7>+ACE-</@d_utf7>", hackvertor));
+        assertEquals("@", hackvertor.convert("<@d_utf7>+AEA-</@d_utf7>", hackvertor));
+        
+        // Test case from the original: foo bar
+        assertEquals("foo bar", hackvertor.convert("<@d_utf7>+AGY-+AG8-+AG8-+ACA-+AGI-+AGE-+AHI-</@d_utf7>", hackvertor));
+    }
+
+    @Test
+    void testUtf7Encoding() {
+        // Test with default exclusion pattern (alphanumeric and common ASCII)
+        // Note: backslashes need to be double-escaped in Java strings for the regex pattern
+        String defaultPattern = "[\\\\s\\\\t\\\\r\\'(),-./:?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789=+!]";
+        // Test case from user - abc<> with default pattern
+        // Note: <> are grouped together in encoding
+        String input = "<@utf7('" + defaultPattern + "')>abc<></@utf7>";
+        String converted = hackvertor.convert(input, hackvertor);
+        assertEquals("abc+ADwAPg-", converted);
+        
+        // Test special characters that should be encoded (grouped)
+        input = "<@utf7('" + defaultPattern + "')><>&\"</@utf7>";
+        converted = hackvertor.convert(input, hackvertor);
+        assertEquals("+ADwAPgAmACI-", converted);
+        
+        // Test mixed content with excluded and encoded characters
+        input = "<@utf7('" + defaultPattern + "')>Hello <script></@utf7>";
+        converted = hackvertor.convert(input, hackvertor);
+        assertEquals("Hello +ADw-script+AD4-", converted);
+        
+        // Test with only alphanumeric exclusion (grouped)
+        String alphaNumPattern = "[A-Za-z0-9]";
+        input = "<@utf7('" + alphaNumPattern + "')>abc !@#</@utf7>";
+        converted = hackvertor.convert(input, hackvertor);
+        assertEquals("abc+ACAAIQBAACM-", converted);
+        
+        // Test empty exclusion pattern (encode everything as group)
+        input = "<@utf7('')>abc</@utf7>";
+        converted = hackvertor.convert(input, hackvertor);
+        assertEquals("+AGEAYgBj-", converted);
+        
+        // Test with spaces and special chars excluded
+        String spacesPattern = "[\\\\s]";
+        input = "<@utf7('" + spacesPattern + "')>a b c</@utf7>";
+        converted = hackvertor.convert(input, hackvertor);
+        assertEquals("+AGE- +AGI- +AGM-", converted);
+        
+        // Test unicode characters (should always be encoded as group)
+        input = "<@utf7('" + defaultPattern + "')>Hello 世界</@utf7>";
+        converted = hackvertor.convert(input, hackvertor);
+        assertEquals("Hello +ThZ1TA-", converted);
+        
+        // Test HTML entities mixed with text
+        input = "<@utf7('" + defaultPattern + "')>&lt;div&gt;</@utf7>";
+        converted = hackvertor.convert(input, hackvertor);
+        assertEquals("+ACY-lt+ADs-div+ACY-gt+ADs-", converted);
+        
+        // Test punctuation marks (grouped)
+        input = "<@utf7('[A-Za-z0-9]')>Hello, World!</@utf7>";
+        converted = hackvertor.convert(input, hackvertor);
+        assertEquals("Hello+ACwAIA-World+ACE-", converted);
+        
+        // Test consecutive special characters (grouped)
+        input = "<@utf7('" + defaultPattern + "')><<<>>></@utf7>";
+        converted = hackvertor.convert(input, hackvertor);
+        assertEquals("+ADwAPAA8AD4APgA+-", converted);
+    }
+
+    @Test 
+    void testUtf7EncodingRoundTrip() {
+        // Test that encoding and then decoding produces the original text
+        String[] testStrings = {
+            "Hello World",
+            "<script>alert('XSS')</script>",
+            "Special chars: & < > \" '",
+            "Unicode: 日本語 émojis 😀",
+            "Mixed: abc<>123",
+            "Symbols: !@#$%^&*()",
+            "HTML: <div class=\"test\">&nbsp;</div>"
+        };
+
+        String defaultPattern = "[\\\\s\\\\t\\\\r\\'(),-./:?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789=+!]";
+        
+        for (String original : testStrings) {
+            // Encode
+            String encoded = hackvertor.convert("<@utf7('" + defaultPattern + "')>" + original + "</@utf7>", hackvertor);
+            // Decode
+            String decoded = hackvertor.convert("<@d_utf7>" + encoded + "</@d_utf7>", hackvertor);
+            assertEquals(original, decoded, "Round-trip failed for: " + original);
+        }
+    }
+
+    @Test
+    void testUtf7EncodingEdgeCases() {
+        String defaultPattern = "[\\\\s\\\\t\\\\r\\'(),-./:?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789=+!]";
+        
+        // Test empty string
+        String input = "<@utf7('" + defaultPattern + "')></@utf7>";
+        String converted = hackvertor.convert(input, hackvertor);
+        assertEquals("", converted);
+        
+        // Test single special character
+        input = "<@utf7('" + defaultPattern + "')><</@utf7>";
+        converted = hackvertor.convert(input, hackvertor);
+        assertEquals("+ADw-", converted);
+        
+        // Test plus sign handling (plus is special in UTF-7)
+        input = "<@utf7('[A-Za-z0-9]')>a+b</@utf7>";
+        converted = hackvertor.convert(input, hackvertor);
+        assertEquals("a+ACs-b", converted);
+        
+        // Test already UTF-7 encoded content (should pass through)
+        input = "<@utf7('" + defaultPattern + "')>+ADw-</@utf7>";
+        converted = hackvertor.convert(input, hackvertor);
+        assertEquals("+-ADw-", converted);  // '+' becomes '+-', rest are excluded
+        
+        // Test newlines and tabs
+        input = "<@utf7('[A-Za-z0-9]')>line1\nline2\ttab</@utf7>";
+        converted = hackvertor.convert(input, hackvertor);
+        assertEquals("line1+AAo-line2+AAk-tab", converted);
+    }
+
     // Hash Category Tests
     @Test
     void testMd5Hash() {

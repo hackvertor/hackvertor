@@ -97,9 +97,6 @@ public class Hackvertor {
         tag.argument1 = new TagArgument("string", "from");
         tag.argument2 = new TagArgument("string", "to");
         tags.add(tag);
-        tag = new Tag(Tag.Category.Charsets, "utf7", true, "utf7(String str, String excludeCharacters)");
-        tag.argument1 = new TagArgument("string", "\\s\\t\\r'(),-./:?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789=+!");
-        tags.add(tag);
         tags.add(new Tag(Tag.Category.Compression, "brotli_decompress", true, "brotli_decompress(String str)"));
         tags.add(new Tag(Tag.Category.Compression, "gzip_compress", true, "gzip_compress(String str)"));
         tags.add(new Tag(Tag.Category.Compression, "gzip_decompress", true, "gzip_decompress(String str)"));
@@ -194,9 +191,13 @@ public class Hackvertor {
         tags.add(new Tag(Tag.Category.Encode, "quoted_printable", true, "quoted_printable(String str)"));
         tags.add(new Tag(Tag.Category.Encode, "js_string", true, "js_string(String str)"));
         tags.add(new Tag(Tag.Category.Encode, "unicode_alternatives", true, "unicode_alteratives(String str)"));
+        tag = new Tag(Tag.Category.Encode, "utf7", true, "utf7(String str, String excludeCharacters)");
+        tag.argument1 = new TagArgument("string", "[\\s\\t\\r'(),-./:?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789=+!]");
+        tags.add(tag);
         tags.add(new Tag(Tag.Category.Decode, "d_saml", true, "d_saml(String str)"));
         tags.add(new Tag(Tag.Category.Decode, "auto_decode", true, "auto_decode(String str)"));
         tags.add(new Tag(Tag.Category.Decode, "auto_decode_no_decrypt", true, "auto_decode_no_decrypt(String str)"));
+        tags.add(new Tag(Tag.Category.Decode, "d_utf7", true, "utf7Decode(String str)"));
         tags.add(new Tag(Tag.Category.Decode, "d_base32", true, "decode_base32(String str)"));
         tags.add(new Tag(Tag.Category.Decode, "d_base58", true, "decode_base58(String str)"));
         tags.add(new Tag(Tag.Category.Decode, "d_base64", true, "decode_base64(String str)"));

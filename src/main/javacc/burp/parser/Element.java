@@ -35,7 +35,7 @@ public class Element {
                     if((argument.startsWith("0x") && argument.matches("^0x[0-9a-fA-F]+$")) || (argument.startsWith("-") && StringUtils.isNumeric(argument.substring(1))) || StringUtils.isNumeric(argument) || argument.equals("true") || argument.equals("false"))
                         sb.append(argument);
                     else
-                        sb.append("'" + JavaEscape.escapeJava(argument) + "'");
+                        sb.append("'" + JavaEscape.escapeJava(argument).replaceAll("'","\\\\'") + "'");
                 }
                 sb.append(")");
             }
@@ -61,7 +61,7 @@ public class Element {
                     if((argument.startsWith("-") && StringUtils.isNumeric(argument.substring(1))) || StringUtils.isNumeric(argument) || argument.equals("true") || argument.equals("false")) {
                         sb.append(argument);
                     } else {
-                        sb.append("\"").append(arguments.get(i)).append("\"");
+                        sb.append("'").append(arguments.get(i).replaceAll("'","\\\\'")).append("'");
                     }
                 }
                 sb.append(")");
