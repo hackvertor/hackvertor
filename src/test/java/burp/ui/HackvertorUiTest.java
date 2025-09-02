@@ -183,6 +183,25 @@ public class HackvertorUiTest {
                 .toList();
 
         JTabbedPane innerTabs = tabPanes.get(0);
+        
+        // Find and click the "Encode" tab by name
+        int encodeTabIndex = -1;
+        for (int i = 0; i < innerTabs.getTabCount(); i++) {
+            if ("Encode".equals(innerTabs.getTitleAt(i))) {
+                encodeTabIndex = i;
+                break;
+            }
+        }
+        
+        if (encodeTabIndex >= 0) {
+            final int tabIndex = encodeTabIndex;
+            GuiActionRunner.execute(() -> innerTabs.setSelectedIndex(tabIndex));
+        } else {
+            // Fallback to first tab if "Encode" not found by name
+            GuiActionRunner.execute(() -> innerTabs.setSelectedIndex(0));
+        }
+        window.robot().waitForIdle();
+        
         Component selectedTabContent = GuiActionRunner.execute(innerTabs::getSelectedComponent);
 
         // Find and click the base64 button
@@ -206,6 +225,187 @@ public class HackvertorUiTest {
         // Check that output area contains the base64 encoded value of "test"
         String outputText = outputArea.getText();
         Assertions.assertEquals("dGVzdA==", outputText, "Output should contain base64 encoded 'test'");
+    }
+
+    @Test
+    void testUtf7EncodingWithText() throws Exception {
+        // Wait for UI to be ready
+        window.robot().waitForIdle();
+        
+        // Find the input and output HackvertorInput areas
+        Component[] allTextAreas = window.robot().finder()
+                .findAll(window.target(), component -> component instanceof JTextArea)
+                .toArray(new Component[0]);
+        
+        JTextArea inputArea = null;
+        JTextArea outputArea = null;
+        int hackvertorInputCount = 0;
+        
+        for (Component component : allTextAreas) {
+            if (component.getClass().getName().equals("burp.hv.ui.HackvertorInput")) {
+                if (hackvertorInputCount == 0) {
+                    inputArea = (JTextArea) component;
+                } else if (hackvertorInputCount == 1) {
+                    outputArea = (JTextArea) component;
+                }
+                hackvertorInputCount++;
+            }
+        }
+        
+        Assertions.assertNotNull(inputArea, "Input area should be found");
+        Assertions.assertNotNull(outputArea, "Output area should be found");
+        
+        // Type "abc<>" in the input area (test case from ConvertorTests)
+        window.robot().click(inputArea);
+        window.robot().waitForIdle();
+        
+        final JTextArea finalInputArea = inputArea;
+        GuiActionRunner.execute(() -> finalInputArea.setText("abc<>"));
+        window.robot().waitForIdle();
+        
+        // Select all text
+        GuiActionRunner.execute(finalInputArea::selectAll);
+        window.robot().waitForIdle();
+        
+        // Find the tabbed pane and click on "Encode" category tab
+        List<JTabbedPane> tabPanes = window.robot().finder().findAll(
+                        c -> c instanceof JTabbedPane && c.isShowing()
+                ).stream()
+                .map(c -> (JTabbedPane) c)
+                .toList();
+
+        JTabbedPane innerTabs = tabPanes.get(0);
+        
+        // Find and click the "Encode" tab by name
+        int encodeTabIndex = -1;
+        for (int i = 0; i < innerTabs.getTabCount(); i++) {
+            if ("Encode".equals(innerTabs.getTitleAt(i))) {
+                encodeTabIndex = i;
+                break;
+            }
+        }
+        
+        if (encodeTabIndex >= 0) {
+            final int tabIndex = encodeTabIndex;
+            GuiActionRunner.execute(() -> innerTabs.setSelectedIndex(tabIndex));
+        } else {
+            Assertions.fail("Could not find 'Encode' tab");
+        }
+        window.robot().waitForIdle();
+        Component selectedTabContent = GuiActionRunner.execute(innerTabs::getSelectedComponent);
+
+        // Find and click the utf7 button
+        Component utf7Button = window.robot().finder().find(
+                (Container) selectedTabContent,
+                c -> c instanceof JButton &&
+                        "utf7".equals(((JButton) c).getText())
+        );
+        
+        JButton button = (JButton) utf7Button;
+        GuiActionRunner.execute(() -> button.doClick());
+        
+        // Wait for processing
+        window.robot().waitForIdle();
+        
+        // Check that input area contains the tags around "abc<>"
+        String inputText = inputArea.getText();
+        // The default pattern excludes alphanumeric and common ASCII chars
+        String expectedInput = "<@utf7('[\\\\s\\\\t\\\\r\\'(),-./:?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789=+!]')>abc<></@utf7>";
+        Assertions.assertEquals(expectedInput, inputText, "Input should have utf7 tags with default exclusion pattern around 'abc<>'");
+        
+        // Check that output area contains the UTF-7 encoded value
+        String outputText = outputArea.getText();
+        Assertions.assertEquals("abc+ADwAPg-", outputText, "Output should contain UTF-7 encoded 'abc<>'");
+    }
+
+    @Test
+    void testUtf7DecodingWithText() throws Exception {
+        // Wait for UI to be ready
+        window.robot().waitForIdle();
+        
+        // Find the input and output HackvertorInput areas
+        Component[] allTextAreas = window.robot().finder()
+                .findAll(window.target(), component -> component instanceof JTextArea)
+                .toArray(new Component[0]);
+        
+        JTextArea inputArea = null;
+        JTextArea outputArea = null;
+        int hackvertorInputCount = 0;
+        
+        for (Component component : allTextAreas) {
+            if (component.getClass().getName().equals("burp.hv.ui.HackvertorInput")) {
+                if (hackvertorInputCount == 0) {
+                    inputArea = (JTextArea) component;
+                } else if (hackvertorInputCount == 1) {
+                    outputArea = (JTextArea) component;
+                }
+                hackvertorInputCount++;
+            }
+        }
+        
+        Assertions.assertNotNull(inputArea, "Input area should be found");
+        Assertions.assertNotNull(outputArea, "Output area should be found");
+        
+        // Type UTF-7 encoded text in the input area (test case from ConvertorTests)
+        window.robot().click(inputArea);
+        window.robot().waitForIdle();
+        
+        final JTextArea finalInputArea = inputArea;
+        GuiActionRunner.execute(() -> finalInputArea.setText("Hi Mom +Jjo-"));
+        window.robot().waitForIdle();
+        
+        // Select all text
+        GuiActionRunner.execute(finalInputArea::selectAll);
+        window.robot().waitForIdle();
+        
+        // Find the tabbed pane and click on "Decode" category tab
+        List<JTabbedPane> tabPanes = window.robot().finder().findAll(
+                        c -> c instanceof JTabbedPane && c.isShowing()
+                ).stream()
+                .map(c -> (JTabbedPane) c)
+                .toList();
+
+        JTabbedPane innerTabs = tabPanes.get(0);
+        
+        // Find and click the "Decode" tab by name
+        int decodeTabIndex = -1;
+        for (int i = 0; i < innerTabs.getTabCount(); i++) {
+            if ("Decode".equals(innerTabs.getTitleAt(i))) {
+                decodeTabIndex = i;
+                break;
+            }
+        }
+        
+        if (decodeTabIndex >= 0) {
+            final int tabIndex = decodeTabIndex;
+            GuiActionRunner.execute(() -> innerTabs.setSelectedIndex(tabIndex));
+        } else {
+            Assertions.fail("Could not find 'Decode' tab");
+        }
+        window.robot().waitForIdle();
+        
+        Component selectedTabContent = GuiActionRunner.execute(innerTabs::getSelectedComponent);
+
+        // Find and click the d_utf7 button
+        Component utf7DecodeButton = window.robot().finder().find(
+                (Container) selectedTabContent,
+                c -> c instanceof JButton &&
+                        "d_utf7".equals(((JButton) c).getText())
+        );
+        
+        JButton button = (JButton) utf7DecodeButton;
+        GuiActionRunner.execute(() -> button.doClick());
+        
+        // Wait for processing
+        window.robot().waitForIdle();
+        
+        // Check that input area contains the decode tags
+        String inputText = inputArea.getText();
+        Assertions.assertEquals("<@d_utf7>Hi Mom +Jjo-</@d_utf7>", inputText, "Input should have d_utf7 tags around encoded text");
+        
+        // Check that output area contains the decoded text with emoji
+        String outputText = outputArea.getText();
+        Assertions.assertEquals("Hi Mom ☺", outputText, "Output should contain decoded text 'Hi Mom ☺'");
     }
 
     @Test
