@@ -1,6 +1,7 @@
 package burp.hv.ui;
 
 import burp.*;
+import burp.api.montoya.http.message.HttpRequestResponse;
 import burp.hv.*;
 import burp.hv.ai.AI;
 import burp.hv.ai.LearnFromRepeater;
@@ -92,7 +93,10 @@ public class ContextMenu implements IContextMenuFactory {
         convert.addActionListener(e -> {
             if (invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST || invocation.getInvocationContext() == IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST) {
                 byte[] message = invocation.getSelectedMessages()[0].getRequest();
-                invocation.getSelectedMessages()[0].setRequest(HackvertorExtension.helpers.stringToBytes(HackvertorExtension.hackvertor.convert(HackvertorExtension.helpers.bytesToString(message), null)));
+                IHttpRequestResponse messageInfo = invocation.getSelectedMessages()[0];
+                String requestStr = HackvertorExtension.helpers.bytesToString(message);
+                HackvertorExtension.hackvertor.analyzeRequest(HackvertorExtension.helpers.stringToBytes(Hackvertor.removeHackvertorTags(requestStr)), messageInfo);
+                invocation.getSelectedMessages()[0].setRequest(HackvertorExtension.helpers.stringToBytes(HackvertorExtension.hackvertor.convert(requestStr, HackvertorExtension.hackvertor)));
             }
         });
         submenu.add(convert);
