@@ -85,10 +85,19 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       
+      - name: Setup virtual display for UI tests
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          export DISPLAY=:99
+          Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+          echo "DISPLAY=:99" >> $GITHUB_ENV
+      
       - name: Run all tests
         run: |
           echo "Running all tests before release..."
-          ./gradlew test --info
+          # Run tests with virtual display
+          xvfb-run -a ./gradlew test --info
           if [ $? -ne 0 ]; then
             echo "Tests failed! Aborting release."
             exit 1
