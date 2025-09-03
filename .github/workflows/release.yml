@@ -85,6 +85,16 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       
+      - name: Run all tests
+        run: |
+          echo "Running all tests before release..."
+          ./gradlew test --info
+          if [ $? -ne 0 ]; then
+            echo "Tests failed! Aborting release."
+            exit 1
+          fi
+          echo "All tests passed successfully!"
+      
       - name: Build with Gradle
         run: ./gradlew shadowJar
       
