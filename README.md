@@ -10,6 +10,12 @@ Tags also support arguments. The find tag allows you to find a string by regex a
 
 # Changelog
 
+## Version v2.0.29 (2025-09-04)
+
+- Added tag execution key to each context tag to prevent misuse by an attacker. 
+- Added new context_request tag to capture the full request. 
+- Fixed context_url tag with null checks.
+
 ## Version v2.0.26 (2025-09-02)
 
 - Fixed UTF-7 encoding/decoding
