@@ -254,14 +254,16 @@ public class Convertors {
                 return increment_var(globalVariables, getInt(arguments, 0), getString(arguments, 1), getBoolean(arguments, 2));
             case "decrement_var":
                 return decrement_var(globalVariables, getInt(arguments, 0), getString(arguments, 1), getBoolean(arguments, 2));
+            case "context_request":
+                return context_request(getString(arguments, 0), hackvertor);
             case "context_url":
-                return context_url(getString(arguments,0), hackvertor);
+                return context_url(getString(arguments,0), getString(arguments,1), hackvertor);
             case "context_header":
-                return context_header(getString(arguments,0), hackvertor);
+                return context_header(getString(arguments,0), getString(arguments,1), hackvertor);
             case "context_body":
-                return context_body(hackvertor);
+                return context_body(getString(arguments,0), hackvertor);
             case "context_param":
-                return context_param(getString(arguments,0), hackvertor);
+                return context_param(getString(arguments,0),getString(arguments,1), hackvertor);
             case "charset_convert": {
                 try {
                     return charset_convert(output, getString(arguments, 0), getString(arguments, 1));
@@ -874,21 +876,57 @@ public class Convertors {
         return helpers.bytesToString(output);
     }
 
-    static String context_url(String properties, Hackvertor hackvertor) {
+    static String context_url(String properties, String key, Hackvertor hackvertor) {
+        String errorMessage = CustomTags.checkTagExecutionPermissions(key);
+        if(errorMessage != null) {
+            return errorMessage;
+        }
         if(hackvertor == null) {
             return properties;
         }
+
         IRequestInfo analyzedRequest = hackvertor.getAnalyzedRequest();
-        properties = properties.replace("$protocol", analyzedRequest.getUrl().getProtocol());
-        properties = properties.replace("$host", analyzedRequest.getUrl().getHost());
-        properties = properties.replace("$path", analyzedRequest.getUrl().getPath());
-        properties = properties.replace("$file", analyzedRequest.getUrl().getFile());
-        properties = properties.replace("$query", analyzedRequest.getUrl().getQuery());
-        properties = properties.replace("$port", String.valueOf(analyzedRequest.getUrl().getPort()));
+        URL url = analyzedRequest.getUrl();
+        if(url == null) {
+            return "";
+        }
+        if(url.getProtocol() != null) {
+            properties = properties.replace("$protocol", url.getProtocol());
+        }
+        if(url.getHost() != null) {
+            properties = properties.replace("$host", url.getHost());
+        }
+        if(url.getPath() != null) {
+            properties = properties.replace("$path", url.getPath());
+        }
+        if(url.getFile() != null) {
+            properties = properties.replace("$file", url.getFile());
+        }
+        if(analyzedRequest.getUrl().getQuery() != null) {
+            properties = properties.replace("$query", url.getQuery());
+        }
+        if(url.getPort() != -1) {
+            properties = properties.replace("$port", String.valueOf(url.getPort()));
+        }
         return properties;
     }
 
-    static String context_header(String properties, Hackvertor hackvertor) {
+    static String context_request(String key, Hackvertor hackvertor) {
+        String errorMessage = CustomTags.checkTagExecutionPermissions(key);
+        if(errorMessage != null) {
+            return errorMessage;
+        }
+        if(hackvertor == null) {
+            return "";
+        }
+        return helpers.bytesToString(hackvertor.getRequest());
+    }
+
+    static String context_header(String properties, String key, Hackvertor hackvertor) {
+        String errorMessage = CustomTags.checkTagExecutionPermissions(key);
+        if(errorMessage != null) {
+            return errorMessage;
+        }
         if(hackvertor == null) {
             return properties;
         }
@@ -903,7 +941,12 @@ public class Convertors {
         }
         return properties;
     }
-    static String context_param(String properties, Hackvertor hackvertor) {
+
+    static String context_param(String properties, String key, Hackvertor hackvertor) {
+        String errorMessage = CustomTags.checkTagExecutionPermissions(key);
+        if(errorMessage != null) {
+            return errorMessage;
+        }
         if(hackvertor == null) {
             return properties;
         }
@@ -913,6 +956,20 @@ public class Convertors {
             properties = properties.replace("$"+param.getName(), param.getValue());
         }
         return properties;
+    }
+
+    static String context_body(String key, Hackvertor hackvertor) {
+        String errorMessage = CustomTags.checkTagExecutionPermissions(key);
+        if(errorMessage != null) {
+            return errorMessage;
+        }
+        if(hackvertor == null) {
+            return "";
+        }
+        IRequestInfo analyzedRequest = hackvertor.getAnalyzedRequest();
+        int bodyOffset = analyzedRequest.getBodyOffset();
+        byte[] req = hackvertor.getRequest();
+        return helpers.bytesToString(Arrays.copyOfRange(req, bodyOffset, req.length));
     }
 
     static String increment_var(HashMap<String, String> variableMap, int start, String variableName, Boolean enabled) {
@@ -943,16 +1000,6 @@ public class Convertors {
         String returnValue = String.valueOf(value);
         variableMap.put(variableName, String.valueOf(value-1));
         return returnValue;
-    }
-
-    static String context_body(Hackvertor hackvertor) {
-        if(hackvertor == null) {
-            return "";
-        }
-        IRequestInfo analyzedRequest = hackvertor.getAnalyzedRequest();
-        int bodyOffset = analyzedRequest.getBodyOffset();
-        byte[] req = hackvertor.getRequest();
-        return helpers.bytesToString(Arrays.copyOfRange(req, bodyOffset, req.length));
     }
 
     static String json_parse(String input, String properties) {
