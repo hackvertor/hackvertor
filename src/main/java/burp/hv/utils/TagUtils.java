@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 import static burp.hv.HackvertorExtension.*;
 
 public class TagUtils {
-    public static String paramRegex = "^[a-zA-Z_]\\w{0,10}$";
+    public static String paramRegex = "^[a-zA-Z_]\\w{0,100}$";
     public static String numberRegex = "^(?:0x[a-fA-F0-9]+|\\d+)$";
     public static String tagNameRegex = "[^\\w]";
 
