@@ -29,14 +29,24 @@ public class SearchPanel extends JPanel {
         this.hackvertorPanel = hackvertorPanel;
 
         this.setPreferredSize(new Dimension(1500, 80));
-        String[] searchOptionsText = {"Search tags", "Search Input", "Search output"};
+        String[] searchOptionsText = {"Search tags", "Search Input", "Search output", "Find & Replace Input", "Find & Replace Output"};
         JComboBox searchOptions = new JComboBox(searchOptionsText);
         JTextField searchBox = new JTextField();
+        JTextField replaceBox = new JTextField();
+        JButton replaceButton = new JButton("Replace");
+        JButton replaceAllButton = new JButton("Replace All");
         JCheckBox regexCheckbox = new JCheckBox("Regex?");
         searchBox.setPreferredSize(new Dimension(300, 30));
+        replaceBox.setPreferredSize(new Dimension(300, 30));
         JPanel tagsPanel = new JPanel();
         tagsPanel.setAutoscrolls(false);
         tagsPanel.setPreferredSize(new Dimension(1500, 50));
+        
+        // Initially hide replace components
+        replaceBox.setVisible(false);
+        replaceButton.setVisible(false);
+        replaceAllButton.setVisible(false);
+        
         searchBox.addKeyListener(new KeyAdapter() {
             public void keyReleased(KeyEvent e) {
 
@@ -49,15 +59,49 @@ public class SearchPanel extends JPanel {
 
                 if (searchOptions.getSelectedIndex() == 0) {
                     searchTags(searchBox.getText(), tagsPanel, regexCheckbox.isSelected());
-                } else if (searchOptions.getSelectedIndex() == 1) {
+                } else if (searchOptions.getSelectedIndex() == 1 || searchOptions.getSelectedIndex() == 3) {
                     search(searchBox.getText(), hackvertorPanel.getInputArea(), regexCheckbox.isSelected());
-                } else if (searchOptions.getSelectedIndex() == 2) {
+                } else if (searchOptions.getSelectedIndex() == 2 || searchOptions.getSelectedIndex() == 4) {
                     search(searchBox.getText(), hackvertorPanel.getOutputArea(), regexCheckbox.isSelected());
                 }
             }
         });
+        
+        searchOptions.addActionListener(e -> {
+            int selectedIndex = searchOptions.getSelectedIndex();
+            boolean isReplace = selectedIndex >= 3;
+            replaceBox.setVisible(isReplace);
+            replaceButton.setVisible(isReplace);
+            replaceAllButton.setVisible(isReplace);
+            tagsPanel.setVisible(!isReplace);
+            
+            // Trigger search when switching modes
+            if (searchBox.getText().length() > 0) {
+                searchBox.getKeyListeners()[0].keyReleased(null);
+            }
+        });
+        
+        replaceButton.addActionListener(e -> {
+            if (searchOptions.getSelectedIndex() == 3) {
+                replace(searchBox.getText(), replaceBox.getText(), hackvertorPanel.getInputArea(), regexCheckbox.isSelected(), false);
+            } else if (searchOptions.getSelectedIndex() == 4) {
+                replace(searchBox.getText(), replaceBox.getText(), hackvertorPanel.getOutputArea(), regexCheckbox.isSelected(), false);
+            }
+        });
+        
+        replaceAllButton.addActionListener(e -> {
+            if (searchOptions.getSelectedIndex() == 3) {
+                replace(searchBox.getText(), replaceBox.getText(), hackvertorPanel.getInputArea(), regexCheckbox.isSelected(), true);
+            } else if (searchOptions.getSelectedIndex() == 4) {
+                replace(searchBox.getText(), replaceBox.getText(), hackvertorPanel.getOutputArea(), regexCheckbox.isSelected(), true);
+            }
+        });
+        
         this.add(searchOptions);
         this.add(searchBox);
+        this.add(replaceBox);
+        this.add(replaceButton);
+        this.add(replaceAllButton);
         this.add(regexCheckbox);
         this.add(tagsPanel);
     }
@@ -108,6 +152,60 @@ public class SearchPanel extends JPanel {
                 element.select(0, 0);
             }
         } catch (BadLocationException e) {
+        }
+    }
+    
+    void replace(String findText, String replaceText, JTextArea element, Boolean regex, Boolean replaceAll) {
+        try {
+            if (findText.length() == 0) {
+                return;
+            }
+            
+            Document doc = element.getDocument();
+            String text = doc.getText(0, doc.getLength());
+            String newText = text;
+            
+            if (replaceAll) {
+                if (regex) {
+                    Pattern pattern = Pattern.compile(findText);
+                    newText = pattern.matcher(text).replaceAll(replaceText);
+                } else {
+                    newText = text.replace(findText, replaceText);
+                }
+                element.setText(newText);
+            } else {
+                // Replace only the currently selected text if it matches
+                int selectionStart = element.getSelectionStart();
+                int selectionEnd = element.getSelectionEnd();
+                
+                if (selectionStart != selectionEnd) {
+                    String selectedText = element.getSelectedText();
+                    boolean shouldReplace = false;
+                    
+                    if (regex) {
+                        Pattern pattern = Pattern.compile(findText);
+                        shouldReplace = pattern.matcher(selectedText).matches();
+                    } else {
+                        shouldReplace = selectedText.equals(findText);
+                    }
+                    
+                    if (shouldReplace) {
+                        if (regex) {
+                            Pattern pattern = Pattern.compile(findText);
+                            String replacement = pattern.matcher(selectedText).replaceFirst(replaceText);
+                            element.replaceSelection(replacement);
+                        } else {
+                            element.replaceSelection(replaceText);
+                        }
+                    }
+                }
+                
+                // Search for next occurrence
+                search(findText, element, regex);
+            }
+        } catch (BadLocationException e) {
+        } catch (PatternSyntaxException e) {
+            stderr.println(e);
         }
     }
 }
