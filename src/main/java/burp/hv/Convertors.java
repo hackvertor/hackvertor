@@ -1617,7 +1617,6 @@ public class Convertors {
                 return "0";
             }
             JWTVerifier verifier = JWT.require(algorithm)
-                    .withIssuer(jwt.getIssuer())
                     .build();
             verifier.verify(token);
             return "1";
