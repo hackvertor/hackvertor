@@ -10,6 +10,12 @@ Tags also support arguments. The find tag allows you to find a string by regex a
 
 # Changelog
 
+## Version v2.0.31 (2025-09-05)
+
+- Increased custom param length limit
+- Removed issuer validation from JWT verify tag
+- Added find and replace option to input/output
+
 ## Version v2.0.29 (2025-09-04)
 
 - Added tag execution key to each context tag to prevent misuse by an attacker. 
