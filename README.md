@@ -10,6 +10,15 @@ Tags also support arguments. The find tag allows you to find a string by regex a
 
 # Changelog
 
+## Version v2.1.0 (2025-09-07)
+
+- Changed from old Burp API to montoya.
+- Added HttpHandler
+- New Context menu
+- Fixed bug in settings when declaring ints
+- Added max body length setting
+- Checked if over max body length and only converted headers.
+
 ## Version v2.0.31 (2025-09-05)
 
 - Increased custom param length limit
