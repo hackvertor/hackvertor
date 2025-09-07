@@ -1,6 +1,8 @@
 package burp.hv.utils;
 
 import burp.IRequestInfo;
+import burp.api.montoya.http.message.ContentType;
+import burp.api.montoya.http.message.requests.HttpRequest;
 import burp.hv.tags.CustomTags;
 import burp.hv.settings.Settings;
 import burp.hv.tags.TagStore;
@@ -23,17 +25,17 @@ import static burp.hv.HackvertorExtension.*;
 
 public class Utils {
 
-    public static String getContext(IRequestInfo analyzedRequest) {
+    public static String getContext(HttpRequest analyzedRequest) {
         if(analyzedRequest == null) {
             return null;
         }
-        if(analyzedRequest.getContentType() == IRequestInfo.CONTENT_TYPE_JSON) {
+        if(analyzedRequest.contentType() == ContentType.JSON) {
             return "JSON";
         }
-        if(analyzedRequest.getMethod() != null && analyzedRequest.getMethod().equalsIgnoreCase("GET")) {
+        if(analyzedRequest.method() != null && analyzedRequest.method().equalsIgnoreCase("GET")) {
             return "GET";
         }
-        if(analyzedRequest.getMethod() != null && analyzedRequest.getMethod().equalsIgnoreCase("POST")) {
+        if(analyzedRequest.method() != null && analyzedRequest.method().equalsIgnoreCase("POST")) {
             return "POST";
         }
         return null;
@@ -69,6 +71,7 @@ public class Utils {
         settings.registerBooleanSetting("tagsInExtensions", true, "Allow tags in Extensions", "Tag permissions", null);
         settings.registerBooleanSetting("codeExecutionTagsEnabled", false, "Allow code execution tags", "Tag permissions", "Using code execution tags on untrusted requests can compromise your system, are you sure?");
         settings.registerBooleanSetting("autoUpdateContentLength", true, "Auto update content length", "Requests", null);
+        settings.registerIntegerSetting("maxBodyLength", 3 * 1024 * 1024, "Maximum body length", "Requests");
         settings.registerBooleanSetting("allowTagCount", true, "Count tag usage (Not sent to any server)","Statistics", null);
         settings.registerBooleanSetting("allowAiToGenerateCode", false, "Use AI to generate code", "AI", "Using AI to generate code execution tags can compromise your system, be careful when using it with untrusted repeater requests. Are you sure?");
         settings.registerBooleanSetting("allowAiToSummariseCode", false, "Use AI to summarise custom tags code", "AI", null);

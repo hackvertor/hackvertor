@@ -1,7 +1,5 @@
 package burp.hv;
-
-import burp.IHttpRequestResponse;
-import burp.IRequestInfo;
+import burp.api.montoya.http.message.requests.HttpRequest;
 import burp.hv.tags.CustomTags;
 import burp.hv.tags.Tag;
 import burp.hv.tags.TagArgument;
@@ -23,22 +21,16 @@ import static burp.hv.HackvertorExtension.*;
 public class Hackvertor {
     private ArrayList<Tag> tags = new ArrayList<Tag>();
     private JSONArray customTags = new JSONArray();
-    private IRequestInfo analyzedRequest = null;
-    private byte[] request;
+    private HttpRequest request;
     public Hackvertor(){
         init();
     }
 
-    public void analyzeRequest(byte[] request, IHttpRequestResponse messageInfo) {
-        this.request = request;
-        this.analyzedRequest = helpers.analyzeRequest(messageInfo.getHttpService(), request);
-    }
-
-    public byte[] getRequest() {
+    public HttpRequest getRequest() {
         return request;
     }
 
-    public void setRequest(byte[] request) {
+    public void setRequest(HttpRequest request) {
         this.request = request;
     }
 
@@ -66,10 +58,6 @@ public class Hackvertor {
             ex.printStackTrace();
         }
         return input;
-    }
-
-    public IRequestInfo getAnalyzedRequest() {
-        return analyzedRequest;
     }
 
     void init() {

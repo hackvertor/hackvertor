@@ -11,10 +11,7 @@ import burp.api.montoya.ui.hotkey.HotKeyContext;
 import burp.hv.settings.Settings;
 import burp.hv.tags.CustomTags;
 import burp.hv.tags.Tag;
-import burp.hv.ui.ContextMenu;
-import burp.hv.ui.ExtensionPanel;
-import burp.hv.ui.HackvertorMessageTab;
-import burp.hv.ui.MontoyaContextMenu;
+import burp.hv.ui.*;
 import burp.hv.utils.Utils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
@@ -28,12 +25,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static burp.hv.Convertors.*;
-import static burp.hv.HackvertorExtension.montoyaApi;
 
 public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, IExtensionStateListener, IMessageEditorTabFactory {
     //TODO Unset on unload
     public static String extensionName = "Hackvertor";
-    public static String version = "v2.0.31";
+    public static String version = "v2.1.0";
     public static JFrame HackvertorFrame = null;
     public static IBurpExtenderCallbacks callbacks;
     public static IExtensionHelpers helpers;
@@ -55,7 +51,7 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
     public static final ExecutorService executorService = Executors.newSingleThreadExecutor();
     public static int requestHistoryPos = 0;
     public static boolean hasHotKey = false;
-    public static ArrayList<IRequestInfo> requestHistory = new ArrayList<>();
+    public static ArrayList<HttpRequest> requestHistory = new ArrayList<>();
     public static HashMap<String, Integer> tagCount = new HashMap<>();
     public static final HashMap<String, HashMap<String, Integer>> contextTagCount = new HashMap() {
         {
@@ -116,8 +112,6 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
                 extensionPanel = new ExtensionPanel(hackvertor);
                 callbacks.addSuiteTab(this);
                 callbacks.registerMessageEditorTabFactory(HackvertorExtension.this);
-                callbacks.registerContextMenuFactory(new ContextMenu());
-                callbacks.registerHttpListener(new HttpListener());
                 callbacks.registerExtensionStateListener(this);
             } catch (Exception ignored){
 
@@ -174,7 +168,8 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
         HackvertorExtension.montoyaApi = montoyaApi;
         montoyaApi.userInterface().menuBar().registerMenu(Utils.generateHackvertorMenuBar());
         Burp burp = new Burp(montoyaApi.burpSuite().version());
-        montoyaApi.userInterface().registerContextMenuItemsProvider(new MontoyaContextMenu(montoyaApi));
+        montoyaApi.http().registerHttpHandler(new HackvertorHttpHandler());
+        montoyaApi.userInterface().registerContextMenuItemsProvider(new HackvertorContextMenu());
         if(burp.hasCapability(Burp.Capability.REGISTER_HOTKEY)) {
             Registration registration = montoyaApi.userInterface().registerHotKeyHandler(HotKeyContext.HTTP_MESSAGE_EDITOR, "Ctrl+Alt+D",
             event -> {

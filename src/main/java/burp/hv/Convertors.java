@@ -4,6 +4,10 @@ import bsh.EvalError;
 import bsh.Interpreter;
 import burp.IParameter;
 import burp.IRequestInfo;
+import burp.api.montoya.http.Http;
+import burp.api.montoya.http.message.HttpHeader;
+import burp.api.montoya.http.message.params.ParsedHttpParameter;
+import burp.api.montoya.http.message.requests.HttpRequest;
 import burp.hv.ai.AI;
 import burp.hv.settings.InvalidTypeSettingException;
 import burp.hv.settings.UnregisteredSettingException;
@@ -885,29 +889,13 @@ public class Convertors {
             return properties;
         }
 
-        IRequestInfo analyzedRequest = hackvertor.getAnalyzedRequest();
-        URL url = analyzedRequest.getUrl();
-        if(url == null) {
-            return "";
-        }
-        if(url.getProtocol() != null) {
-            properties = properties.replace("$protocol", url.getProtocol());
-        }
-        if(url.getHost() != null) {
-            properties = properties.replace("$host", url.getHost());
-        }
-        if(url.getPath() != null) {
-            properties = properties.replace("$path", url.getPath());
-        }
-        if(url.getFile() != null) {
-            properties = properties.replace("$file", url.getFile());
-        }
-        if(analyzedRequest.getUrl().getQuery() != null) {
-            properties = properties.replace("$query", url.getQuery());
-        }
-        if(url.getPort() != -1) {
-            properties = properties.replace("$port", String.valueOf(url.getPort()));
-        }
+        HttpRequest req = hackvertor.getRequest();
+        properties = properties.replace("$protocol", req.httpService().secure()? "https:" : "http");
+        properties = properties.replace("$host", req.httpService().host());
+        properties = properties.replace("$path", req.pathWithoutQuery());
+        properties = properties.replace("$file", req.fileExtension());
+        properties = properties.replace("$query", req.query());
+        properties = properties.replace("$port", req.httpService().port()+"");
         return properties;
     }
 
@@ -916,10 +904,10 @@ public class Convertors {
         if(errorMessage != null) {
             return errorMessage;
         }
-        if(hackvertor == null) {
+        if(hackvertor == null || hackvertor.getRequest() == null) {
             return "";
         }
-        return helpers.bytesToString(hackvertor.getRequest());
+        return hackvertor.getRequest().toString();
     }
 
     static String context_header(String properties, String key, Hackvertor hackvertor) {
@@ -927,17 +915,13 @@ public class Convertors {
         if(errorMessage != null) {
             return errorMessage;
         }
-        if(hackvertor == null) {
+        if(hackvertor == null || hackvertor.getRequest() == null) {
             return properties;
         }
-        IRequestInfo analyzedRequest = hackvertor.getAnalyzedRequest();
-        List<String> headers = analyzedRequest.getHeaders();
-        for(String header : headers) {
-            String[] nameValue = header.split(":");
-            if(nameValue.length > 1) {
-                properties = properties.replace("$" + nameValue[0].trim(), nameValue[1].trim()
-                        + (nameValue.length > 2 ? ":" + String.join(":",  Arrays.copyOfRange(nameValue, 2, nameValue.length)) : ""));
-            }
+        HttpRequest analyzedRequest = hackvertor.getRequest();
+        List<HttpHeader> headers = analyzedRequest.headers();
+        for(HttpHeader header : headers) {
+            properties = properties.replace("$" + header.name(), header.value());
         }
         return properties;
     }
@@ -947,13 +931,13 @@ public class Convertors {
         if(errorMessage != null) {
             return errorMessage;
         }
-        if(hackvertor == null) {
+        if(hackvertor == null || hackvertor.getRequest() == null) {
             return properties;
         }
-        IRequestInfo analyzedRequest = hackvertor.getAnalyzedRequest();
-        List<IParameter> params = analyzedRequest.getParameters();
-        for(IParameter param : params) {
-            properties = properties.replace("$"+param.getName(), param.getValue());
+        HttpRequest analyzedRequest = hackvertor.getRequest();
+        List<ParsedHttpParameter> params = analyzedRequest.parameters();
+        for(ParsedHttpParameter param : params) {
+            properties = properties.replace("$"+param.name(), param.value());
         }
         return properties;
     }
@@ -963,13 +947,10 @@ public class Convertors {
         if(errorMessage != null) {
             return errorMessage;
         }
-        if(hackvertor == null) {
+        if(hackvertor == null || hackvertor.getRequest() == null) {
             return "";
         }
-        IRequestInfo analyzedRequest = hackvertor.getAnalyzedRequest();
-        int bodyOffset = analyzedRequest.getBodyOffset();
-        byte[] req = hackvertor.getRequest();
-        return helpers.bytesToString(Arrays.copyOfRange(req, bodyOffset, req.length));
+        return hackvertor.getRequest().bodyToString();
     }
 
     static String increment_var(HashMap<String, String> variableMap, int start, String variableName, Boolean enabled) {

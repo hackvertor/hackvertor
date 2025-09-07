@@ -2,6 +2,9 @@ package burp.hv;
 
 import burp.IContextMenuInvocation;
 import burp.IResponseInfo;
+import burp.api.montoya.http.message.requests.HttpRequest;
+import burp.api.montoya.ui.contextmenu.ContextMenuEvent;
+import burp.api.montoya.ui.contextmenu.MessageEditorHttpRequestResponse;
 import burp.hv.ui.ExtensionPanel;
 import burp.hv.ui.HackvertorPanel;
 
@@ -9,44 +12,52 @@ import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Optional;
 
 public class HackvertorAction extends AbstractAction {
 
     private final ExtensionPanel extensionPanel;
-    private final IContextMenuInvocation invocation;
+    private final ContextMenuEvent event;
     private static final long serialVersionUID = 1L;
 
-    public HackvertorAction(String text, ExtensionPanel extensionPanel, IContextMenuInvocation invocation) {
+    public HackvertorAction(String text, ExtensionPanel extensionPanel, ContextMenuEvent event) {
         super(text);
         this.extensionPanel = extensionPanel;
-        this.invocation = invocation;
+        this.event = event;
     }
 
     public void actionPerformed(ActionEvent e) {
-        byte[] message = null;
-        switch (invocation.getInvocationContext()) {
-            case IContextMenuInvocation.CONTEXT_MESSAGE_EDITOR_REQUEST:
-            case IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_REQUEST:
-            case IContextMenuInvocation.CONTEXT_INTRUDER_PAYLOAD_POSITIONS:
-                message = invocation.getSelectedMessages()[0].getRequest();
+        String message = null;
+        String body = null;
+        switch (event.invocationType()) {
+            case MESSAGE_EDITOR_REQUEST:
+            case MESSAGE_VIEWER_REQUEST:
+            case INTRUDER_PAYLOAD_POSITIONS:
+                message = event.selectedRequestResponses().get(0).request().toString();
+                body = event.selectedRequestResponses().get(0).request().bodyToString();
                 break;
-            case IContextMenuInvocation.CONTEXT_MESSAGE_VIEWER_RESPONSE:
-                message = invocation.getSelectedMessages()[0].getResponse();
+            case MESSAGE_VIEWER_RESPONSE:
+                message = event.selectedRequestResponses().get(0).response().toString();
+                body = event.selectedRequestResponses().get(0).response().bodyToString();
                 break;
         }
-        int[] bounds = invocation.getSelectionBounds();
         if (message != null) {
             HackvertorPanel hackvertorPanel = extensionPanel.addNewPanel();
-            if (bounds[0] == bounds[1]) {
-                IResponseInfo analyzedResponse = HackvertorExtension.helpers.analyzeResponse(message);
-                byte[] body = Arrays.copyOfRange(message, analyzedResponse.getBodyOffset(), message.length);
-                if(body.length > 0) {
-                    hackvertorPanel.getInputArea().setText(new String(body, StandardCharsets.ISO_8859_1));
+            int start = -1;
+            int end = - 1;
+            Optional<MessageEditorHttpRequestResponse> editor = event.messageEditorRequestResponse();
+            if(editor.isPresent() && editor.get().selectionOffsets().isPresent()) {
+                start = editor.get().selectionOffsets().get().startIndexInclusive();
+                end = editor.get().selectionOffsets().get().endIndexExclusive();
+            }
+            if (start == end) {
+                if(!body.isEmpty()) {
+                    hackvertorPanel.getInputArea().setText(body);
                 } else {
-                    hackvertorPanel.getInputArea().setText(new String(message, StandardCharsets.ISO_8859_1));
+                    hackvertorPanel.getInputArea().setText(message);
                 }
             } else {
-                hackvertorPanel.getInputArea().setText("<@auto_decode_no_decrypt>" + new String(Arrays.copyOfRange(message, bounds[0], bounds[1]), StandardCharsets.ISO_8859_1).trim() + "</@auto_decode_no_decrypt>");
+                hackvertorPanel.getInputArea().setText("<@auto_decode_no_decrypt>" + message.substring(start, end).trim() + "</@auto_decode_no_decrypt>");
             }
             extensionPanel.makeActiveBurpTab();
         }

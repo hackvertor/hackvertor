@@ -2,6 +2,7 @@ package burp.hv.settings;
 
 import burp.IBurpExtenderCallbacks;
 import burp.hv.HackvertorExtension;
+import burp.hv.HackvertorHttpHandler;
 import burp.hv.ai.AI;
 import burp.hv.utils.GridbagUtils;
 import burp.hv.utils.Utils;
@@ -12,10 +13,7 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.ItemEvent;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 import static burp.hv.utils.GridbagUtils.addMarginToGbc;
 import static burp.hv.utils.GridbagUtils.createConstraints;
@@ -58,6 +56,7 @@ public class Settings {
             pane.add(settingsScroll, createConstraints(0, 0, 1, GridBagConstraints.BOTH, 1, 1, 5, 5, CENTER));
         } catch (UnregisteredSettingException | InvalidTypeSettingException e) {
             HackvertorExtension.callbacks.printError("Error building interface:" + e);
+            HackvertorExtension.callbacks.printError(Arrays.toString(e.getStackTrace()));
             throw new RuntimeException(e);
         }
         settingsWindow.pack();
@@ -184,7 +183,7 @@ public class Settings {
     public int getInteger(String name) throws UnregisteredSettingException, InvalidTypeSettingException {
         JSONObject setting = this.getSetting(name);
         String type = setting.getString("type");
-        if(SettingType.String.name().equals(type)) {
+        if(SettingType.Integer.name().equals(type)) {
             if(setting.has("value")) {
                 return setting.getInt("value");
             } else {
@@ -355,7 +354,11 @@ public class Settings {
                         JLabel label = new JLabel(currentSetting.getString("description"));
                         label.setPreferredSize(new Dimension(componentWidth, componentHeight));
                         JTextField field = new JTextField();
-                        field.setText(this.getString(name));
+                        if(currentSetting.getString("type").equals("String")) {
+                            field.setText(this.getString(name));
+                        } else {
+                            field.setText(this.getInteger(name)+"");
+                        }
                         field.setPreferredSize(new Dimension(componentWidth, componentHeight));
                         categoryContainer.add(label, addMarginToGbc(createConstraints(0, componentRow, 1, GridBagConstraints.BOTH, 1, 0, spacing, spacing, GridBagConstraints.WEST), 0, 5, 0,0));
                         categoryContainer.add(new JLabel(), createConstraints(1, componentRow, 1, GridBagConstraints.BOTH, 1, 0, spacing, spacing, GridBagConstraints.WEST));
