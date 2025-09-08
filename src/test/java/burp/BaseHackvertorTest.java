@@ -9,10 +9,14 @@ import burp.stubs.StubCallbacks;
 import burp.stubs.StubExtensionHelpers;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 
 import javax.swing.*;
 import java.io.PrintWriter;
 import java.security.Security;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Base test class for Hackvertor tests that provides common setUp functionality
@@ -20,9 +24,24 @@ import java.security.Security;
 public abstract class BaseHackvertorTest {
     
     protected Hackvertor hackvertor;
+    private Thread.UncaughtExceptionHandler originalHandler;
+    private final ConcurrentLinkedQueue<Throwable> uncaughtExceptions = new ConcurrentLinkedQueue<>();
     
     @BeforeEach
     public void setUp() {
+        // Set up uncaught exception handler to catch any Java exceptions
+        originalHandler = Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler((thread, exception) -> {
+            uncaughtExceptions.offer(exception);
+            // Also call original handler if it exists
+            if (originalHandler != null) {
+                originalHandler.uncaughtException(thread, exception);
+            }
+        });
+        
+        // Clear any previous exceptions
+        uncaughtExceptions.clear();
+        
         // Initialize helpers first
         HackvertorExtension.setHelpers(new StubExtensionHelpers());
         
@@ -52,5 +71,29 @@ public abstract class BaseHackvertorTest {
         
         // Create Hackvertor instance
         this.hackvertor = new Hackvertor();
+    }
+    
+    @AfterEach
+    public void tearDown() {
+        // Check for uncaught exceptions and fail the test if any occurred
+        if (!uncaughtExceptions.isEmpty()) {
+            StringBuilder sb = new StringBuilder("Test failed due to uncaught exception(s):\n");
+            for (Throwable exception : uncaughtExceptions) {
+                sb.append("- ").append(exception.getClass().getSimpleName())
+                  .append(": ").append(exception.getMessage()).append("\n");
+                if (exception.getCause() != null) {
+                    sb.append("  Caused by: ").append(exception.getCause().getClass().getSimpleName())
+                      .append(": ").append(exception.getCause().getMessage()).append("\n");
+                }
+            }
+            
+            // Restore original handler before failing
+            Thread.setDefaultUncaughtExceptionHandler(originalHandler);
+            
+            fail(sb.toString());
+        }
+        
+        // Restore original exception handler
+        Thread.setDefaultUncaughtExceptionHandler(originalHandler);
     }
 }

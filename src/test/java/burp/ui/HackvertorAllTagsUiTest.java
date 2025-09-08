@@ -10,6 +10,9 @@ import org.junit.jupiter.api.*;
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Comprehensive UI tests for all Hackvertor tag buttons in each category.
@@ -21,10 +24,47 @@ public class HackvertorAllTagsUiTest {
     private static JFrame frame;
     private static final int width = 1200;
     private static final int height = 1000;
+    private static Thread.UncaughtExceptionHandler originalHandler;
+    private static final ConcurrentLinkedQueue<Throwable> uncaughtExceptions = new ConcurrentLinkedQueue<>();
 
     @BeforeAll
     static void installRepaintManager() {
+        // Set system properties for headless mode and better UI testing
+        System.setProperty("java.awt.headless", "false"); // We need GUI for UI tests
+        System.setProperty("javax.swing.disableQuestions", "true");
+        System.setProperty("swing.disableOnEDT", "false");
+        System.setProperty("awt.useSystemAAFontSettings", "on");
+        
         FailOnThreadViolationRepaintManager.install();
+        
+        // Set up uncaught exception handler to catch Java exceptions but filter UI noise
+        originalHandler = Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler((thread, exception) -> {
+            // Filter out common UI noise exceptions that don't affect test functionality
+            if (!isUINoiseException(exception)) {
+                uncaughtExceptions.offer(exception);
+            }
+            // Also call original handler if it exists
+            if (originalHandler != null) {
+                originalHandler.uncaughtException(thread, exception);
+            }
+        });
+        
+        // Clear any previous exceptions
+        uncaughtExceptions.clear();
+    }
+    
+    private static boolean isUINoiseException(Throwable exception) {
+        String message = exception.getMessage();
+        if (message == null) return false;
+        
+        // Filter out common UI layout exceptions that don't affect test functionality
+        return message.contains("Cannot invoke \"javax.swing.text.View.getMinimumSpan") ||
+               message.contains("Cannot invoke \"javax.swing.text.View.getPreferredSpan") ||
+               message.contains("Cannot invoke \"javax.swing.text.View.getMaximumSpan") ||
+               message.contains("sun.swing.") ||
+               message.contains("java.awt.EventQueue") ||
+               (exception instanceof java.awt.IllegalComponentStateException);
     }
 
     @BeforeAll
@@ -53,14 +93,57 @@ public class HackvertorAllTagsUiTest {
         window.show();
     }
 
+    @AfterEach
+    void checkForUncaughtExceptions() {
+        // Check for uncaught exceptions and fail the test if any occurred
+        if (!uncaughtExceptions.isEmpty()) {
+            StringBuilder sb = new StringBuilder("Test failed due to uncaught exception(s):\n");
+            for (Throwable exception : uncaughtExceptions) {
+                sb.append("- ").append(exception.getClass().getSimpleName())
+                  .append(": ").append(exception.getMessage()).append("\n");
+                if (exception.getCause() != null) {
+                    sb.append("  Caused by: ").append(exception.getCause().getClass().getSimpleName())
+                      .append(": ").append(exception.getCause().getMessage()).append("\n");
+                }
+            }
+            
+            // Clear exceptions for next test
+            uncaughtExceptions.clear();
+            
+            fail(sb.toString());
+        }
+    }
+
     @AfterAll
     static void tearDown() {
+        // Check for uncaught exceptions one final time
+        if (!uncaughtExceptions.isEmpty()) {
+            StringBuilder sb = new StringBuilder("Test suite failed due to uncaught exception(s):\n");
+            for (Throwable exception : uncaughtExceptions) {
+                sb.append("- ").append(exception.getClass().getSimpleName())
+                  .append(": ").append(exception.getMessage()).append("\n");
+                if (exception.getCause() != null) {
+                    sb.append("  Caused by: ").append(exception.getCause().getClass().getSimpleName())
+                      .append(": ").append(exception.getCause().getMessage()).append("\n");
+                }
+            }
+            
+            // Restore original handler before failing
+            Thread.setDefaultUncaughtExceptionHandler(originalHandler);
+            
+            fail(sb.toString());
+        }
+        
+        // Restore original exception handler
+        Thread.setDefaultUncaughtExceptionHandler(originalHandler);
+        
         window.cleanUp();
     }
 
     private void testTagButton(String categoryName, String buttonName, String inputText, String expectedTagPrefix) throws Exception {
-        // Wait for UI to be ready
+        // Wait for UI to be ready with longer timeout
         window.robot().waitForIdle();
+        Thread.sleep(100); // Additional small delay for UI stabilization
         
         // Find the input and output HackvertorInput areas
         Component[] allTextAreas = window.robot().finder()
@@ -135,8 +218,9 @@ public class HackvertorAllTagsUiTest {
         JButton jButton = (JButton) button;
         GuiActionRunner.execute(() -> jButton.doClick());
         
-        // Wait for processing
+        // Wait for processing with additional stabilization time
         window.robot().waitForIdle();
+        Thread.sleep(50); // Allow UI to fully update
         
         // Verify that input area contains the tag
         String actualInput = inputArea.getText();
@@ -148,6 +232,9 @@ public class HackvertorAllTagsUiTest {
         // Get output for verification (not asserting specific output as it varies by tag)
         String outputText = outputArea.getText();
         System.out.println(buttonName + " output: " + outputText);
+        
+        // Final wait to let any background UI updates complete before next test
+        window.robot().waitForIdle();
     }
 
     // ============ ENCODE CATEGORY TESTS ============
