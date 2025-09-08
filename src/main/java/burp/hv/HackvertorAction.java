@@ -33,20 +33,20 @@ public class HackvertorAction extends AbstractAction {
             case MESSAGE_EDITOR_REQUEST:
             case MESSAGE_VIEWER_REQUEST:
             case INTRUDER_PAYLOAD_POSITIONS:
-                message = event.selectedRequestResponses().get(0).request().toString();
-                body = event.selectedRequestResponses().get(0).request().bodyToString();
+                message = event.messageEditorRequestResponse().get().requestResponse().request().toString();
+                body = event.messageEditorRequestResponse().get().requestResponse().request().bodyToString();
                 break;
             case MESSAGE_VIEWER_RESPONSE:
-                message = event.selectedRequestResponses().get(0).response().toString();
-                body = event.selectedRequestResponses().get(0).response().bodyToString();
+                message = event.messageEditorRequestResponse().get().requestResponse().response().toString();
+                body = event.messageEditorRequestResponse().get().requestResponse().response().bodyToString();
                 break;
         }
         if (message != null) {
             HackvertorPanel hackvertorPanel = extensionPanel.addNewPanel();
-            int start = -1;
-            int end = - 1;
             Optional<MessageEditorHttpRequestResponse> editor = event.messageEditorRequestResponse();
-            if(editor.isPresent() && editor.get().selectionOffsets().isPresent()) {
+            int start = editor.get().caretPosition();
+            int end = editor.get().caretPosition();
+            if(editor.get().selectionOffsets().isPresent()) {
                 start = editor.get().selectionOffsets().get().startIndexInclusive();
                 end = editor.get().selectionOffsets().get().endIndexExclusive();
             }
