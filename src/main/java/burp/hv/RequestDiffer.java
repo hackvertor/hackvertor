@@ -85,7 +85,6 @@ public class RequestDiffer {
             result.put(pathObj);
         }
         List<HttpHeader> headers = new ArrayList<>(request.headers());
-        if (!headers.isEmpty()) headers.removeFirst();
         for (HttpHeader h : headers) {
             if(headersToSkip.contains(h.name())) {
                 continue;
