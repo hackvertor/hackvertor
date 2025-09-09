@@ -4,6 +4,7 @@ import burp.IRequestInfo;
 import burp.api.montoya.http.message.ContentType;
 import burp.api.montoya.http.message.requests.HttpRequest;
 import burp.hv.tags.CustomTags;
+import burp.hv.tags.Profile;
 import burp.hv.settings.Settings;
 import burp.hv.tags.TagStore;
 import burp.hv.Variables;
@@ -129,9 +130,17 @@ public class Utils {
                 Variables.showGlobalVariablesWindow();
             }
         });
+        JMenuItem profilesMenu = new JMenuItem("Manage profiles");
+        profilesMenu.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Profile.showProfilesDialog();
+            }
+        });
         hvMenuBar.add(createCustomTagsMenu);
         hvMenuBar.add(listCustomTagsMenu);
         hvMenuBar.add(globalVariablesMenu);
+        hvMenuBar.add(profilesMenu);
         hvMenuBar.addSeparator();
         hvMenuBar.add(tagStoreMenu);
         JMenuItem settingsMenu = new JMenuItem("Settings");
