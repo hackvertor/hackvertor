@@ -32,7 +32,8 @@ public class HackvertorAction extends AbstractAction {
         switch (event.invocationType()) {
             case MESSAGE_EDITOR_REQUEST:
             case MESSAGE_VIEWER_REQUEST:
-            case INTRUDER_PAYLOAD_POSITIONS:
+                //Intruder Context menu doesn't have the requestEditor unfortunately
+                //case INTRUDER_PAYLOAD_POSITIONS:
                 message = event.messageEditorRequestResponse().get().requestResponse().request().toString();
                 body = event.messageEditorRequestResponse().get().requestResponse().request().bodyToString();
                 break;

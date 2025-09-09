@@ -55,7 +55,8 @@ public class HackvertorContextMenu implements ContextMenuItemsProvider {
             return menuItemList;
         }
         switch (event.invocationType()) {
-            case INTRUDER_PAYLOAD_POSITIONS:
+            //Intruder Context menu doesn't have the requestEditor unfortunately
+            //case INTRUDER_PAYLOAD_POSITIONS:
             case MESSAGE_EDITOR_REQUEST:
             case MESSAGE_VIEWER_REQUEST:
             case MESSAGE_VIEWER_RESPONSE:
