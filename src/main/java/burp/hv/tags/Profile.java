@@ -64,7 +64,7 @@ public class Profile {
         loadProfiles();
         
         // Create table model for profiles list
-        String[] columnNames = {"Enabled", "Name", "Regex", "Context"};
+        String[] columnNames = {"Enabled", "Name", "Analysis", "Modification"};
         DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -80,7 +80,7 @@ public class Profile {
             tableModel.addRow(new Object[]{
                 enabled ? "✓" : "✗",
                 profile.getString("name"),
-                profile.getString("regex"),
+                profile.getString("analysis"),
                 contexts
             });
         }
@@ -195,7 +195,7 @@ public class Profile {
                                 tableModel.addRow(new Object[]{
                                     enabled ? "✓" : "✗",
                                     profile.getString("name"),
-                                    profile.getString("regex"),
+                                    profile.getString("analysis"),
                                     contexts
                                 });
                             }
@@ -291,24 +291,24 @@ public class Profile {
             enabledCheckbox.setSelected(true);
         }
         
-        // Regex field
-        JLabel regexLabel = new JLabel("Match Regex:");
-        JTextArea regexArea = new JTextArea(3, 30);
-        regexArea.setLineWrap(true);
-        regexArea.setWrapStyleWord(true);
-        JScrollPane regexScroll = new JScrollPane(regexArea);
+        // Analysis field
+        JLabel analysisLabel = new JLabel("Analysis(Python):");
+        JTextArea analysisArea = new JTextArea(3, 30);
+        analysisArea.setLineWrap(true);
+        analysisArea.setWrapStyleWord(true);
+        JScrollPane analysisScroll = new JScrollPane(analysisArea);
         if (isEdit && existingProfile != null) {
-            regexArea.setText(existingProfile.getString("regex"));
+            analysisArea.setText(existingProfile.getString("analysis"));
         }
         
-        // Tag string field
-        JLabel tagLabel = new JLabel("Tag String:");
-        JTextArea tagArea = new JTextArea(5, 30);
-        tagArea.setLineWrap(true);
-        tagArea.setWrapStyleWord(true);
-        JScrollPane tagScroll = new JScrollPane(tagArea);
+        // Modification field
+        JLabel modificationLabel = new JLabel("Modification(Python):");
+        JTextArea modificationArea = new JTextArea(5, 30);
+        modificationArea.setLineWrap(true);
+        modificationArea.setWrapStyleWord(true);
+        JScrollPane modificationScroll = new JScrollPane(modificationArea);
         if (isEdit && existingProfile != null) {
-            tagArea.setText(existingProfile.getString("tagString"));
+            modificationArea.setText(existingProfile.getString("modification"));
         }
         
         // Context checkboxes
@@ -343,11 +343,11 @@ public class Profile {
         mainPanel.add(enabledLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST));
         mainPanel.add(enabledCheckbox, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.WEST));
         
-        mainPanel.add(regexLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.NORTHWEST));
-        mainPanel.add(regexScroll, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0.3, 5, 5, GridBagConstraints.CENTER));
+        mainPanel.add(analysisLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.NORTHWEST));
+        mainPanel.add(analysisScroll, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0.3, 5, 5, GridBagConstraints.CENTER));
         
-        mainPanel.add(tagLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.NORTHWEST));
-        mainPanel.add(tagScroll, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0.5, 5, 5, GridBagConstraints.CENTER));
+        mainPanel.add(modificationLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.NORTHWEST));
+        mainPanel.add(modificationScroll, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0.5, 5, 5, GridBagConstraints.CENTER));
         
         mainPanel.add(contextLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST));
         mainPanel.add(contextPanel, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.CENTER));
@@ -361,8 +361,8 @@ public class Profile {
             @Override
             public void actionPerformed(ActionEvent e) {
                 String name = nameField.getText().trim();
-                String regex = regexArea.getText().trim();
-                String tagString = tagArea.getText().trim();
+                String analysis = analysisArea.getText().trim();
+                String modification = modificationArea.getText().trim();
                 
                 // Validation
                 if (name.isEmpty()) {
@@ -371,14 +371,14 @@ public class Profile {
                     return;
                 }
                 
-                if (regex.isEmpty()) {
-                    JOptionPane.showMessageDialog(dialog, "Regex pattern cannot be empty", 
+                if (analysis.isEmpty()) {
+                    JOptionPane.showMessageDialog(dialog, "Analysis code cannot be empty", 
                         "Validation Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
                 
-                if (tagString.isEmpty()) {
-                    JOptionPane.showMessageDialog(dialog, "Tag string cannot be empty", 
+                if (modification.isEmpty()) {
+                    JOptionPane.showMessageDialog(dialog, "Modification code cannot be empty", 
                         "Validation Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
@@ -401,8 +401,8 @@ public class Profile {
                 // Create or update profile
                 JSONObject profile = new JSONObject();
                 profile.put("name", name);
-                profile.put("regex", regex);
-                profile.put("tagString", tagString);
+                profile.put("analysis", analysis);
+                profile.put("modification", modification);
                 profile.put("contexts", contexts);
                 profile.put("enabled", enabledCheckbox.isSelected());
                 
@@ -415,7 +415,7 @@ public class Profile {
                             String contextsStr = String.join(", ", getContextsFromProfile(profile));
                             tableModel.setValueAt(enabledCheckbox.isSelected() ? "✓" : "✗", i, 0);
                             tableModel.setValueAt(name, i, 1);
-                            tableModel.setValueAt(regex, i, 2);
+                            tableModel.setValueAt(analysis, i, 2);
                             tableModel.setValueAt(contextsStr, i, 3);
                             break;
                         }
@@ -428,7 +428,7 @@ public class Profile {
                     tableModel.addRow(new Object[]{
                         enabledCheckbox.isSelected() ? "✓" : "✗",
                         name, 
-                        regex, 
+                        analysis, 
                         contextsStr
                     });
                 }
@@ -497,11 +497,13 @@ public class Profile {
             }
             
             if (appliesTo) {
-                String regex = profile.getString("regex");
-                String tagString = profile.getString("tagString");
+                String analysis = profile.getString("analysis");
+                String modification = profile.getString("modification");
                 
-                // Apply the profile's regex replacement
-                content = content.replaceAll(regex, tagString);
+                // Apply the profile's analysis and modification
+                // TODO: Implement Python execution for analysis and modification
+                // For now, keeping the same replacement logic
+                content = content.replaceAll(analysis, modification);
             }
         }
         return content;
