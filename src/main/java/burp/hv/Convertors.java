@@ -3305,7 +3305,7 @@ public class Convertors {
             for (Map.Entry<String, String> entry : variableMap.entrySet()) {
                 String name = entry.getKey();
                 Object value = entry.getValue();
-                if (name.length() > 0) {
+                if (!name.isEmpty()) {
                     pythonInterpreter.set(name, value);
                 }
             }
@@ -3342,7 +3342,6 @@ public class Convertors {
                 "def convert(input):\n" +
                 "   return Convertors.weakConvert(variableMap, customTags, input, hackvertor)\n" +
                 "\n";
-                alert(initCode);
                 pythonInterpreter.exec(initCode + code);
             }
             PyObject output = pythonInterpreter.get("output");

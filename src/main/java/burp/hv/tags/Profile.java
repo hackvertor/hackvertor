@@ -299,6 +299,18 @@ public class Profile {
         JScrollPane analysisScroll = new JScrollPane(analysisArea);
         if (isEdit && existingProfile != null) {
             analysisArea.setText(existingProfile.getString("analysis"));
+        } else {
+            analysisArea.setText("""
+import re
+
+_jwt = re.compile(r'([A-Za-z0-9_-]+)\\.([A-Za-z0-9_-]+)\\.([A-Za-z0-9_-]+)')
+
+def find_positions(text):
+    positions = ["{},{}".format(m.start(), m.end()) for m in _jwt.finditer(text)]
+    return positions[0] if len(positions) == 1 else positions
+    
+output = find_positions(input)
+                    """);
         }
         
         // Modification field
@@ -309,6 +321,20 @@ public class Profile {
         JScrollPane modificationScroll = new JScrollPane(modificationArea);
         if (isEdit && existingProfile != null) {
             modificationArea.setText(existingProfile.getString("modification"));
+        } else {
+            modificationArea.setText("""
+def wrap(input):
+    parts = input.split(".")
+    if len(parts) != 3:
+        return input
+    header, payload, _ = parts
+    decoded_header = convert("<@d_base64url>" + header + "</@d_base64url>")
+    decoded_payload = convert("<@d_base64url>" + payload + "</@d_base64url>")
+    decoded = "{}.{}".format(decoded_header, decoded_payload)
+    return "<@d_base64url>{}</@d_base64url><@base64url>{}</@base64url>".format(input, decoded) 
+ 
+output = wrap(input)                    
+                    """);
         }
         
         // Context checkboxes
