@@ -1,10 +1,9 @@
 package burp.hv.utils;
 
-import burp.IRequestInfo;
 import burp.api.montoya.http.message.ContentType;
 import burp.api.montoya.http.message.requests.HttpRequest;
 import burp.hv.tags.CustomTags;
-import burp.hv.tags.Profile;
+import burp.hv.tags.Profiles;
 import burp.hv.settings.Settings;
 import burp.hv.tags.TagStore;
 import burp.hv.Variables;
@@ -134,7 +133,7 @@ public class Utils {
         profilesMenu.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                Profile.showProfilesDialog();
+                Profiles.showProfilesDialog();
             }
         });
         hvMenuBar.add(createCustomTagsMenu);

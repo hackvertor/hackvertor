@@ -21,11 +21,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 
 import static burp.hv.HackvertorExtension.callbacks;
 
-public class Profile {
+public class Profiles {
     private static JSONArray profiles = new JSONArray();
     private static final String PROFILES_KEY = "hackvertor_profiles";
     
@@ -267,7 +266,7 @@ public class Profile {
         JDialog dialog = new JDialog(Utils.getHackvertorWindowInstance(), 
             isEdit ? "Edit Profile" : "Create Profile", true);
         dialog.setLayout(new BorderLayout());
-        dialog.setPreferredSize(new Dimension(600, 550));
+        dialog.setPreferredSize(new Dimension(800, 700));
         
         JPanel mainPanel = new JPanel(new GridBagLayout());
         mainPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
@@ -293,7 +292,7 @@ public class Profile {
         
         // Analysis field
         JLabel analysisLabel = new JLabel("Analysis(Python):");
-        JTextArea analysisArea = new JTextArea(3, 30);
+        JTextArea analysisArea = new JTextArea(6, 50);
         analysisArea.setLineWrap(true);
         analysisArea.setWrapStyleWord(true);
         JScrollPane analysisScroll = new JScrollPane(analysisArea);
@@ -303,11 +302,11 @@ public class Profile {
             analysisArea.setText("""
 import re
 
-_jwt = re.compile(r'([A-Za-z0-9_-]+)\\.([A-Za-z0-9_-]+)\\.([A-Za-z0-9_-]+)')
+_jwt = re.compile(r'eyJ[A-Za-z0-9_-]*\\.eyJ[A-Za-z0-9_-]*\\.[A-Za-z0-9_-]*')
 
 def find_positions(text):
     positions = ["{},{}".format(m.start(), m.end()) for m in _jwt.finditer(text)]
-    return positions[0] if len(positions) == 1 else positions
+    return ";".join(positions)
     
 output = find_positions(input)
                     """);
@@ -315,7 +314,7 @@ output = find_positions(input)
         
         // Modification field
         JLabel modificationLabel = new JLabel("Modification(Python):");
-        JTextArea modificationArea = new JTextArea(5, 30);
+        JTextArea modificationArea = new JTextArea(8, 50);
         modificationArea.setLineWrap(true);
         modificationArea.setWrapStyleWord(true);
         JScrollPane modificationScroll = new JScrollPane(modificationArea);
@@ -330,8 +329,7 @@ def wrap(input):
     header, payload, _ = parts
     decoded_header = convert("<@d_base64url>" + header + "</@d_base64url>")
     decoded_payload = convert("<@d_base64url>" + payload + "</@d_base64url>")
-    decoded = "{}.{}".format(decoded_header, decoded_payload)
-    return "<@d_base64url>{}</@d_base64url><@base64url>{}</@base64url>".format(input, decoded) 
+    return "<@base64url>{}</@base64url>.<@base64url>{}</@base64url>.{}".format(decoded_header,decoded_payload,_) 
  
 output = wrap(input)                    
                     """);
@@ -372,8 +370,57 @@ output = wrap(input)
         mainPanel.add(analysisLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.NORTHWEST));
         mainPanel.add(analysisScroll, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0.3, 5, 5, GridBagConstraints.CENTER));
         
+        // Test button for analysis
+        JButton testAnalysisButton = new JButton("Test Analysis");
+        testAnalysisButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String testInput = JOptionPane.showInputDialog(dialog, "Enter test input:", "Test Analysis", JOptionPane.PLAIN_MESSAGE);
+                if (testInput != null) {
+                    try {
+                        String analysisCode = analysisArea.getText();
+                        String result = burp.hv.Convertors.python(HackvertorExtension.globalVariables, testInput, analysisCode, HackvertorExtension.tagCodeExecutionKey, null, HackvertorExtension.hackvertor.getCustomTags(), HackvertorExtension.hackvertor);
+                        JOptionPane.showMessageDialog(dialog, "Result: " + result, "Analysis Test Result", JOptionPane.INFORMATION_MESSAGE);
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(dialog, "Error: " + ex.getMessage(), "Analysis Test Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            }
+        });
+        if (!HackvertorExtension.isNativeTheme && !HackvertorExtension.isDarkTheme) {
+            testAnalysisButton.setBackground(Color.decode("#005a70"));
+            testAnalysisButton.setForeground(Color.white);
+        }
+        mainPanel.add(new JLabel(), GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST));
+        mainPanel.add(testAnalysisButton, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.WEST));
+        
         mainPanel.add(modificationLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.NORTHWEST));
         mainPanel.add(modificationScroll, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0.5, 5, 5, GridBagConstraints.CENTER));
+        
+        // Test button for modification
+        JButton testModificationButton = new JButton("Test Modification");
+        testModificationButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String testInput = JOptionPane.showInputDialog(dialog, "Enter test input:", "Test Modification", JOptionPane.PLAIN_MESSAGE);
+                if (testInput != null) {
+                    try {
+                        CustomTags.loadCustomTags();
+                        String modificationCode = modificationArea.getText();
+                        String result = burp.hv.Convertors.python(HackvertorExtension.globalVariables, testInput, modificationCode, HackvertorExtension.tagCodeExecutionKey, null, HackvertorExtension.hackvertor.getCustomTags(), HackvertorExtension.hackvertor);
+                        JOptionPane.showMessageDialog(dialog, "Result: " + result, "Modification Test Result", JOptionPane.INFORMATION_MESSAGE);
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(dialog, "Error: " + ex.getMessage(), "Modification Test Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            }
+        });
+        if (!HackvertorExtension.isNativeTheme && !HackvertorExtension.isDarkTheme) {
+            testModificationButton.setBackground(Color.decode("#005a70"));
+            testModificationButton.setForeground(Color.white);
+        }
+        mainPanel.add(new JLabel(), GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST));
+        mainPanel.add(testModificationButton, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.WEST));
         
         mainPanel.add(contextLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST));
         mainPanel.add(contextPanel, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.CENTER));
@@ -490,7 +537,7 @@ output = wrap(input)
         dialog.setVisible(true);
     }
     
-    private static ArrayList<String> getContextsFromProfile(JSONObject profile) {
+    public static ArrayList<String> getContextsFromProfile(JSONObject profile) {
         ArrayList<String> contexts = new ArrayList<>();
         JSONArray contextsArray = profile.getJSONArray("contexts");
         for (int i = 0; i < contextsArray.length(); i++) {
@@ -526,10 +573,50 @@ output = wrap(input)
                 String analysis = profile.getString("analysis");
                 String modification = profile.getString("modification");
                 
-                // Apply the profile's analysis and modification
-                // TODO: Implement Python execution for analysis and modification
-                // For now, keeping the same replacement logic
-                content = content.replaceAll(analysis, modification);
+                try {
+                    // Execute analysis Python code to get positions
+                    String analysisResult = burp.hv.Convertors.python(HackvertorExtension.globalVariables, 
+                        content, analysis, HackvertorExtension.tagCodeExecutionKey, 
+                        null, HackvertorExtension.hackvertor.getCustomTags(), HackvertorExtension.hackvertor);
+                    
+                    // Parse positions from analysis result (e.g., "0,126" or multiple positions "0,11;15,26")
+                    if (analysisResult != null && !analysisResult.trim().isEmpty()) {
+                        String[] positionSets = analysisResult.trim().split(";");
+                        
+                        // Process position sets in reverse order to maintain correct indices during replacement
+                        for (int j = positionSets.length - 1; j >= 0; j--) {
+                            String positionSet = positionSets[j];
+                            String[] positions = positionSet.trim().split(",");
+                            
+                            if (positions.length >= 2) {
+                                try {
+                                    int start = Integer.parseInt(positions[0].trim());
+                                    int end = Integer.parseInt(positions[1].trim());
+                                    
+                                    // Validate positions
+                                    if (start >= 0 && end > start && end <= content.length()) {
+                                        // Extract the substring at the identified positions
+                                        String extractedContent = content.substring(start, end);
+                                        
+                                        // Execute modification Python code on the extracted content
+                                        String modificationResult = burp.hv.Convertors.python(HackvertorExtension.globalVariables, 
+                                            extractedContent, modification, HackvertorExtension.tagCodeExecutionKey, 
+                                            null, HackvertorExtension.hackvertor.getCustomTags(), HackvertorExtension.hackvertor);
+                                        
+                                        // Replace the content at the specified positions with the modification result
+                                        if (modificationResult != null) {
+                                            content = content.substring(0, start) + modificationResult + content.substring(end);
+                                        }
+                                    }
+                                } catch (NumberFormatException | StringIndexOutOfBoundsException ex) {
+                                    // Skip this position set if parsing fails, continue with other position sets
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception ex) {
+                    // Skip this profile if Python execution fails
+                }
             }
         }
         return content;

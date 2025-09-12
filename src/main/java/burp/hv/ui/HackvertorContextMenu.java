@@ -2,6 +2,7 @@ package burp.hv.ui;
 
 import burp.api.montoya.core.ToolType;
 import burp.api.montoya.http.message.requests.HttpRequest;
+import burp.api.montoya.http.message.responses.HttpResponse;
 import burp.api.montoya.ui.contextmenu.ContextMenuEvent;
 import burp.api.montoya.ui.contextmenu.ContextMenuItemsProvider;
 import burp.api.montoya.ui.contextmenu.InvocationType;
@@ -12,10 +13,12 @@ import burp.hv.ai.LearnFromRepeater;
 import burp.hv.settings.InvalidTypeSettingException;
 import burp.hv.settings.UnregisteredSettingException;
 import burp.hv.tags.CustomTags;
+import burp.hv.tags.Profiles;
 import burp.hv.tags.Tag;
 import burp.hv.utils.TagUtils;
 import burp.hv.utils.Utils;
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 import javax.swing.*;
 import java.awt.*;
@@ -28,6 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static burp.hv.Convertors.auto_decode_no_decrypt;
 import static burp.hv.HackvertorExtension.hasHotKey;
 import static burp.hv.HackvertorExtension.montoyaApi;
+import static burp.hv.tags.Profiles.getContextsFromProfile;
 
 public class HackvertorContextMenu implements ContextMenuItemsProvider {
     public List<Component> provideMenuItems(ContextMenuEvent event) {
@@ -77,6 +81,42 @@ public class HackvertorContextMenu implements ContextMenuItemsProvider {
         }
         JMenuItem sendToHackvertor = new JMenuItem(hackvertorAction);
         menu.add(sendToHackvertor);
+
+        Profiles.loadProfiles();
+        JSONArray profiles = Profiles.getProfiles();
+        JMenu profilesMenu = new JMenu("Profiles");
+        for (int i = 0; i < profiles.length(); i++) {
+            JSONObject profile = profiles.getJSONObject(i);
+            ArrayList<String> contexts = getContextsFromProfile(profile);
+            boolean enabled = profile.optBoolean("enabled", true);
+            if(!enabled) {
+                continue;
+            }
+            if(!contexts.contains("response") && event.invocationType() == InvocationType.MESSAGE_VIEWER_RESPONSE) {
+                continue;
+            }
+            if(!contexts.contains("request") && event.invocationType() == InvocationType.MESSAGE_EDITOR_REQUEST) {
+                continue;
+            }
+            JMenuItem profileMenuItem = new JMenuItem(profile.getString("name"));
+            profileMenuItem.addActionListener(e -> {
+                if(event.invocationType() == InvocationType.MESSAGE_EDITOR_REQUEST) {
+                    HttpRequest request = event.messageEditorRequestResponse().get().requestResponse().request();
+                    String requestStr = request.toString();
+                    requestStr = Profiles.applyProfiles(requestStr, "request");
+                    event.messageEditorRequestResponse().get().setRequest(HttpRequest.httpRequest(request.httpService(), requestStr));
+                }
+                if(event.invocationType() == InvocationType.MESSAGE_VIEWER_RESPONSE) {
+                    HttpResponse response = event.messageEditorRequestResponse().get().requestResponse().response();
+                    String responseStr = response.toString();
+                    responseStr = Profiles.applyProfiles(responseStr, "response");
+                    event.messageEditorRequestResponse().get().setResponse(HttpResponse.httpResponse(responseStr));
+                }
+            });
+            profilesMenu.add(profileMenuItem);
+        }
+
+        menuItemList.add(profilesMenu);
 
         switch(event.invocationType()) {
             case SITE_MAP_TREE:
