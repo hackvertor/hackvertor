@@ -84,7 +84,8 @@ public class HackvertorContextMenu implements ContextMenuItemsProvider {
 
         Profiles.loadProfiles();
         JSONArray profiles = Profiles.getProfiles();
-        JMenu profilesMenu = new JMenu("Profiles");
+        JMenu profilesMenu = new JMenu("Apply Profile");
+        profilesMenu.setEnabled(event.invocationType() == InvocationType.MESSAGE_VIEWER_RESPONSE || event.invocationType() == InvocationType.MESSAGE_EDITOR_REQUEST);
         for (int i = 0; i < profiles.length(); i++) {
             JSONObject profile = profiles.getJSONObject(i);
             ArrayList<String> contexts = getContextsFromProfile(profile);
@@ -100,23 +101,27 @@ public class HackvertorContextMenu implements ContextMenuItemsProvider {
             }
             JMenuItem profileMenuItem = new JMenuItem(profile.getString("name"));
             profileMenuItem.addActionListener(e -> {
-                if(event.invocationType() == InvocationType.MESSAGE_EDITOR_REQUEST) {
-                    HttpRequest request = event.messageEditorRequestResponse().get().requestResponse().request();
-                    String requestStr = request.toString();
-                    requestStr = Profiles.applyProfiles(requestStr, "request");
-                    event.messageEditorRequestResponse().get().setRequest(HttpRequest.httpRequest(request.httpService(), requestStr));
-                }
-                if(event.invocationType() == InvocationType.MESSAGE_VIEWER_RESPONSE) {
-                    HttpResponse response = event.messageEditorRequestResponse().get().requestResponse().response();
-                    String responseStr = response.toString();
-                    responseStr = Profiles.applyProfiles(responseStr, "response");
-                    event.messageEditorRequestResponse().get().setResponse(HttpResponse.httpResponse(responseStr));
+                if(event.messageEditorRequestResponse().isPresent()) {
+                    if (event.invocationType() == InvocationType.MESSAGE_EDITOR_REQUEST) {
+                        HttpRequest request = event.messageEditorRequestResponse().get().requestResponse().request();
+                        String requestStr = request.toString();
+                        requestStr = Profiles.applyProfiles(requestStr, "request");
+                        event.messageEditorRequestResponse().get().setRequest(HttpRequest.httpRequest(request.httpService(), requestStr));
+                    }
+                    if (event.invocationType() == InvocationType.MESSAGE_VIEWER_RESPONSE) {
+                        HttpResponse response = event.messageEditorRequestResponse().get().requestResponse().response();
+                        String responseStr = response.toString();
+                        responseStr = Profiles.applyProfiles(responseStr, "response");
+                        HackvertorPanel hackvertorPanel = HackvertorExtension.extensionPanel.addNewPanel();
+                        hackvertorPanel.getInputArea().setText(responseStr);
+                        HackvertorExtension.extensionPanel.makeActiveBurpTab();
+                    }
                 }
             });
             profilesMenu.add(profileMenuItem);
         }
 
-        menuItemList.add(profilesMenu);
+        menu.add(profilesMenu);
 
         switch(event.invocationType()) {
             case SITE_MAP_TREE:
