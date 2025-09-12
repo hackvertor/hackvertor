@@ -10,6 +10,10 @@ Tags also support arguments. The find tag allows you to find a string by regex a
 
 # Changelog
 
+## Version v2.1.7 (2025-09-12)
+
+- Added profiles
+
 ## Version v2.1.0 (2025-09-07)
 
 - Changed from old Burp API to montoya.
