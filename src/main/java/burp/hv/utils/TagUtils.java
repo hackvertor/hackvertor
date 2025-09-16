@@ -2,11 +2,13 @@ package burp.hv.utils;
 
 import burp.IContextMenuInvocation;
 import burp.IRequestInfo;
+import burp.api.montoya.core.ToolType;
 import burp.api.montoya.http.message.requests.HttpRequest;
 import burp.api.montoya.ui.contextmenu.ContextMenuEvent;
 import burp.api.montoya.ui.contextmenu.InvocationType;
 import burp.api.montoya.ui.contextmenu.MessageEditorHttpRequestResponse;
 import burp.hv.Convertors;
+import burp.hv.HackvertorExtension;
 import burp.hv.settings.InvalidTypeSettingException;
 import burp.hv.tags.Tag;
 import burp.hv.settings.UnregisteredSettingException;
@@ -219,5 +221,54 @@ public class TagUtils {
             default:
                 return null;
         }
+    }
+
+    public static boolean shouldProcessTags(ToolType toolType) {
+        boolean tagsInProxy;
+        boolean tagsInIntruder;
+        boolean tagsInRepeater;
+        boolean tagsInScanner;
+        boolean tagsInExtensions;
+
+        try {
+            tagsInProxy = HackvertorExtension.generalSettings.getBoolean("tagsInProxy");
+            tagsInIntruder = HackvertorExtension.generalSettings.getBoolean("tagsInIntruder");
+            tagsInRepeater = HackvertorExtension.generalSettings.getBoolean("tagsInRepeater");
+            tagsInScanner = HackvertorExtension.generalSettings.getBoolean("tagsInScanner");
+            tagsInExtensions = HackvertorExtension.generalSettings.getBoolean("tagsInExtensions");
+        } catch (UnregisteredSettingException | InvalidTypeSettingException e) {
+            HackvertorExtension.callbacks.printError("Error loading settings:" + e);
+            throw new RuntimeException(e);
+        }
+        switch (toolType) {
+            case PROXY:
+                if (!tagsInProxy) {
+                    return false;
+                }
+                break;
+            case INTRUDER:
+                if (!tagsInIntruder) {
+                    return false;
+                }
+                break;
+            case REPEATER:
+                if (!tagsInRepeater) {
+                    return false;
+                }
+                break;
+            case SCANNER:
+                if (!tagsInScanner) {
+                    return false;
+                }
+                break;
+            case EXTENSIONS:
+                if (!tagsInExtensions) {
+                    return false;
+                }
+                break;
+            default:
+                return false;
+        }
+        return true;
     }
 }

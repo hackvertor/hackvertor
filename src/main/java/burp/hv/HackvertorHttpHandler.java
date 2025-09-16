@@ -6,10 +6,14 @@ import burp.api.montoya.http.handler.HttpResponseReceived;
 import burp.api.montoya.http.handler.RequestToBeSentAction;
 import burp.api.montoya.http.handler.ResponseReceivedAction;
 import burp.api.montoya.http.message.requests.HttpRequest;
+import burp.api.montoya.http.message.responses.HttpResponse;
 import burp.hv.ai.AI;
 import burp.hv.ai.LearnFromRepeater;
 import burp.hv.settings.InvalidTypeSettingException;
 import burp.hv.settings.UnregisteredSettingException;
+import burp.hv.tags.Profiles;
+import burp.hv.ui.HackvertorPanel;
+import burp.hv.utils.TagUtils;
 import org.json.JSONArray;
 
 import java.util.ArrayList;
@@ -22,21 +26,11 @@ public class HackvertorHttpHandler implements burp.api.montoya.http.handler.Http
     public RequestToBeSentAction handleHttpRequestToBeSent(HttpRequestToBeSent req) {
         boolean learnFromRepeater;
         boolean allowAiToGenerateCode;
-        boolean tagsInProxy;
-        boolean tagsInIntruder;
-        boolean tagsInRepeater;
-        boolean tagsInScanner;
-        boolean tagsInExtensions;
         boolean autoUpdateContentLength;
         int maxBodyLength;
         try {
             learnFromRepeater = HackvertorExtension.generalSettings.getBoolean("learnFromRepeater");
             allowAiToGenerateCode = HackvertorExtension.generalSettings.getBoolean("allowAiToGenerateCode");
-            tagsInProxy = HackvertorExtension.generalSettings.getBoolean("tagsInProxy");
-            tagsInIntruder = HackvertorExtension.generalSettings.getBoolean("tagsInIntruder");
-            tagsInRepeater = HackvertorExtension.generalSettings.getBoolean("tagsInRepeater");
-            tagsInScanner = HackvertorExtension.generalSettings.getBoolean("tagsInScanner");
-            tagsInExtensions = HackvertorExtension.generalSettings.getBoolean("tagsInExtensions");
             autoUpdateContentLength = HackvertorExtension.generalSettings.getBoolean("autoUpdateContentLength");
             maxBodyLength = HackvertorExtension.generalSettings.getInteger("maxBodyLength");
         } catch (UnregisteredSettingException | InvalidTypeSettingException e) {
@@ -56,36 +50,8 @@ public class HackvertorHttpHandler implements burp.api.montoya.http.handler.Http
                 HackvertorExtension.requestHistory.add(req);
             }
         }
+        if(!TagUtils.shouldProcessTags(req.toolSource().toolType())) return null;
 
-        switch (req.toolSource().toolType()) {
-            case PROXY:
-                if (!tagsInProxy) {
-                    return null;
-                }
-                break;
-            case INTRUDER:
-                if (!tagsInIntruder) {
-                    return null;
-                }
-                break;
-            case REPEATER:
-                if (!tagsInRepeater) {
-                    return null;
-                }
-                break;
-            case SCANNER:
-                if (!tagsInScanner) {
-                    return null;
-                }
-                break;
-            case EXTENSIONS:
-                if (!tagsInExtensions) {
-                    return null;
-                }
-                break;
-            default:
-                return null;
-        }
         String requestStr = req.toString();
         if (requestStr.contains("<@")) {
             HackvertorExtension.hackvertor.setRequest(req);
@@ -109,6 +75,20 @@ public class HackvertorHttpHandler implements burp.api.montoya.http.handler.Http
 
     @Override
     public ResponseReceivedAction handleHttpResponseReceived(HttpResponseReceived responseReceived) {
-        return null;
+        try {
+            boolean tagsInResponse = HackvertorExtension.generalSettings.getBoolean("tagsInExtensions");
+            int maxBodyLength = HackvertorExtension.generalSettings.getInteger("maxBodyLength");
+            if(!tagsInResponse) {
+                return null;
+            }
+            if(!TagUtils.shouldProcessTags(responseReceived.toolSource().toolType())) return null;
+            if(responseReceived.body().length() > maxBodyLength) return null;
+            String responseStr = responseReceived.toString();
+            responseStr = Profiles.applyProfiles(responseStr, "response");
+            return ResponseReceivedAction.continueWith(HttpResponse.httpResponse(HackvertorExtension.hackvertor.convert(responseStr, HackvertorExtension.hackvertor)));
+        } catch (UnregisteredSettingException | InvalidTypeSettingException e) {
+            HackvertorExtension.callbacks.printError("Error loading settings:" + e);
+            throw new RuntimeException(e);
+        }
     }
 }
