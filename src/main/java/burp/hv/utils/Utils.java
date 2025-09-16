@@ -26,18 +26,21 @@ import static burp.hv.HackvertorExtension.*;
 public class Utils {
 
     public static String getContext(HttpRequest analyzedRequest) {
-        if(analyzedRequest == null) {
+        try {
+            if (analyzedRequest == null) {
+                return null;
+            }
+            if (analyzedRequest.contentType() == ContentType.JSON) {
+                return "JSON";
+            }
+            if (analyzedRequest.method() != null && analyzedRequest.method().equalsIgnoreCase("GET")) {
+                return "GET";
+            }
+            if (analyzedRequest.method() != null && analyzedRequest.method().equalsIgnoreCase("POST")) {
+                return "POST";
+            }
             return null;
-        }
-        if(analyzedRequest.contentType() == ContentType.JSON) {
-            return "JSON";
-        }
-        if(analyzedRequest.method() != null && analyzedRequest.method().equalsIgnoreCase("GET")) {
-            return "GET";
-        }
-        if(analyzedRequest.method() != null && analyzedRequest.method().equalsIgnoreCase("POST")) {
-            return "POST";
-        }
+        } catch (Throwable ignored) {}
         return null;
     }
 
