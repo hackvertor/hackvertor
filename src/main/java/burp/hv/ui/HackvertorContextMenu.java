@@ -152,6 +152,16 @@ public class HackvertorContextMenu implements ContextMenuItemsProvider {
             }
         });
         menu.add(convert);
+        JMenuItem clear = new JMenuItem("Clear tags");
+        clear.addActionListener(e -> {
+            if (event.invocationType() == InvocationType.MESSAGE_EDITOR_REQUEST || event.invocationType()  == InvocationType.MESSAGE_VIEWER_REQUEST) {
+                if(event.messageEditorRequestResponse().isPresent()) {
+                    HttpRequest request = event.messageEditorRequestResponse().get().requestResponse().request();
+                    event.messageEditorRequestResponse().get().setRequest(HttpRequest.httpRequest(request.httpService(), Hackvertor.removeHackvertorTags(request.toString())));
+                }
+            }
+        });
+        menu.add(clear);
         JMenuItem learnFromThisRequest = new JMenuItem("Learn encoding from this request");
         learnFromThisRequest.setEnabled(learnFromRepeater && AI.isAiSupported());
         learnFromThisRequest.addActionListener(e -> {
