@@ -12,6 +12,10 @@ Tags also support arguments. The find tag allows you to find a string by regex a
 
 ## Version v2.1.11 (2025-09-17)
 
+- Allow rules to be applied to different tools
+
+## Version v2.1.11 (2025-09-17)
+
 - Renamed profiles to tag automator
 - Added clear tags option in Repeater request
 - Fixed null pointer in get tag context
