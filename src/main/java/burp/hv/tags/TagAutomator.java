@@ -184,6 +184,7 @@ public class TagAutomator {
                                     enabled ? "✓" : "✗",
                                     rule.getString("name"),
                                     rule.getString("analysis"),
+                                    rule.getString("modification"),
                                     contexts
                                 });
                             }
