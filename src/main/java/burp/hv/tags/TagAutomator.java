@@ -61,7 +61,7 @@ public class TagAutomator {
 
         loadRules();
 
-        String[] columnNames = {"Enabled", "Name", "Analysis", "Modification", "Context"};
+        String[] columnNames = {"Enabled", "Type", "Name", "Analysis", "Modification", "Context"};
         DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -73,8 +73,10 @@ public class TagAutomator {
             JSONObject rule = rules.getJSONObject(i);
             String contexts = String.join(", ", getContextsFromRule(rule));
             boolean enabled = rule.optBoolean("enabled", true);
+            String ruleType = rule.optString("type", "Context Menu");
             tableModel.addRow(new Object[]{
                 enabled ? "✓" : "✗",
+                ruleType,
                 rule.getString("name"),
                 rule.getString("analysis"),
                 rule.getString("modification"),
@@ -180,8 +182,10 @@ public class TagAutomator {
                                 JSONObject rule = rules.getJSONObject(i);
                                 String contexts = String.join(", ", getContextsFromRule(rule));
                                 boolean enabled = rule.optBoolean("enabled", true);
+                                String ruleType = rule.optString("type", "Context Menu");
                                 tableModel.addRow(new Object[]{
                                     enabled ? "✓" : "✗",
+                                    ruleType,
                                     rule.getString("name"),
                                     rule.getString("analysis"),
                                     rule.getString("modification"),
@@ -244,6 +248,16 @@ public class TagAutomator {
         JPanel mainPanel = new JPanel(new GridBagLayout());
         mainPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
+        JLabel typeLabel = new JLabel("Rule Type:");
+        String[] ruleTypes = {"Context Menu", "HTTP"};
+        JComboBox<String> typeComboBox = new JComboBox<>(ruleTypes);
+        if (isEdit && existingRule != null) {
+            String ruleType = existingRule.optString("type", "Context Menu");
+            typeComboBox.setSelectedItem(ruleType);
+        } else {
+            typeComboBox.setSelectedItem("Context Menu");
+        }
+        
         JLabel nameLabel = new JLabel("Rule Name:");
         JTextField nameField = new JTextField();
         if (isEdit && existingRule != null) {
@@ -332,6 +346,9 @@ output = wrap(input)
         contextPanel.add(responseCheckbox);
 
         int y = 0;
+        mainPanel.add(typeLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST));
+        mainPanel.add(typeComboBox, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.WEST));
+        
         mainPanel.add(nameLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST));
         mainPanel.add(nameField, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.CENTER));
         
@@ -441,6 +458,7 @@ output = wrap(input)
                 }
 
                 JSONObject rule = new JSONObject();
+                rule.put("type", (String) typeComboBox.getSelectedItem());
                 rule.put("name", name);
                 rule.put("analysis", analysis);
                 rule.put("modification", modification);
@@ -454,9 +472,10 @@ output = wrap(input)
                             rules.put(i, rule);
                             String contextsStr = String.join(", ", getContextsFromRule(rule));
                             tableModel.setValueAt(enabledCheckbox.isSelected() ? "✓" : "✗", i, 0);
-                            tableModel.setValueAt(name, i, 1);
-                            tableModel.setValueAt(analysis, i, 2);
-                            tableModel.setValueAt(contextsStr, i, 3);
+                            tableModel.setValueAt((String) typeComboBox.getSelectedItem(), i, 1);
+                            tableModel.setValueAt(name, i, 2);
+                            tableModel.setValueAt(analysis, i, 3);
+                            tableModel.setValueAt(contextsStr, i, 4);
                             break;
                         }
                     }
@@ -465,6 +484,7 @@ output = wrap(input)
                     String contextsStr = String.join(", ", getContextsFromRule(rule));
                     tableModel.addRow(new Object[]{
                         enabledCheckbox.isSelected() ? "✓" : "✗",
+                        (String) typeComboBox.getSelectedItem(),
                         name, 
                         analysis, 
                         contextsStr
@@ -510,7 +530,7 @@ output = wrap(input)
         return contexts;
     }
 
-    public static boolean shouldApplyRules(String context, String tool) {
+    public static boolean shouldApplyRules(String context, String tool, String type) {
         loadRules();
         for (int i = 0; i < rules.length(); i++) {
             JSONObject rule = rules.getJSONObject(i);
@@ -519,7 +539,7 @@ output = wrap(input)
             if (!enabled) {
                 continue;
             }
-
+            if(!rule.getString("type").equals(type)) continue;
             JSONArray contexts = rule.getJSONArray("contexts");
             String ruleTool = rule.optString("tool", "Repeater");
 
@@ -540,15 +560,16 @@ output = wrap(input)
         return false;
     }
 
-    public static String applyRules(String content, String context, String tool) {
+    public static String applyRules(String content, String context, String tool, String type) {
         loadRules();
         for (int i = 0; i < rules.length(); i++) {
             JSONObject rule = rules.getJSONObject(i);
-
             boolean enabled = rule.optBoolean("enabled", true);
             if (!enabled) {
                 continue;
             }
+
+            if(!rule.getString("type").equals(type)) continue;
             
             JSONArray contexts = rule.getJSONArray("contexts");
             String ruleTool = rule.optString("tool", "Repeater");

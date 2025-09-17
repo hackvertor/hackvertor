@@ -54,6 +54,12 @@ public class HackvertorHttpHandler implements burp.api.montoya.http.handler.Http
         String requestStr = req.toString();
         if (requestStr.contains("<@")) {
             HackvertorExtension.hackvertor.setRequest(req);
+
+            String tool = getToolFromToolType(req.toolSource().toolType());
+            if(TagAutomator.shouldApplyRules("request", tool, "HTTP")) {
+                requestStr = TagAutomator.applyRules(requestStr, "request", tool, "HTTP");
+            }
+
             String converted;
             if(req.body().length() > maxBodyLength) {
                 montoyaApi.logging().logToOutput("Warning: Hackvertor only converted tags in headers because the body was too big. Hit the "+maxBodyLength + " limit.");
@@ -73,19 +79,19 @@ public class HackvertorHttpHandler implements burp.api.montoya.http.handler.Http
     }
 
     @Override
-    public ResponseReceivedAction handleHttpResponseReceived(HttpResponseReceived responseReceived) {
+    public ResponseReceivedAction handleHttpResponseReceived(HttpResponseReceived resp) {
         try {
             boolean tagsInResponse = HackvertorExtension.generalSettings.getBoolean("tagsInResponse");
             int maxBodyLength = HackvertorExtension.generalSettings.getInteger("maxBodyLength");
             if(!tagsInResponse) {
                 return null;
             }
-            String tool = getToolFromToolType(responseReceived.toolSource().toolType());
-            if(!TagAutomator.shouldApplyRules("response", tool)) return null;
-            if(!TagUtils.shouldProcessTags(responseReceived.toolSource().toolType())) return null;
-            if(responseReceived.body().length() > maxBodyLength) return null;
-            String responseStr = responseReceived.toString();
-            responseStr = TagAutomator.applyRules(responseStr, "response", tool);
+            String tool = getToolFromToolType(resp.toolSource().toolType());
+            if(!TagAutomator.shouldApplyRules("response", tool, "HTTP")) return null;
+            if(!TagUtils.shouldProcessTags(resp.toolSource().toolType())) return null;
+            if(resp.body().length() > maxBodyLength) return null;
+            String responseStr = resp.toString();
+            responseStr = TagAutomator.applyRules(responseStr, "response", tool, "HTTP");
             return ResponseReceivedAction.continueWith(HttpResponse.httpResponse(HackvertorExtension.hackvertor.convert(responseStr, HackvertorExtension.hackvertor)));
         } catch (UnregisteredSettingException | InvalidTypeSettingException e) {
             HackvertorExtension.callbacks.printError("Error loading settings:" + e);

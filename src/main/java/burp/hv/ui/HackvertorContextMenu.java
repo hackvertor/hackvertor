@@ -32,6 +32,7 @@ import static burp.hv.Convertors.auto_decode_no_decrypt;
 import static burp.hv.HackvertorExtension.hasHotKey;
 import static burp.hv.HackvertorExtension.montoyaApi;
 import static burp.hv.tags.TagAutomator.getContextsFromRule;
+import static burp.hv.tags.TagAutomator.shouldApplyRules;
 
 public class HackvertorContextMenu implements ContextMenuItemsProvider {
     public List<Component> provideMenuItems(ContextMenuEvent event) {
@@ -99,6 +100,11 @@ public class HackvertorContextMenu implements ContextMenuItemsProvider {
             if(!contexts.contains("request") && event.invocationType() == InvocationType.MESSAGE_EDITOR_REQUEST) {
                 continue;
             }
+
+            if(!shouldApplyRules(contexts.contains("request") && event.invocationType() == InvocationType.MESSAGE_EDITOR_REQUEST ? "request" : "response",  getToolFromInvocationType(event.invocationType()),"Context Menu")) {
+                continue;
+            }
+
             JMenuItem ruleMenuItem = new JMenuItem(rule.getString("name"));
             ruleMenuItem.addActionListener(e -> {
                 if(event.messageEditorRequestResponse().isPresent()) {
@@ -106,14 +112,14 @@ public class HackvertorContextMenu implements ContextMenuItemsProvider {
                         HttpRequest request = event.messageEditorRequestResponse().get().requestResponse().request();
                         String requestStr = request.toString();
                         String tool = getToolFromInvocationType(event.invocationType());
-                        requestStr = TagAutomator.applyRules(requestStr, "request", tool);
+                        requestStr = TagAutomator.applyRules(requestStr, "request", tool, "Context Menu");
                         event.messageEditorRequestResponse().get().setRequest(HttpRequest.httpRequest(request.httpService(), requestStr));
                     }
                     if (event.invocationType() == InvocationType.MESSAGE_VIEWER_RESPONSE) {
                         HttpResponse response = event.messageEditorRequestResponse().get().requestResponse().response();
                         String responseStr = response.toString();
                         String tool = getToolFromInvocationType(event.invocationType());
-                        responseStr = TagAutomator.applyRules(responseStr, "response", tool);
+                        responseStr = TagAutomator.applyRules(responseStr, "response", tool, "Context Menu");
                         HackvertorPanel hackvertorPanel = HackvertorExtension.extensionPanel.addNewPanel();
                         hackvertorPanel.getInputArea().setText(responseStr);
                         HackvertorExtension.extensionPanel.makeActiveBurpTab();
