@@ -75,7 +75,7 @@ public class HackvertorHttpHandler implements burp.api.montoya.http.handler.Http
     @Override
     public ResponseReceivedAction handleHttpResponseReceived(HttpResponseReceived responseReceived) {
         try {
-            boolean tagsInResponse = HackvertorExtension.generalSettings.getBoolean("tagsInExtensions");
+            boolean tagsInResponse = HackvertorExtension.generalSettings.getBoolean("tagsInResponse");
             int maxBodyLength = HackvertorExtension.generalSettings.getInteger("maxBodyLength");
             if(!tagsInResponse) {
                 return null;
