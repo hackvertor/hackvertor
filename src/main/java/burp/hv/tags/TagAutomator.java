@@ -215,11 +215,6 @@ public class TagAutomator {
                 rulesWindow.getContentPane().removeAll();
             }
         });
-
-        if (!HackvertorExtension.isNativeTheme && HackvertorExtension.isDarkTheme) {
-            newButton.setBackground(Color.decode("#005a70"));
-            newButton.setForeground(Color.white);
-        }
         
         buttonPanel.add(newButton);
         buttonPanel.add(editButton);
@@ -310,6 +305,11 @@ output = wrap(input)
         JCheckBox requestCheckbox = new JCheckBox("Request");
         JCheckBox responseCheckbox = new JCheckBox("Response");
         
+        JLabel toolLabel = new JLabel("Tool:");
+        String[] tools = {"Proxy", "Intruder", "Repeater", "Scanner", "Extensions"};
+        JComboBox<String> toolComboBox = new JComboBox<>(tools);
+        toolComboBox.setSelectedItem("Repeater");
+        
         if (isEdit && existingRule != null) {
             JSONArray contexts = existingRule.getJSONArray("contexts");
             for (int i = 0; i < contexts.length(); i++) {
@@ -320,6 +320,8 @@ output = wrap(input)
                     responseCheckbox.setSelected(true);
                 }
             }
+            String tool = existingRule.optString("tool", "Repeater");
+            toolComboBox.setSelectedItem(tool);
         } else {
             requestCheckbox.setSelected(true);
         }
@@ -389,6 +391,9 @@ output = wrap(input)
         
         mainPanel.add(contextLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST));
         mainPanel.add(contextPanel, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.CENTER));
+        
+        mainPanel.add(toolLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST));
+        mainPanel.add(toolComboBox, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.WEST));
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         JButton saveButton = new JButton(isEdit ? "Update" : "Create");
@@ -439,6 +444,7 @@ output = wrap(input)
                 rule.put("modification", modification);
                 rule.put("contexts", contexts);
                 rule.put("enabled", enabledCheckbox.isSelected());
+                rule.put("tool", (String) toolComboBox.getSelectedItem());
                 
                 if (isEdit) {
                     for (int i = 0; i < rules.length(); i++) {
@@ -501,8 +507,8 @@ output = wrap(input)
         }
         return contexts;
     }
-
-    public static String applyRules(String content, String context) {
+    
+    public static String applyRules(String content, String context, String tool) {
         loadRules();
         for (int i = 0; i < rules.length(); i++) {
             JSONObject rule = rules.getJSONObject(i);
@@ -513,6 +519,7 @@ output = wrap(input)
             }
             
             JSONArray contexts = rule.getJSONArray("contexts");
+            String ruleTool = rule.optString("tool", "Repeater");
 
             boolean appliesTo = false;
             for (int j = 0; j < contexts.length(); j++) {
@@ -522,7 +529,9 @@ output = wrap(input)
                 }
             }
             
-            if (appliesTo) {
+            boolean toolMatches = ruleTool.equalsIgnoreCase(tool);
+            
+            if (appliesTo && toolMatches) {
                 String analysis = rule.getString("analysis");
                 String modification = rule.getString("modification");
                 

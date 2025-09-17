@@ -105,13 +105,15 @@ public class HackvertorContextMenu implements ContextMenuItemsProvider {
                     if (event.invocationType() == InvocationType.MESSAGE_EDITOR_REQUEST) {
                         HttpRequest request = event.messageEditorRequestResponse().get().requestResponse().request();
                         String requestStr = request.toString();
-                        requestStr = TagAutomator.applyRules(requestStr, "request");
+                        String tool = getToolFromInvocationType(event.invocationType());
+                        requestStr = TagAutomator.applyRules(requestStr, "request", tool);
                         event.messageEditorRequestResponse().get().setRequest(HttpRequest.httpRequest(request.httpService(), requestStr));
                     }
                     if (event.invocationType() == InvocationType.MESSAGE_VIEWER_RESPONSE) {
                         HttpResponse response = event.messageEditorRequestResponse().get().requestResponse().response();
                         String responseStr = response.toString();
-                        responseStr = TagAutomator.applyRules(responseStr, "response");
+                        String tool = getToolFromInvocationType(event.invocationType());
+                        responseStr = TagAutomator.applyRules(responseStr, "response", tool);
                         HackvertorPanel hackvertorPanel = HackvertorExtension.extensionPanel.addNewPanel();
                         hackvertorPanel.getInputArea().setText(responseStr);
                         HackvertorExtension.extensionPanel.makeActiveBurpTab();
@@ -258,5 +260,25 @@ public class HackvertorContextMenu implements ContextMenuItemsProvider {
         }
         menuItemList.add(menu);
         return menuItemList;
+    }
+    
+    private static String getToolFromInvocationType(InvocationType type) {
+        switch(type) {
+            case PROXY_HISTORY:
+            case PROXY_INTERCEPT:
+                return "Proxy";
+            case INTRUDER_ATTACK_RESULTS:
+            case INTRUDER_PAYLOAD_POSITIONS:
+                return "Intruder";
+            case MESSAGE_EDITOR_REQUEST:
+            case MESSAGE_VIEWER_REQUEST:
+            case MESSAGE_EDITOR_RESPONSE:
+            case MESSAGE_VIEWER_RESPONSE:
+                return "Repeater";
+            case SCANNER_RESULTS:
+                return "Scanner";
+            default:
+                return "Extensions";
+        }
     }
 }
