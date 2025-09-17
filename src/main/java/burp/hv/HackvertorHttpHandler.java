@@ -11,8 +11,7 @@ import burp.hv.ai.AI;
 import burp.hv.ai.LearnFromRepeater;
 import burp.hv.settings.InvalidTypeSettingException;
 import burp.hv.settings.UnregisteredSettingException;
-import burp.hv.tags.Profiles;
-import burp.hv.ui.HackvertorPanel;
+import burp.hv.tags.TagAutomator;
 import burp.hv.utils.TagUtils;
 import org.json.JSONArray;
 
@@ -84,7 +83,7 @@ public class HackvertorHttpHandler implements burp.api.montoya.http.handler.Http
             if(!TagUtils.shouldProcessTags(responseReceived.toolSource().toolType())) return null;
             if(responseReceived.body().length() > maxBodyLength) return null;
             String responseStr = responseReceived.toString();
-            responseStr = Profiles.applyProfiles(responseStr, "response");
+            responseStr = TagAutomator.applyRules(responseStr, "response");
             return ResponseReceivedAction.continueWith(HttpResponse.httpResponse(HackvertorExtension.hackvertor.convert(responseStr, HackvertorExtension.hackvertor)));
         } catch (UnregisteredSettingException | InvalidTypeSettingException e) {
             HackvertorExtension.callbacks.printError("Error loading settings:" + e);

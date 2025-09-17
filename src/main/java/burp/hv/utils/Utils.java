@@ -3,7 +3,7 @@ package burp.hv.utils;
 import burp.api.montoya.http.message.ContentType;
 import burp.api.montoya.http.message.requests.HttpRequest;
 import burp.hv.tags.CustomTags;
-import burp.hv.tags.Profiles;
+import burp.hv.tags.TagAutomator;
 import burp.hv.settings.Settings;
 import burp.hv.tags.TagStore;
 import burp.hv.Variables;
@@ -133,17 +133,17 @@ public class Utils {
                 Variables.showGlobalVariablesWindow();
             }
         });
-        JMenuItem profilesMenu = new JMenuItem("Manage profiles");
-        profilesMenu.addActionListener(new ActionListener() {
+        JMenuItem tagAutomatorMenu = new JMenuItem("Tag Automator");
+        tagAutomatorMenu.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                Profiles.showProfilesDialog();
+                TagAutomator.showRulesDialog();
             }
         });
         hvMenuBar.add(createCustomTagsMenu);
         hvMenuBar.add(listCustomTagsMenu);
         hvMenuBar.add(globalVariablesMenu);
-        hvMenuBar.add(profilesMenu);
+        hvMenuBar.add(tagAutomatorMenu);
         hvMenuBar.addSeparator();
         hvMenuBar.add(tagStoreMenu);
         JMenuItem settingsMenu = new JMenuItem("Settings");

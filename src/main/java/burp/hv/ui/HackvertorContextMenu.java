@@ -13,7 +13,7 @@ import burp.hv.ai.LearnFromRepeater;
 import burp.hv.settings.InvalidTypeSettingException;
 import burp.hv.settings.UnregisteredSettingException;
 import burp.hv.tags.CustomTags;
-import burp.hv.tags.Profiles;
+import burp.hv.tags.TagAutomator;
 import burp.hv.tags.Tag;
 import burp.hv.utils.TagUtils;
 import burp.hv.utils.Utils;
@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static burp.hv.Convertors.auto_decode_no_decrypt;
 import static burp.hv.HackvertorExtension.hasHotKey;
 import static burp.hv.HackvertorExtension.montoyaApi;
-import static burp.hv.tags.Profiles.getContextsFromProfile;
+import static burp.hv.tags.TagAutomator.getContextsFromRule;
 
 public class HackvertorContextMenu implements ContextMenuItemsProvider {
     public List<Component> provideMenuItems(ContextMenuEvent event) {
@@ -82,14 +82,14 @@ public class HackvertorContextMenu implements ContextMenuItemsProvider {
         JMenuItem sendToHackvertor = new JMenuItem(hackvertorAction);
         menu.add(sendToHackvertor);
 
-        Profiles.loadProfiles();
-        JSONArray profiles = Profiles.getProfiles();
-        JMenu profilesMenu = new JMenu("Apply Profile");
-        profilesMenu.setEnabled(event.invocationType() == InvocationType.MESSAGE_VIEWER_RESPONSE || event.invocationType() == InvocationType.MESSAGE_EDITOR_REQUEST);
-        for (int i = 0; i < profiles.length(); i++) {
-            JSONObject profile = profiles.getJSONObject(i);
-            ArrayList<String> contexts = getContextsFromProfile(profile);
-            boolean enabled = profile.optBoolean("enabled", true);
+        TagAutomator.loadRules();
+        JSONArray rules = TagAutomator.getRules();
+        JMenu tagAutomationMenu = new JMenu("Apply Tag Automation");
+        tagAutomationMenu.setEnabled(event.invocationType() == InvocationType.MESSAGE_VIEWER_RESPONSE || event.invocationType() == InvocationType.MESSAGE_EDITOR_REQUEST);
+        for (int i = 0; i < rules.length(); i++) {
+            JSONObject rule = rules.getJSONObject(i);
+            ArrayList<String> contexts = getContextsFromRule(rule);
+            boolean enabled = rule.optBoolean("enabled", true);
             if(!enabled) {
                 continue;
             }
@@ -99,29 +99,29 @@ public class HackvertorContextMenu implements ContextMenuItemsProvider {
             if(!contexts.contains("request") && event.invocationType() == InvocationType.MESSAGE_EDITOR_REQUEST) {
                 continue;
             }
-            JMenuItem profileMenuItem = new JMenuItem(profile.getString("name"));
-            profileMenuItem.addActionListener(e -> {
+            JMenuItem ruleMenuItem = new JMenuItem(rule.getString("name"));
+            ruleMenuItem.addActionListener(e -> {
                 if(event.messageEditorRequestResponse().isPresent()) {
                     if (event.invocationType() == InvocationType.MESSAGE_EDITOR_REQUEST) {
                         HttpRequest request = event.messageEditorRequestResponse().get().requestResponse().request();
                         String requestStr = request.toString();
-                        requestStr = Profiles.applyProfiles(requestStr, "request");
+                        requestStr = TagAutomator.applyRules(requestStr, "request");
                         event.messageEditorRequestResponse().get().setRequest(HttpRequest.httpRequest(request.httpService(), requestStr));
                     }
                     if (event.invocationType() == InvocationType.MESSAGE_VIEWER_RESPONSE) {
                         HttpResponse response = event.messageEditorRequestResponse().get().requestResponse().response();
                         String responseStr = response.toString();
-                        responseStr = Profiles.applyProfiles(responseStr, "response");
+                        responseStr = TagAutomator.applyRules(responseStr, "response");
                         HackvertorPanel hackvertorPanel = HackvertorExtension.extensionPanel.addNewPanel();
                         hackvertorPanel.getInputArea().setText(responseStr);
                         HackvertorExtension.extensionPanel.makeActiveBurpTab();
                     }
                 }
             });
-            profilesMenu.add(profileMenuItem);
+            tagAutomationMenu.add(ruleMenuItem);
         }
 
-        menu.add(profilesMenu);
+        menu.add(tagAutomationMenu);
 
         switch(event.invocationType()) {
             case SITE_MAP_TREE:

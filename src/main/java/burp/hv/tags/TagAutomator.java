@@ -24,45 +24,43 @@ import java.util.ArrayList;
 
 import static burp.hv.HackvertorExtension.callbacks;
 
-public class Profiles {
-    private static JSONArray profiles = new JSONArray();
-    private static final String PROFILES_KEY = "hackvertor_profiles";
+public class TagAutomator {
+    private static JSONArray rules = new JSONArray();
+    private static final String RULES_KEY = "hackvertor_rules";
     
-    public static void loadProfiles() {
-        String profilesJson = callbacks.loadExtensionSetting(PROFILES_KEY);
-        if (profilesJson != null && !profilesJson.isEmpty()) {
+    public static void loadRules() {
+        String rulesJson = callbacks.loadExtensionSetting(RULES_KEY);
+        if (rulesJson != null && !rulesJson.isEmpty()) {
             try {
-                profiles = new JSONArray(profilesJson);
+                rules = new JSONArray(rulesJson);
             } catch (JSONException e) {
-                profiles = new JSONArray();
+                rules = new JSONArray();
             }
         }
     }
     
-    public static void saveProfiles() {
-        callbacks.saveExtensionSetting(PROFILES_KEY, profiles.toString());
+    public static void saveRules() {
+        callbacks.saveExtensionSetting(RULES_KEY, rules.toString());
     }
     
-    public static JSONArray getProfiles() {
-        if (profiles == null) {
-            profiles = new JSONArray();
+    public static JSONArray getRules() {
+        if (rules == null) {
+            rules = new JSONArray();
         }
-        return profiles;
+        return rules;
     }
     
-    public static void showProfilesDialog() {
-        JPanel profilesPanel = new JPanel(new BorderLayout());
-        JFrame profilesWindow = Utils.getHackvertorWindowInstance();
-        profilesWindow.getContentPane().removeAll();
-        profilesWindow.getContentPane().setLayout(new BorderLayout());
-        profilesWindow.setTitle("Manage Profiles");
-        profilesWindow.setResizable(true);
-        profilesWindow.setPreferredSize(new Dimension(800, 600));
-        
-        // Load profiles if not already loaded
-        loadProfiles();
-        
-        // Create table model for profiles list
+    public static void showRulesDialog() {
+        JPanel rulesPanel = new JPanel(new BorderLayout());
+        JFrame rulesWindow = Utils.getHackvertorWindowInstance();
+        rulesWindow.getContentPane().removeAll();
+        rulesWindow.getContentPane().setLayout(new BorderLayout());
+        rulesWindow.setTitle("Manage rules");
+        rulesWindow.setResizable(true);
+        rulesWindow.setPreferredSize(new Dimension(800, 600));
+
+        loadRules();
+
         String[] columnNames = {"Enabled", "Name", "Analysis", "Modification"};
         DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
@@ -70,109 +68,100 @@ public class Profiles {
                 return false;
             }
         };
-        
-        // Populate table with existing profiles
-        for (int i = 0; i < profiles.length(); i++) {
-            JSONObject profile = profiles.getJSONObject(i);
-            String contexts = String.join(", ", getContextsFromProfile(profile));
-            boolean enabled = profile.optBoolean("enabled", true);
+
+        for (int i = 0; i < rules.length(); i++) {
+            JSONObject rule = rules.getJSONObject(i);
+            String contexts = String.join(", ", getContextsFromRule(rule));
+            boolean enabled = rule.optBoolean("enabled", true);
             tableModel.addRow(new Object[]{
                 enabled ? "✓" : "✗",
-                profile.getString("name"),
-                profile.getString("analysis"),
+                rule.getString("name"),
+                rule.getString("analysis"),
                 contexts
             });
         }
         
-        JTable profilesTable = new JTable(tableModel);
-        profilesTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        JScrollPane tableScrollPane = new JScrollPane(profilesTable);
+        JTable rulesTable = new JTable(tableModel);
+        rulesTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        JScrollPane tableScrollPane = new JScrollPane(rulesTable);
         tableScrollPane.setPreferredSize(new Dimension(750, 400));
-        
-        // Create button panel
+
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        JButton newButton = new JButton("New Profile");
-        JButton editButton = new JButton("Edit Profile");
-        JButton deleteButton = new JButton("Delete Profile");
+        JButton newButton = new JButton("New Rule");
+        JButton editButton = new JButton("Edit Rule");
+        JButton deleteButton = new JButton("Delete Rule");
         JButton exportButton = new JButton("Export to Clipboard");
         JButton importButton = new JButton("Import from Clipboard");
-        
-        // Initially disable edit and delete buttons
+
         editButton.setEnabled(false);
         deleteButton.setEnabled(false);
-        
-        // Add selection listener to enable/disable buttons
-        profilesTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+
+        rulesTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
                 if (!e.getValueIsAdjusting()) {
-                    boolean hasSelection = profilesTable.getSelectedRow() != -1;
+                    boolean hasSelection = rulesTable.getSelectedRow() != -1;
                     editButton.setEnabled(hasSelection);
                     deleteButton.setEnabled(hasSelection);
                 }
             }
         });
-        
-        // New Profile button action
+
         newButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                showCreateEditProfileDialog(false, null, tableModel);
+                showCreateEditRuleDialog(false, null, tableModel);
             }
         });
-        
-        // Edit Profile button action
+
         editButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                int selectedRow = profilesTable.getSelectedRow();
+                int selectedRow = rulesTable.getSelectedRow();
                 if (selectedRow != -1) {
-                    JSONObject profile = profiles.getJSONObject(selectedRow);
-                    showCreateEditProfileDialog(true, profile, tableModel);
+                    JSONObject rule = rules.getJSONObject(selectedRow);
+                    showCreateEditRuleDialog(true, rule, tableModel);
                 }
             }
         });
-        
-        // Delete Profile button action
+
         deleteButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                int selectedRow = profilesTable.getSelectedRow();
+                int selectedRow = rulesTable.getSelectedRow();
                 if (selectedRow != -1) {
-                    int result = JOptionPane.showConfirmDialog(profilesWindow,
-                        "Are you sure you want to delete this profile?",
+                    int result = JOptionPane.showConfirmDialog(rulesWindow,
+                        "Are you sure you want to delete this rule?",
                         "Confirm Delete",
                         JOptionPane.YES_NO_OPTION);
                     
                     if (result == JOptionPane.YES_OPTION) {
-                        profiles.remove(selectedRow);
+                        rules.remove(selectedRow);
                         tableModel.removeRow(selectedRow);
-                        saveProfiles();
+                        saveRules();
                     }
                 }
             }
         });
-        
-        // Export button action
+
         exportButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-                StringSelection profilesJSON = new StringSelection(profiles.toString(2));
-                clipboard.setContents(profilesJSON, null);
-                JOptionPane.showMessageDialog(profilesWindow, 
-                    "Profiles exported to clipboard successfully!", 
+                StringSelection rulesJSON = new StringSelection(rules.toString(2));
+                clipboard.setContents(rulesJSON, null);
+                JOptionPane.showMessageDialog(rulesWindow,
+                    "Rules exported to clipboard successfully!",
                     "Export Success", 
                     JOptionPane.INFORMATION_MESSAGE);
             }
         });
-        
-        // Import button action
+
         importButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                int result = JOptionPane.showConfirmDialog(profilesWindow,
-                    "This will replace all existing profiles. Continue?",
+                int result = JOptionPane.showConfirmDialog(rulesWindow,
+                    "This will replace all existing rules. Continue?",
                     "Confirm Import",
                     JOptionPane.YES_NO_OPTION);
                 
@@ -181,36 +170,35 @@ public class Profiles {
                         String jsonData = (String) Toolkit.getDefaultToolkit()
                             .getSystemClipboard().getData(DataFlavor.stringFlavor);
                         if (jsonData != null && !jsonData.isEmpty()) {
-                            JSONArray importedProfiles = new JSONArray(jsonData);
-                            profiles = importedProfiles;
-                            saveProfiles();
-                            
-                            // Refresh table
+                            JSONArray importedRules = new JSONArray(jsonData);
+                            rules = importedRules;
+                            saveRules();
+
                             tableModel.setRowCount(0);
-                            for (int i = 0; i < profiles.length(); i++) {
-                                JSONObject profile = profiles.getJSONObject(i);
-                                String contexts = String.join(", ", getContextsFromProfile(profile));
-                                boolean enabled = profile.optBoolean("enabled", true);
+                            for (int i = 0; i < rules.length(); i++) {
+                                JSONObject rule = rules.getJSONObject(i);
+                                String contexts = String.join(", ", getContextsFromRule(rule));
+                                boolean enabled = rule.optBoolean("enabled", true);
                                 tableModel.addRow(new Object[]{
                                     enabled ? "✓" : "✗",
-                                    profile.getString("name"),
-                                    profile.getString("analysis"),
+                                    rule.getString("name"),
+                                    rule.getString("analysis"),
                                     contexts
                                 });
                             }
                             
-                            JOptionPane.showMessageDialog(profilesWindow,
-                                "Profiles imported successfully!",
+                            JOptionPane.showMessageDialog(rulesWindow,
+                                "Rules imported successfully!",
                                 "Import Success",
                                 JOptionPane.INFORMATION_MESSAGE);
                         }
                     } catch (JSONException ex) {
-                        JOptionPane.showMessageDialog(profilesWindow,
+                        JOptionPane.showMessageDialog(rulesWindow,
                             "Invalid JSON format: " + ex.getMessage(),
                             "Import Error",
                             JOptionPane.ERROR_MESSAGE);
                     } catch (UnsupportedFlavorException | IOException ex) {
-                        JOptionPane.showMessageDialog(profilesWindow,
+                        JOptionPane.showMessageDialog(rulesWindow,
                             "Failed to read clipboard data: " + ex.getMessage(),
                             "Import Error",
                             JOptionPane.ERROR_MESSAGE);
@@ -218,31 +206,19 @@ public class Profiles {
                 }
             }
         });
-        
-        // Close button action
+
         JButton closeButton = new JButton("Close");
         closeButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                profilesWindow.setVisible(false);
-                profilesWindow.getContentPane().removeAll();
+                rulesWindow.setVisible(false);
+                rulesWindow.getContentPane().removeAll();
             }
         });
-        
-        // Style buttons if not native theme
-        if (!HackvertorExtension.isNativeTheme && !HackvertorExtension.isDarkTheme) {
+
+        if (!HackvertorExtension.isNativeTheme && HackvertorExtension.isDarkTheme) {
             newButton.setBackground(Color.decode("#005a70"));
             newButton.setForeground(Color.white);
-            editButton.setBackground(Color.decode("#005a70"));
-            editButton.setForeground(Color.white);
-            deleteButton.setBackground(Color.decode("#005a70"));
-            deleteButton.setForeground(Color.white);
-            exportButton.setBackground(Color.decode("#005a70"));
-            exportButton.setForeground(Color.white);
-            importButton.setBackground(Color.decode("#005a70"));
-            importButton.setForeground(Color.white);
-            closeButton.setBackground(Color.decode("#005a70"));
-            closeButton.setForeground(Color.white);
         }
         
         buttonPanel.add(newButton);
@@ -253,51 +229,46 @@ public class Profiles {
         buttonPanel.add(importButton);
         buttonPanel.add(closeButton);
         
-        profilesPanel.add(tableScrollPane, BorderLayout.CENTER);
-        profilesPanel.add(buttonPanel, BorderLayout.SOUTH);
+        rulesPanel.add(tableScrollPane, BorderLayout.CENTER);
+        rulesPanel.add(buttonPanel, BorderLayout.SOUTH);
         
-        profilesWindow.add(profilesPanel);
-        profilesWindow.pack();
-        profilesWindow.setLocationRelativeTo(null);
-        profilesWindow.setVisible(true);
+        rulesWindow.add(rulesPanel);
+        rulesWindow.pack();
+        rulesWindow.setLocationRelativeTo(null);
+        rulesWindow.setVisible(true);
     }
     
-    private static void showCreateEditProfileDialog(boolean isEdit, JSONObject existingProfile, DefaultTableModel tableModel) {
+    private static void showCreateEditRuleDialog(boolean isEdit, JSONObject existingRule, DefaultTableModel tableModel) {
         JDialog dialog = new JDialog(Utils.getHackvertorWindowInstance(), 
-            isEdit ? "Edit Profile" : "Create Profile", true);
+            isEdit ? "Edit Rule" : "Create Rule", true);
         dialog.setLayout(new BorderLayout());
         dialog.setPreferredSize(new Dimension(800, 700));
         
         JPanel mainPanel = new JPanel(new GridBagLayout());
         mainPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        
-        // Name field
-        JLabel nameLabel = new JLabel("Profile Name:");
+
+        JLabel nameLabel = new JLabel("Rule Name:");
         JTextField nameField = new JTextField();
-        if (isEdit && existingProfile != null) {
-            nameField.setText(existingProfile.getString("name"));
+        if (isEdit && existingRule != null) {
+            nameField.setText(existingRule.getString("name"));
         }
-        
-        // Enabled checkbox
+
         JLabel enabledLabel = new JLabel("Status:");
         JCheckBox enabledCheckbox = new JCheckBox("Enabled");
-        if (isEdit && existingProfile != null) {
-            // Check if the profile has an enabled field, default to true for backward compatibility
-            boolean enabled = existingProfile.optBoolean("enabled", true);
+        if (isEdit && existingRule != null) {
+            boolean enabled = existingRule.optBoolean("enabled", true);
             enabledCheckbox.setSelected(enabled);
         } else {
-            // Default to enabled for new profiles
             enabledCheckbox.setSelected(true);
         }
-        
-        // Analysis field
+
         JLabel analysisLabel = new JLabel("Analysis(Python):");
         JTextArea analysisArea = new JTextArea(6, 50);
         analysisArea.setLineWrap(true);
         analysisArea.setWrapStyleWord(true);
         JScrollPane analysisScroll = new JScrollPane(analysisArea);
-        if (isEdit && existingProfile != null) {
-            analysisArea.setText(existingProfile.getString("analysis"));
+        if (isEdit && existingRule != null) {
+            analysisArea.setText(existingRule.getString("analysis"));
         } else {
             analysisArea.setText("""
 import re
@@ -311,15 +282,14 @@ def find_positions(text):
 output = find_positions(input)
                     """);
         }
-        
-        // Modification field
+
         JLabel modificationLabel = new JLabel("Modification(Python):");
         JTextArea modificationArea = new JTextArea(8, 50);
         modificationArea.setLineWrap(true);
         modificationArea.setWrapStyleWord(true);
         JScrollPane modificationScroll = new JScrollPane(modificationArea);
-        if (isEdit && existingProfile != null) {
-            modificationArea.setText(existingProfile.getString("modification"));
+        if (isEdit && existingRule != null) {
+            modificationArea.setText(existingRule.getString("modification"));
         } else {
             modificationArea.setText("""
 def wrap(input):
@@ -334,15 +304,14 @@ def wrap(input):
 output = wrap(input)                    
                     """);
         }
-        
-        // Context checkboxes
+
         JLabel contextLabel = new JLabel("Apply to:");
         JPanel contextPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JCheckBox requestCheckbox = new JCheckBox("Request");
         JCheckBox responseCheckbox = new JCheckBox("Response");
         
-        if (isEdit && existingProfile != null) {
-            JSONArray contexts = existingProfile.getJSONArray("contexts");
+        if (isEdit && existingRule != null) {
+            JSONArray contexts = existingRule.getJSONArray("contexts");
             for (int i = 0; i < contexts.length(); i++) {
                 String context = contexts.getString(i);
                 if ("request".equals(context)) {
@@ -352,14 +321,12 @@ output = wrap(input)
                 }
             }
         } else {
-            // Default to request selected for new profiles
             requestCheckbox.setSelected(true);
         }
         
         contextPanel.add(requestCheckbox);
         contextPanel.add(responseCheckbox);
-        
-        // Add components to main panel
+
         int y = 0;
         mainPanel.add(nameLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST));
         mainPanel.add(nameField, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.CENTER));
@@ -369,8 +336,7 @@ output = wrap(input)
         
         mainPanel.add(analysisLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.NORTHWEST));
         mainPanel.add(analysisScroll, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0.3, 5, 5, GridBagConstraints.CENTER));
-        
-        // Test button for analysis
+
         JButton testAnalysisButton = new JButton("Test Analysis");
         testAnalysisButton.addActionListener(new ActionListener() {
             @Override
@@ -396,8 +362,7 @@ output = wrap(input)
         
         mainPanel.add(modificationLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.NORTHWEST));
         mainPanel.add(modificationScroll, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0.5, 5, 5, GridBagConstraints.CENTER));
-        
-        // Test button for modification
+
         JButton testModificationButton = new JButton("Test Modification");
         testModificationButton.addActionListener(new ActionListener() {
             @Override
@@ -424,8 +389,7 @@ output = wrap(input)
         
         mainPanel.add(contextLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST));
         mainPanel.add(contextPanel, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.CENTER));
-        
-        // Button panel
+
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         JButton saveButton = new JButton(isEdit ? "Update" : "Create");
         JButton cancelButton = new JButton("Cancel");
@@ -436,10 +400,9 @@ output = wrap(input)
                 String name = nameField.getText().trim();
                 String analysis = analysisArea.getText().trim();
                 String modification = modificationArea.getText().trim();
-                
-                // Validation
+
                 if (name.isEmpty()) {
-                    JOptionPane.showMessageDialog(dialog, "Profile name cannot be empty", 
+                    JOptionPane.showMessageDialog(dialog, "Rule name cannot be empty",
                         "Validation Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
@@ -461,8 +424,7 @@ output = wrap(input)
                         "Validation Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
-                
-                // Create contexts array
+
                 JSONArray contexts = new JSONArray();
                 if (requestCheckbox.isSelected()) {
                     contexts.put("request");
@@ -470,22 +432,19 @@ output = wrap(input)
                 if (responseCheckbox.isSelected()) {
                     contexts.put("response");
                 }
-                
-                // Create or update profile
-                JSONObject profile = new JSONObject();
-                profile.put("name", name);
-                profile.put("analysis", analysis);
-                profile.put("modification", modification);
-                profile.put("contexts", contexts);
-                profile.put("enabled", enabledCheckbox.isSelected());
+
+                JSONObject rule = new JSONObject();
+                rule.put("name", name);
+                rule.put("analysis", analysis);
+                rule.put("modification", modification);
+                rule.put("contexts", contexts);
+                rule.put("enabled", enabledCheckbox.isSelected());
                 
                 if (isEdit) {
-                    // Find and update existing profile
-                    for (int i = 0; i < profiles.length(); i++) {
-                        if (profiles.getJSONObject(i).getString("name").equals(existingProfile.getString("name"))) {
-                            profiles.put(i, profile);
-                            // Update table
-                            String contextsStr = String.join(", ", getContextsFromProfile(profile));
+                    for (int i = 0; i < rules.length(); i++) {
+                        if (rules.getJSONObject(i).getString("name").equals(existingRule.getString("name"))) {
+                            rules.put(i, rule);
+                            String contextsStr = String.join(", ", getContextsFromRule(rule));
                             tableModel.setValueAt(enabledCheckbox.isSelected() ? "✓" : "✗", i, 0);
                             tableModel.setValueAt(name, i, 1);
                             tableModel.setValueAt(analysis, i, 2);
@@ -494,10 +453,8 @@ output = wrap(input)
                         }
                     }
                 } else {
-                    // Add new profile
-                    profiles.put(profile);
-                    // Add to table
-                    String contextsStr = String.join(", ", getContextsFromProfile(profile));
+                    rules.put(rule);
+                    String contextsStr = String.join(", ", getContextsFromRule(rule));
                     tableModel.addRow(new Object[]{
                         enabledCheckbox.isSelected() ? "✓" : "✗",
                         name, 
@@ -506,7 +463,7 @@ output = wrap(input)
                     });
                 }
                 
-                saveProfiles();
+                saveRules();
                 dialog.dispose();
             }
         });
@@ -517,8 +474,7 @@ output = wrap(input)
                 dialog.dispose();
             }
         });
-        
-        // Style buttons if not native theme
+
         if (!HackvertorExtension.isNativeTheme && !HackvertorExtension.isDarkTheme) {
             saveButton.setBackground(Color.decode("#005a70"));
             saveButton.setForeground(Color.white);
@@ -537,30 +493,27 @@ output = wrap(input)
         dialog.setVisible(true);
     }
     
-    public static ArrayList<String> getContextsFromProfile(JSONObject profile) {
+    public static ArrayList<String> getContextsFromRule(JSONObject rule) {
         ArrayList<String> contexts = new ArrayList<>();
-        JSONArray contextsArray = profile.getJSONArray("contexts");
+        JSONArray contextsArray = rule.getJSONArray("contexts");
         for (int i = 0; i < contextsArray.length(); i++) {
             contexts.add(contextsArray.getString(i));
         }
         return contexts;
     }
-    
-    // Method to apply profiles to content
-    public static String applyProfiles(String content, String context) {
-        loadProfiles();
-        for (int i = 0; i < profiles.length(); i++) {
-            JSONObject profile = profiles.getJSONObject(i);
-            
-            // Check if profile is enabled (default to true for backward compatibility)
-            boolean enabled = profile.optBoolean("enabled", true);
+
+    public static String applyRules(String content, String context) {
+        loadRules();
+        for (int i = 0; i < rules.length(); i++) {
+            JSONObject rule = rules.getJSONObject(i);
+
+            boolean enabled = rule.optBoolean("enabled", true);
             if (!enabled) {
-                continue; // Skip disabled profiles
+                continue;
             }
             
-            JSONArray contexts = profile.getJSONArray("contexts");
-            
-            // Check if this profile applies to the current context
+            JSONArray contexts = rule.getJSONArray("contexts");
+
             boolean appliesTo = false;
             for (int j = 0; j < contexts.length(); j++) {
                 if (contexts.getString(j).equals(context)) {
@@ -570,20 +523,17 @@ output = wrap(input)
             }
             
             if (appliesTo) {
-                String analysis = profile.getString("analysis");
-                String modification = profile.getString("modification");
+                String analysis = rule.getString("analysis");
+                String modification = rule.getString("modification");
                 
                 try {
-                    // Execute analysis Python code to get positions
                     String analysisResult = burp.hv.Convertors.python(HackvertorExtension.globalVariables, 
                         content, analysis, HackvertorExtension.tagCodeExecutionKey, 
                         null, HackvertorExtension.hackvertor.getCustomTags(), HackvertorExtension.hackvertor);
-                    
-                    // Parse positions from analysis result (e.g., "0,126" or multiple positions "0,11;15,26")
+
                     if (analysisResult != null && !analysisResult.trim().isEmpty()) {
                         String[] positionSets = analysisResult.trim().split(";");
-                        
-                        // Process position sets in reverse order to maintain correct indices during replacement
+
                         for (int j = positionSets.length - 1; j >= 0; j--) {
                             String positionSet = positionSets[j];
                             String[] positions = positionSet.trim().split(",");
@@ -592,30 +542,24 @@ output = wrap(input)
                                 try {
                                     int start = Integer.parseInt(positions[0].trim());
                                     int end = Integer.parseInt(positions[1].trim());
-                                    
-                                    // Validate positions
+
                                     if (start >= 0 && end > start && end <= content.length()) {
-                                        // Extract the substring at the identified positions
                                         String extractedContent = content.substring(start, end);
-                                        
-                                        // Execute modification Python code on the extracted content
+
                                         String modificationResult = burp.hv.Convertors.python(HackvertorExtension.globalVariables, 
                                             extractedContent, modification, HackvertorExtension.tagCodeExecutionKey, 
                                             null, HackvertorExtension.hackvertor.getCustomTags(), HackvertorExtension.hackvertor);
-                                        
-                                        // Replace the content at the specified positions with the modification result
+
                                         if (modificationResult != null) {
                                             content = content.substring(0, start) + modificationResult + content.substring(end);
                                         }
                                     }
                                 } catch (NumberFormatException | StringIndexOutOfBoundsException ex) {
-                                    // Skip this position set if parsing fails, continue with other position sets
                                 }
                             }
                         }
                     }
                 } catch (Exception ex) {
-                    // Skip this profile if Python execution fails
                 }
             }
         }
