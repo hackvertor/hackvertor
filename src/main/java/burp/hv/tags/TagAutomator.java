@@ -61,7 +61,7 @@ public class TagAutomator {
 
         loadRules();
 
-        String[] columnNames = {"Enabled", "Name", "Analysis", "Modification"};
+        String[] columnNames = {"Enabled", "Name", "Analysis", "Modification", "Context"};
         DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -77,6 +77,7 @@ public class TagAutomator {
                 enabled ? "✓" : "✗",
                 rule.getString("name"),
                 rule.getString("analysis"),
+                rule.getString("modification"),
                 contexts
             });
         }
@@ -507,7 +508,37 @@ output = wrap(input)
         }
         return contexts;
     }
-    
+
+    public static boolean shouldApplyRules(String context, String tool) {
+        loadRules();
+        for (int i = 0; i < rules.length(); i++) {
+            JSONObject rule = rules.getJSONObject(i);
+
+            boolean enabled = rule.optBoolean("enabled", true);
+            if (!enabled) {
+                continue;
+            }
+
+            JSONArray contexts = rule.getJSONArray("contexts");
+            String ruleTool = rule.optString("tool", "Repeater");
+
+            boolean appliesTo = false;
+            for (int j = 0; j < contexts.length(); j++) {
+                if (contexts.getString(j).equals(context)) {
+                    appliesTo = true;
+                    break;
+                }
+            }
+
+            boolean toolMatches = ruleTool.equalsIgnoreCase(tool);
+
+            if (appliesTo && toolMatches) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static String applyRules(String content, String context, String tool) {
         loadRules();
         for (int i = 0; i < rules.length(); i++) {
