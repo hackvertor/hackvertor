@@ -108,13 +108,15 @@ public class HackvertorContextMenu implements ContextMenuItemsProvider {
             JMenuItem ruleMenuItem = new JMenuItem(rule.getString("name"));
             ruleMenuItem.addActionListener(e -> {
                 if(event.messageEditorRequestResponse().isPresent()) {
+                    String ruleName = rule.getString("name");
                     if (event.invocationType() == InvocationType.MESSAGE_EDITOR_REQUEST) {
                         HttpRequest request = event.messageEditorRequestResponse().get().requestResponse().request();
                         String requestStr = request.toString();
                         String tool = getToolFromInvocationType(event.invocationType());
                         final String finalRequestStr = requestStr;
+                        final String finalRuleName = ruleName;
                         try {
-                            requestStr = HackvertorExtension.executorService.submit(() -> TagAutomator.applyRules(finalRequestStr, "request", tool, "Context Menu")).get();
+                            requestStr = HackvertorExtension.executorService.submit(() -> TagAutomator.applyRules(finalRequestStr, "request", tool, "Context Menu", finalRuleName)).get();
                         } catch (Exception ignored) {}
                         event.messageEditorRequestResponse().get().setRequest(HttpRequest.httpRequest(request.httpService(), requestStr));
                     }
@@ -123,8 +125,9 @@ public class HackvertorContextMenu implements ContextMenuItemsProvider {
                         String responseStr = response.toString();
                         String tool = getToolFromInvocationType(event.invocationType());
                         final String finalResponseStr = responseStr;
+                        final String finalRuleName = ruleName;
                         try {
-                            responseStr = HackvertorExtension.executorService.submit(() -> TagAutomator.applyRules(finalResponseStr, "reponse", tool, "Context Menu")).get();
+                            responseStr = HackvertorExtension.executorService.submit(() -> TagAutomator.applyRules(finalResponseStr, "response", tool, "Context Menu", finalRuleName)).get();
                         } catch (Exception ignored) {}
                         HackvertorPanel hackvertorPanel = HackvertorExtension.extensionPanel.addNewPanel();
                         hackvertorPanel.getInputArea().setText(responseStr);

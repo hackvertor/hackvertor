@@ -613,6 +613,10 @@ public class TagAutomator {
     }
 
     public static String applyRules(String content, String context, String tool, String type) {
+        return applyRules(content, context, tool, type, null);
+    }
+    
+    public static String applyRules(String content, String context, String tool, String type, String specificRuleName) {
         loadRules();
         for (int i = 0; i < rules.length(); i++) {
             JSONObject rule = rules.getJSONObject(i);
@@ -622,6 +626,11 @@ public class TagAutomator {
             }
 
             if(!rule.getString("type").equals(type)) continue;
+            
+            // If a specific rule name is provided, only apply that rule
+            if (specificRuleName != null && !rule.getString("name").equals(specificRuleName)) {
+                continue;
+            }
             
             JSONArray contexts = rule.getJSONArray("contexts");
             String ruleTool = rule.optString("tool", "Repeater");
@@ -674,6 +683,11 @@ public class TagAutomator {
                         }
                     }
                 } catch (Exception ex) {
+                }
+                
+                // If a specific rule was requested, break after applying it
+                if (specificRuleName != null) {
+                    break;
                 }
             }
         }
