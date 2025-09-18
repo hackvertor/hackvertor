@@ -392,6 +392,7 @@ public class TagAutomator {
         });
 
         int y = 0;
+        mainPanel.add(buildWarning(warningMsg), GridbagUtils.createConstraints(0, y++, 2, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST));
         mainPanel.add(examplesLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST));
         mainPanel.add(examplesComboBox, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.WEST));
 
