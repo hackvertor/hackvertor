@@ -20,6 +20,9 @@ import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 import static burp.hv.HackvertorExtension.callbacks;
@@ -240,14 +243,42 @@ public class TagAutomator {
         rulesWindow.setVisible(true);
     }
     
+    private static JSONArray loadExamples() {
+        try {
+            InputStream inputStream = TagAutomator.class.getResourceAsStream("/tag-automator-examples.json");
+            if (inputStream != null) {
+                InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+                StringBuilder jsonContent = new StringBuilder();
+                char[] buffer = new char[1024];
+                int length;
+                while ((length = reader.read(buffer)) > 0) {
+                    jsonContent.append(buffer, 0, length);
+                }
+                reader.close();
+                return new JSONArray(jsonContent.toString());
+            }
+        } catch (IOException | JSONException e) {
+        }
+        return new JSONArray();
+    }
+
     private static void showCreateEditRuleDialog(boolean isEdit, JSONObject existingRule, DefaultTableModel tableModel) {
-        JDialog dialog = new JDialog(Utils.getHackvertorWindowInstance(), 
+        JDialog dialog = new JDialog(Utils.getHackvertorWindowInstance(),
             isEdit ? "Edit Rule" : "Create Rule", true);
         dialog.setLayout(new BorderLayout());
-        dialog.setPreferredSize(new Dimension(800, 700));
-        
+        dialog.setPreferredSize(new Dimension(800, 750));
+
         JPanel mainPanel = new JPanel(new GridBagLayout());
         mainPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+        JLabel examplesLabel = new JLabel("Examples:");
+        JSONArray examples = loadExamples();
+        String[] exampleNames = new String[examples.length() + 1];
+        exampleNames[0] = "-- Select an example --";
+        for (int i = 0; i < examples.length(); i++) {
+            exampleNames[i + 1] = examples.getJSONObject(i).getString("name");
+        }
+        JComboBox<String> examplesComboBox = new JComboBox<>(exampleNames);
 
         JLabel typeLabel = new JLabel("Rule Type:");
         String[] ruleTypes = {"Context Menu", "HTTP"};
@@ -258,7 +289,7 @@ public class TagAutomator {
         } else {
             typeComboBox.setSelectedItem("Context Menu");
         }
-        
+
         JLabel nameLabel = new JLabel("Rule Name:");
         JTextField nameField = new JTextField();
         if (isEdit && existingRule != null) {
@@ -321,7 +352,49 @@ public class TagAutomator {
         contextPanel.add(requestCheckbox);
         contextPanel.add(responseCheckbox);
 
+        examplesComboBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int selectedIndex = examplesComboBox.getSelectedIndex();
+                if (selectedIndex > 0) {
+                    JSONObject example = examples.getJSONObject(selectedIndex - 1);
+
+                    typeComboBox.setSelectedItem(example.getString("type"));
+                    nameField.setText(example.getString("name"));
+                    analysisArea.setText(example.getString("analysis"));
+                    modificationArea.setText(example.getString("modification"));
+                    enabledCheckbox.setSelected(example.optBoolean("enabled", true));
+
+                    requestCheckbox.setSelected(false);
+                    responseCheckbox.setSelected(false);
+                    JSONArray contexts = example.getJSONArray("contexts");
+                    for (int i = 0; i < contexts.length(); i++) {
+                        String context = contexts.getString(i);
+                        if ("request".equals(context)) {
+                            requestCheckbox.setSelected(true);
+                        } else if ("response".equals(context)) {
+                            responseCheckbox.setSelected(true);
+                        }
+                    }
+
+                    String tool = example.optString("tool", "Repeater");
+                    toolComboBox.setSelectedItem(tool);
+                } else {
+                    typeComboBox.setSelectedItem("Context Menu");
+                    nameField.setText("");
+                    analysisArea.setText("");
+                    modificationArea.setText("");
+                    enabledCheckbox.setSelected(true);
+                    requestCheckbox.setSelected(true);
+                    responseCheckbox.setSelected(false);
+                }
+            }
+        });
+
         int y = 0;
+        mainPanel.add(examplesLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST));
+        mainPanel.add(examplesComboBox, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.WEST));
+
         mainPanel.add(typeLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST));
         mainPanel.add(typeComboBox, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.WEST));
         
