@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import static burp.hv.HackvertorExtension.callbacks;
 
 public class TagAutomator {
+    private static final String warningMsg = "Warning: These rules can slow down Burp Suite and increase memory usage. Be very careful with the Python you write. Avoid enabling them across many tools, and keep the number of rules as low as possible to reduce performance impact.";
     private static JSONArray rules = new JSONArray();
     private static final String RULES_KEY = "hackvertor_rules";
     
@@ -229,7 +230,7 @@ public class TagAutomator {
         buttonPanel.add(exportButton);
         buttonPanel.add(importButton);
         buttonPanel.add(closeButton);
-        
+        rulesPanel.add(buildWarning(warningMsg), BorderLayout.NORTH);
         rulesPanel.add(tableScrollPane, BorderLayout.CENTER);
         rulesPanel.add(buttonPanel, BorderLayout.SOUTH);
         
@@ -280,18 +281,6 @@ public class TagAutomator {
         JScrollPane analysisScroll = new JScrollPane(analysisArea);
         if (isEdit && existingRule != null) {
             analysisArea.setText(existingRule.getString("analysis"));
-        } else {
-            analysisArea.setText("""
-import re
-
-_jwt = re.compile(r'eyJ[A-Za-z0-9_-]*\\.eyJ[A-Za-z0-9_-]*\\.[A-Za-z0-9_-]*')
-
-def find_positions(text):
-    positions = ["{},{}".format(m.start(), m.end()) for m in _jwt.finditer(text)]
-    return ";".join(positions)
-    
-output = find_positions(input)
-                    """);
         }
 
         JLabel modificationLabel = new JLabel("Modification(Python):");
@@ -301,19 +290,6 @@ output = find_positions(input)
         JScrollPane modificationScroll = new JScrollPane(modificationArea);
         if (isEdit && existingRule != null) {
             modificationArea.setText(existingRule.getString("modification"));
-        } else {
-            modificationArea.setText("""
-def wrap(input):
-    parts = input.split(".")
-    if len(parts) != 3:
-        return input
-    header, payload, _ = parts
-    decoded_header = convert("<@d_base64url>" + header + "</@d_base64url>")
-    decoded_payload = convert("<@d_base64url>" + payload + "</@d_base64url>")
-    return "<@base64url>{}</@base64url>.<@base64url>{}</@base64url>.{}".format(decoded_header,decoded_payload,_) 
- 
-output = wrap(input)                    
-                    """);
         }
 
         JLabel contextLabel = new JLabel("Apply to:");
@@ -503,13 +479,6 @@ output = wrap(input)
             }
         });
 
-        if (!HackvertorExtension.isNativeTheme && !HackvertorExtension.isDarkTheme) {
-            saveButton.setBackground(Color.decode("#005a70"));
-            saveButton.setForeground(Color.white);
-            cancelButton.setBackground(Color.decode("#005a70"));
-            cancelButton.setForeground(Color.white);
-        }
-
         buttonPanel.add(cancelButton);
         buttonPanel.add(saveButton);
 
@@ -626,5 +595,18 @@ output = wrap(input)
             }
         }
         return content;
+    }
+
+    static public JTextArea buildWarning(String msg) {
+        JTextArea warning = new JTextArea(msg);
+        warning.setLineWrap(true);
+        warning.setWrapStyleWord(true);
+        warning.setEditable(false);
+        warning.setOpaque(false);
+        warning.setFocusable(false);
+        warning.setBorder(null);
+        warning.setBorder(new EmptyBorder(10, 10, 10, 10));
+        warning.setForeground(Color.decode("#fcb700"));
+        return warning;
     }
 }
