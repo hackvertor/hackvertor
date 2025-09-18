@@ -16,5 +16,14 @@
     "modification": "def wrap(input):\n    return \"<@set_response(true)>{}<\/@set_response>\".format(input)\noutput = wrap(input)",
     "enabled": true,
     "tool": "Repeater"
+  },
+  {
+    "name": "Calling AI cracking a hash",
+    "contexts": ["request"],
+    "type": "Context Menu",
+    "analysis": "import re\n\nhashes = re.compile(r'[a-f0-9]{32}')\n\ndef find_positions(text):\n    positions = [\"{},{}\".format(m.start(), m.end()) for m in hashes.finditer(text)]\n    return \";\".join(positions)\n\noutput = find_positions(input)",
+    "modification": "temp = \"1.0\"\nprompt = \"Crack this hash\"\n\noutput = convert(\"<@ai('\" + temp + \"','\" + prompt + \"','\" + executionKey + \"')>\" + input + \"<\/@ai>\")",
+    "enabled": true,
+    "tool": "Repeater"
   }
 ]
