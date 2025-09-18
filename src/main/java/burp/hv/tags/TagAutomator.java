@@ -414,20 +414,18 @@ public class TagAutomator {
             public void actionPerformed(ActionEvent e) {
                 String testInput = JOptionPane.showInputDialog(dialog, "Enter test input:", "Test Analysis", JOptionPane.PLAIN_MESSAGE);
                 if (testInput != null) {
-                    try {
-                        String analysisCode = analysisArea.getText();
-                        String result = burp.hv.Convertors.python(HackvertorExtension.globalVariables, testInput, analysisCode, HackvertorExtension.tagCodeExecutionKey, null, HackvertorExtension.hackvertor.getCustomTags(), HackvertorExtension.hackvertor);
-                        JOptionPane.showMessageDialog(dialog, "Result: " + result, "Analysis Test Result", JOptionPane.INFORMATION_MESSAGE);
-                    } catch (Exception ex) {
-                        JOptionPane.showMessageDialog(dialog, "Error: " + ex.getMessage(), "Analysis Test Error", JOptionPane.ERROR_MESSAGE);
-                    }
+                    HackvertorExtension.executorService.submit(() -> {
+                        try {
+                            String analysisCode = analysisArea.getText();
+                            String result = burp.hv.Convertors.python(HackvertorExtension.globalVariables, testInput, analysisCode, HackvertorExtension.tagCodeExecutionKey, null, HackvertorExtension.hackvertor.getCustomTags(), HackvertorExtension.hackvertor);
+                            JOptionPane.showMessageDialog(dialog, "Result: " + result, "Analysis Test Result", JOptionPane.INFORMATION_MESSAGE);
+                        } catch (Exception ex) {
+                            JOptionPane.showMessageDialog(dialog, "Error: " + ex.getMessage(), "Analysis Test Error", JOptionPane.ERROR_MESSAGE);
+                        }
+                    });
                 }
             }
         });
-        if (!HackvertorExtension.isNativeTheme && !HackvertorExtension.isDarkTheme) {
-            testAnalysisButton.setBackground(Color.decode("#005a70"));
-            testAnalysisButton.setForeground(Color.white);
-        }
         mainPanel.add(new JLabel(), GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST));
         mainPanel.add(testAnalysisButton, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.WEST));
         
@@ -440,14 +438,16 @@ public class TagAutomator {
             public void actionPerformed(ActionEvent e) {
                 String testInput = JOptionPane.showInputDialog(dialog, "Enter test input:", "Test Modification", JOptionPane.PLAIN_MESSAGE);
                 if (testInput != null) {
-                    try {
-                        CustomTags.loadCustomTags();
-                        String modificationCode = modificationArea.getText();
-                        String result = burp.hv.Convertors.python(HackvertorExtension.globalVariables, testInput, modificationCode, HackvertorExtension.tagCodeExecutionKey, null, HackvertorExtension.hackvertor.getCustomTags(), HackvertorExtension.hackvertor);
-                        JOptionPane.showMessageDialog(dialog, "Result: " + result, "Modification Test Result", JOptionPane.INFORMATION_MESSAGE);
-                    } catch (Exception ex) {
-                        JOptionPane.showMessageDialog(dialog, "Error: " + ex.getMessage(), "Modification Test Error", JOptionPane.ERROR_MESSAGE);
-                    }
+                    HackvertorExtension.executorService.submit(() -> {
+                        try {
+                            CustomTags.loadCustomTags();
+                            String modificationCode = modificationArea.getText();
+                            String result = burp.hv.Convertors.python(HackvertorExtension.globalVariables, testInput, modificationCode, HackvertorExtension.tagCodeExecutionKey, null, HackvertorExtension.hackvertor.getCustomTags(), HackvertorExtension.hackvertor);
+                            JOptionPane.showMessageDialog(dialog, "Result: " + result, "Modification Test Result", JOptionPane.INFORMATION_MESSAGE);
+                        } catch (Exception ex) {
+                            JOptionPane.showMessageDialog(dialog, "Error: " + ex.getMessage(), "Modification Test Error", JOptionPane.ERROR_MESSAGE);
+                        }
+                    });
                 }
             }
         });

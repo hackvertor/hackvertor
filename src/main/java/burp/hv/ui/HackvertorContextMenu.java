@@ -112,14 +112,20 @@ public class HackvertorContextMenu implements ContextMenuItemsProvider {
                         HttpRequest request = event.messageEditorRequestResponse().get().requestResponse().request();
                         String requestStr = request.toString();
                         String tool = getToolFromInvocationType(event.invocationType());
-                        requestStr = TagAutomator.applyRules(requestStr, "request", tool, "Context Menu");
+                        final String finalRequestStr = requestStr;
+                        try {
+                            requestStr = HackvertorExtension.executorService.submit(() -> TagAutomator.applyRules(finalRequestStr, "request", tool, "Context Menu")).get();
+                        } catch (Exception ignored) {}
                         event.messageEditorRequestResponse().get().setRequest(HttpRequest.httpRequest(request.httpService(), requestStr));
                     }
                     if (event.invocationType() == InvocationType.MESSAGE_VIEWER_RESPONSE) {
                         HttpResponse response = event.messageEditorRequestResponse().get().requestResponse().response();
                         String responseStr = response.toString();
                         String tool = getToolFromInvocationType(event.invocationType());
-                        responseStr = TagAutomator.applyRules(responseStr, "response", tool, "Context Menu");
+                        final String finalResponseStr = responseStr;
+                        try {
+                            responseStr = HackvertorExtension.executorService.submit(() -> TagAutomator.applyRules(finalResponseStr, "reponse", tool, "Context Menu")).get();
+                        } catch (Exception ignored) {}
                         HackvertorPanel hackvertorPanel = HackvertorExtension.extensionPanel.addNewPanel();
                         hackvertorPanel.getInputArea().setText(responseStr);
                         HackvertorExtension.extensionPanel.makeActiveBurpTab();

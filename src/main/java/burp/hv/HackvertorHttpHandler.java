@@ -56,8 +56,11 @@ public class HackvertorHttpHandler implements burp.api.montoya.http.handler.Http
             HackvertorExtension.hackvertor.setRequest(req);
 
             String tool = getToolFromToolType(req.toolSource().toolType());
+            final String finalRequestStr = requestStr;
             if(TagAutomator.shouldApplyRules("request", tool, "HTTP")) {
-                requestStr = TagAutomator.applyRules(requestStr, "request", tool, "HTTP");
+                try {
+                    requestStr = HackvertorExtension.executorService.submit(() -> TagAutomator.applyRules(finalRequestStr, "request", tool, "HTTP")).get();
+                } catch (Exception ignored) {}
             }
 
             String converted;
@@ -91,7 +94,10 @@ public class HackvertorHttpHandler implements burp.api.montoya.http.handler.Http
             if(!TagUtils.shouldProcessTags(resp.toolSource().toolType())) return null;
             if(resp.body().length() > maxBodyLength) return null;
             String responseStr = resp.toString();
-            responseStr = TagAutomator.applyRules(responseStr, "response", tool, "HTTP");
+            final String finalResponseStr = responseStr;
+            try {
+                responseStr = HackvertorExtension.executorService.submit(() -> TagAutomator.applyRules(finalResponseStr, "response", tool, "HTTP")).get();
+            } catch (Exception ignored) {}
             return ResponseReceivedAction.continueWith(HttpResponse.httpResponse(HackvertorExtension.hackvertor.convert(responseStr, HackvertorExtension.hackvertor)));
         } catch (UnregisteredSettingException | InvalidTypeSettingException e) {
             HackvertorExtension.callbacks.printError("Error loading settings:" + e);
