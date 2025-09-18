@@ -424,6 +424,13 @@ public class TagAutomator {
                         "Validation Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
+                String tool = toolComboBox.getSelectedItem().toString();
+                if(!tool.equals("Repeater")) {
+                    int confirm = JOptionPane.showConfirmDialog(null, "Running Python on every "+tool+" request or response can affect Burp's performance, are you sure?");
+                    if(confirm != 0) {
+                        return;
+                    }
+                }
 
                 JSONArray contexts = new JSONArray();
                 if (requestCheckbox.isSelected()) {
@@ -451,7 +458,8 @@ public class TagAutomator {
                             tableModel.setValueAt((String) typeComboBox.getSelectedItem(), i, 1);
                             tableModel.setValueAt(name, i, 2);
                             tableModel.setValueAt(analysis, i, 3);
-                            tableModel.setValueAt(contextsStr, i, 4);
+                            tableModel.setValueAt(modification, i, 4);
+                            tableModel.setValueAt(contextsStr, i, 5);
                             break;
                         }
                     }
@@ -462,7 +470,8 @@ public class TagAutomator {
                         enabledCheckbox.isSelected() ? "✓" : "✗",
                         (String) typeComboBox.getSelectedItem(),
                         name, 
-                        analysis, 
+                        analysis,
+                        modification,
                         contextsStr
                     });
                 }
