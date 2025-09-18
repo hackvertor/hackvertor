@@ -4,7 +4,7 @@
     "contexts": ["request"],
     "type": "Context Menu",
     "analysis": "import re\n\n_jwt = re.compile(r'eyJ[A-Za-z0-9_-]*\\.eyJ[A-Za-z0-9_-]*\\.[A-Za-z0-9_-]*')\n\ndef find_positions(text):\n    positions = [\"{},{}\".format(m.start(), m.end()) for m in _jwt.finditer(text)]\n    return \";\".join(positions)\n\noutput = find_positions(input)",
-    "modification": "def wrap(input):\n    parts = input.split(\".\")\n    if len(parts) != 3:\n        return input\n    header, payload, _ = parts\n    decoded_header = convert(\"<@d_base64url>\" + header + \"<\/@d_base64url>\")\n    decoded_payload = convert(\"<@d_base64url>\" + payload + \"<\/@d_base64url>\")\n    return \"<@base64url>{}<\/@base64url>.<@base64url>{}<\/@base64url>.{}\".format(decoded_header,decoded_payload,_)\n\n    output = wrap(input)",
+    "modification": "def wrap(input):\n    parts = input.split(\".\")\n    if len(parts) != 3:\n        return input\n    header, payload, _ = parts\n    decoded_header = convert(\"<@d_base64url>\" + header + \"<\/@d_base64url>\")\n    decoded_payload = convert(\"<@d_base64url>\" + payload + \"<\/@d_base64url>\")\n    return \"<@base64url>{}<\/@base64url>.<@base64url>{}<\/@base64url>.{}\".format(decoded_header,decoded_payload,_)\n\noutput = wrap(input)",
     "enabled": true,
     "tool": "Repeater"
   },
