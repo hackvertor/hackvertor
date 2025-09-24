@@ -161,11 +161,24 @@
    "author": "mwalkowski",
    "numberOfArgs": 0
   },
-{
-   "description": "Convert JSON to x-www-form-urlencoded",
-   "language": "JavaScript",
-   "tagName": "json2form",
-   "author": "guusec",
-   "numberOfArgs": 0
-}
+  {
+     "description": "Convert JSON to x-www-form-urlencoded",
+     "language": "JavaScript",
+     "tagName": "json2form",
+     "author": "guusec",
+     "numberOfArgs": 0
+  },
+  {
+    "argument1Default": "5",
+    "argument2Default": "email",
+    "author": "hackvertor",
+    "argument1Type": "String",
+    "numberOfArgs": 2,
+    "argument1": "items",
+    "argument2Type": "String",
+    "argument2": "dummyDataType",
+    "description": "Creates some dummy data using AI",
+    "language": "AI",
+    "tagName": "createDummyData"
+  }
 ]
