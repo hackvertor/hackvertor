@@ -1,0 +1,4 @@
+Create some dummy data with the input split by commas.
+I want you to produce the amount specified in $items the dummy data should be $dummyDataType.
+You should return your list of data separated by new lines and you should not use any markdown.
+Just return the data separated by new lines do not prefix or suffix it.
