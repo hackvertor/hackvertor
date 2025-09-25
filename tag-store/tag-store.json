@@ -188,5 +188,21 @@
     "tagName": "randChrsBasedOnRegex",
     "author": "hackvertor",
     "numberOfArgs": 0
+  },
+  {
+    "summary": "The code decodes a base64-encoded input, compresses the decoded data using gzip, and then re-encodes the compressed data back to a base64 string. \n\nTest input: \"SGVsbG8gd29ybGQh\" (base64 for \"Hello world!\")\nExpected output: A base64 string representing the gzip-compressed version of \"Hello world!\".",
+    "description": "It accepts an input string containing gzip-compressed data encoded in base64, base64-decodes it to bytes, inflates it with gzip to recover the original raw bytes, then base64-encodes that result again into the output string.",
+    "language": "Python",
+    "tagName": "gzip_compress",
+    "author": "irsdl",
+    "numberOfArgs": 0
+  },
+  {
+    "summary": "The code decodes a base64-encoded and gzip-compressed input, then re-encodes the decompressed data back into base64. \n\nTest input: H4sIAAAAAAAAA/NIzcnJVwjPL8pJAQAA//8BAAD//w==\nExpected output: SGVsbG8gd29ybGQ=",
+    "description": "It takes an input string that is base64-encoded gzip data, base64-decodes it to raw gzip bytes, decompresses those bytes with gzip, and then base64-encodes the uncompressed result into the output string.",
+    "language": "Python",
+    "tagName": "gzip_decompress",
+    "author": "irsdl",
+    "numberOfArgs": 0
   }
 ]
