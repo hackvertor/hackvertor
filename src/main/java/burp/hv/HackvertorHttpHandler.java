@@ -74,7 +74,7 @@ public class HackvertorHttpHandler implements burp.api.montoya.http.handler.Http
             }
             HttpRequest convertedReq = HttpRequest.httpRequest(req.httpService(), converted);
             if (autoUpdateContentLength) {
-                convertedReq.withUpdatedHeader("Content-Length", convertedReq.body().length()+"");
+                convertedReq = convertedReq.withUpdatedHeader("Content-Length", convertedReq.body().length()+"");
             }
             return RequestToBeSentAction.continueWith(convertedReq);
         }
