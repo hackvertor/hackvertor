@@ -180,5 +180,13 @@
     "description": "Creates some dummy data using AI",
     "language": "AI",
     "tagName": "createDummyData"
+  },
+  {
+    "summary": "The code defines a function `randChrsBasedOnRegex` that generates a random string based on a regex pattern of the form `[chars]{n}`, where `chars` is a character class and `n` is the number of characters to generate. It expands the character class and randomly selects `n` characters from it. \n\nTest input: \"[a-z]{4}\"\nExpected output: A random string of 4 lowercase letters, e.g., \"bqwe\".",
+    "description": "Generates random chars based on a regex input e.g. [a-f]{4}",
+    "language": "Python",
+    "tagName": "randChrsBasedOnRegex",
+    "author": "hackvertor",
+    "numberOfArgs": 0
   }
 ]
