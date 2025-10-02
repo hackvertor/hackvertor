@@ -73,7 +73,11 @@ public class RequestDiffer {
                 JSONObject obj = new JSONObject();
                 obj.put("type", type);
                 obj.put("name", param.name());
-                obj.put("value", param.value());
+                String value = param.value();
+                if(value != null) {
+                    value = Convertors.decode_url(value);
+                }
+                obj.put("value", value);
                 result.put(obj);
             }
         }

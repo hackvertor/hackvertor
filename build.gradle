@@ -15,10 +15,15 @@ repositories {
 }
 
 dependencies {
-    // I use implementation for burp-extender and montoya so the tests work
-    implementation 'net.portswigger.burp.extender:burp-extender-api:1.7.22'
-    implementation 'net.portswigger.burp.extensions:montoya-api:2025.8'
-    implementation 'org.assertj:assertj-swing-junit:3.17.1'
+    compileOnly 'net.portswigger.burp.extensions:montoya-api:2025.3'
+    compileOnly 'net.portswigger.burp.extender:burp-extender-api:1.7.22'
+    testImplementation(
+            'net.portswigger.burp.extensions:montoya-api:2025.3',
+            'net.portswigger.burp.extender:burp-extender-api:1.7.22',
+            'org.assertj:assertj-swing-junit:3.17.1',
+            'junit:junit:4.13.2',
+            'org.junit.jupiter:junit-jupiter:5.9.2'
+    )
     implementation 'commons-codec:commons-codec:1.15'
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     implementation 'org.unbescape:unbescape:1.1.6.RELEASE'
@@ -34,8 +39,6 @@ dependencies {
     implementation 'org.codehaus.groovy:groovy-all:3.0.16'
     implementation 'com.github.javafaker:javafaker:1.0.2'
     implementation 'com.fifesoft:autocomplete:3.3.1'
-    testImplementation 'junit:junit:4.13.2'
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
     implementation 'org.graalvm.js:js-community:24.1.1'
     implementation 'org.graalvm.js:js-scriptengine:24.1.1'
 }

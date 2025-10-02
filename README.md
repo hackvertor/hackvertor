@@ -10,6 +10,27 @@ Tags also support arguments. The find tag allows you to find a string by regex a
 
 # Changelog
 
+## Version v2.1.23 (2025-09-18)
+
+- Allowed AI in Tag Automator
+
+## Version v2.1.20 (2025-09-18)
+
+- Added examples rules for Tag Automator
+- Fixed bugs when creating a rule
+- Added warning messages about usage
+
+## Version v2.1.11 (2025-09-17)
+
+- Allow rules to be applied to different tools
+
+## Version v2.1.11 (2025-09-17)
+
+- Renamed profiles to tag automator
+- Added clear tags option in Repeater request
+- Fixed null pointer in get tag context
+- URL decoded data when using it with learn from Repeater
+
 ## Version v2.1.7 (2025-09-12)
 
 - Added profiles

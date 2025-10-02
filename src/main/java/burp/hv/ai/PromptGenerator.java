@@ -37,7 +37,7 @@ public class PromptGenerator {
                             You should not include the data found in this prompt.
                             If you don't find anything just respond with an empty JSON array.
                             Return an empty JSON array if the encodings you've found already exist in the list of existing prompts.
-                            Do not decode anything. Do not output markdown. Do not describe what you are doing just return JSON.
+                            Do not output markdown. Do not describe what you are doing just return JSON.                          
                             You should respond with a JSON array and give your prompt a name that matches this regex "^[a-z0-9_]+$".
                             The first prompt name should contain encode and the second prompt name should contain decode.
                             The JSON returned should contain a tests property where a list of tests are added to ensure the prompt works as expected.

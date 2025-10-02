@@ -116,3 +116,7 @@ Key dependencies include:
 - Jython for Python scripting
 - Groovy runtime
 - JSON processing libraries
+
+## Comments
+
+You should not use comments in your code. Your code should always be clear so it doesn't need them.

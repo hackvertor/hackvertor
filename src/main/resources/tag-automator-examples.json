@@ -1,0 +1,29 @@
+[
+  {
+    "name": "jwt",
+    "contexts": ["request"],
+    "type": "Context Menu",
+    "analysis": "import re\n\n_jwt = re.compile(r'eyJ[A-Za-z0-9_-]*\\.eyJ[A-Za-z0-9_-]*\\.[A-Za-z0-9_-]*')\n\ndef find_positions(text):\n    positions = [\"{},{}\".format(m.start(), m.end()) for m in _jwt.finditer(text)]\n    return \";\".join(positions)\n\noutput = find_positions(input)",
+    "modification": "def wrap(input):\n    parts = input.split(\".\")\n    if len(parts) != 3:\n        return input\n    header, payload, _ = parts\n    decoded_header = convert(\"<@d_base64url>\" + header + \"<\/@d_base64url>\")\n    decoded_payload = convert(\"<@d_base64url>\" + payload + \"<\/@d_base64url>\")\n    return \"<@base64url>{}<\/@base64url>.<@base64url>{}<\/@base64url>.{}\".format(decoded_header,decoded_payload,_)\n\noutput = wrap(input)",
+    "enabled": true,
+    "tool": "Repeater"
+  },
+  {
+    "name": "Set a variable to response",
+    "contexts": ["response"],
+    "type": "HTTP",
+    "analysis": "output = \"0,\" + str(len(input))",
+    "modification": "def wrap(input):\n    return \"<@set_response(true)>{}<\/@set_response>\".format(input)\noutput = wrap(input)",
+    "enabled": true,
+    "tool": "Repeater"
+  },
+  {
+    "name": "Calling AI cracking a hash",
+    "contexts": ["request"],
+    "type": "Context Menu",
+    "analysis": "import re\n\nhashes = re.compile(r'[a-f0-9]{32}')\n\ndef find_positions(text):\n    positions = [\"{},{}\".format(m.start(), m.end()) for m in hashes.finditer(text)]\n    return \";\".join(positions)\n\noutput = find_positions(input)",
+    "modification": "temp = \"1.0\"\nprompt = \"Crack this hash\"\n\ndecoded = convert(\"<@ai('\" + temp + \"','\" + prompt + \"','\" + executionKey + \"')>\" + input + \"<\/@ai>\")\noutput = \"<@md5>\" + decoded + \"<\/@md5>\"",
+    "enabled": true,
+    "tool": "Repeater"
+  }
+]

@@ -1,5 +1,9 @@
 package burp.hv.tags;
 
+import burp.api.montoya.MontoyaApi;
+import burp.api.montoya.http.RequestOptions;
+import burp.api.montoya.http.message.HttpRequestResponse;
+import burp.api.montoya.http.message.requests.HttpRequest;
 import burp.hv.HackvertorExtension;
 import burp.hv.ui.HackvertorInput;
 import burp.hv.utils.TagUtils;
@@ -19,6 +23,8 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.util.HashMap;
+
+import static burp.hv.HackvertorExtension.montoyaApi;
 
 public class TagStore {
     public static void showTagStore() {
@@ -204,33 +210,17 @@ public class TagStore {
     }
 
     public static String makeHttpRequest(String requestUrl, String method) {
-        HttpURLConnection connection = null;
-
         try {
-            URL url = new URI(requestUrl).toURL();
-            connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestProperty("Content-Type", "application/json");
-            connection.setUseCaches(false);
-            connection.setDoOutput(true);
-            connection.setRequestMethod(method);
-            InputStream is = connection.getInputStream();
-            BufferedReader rd = new BufferedReader(new InputStreamReader(is));
-            StringBuilder response = new StringBuilder();
-            String line;
-            while ((line = rd.readLine()) != null) {
-                response.append(line);
-                response.append(System.lineSeparator());
-            }
-            rd.close();
-            return response.toString();
-        } catch (Exception e) {
-            HackvertorExtension.callbacks.printError("Error making HTTP request:" + e);
-            e.printStackTrace();
-            return null;
-        } finally {
-            if (connection != null) {
-                connection.disconnect();
-            }
+            HttpRequest request = HttpRequest.httpRequestFromUrl(requestUrl);
+            request = request.withAddedHeader("Content-Type", "application/json");
+            request = request.withMethod(method);
+            final HttpRequest finalRequest = request;
+            RequestOptions options = RequestOptions.requestOptions()
+                    .withUpstreamTLSVerification();
+            return HackvertorExtension.executorService.submit(() -> montoyaApi.http().sendRequest(finalRequest, options).response().bodyToString()).get();
+        } catch (Throwable ex) {
+            montoyaApi.logging().logToError("Error making request", ex);
         }
+        return null;
     }
 }

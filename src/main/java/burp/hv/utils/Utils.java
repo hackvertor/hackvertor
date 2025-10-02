@@ -3,7 +3,7 @@ package burp.hv.utils;
 import burp.api.montoya.http.message.ContentType;
 import burp.api.montoya.http.message.requests.HttpRequest;
 import burp.hv.tags.CustomTags;
-import burp.hv.tags.Profiles;
+import burp.hv.tags.TagAutomator;
 import burp.hv.settings.Settings;
 import burp.hv.tags.TagStore;
 import burp.hv.Variables;
@@ -26,18 +26,21 @@ import static burp.hv.HackvertorExtension.*;
 public class Utils {
 
     public static String getContext(HttpRequest analyzedRequest) {
-        if(analyzedRequest == null) {
+        try {
+            if (analyzedRequest == null) {
+                return null;
+            }
+            if (analyzedRequest.contentType() == ContentType.JSON) {
+                return "JSON";
+            }
+            if (analyzedRequest.method() != null && analyzedRequest.method().equalsIgnoreCase("GET")) {
+                return "GET";
+            }
+            if (analyzedRequest.method() != null && analyzedRequest.method().equalsIgnoreCase("POST")) {
+                return "POST";
+            }
             return null;
-        }
-        if(analyzedRequest.contentType() == ContentType.JSON) {
-            return "JSON";
-        }
-        if(analyzedRequest.method() != null && analyzedRequest.method().equalsIgnoreCase("GET")) {
-            return "GET";
-        }
-        if(analyzedRequest.method() != null && analyzedRequest.method().equalsIgnoreCase("POST")) {
-            return "POST";
-        }
+        } catch (Throwable ignored) {}
         return null;
     }
 
@@ -69,6 +72,7 @@ public class Utils {
         settings.registerBooleanSetting("tagsInRepeater", true, "Allow tags in Repeater", "Tag permissions", null);
         settings.registerBooleanSetting("tagsInScanner", true, "Allow tags in Scanner", "Tag permissions", null);
         settings.registerBooleanSetting("tagsInExtensions", true, "Allow tags in Extensions", "Tag permissions", null);
+        settings.registerBooleanSetting("tagsInResponse", false, "Allow tags in HTTP response", "Tag permissions", null);
         settings.registerBooleanSetting("codeExecutionTagsEnabled", false, "Allow code execution tags", "Tag permissions", "Using code execution tags on untrusted requests can compromise your system, are you sure?");
         settings.registerBooleanSetting("autoUpdateContentLength", true, "Auto update content length", "Requests", null);
         settings.registerIntegerSetting("maxBodyLength", 3 * 1024 * 1024, "Maximum body length", "Requests");
@@ -129,17 +133,17 @@ public class Utils {
                 Variables.showGlobalVariablesWindow();
             }
         });
-        JMenuItem profilesMenu = new JMenuItem("Manage profiles");
-        profilesMenu.addActionListener(new ActionListener() {
+        JMenuItem tagAutomatorMenu = new JMenuItem("Tag Automator");
+        tagAutomatorMenu.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                Profiles.showProfilesDialog();
+                TagAutomator.showRulesDialog();
             }
         });
         hvMenuBar.add(createCustomTagsMenu);
         hvMenuBar.add(listCustomTagsMenu);
         hvMenuBar.add(globalVariablesMenu);
-        hvMenuBar.add(profilesMenu);
+        hvMenuBar.add(tagAutomatorMenu);
         hvMenuBar.addSeparator();
         hvMenuBar.add(tagStoreMenu);
         JMenuItem settingsMenu = new JMenuItem("Settings");
