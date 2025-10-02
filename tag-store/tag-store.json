@@ -167,5 +167,18 @@
    "tagName": "json2form",
    "author": "guusec",
    "numberOfArgs": 0
-}
+},
+  {
+    "description": "Pretty Print JSON",
+    "language": "JavaScript",
+    "tagName": "pretty_json",
+    "author": "Corey Arthur",
+    "numberOfArgs": 1,
+    "argument1Type": "Number",
+    "numberOfArgs": 1,
+    "argument1": "spacing",
+    "argument2": "notused",
+    "argument2Type": "String",
+    "argument2Default": ""
+  }
 ]
