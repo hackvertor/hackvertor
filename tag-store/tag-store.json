@@ -161,6 +161,13 @@
    "author": "mwalkowski",
    "numberOfArgs": 0
   },
+{
+   "description": "Convert JSON to x-www-form-urlencoded",
+   "language": "JavaScript",
+   "tagName": "json2form",
+   "author": "guusec",
+   "numberOfArgs": 0
+},
   {
      "description": "Convert JSON to x-www-form-urlencoded",
      "language": "JavaScript",
@@ -201,5 +208,18 @@
     "tagName": "gzip_decompress",
     "author": "irsdl",
     "numberOfArgs": 0
+  },
+  {
+    "description": "Pretty Print JSON",
+    "language": "JavaScript",
+    "tagName": "pretty_json",
+    "author": "Corey Arthur",
+    "numberOfArgs": 1,
+    "argument1Type": "Number",
+    "numberOfArgs": 1,
+    "argument1": "spacing",
+    "argument2": "notused",
+    "argument2Type": "String",
+    "argument2Default": ""
   }
 ]
