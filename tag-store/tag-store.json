@@ -216,10 +216,19 @@
     "author": "Corey Arthur",
     "numberOfArgs": 1,
     "argument1Type": "Number",
-    "numberOfArgs": 1,
     "argument1": "spacing",
     "argument2": "notused",
     "argument2Type": "String",
     "argument2Default": ""
+  },
+  {
+    "argument1Default": "1.0",
+    "author": "hackvertor",
+    "argument1Type": "String",
+    "numberOfArgs": 1,
+    "argument1": "temperature",
+    "description": "This tag generates similar names to the input",
+    "language": "AI",
+    "tagName": "similarNames"
   }
 ]
