@@ -5,6 +5,11 @@ on:
   pull_request:
     paths:
       - 'tag-store/tag-store.json'
+  push:
+    branches:
+      - master
+    paths:
+      - 'tag-store/tag-store.json'
 
 jobs:
   validate:
@@ -31,14 +36,36 @@ jobs:
               try:
                   # Read and parse JSON
                   with open('tag-store/tag-store.json', 'r') as f:
-                      data = json.load(f)
-                  
+                      content = f.read()
+                      data = json.loads(content)
+
                   print('✓ Valid JSON syntax')
-                  
+
+                  # Check for duplicate keys by parsing with object_pairs_hook
+                  def check_duplicate_keys(pairs):
+                      keys = [key for key, value in pairs]
+                      duplicates = [key for key in keys if keys.count(key) > 1]
+                      if duplicates:
+                          print(f'✗ Duplicate keys found in JSON object: {set(duplicates)}')
+                          sys.exit(1)
+                      return dict(pairs)
+
+                  # Re-parse with duplicate key detection
+                  json.loads(content, object_pairs_hook=check_duplicate_keys)
+
                   # Check if it's an array
                   if not isinstance(data, list):
                       print('✗ File must contain a JSON array')
                       sys.exit(1)
+
+                  # Check for duplicate tagNames
+                  tag_names = [tag.get('tagName') for tag in data if 'tagName' in tag]
+                  duplicate_tags = [name for name in tag_names if tag_names.count(name) > 1]
+                  if duplicate_tags:
+                      print(f'✗ Duplicate tagName entries found: {set(duplicate_tags)}')
+                      sys.exit(1)
+
+                  print('✓ No duplicate keys or tagNames found')
                   
                   # Required base properties for all tags
                   required_base = ['tagName', 'description', 'author', 'numberOfArgs', 'language']
