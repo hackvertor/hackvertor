@@ -229,6 +229,9 @@
     "argument1": "temperature",
     "description": "This tag generates similar names to the input",
     "language": "AI",
-    "tagName": "similarNames"
+    "tagName": "similarNames",
+    "argument2": "notused",
+    "argument2Type": "String",
+    "argument2Default": ""
   }
 ]
