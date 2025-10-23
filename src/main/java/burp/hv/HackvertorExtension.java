@@ -7,10 +7,13 @@ import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.core.Registration;
 import burp.api.montoya.http.message.requests.HttpRequest;
 import burp.api.montoya.ui.contextmenu.MessageEditorHttpRequestResponse;
+import burp.api.montoya.ui.hotkey.HotKey;
 import burp.api.montoya.ui.hotkey.HotKeyContext;
+import burp.api.montoya.ui.hotkey.HotKeyHandler;
 import burp.hv.settings.Settings;
 import burp.hv.tags.CustomTags;
 import burp.hv.tags.Tag;
+import burp.hv.tags.TagStore;
 import burp.hv.ui.*;
 import burp.hv.utils.Utils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -29,7 +32,7 @@ import static burp.hv.Convertors.*;
 public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, IExtensionStateListener, IMessageEditorTabFactory {
     //TODO Unset on unload
     public static String extensionName = "Hackvertor";
-    public static String version = "v2.1.25";
+    public static String version = "v2.1.26";
     public static JFrame HackvertorFrame = null;
     public static IBurpExtenderCallbacks callbacks;
     public static IExtensionHelpers helpers;
@@ -170,28 +173,76 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
         Burp burp = new Burp(montoyaApi.burpSuite().version());
         montoyaApi.http().registerHttpHandler(new HackvertorHttpHandler());
         montoyaApi.userInterface().registerContextMenuItemsProvider(new HackvertorContextMenu());
+
         if(burp.hasCapability(Burp.Capability.REGISTER_HOTKEY)) {
-            Registration registration = montoyaApi.userInterface().registerHotKeyHandler(HotKeyContext.HTTP_MESSAGE_EDITOR, "Ctrl+Alt+D",
-            event -> {
-                if (event.messageEditorRequestResponse().isEmpty()) {
-                    return;
-                }
-                MessageEditorHttpRequestResponse requestResponse = event.messageEditorRequestResponse().get();
-                if(requestResponse.selectionOffsets().isPresent() && requestResponse.selectionContext().toString().equalsIgnoreCase("request")) {
-                    String request = requestResponse.requestResponse().request().toString();
-                    int start = requestResponse.selectionOffsets().get().startIndexInclusive();
-                    int end = requestResponse.selectionOffsets().get().endIndexExclusive();
-                    String selectionWithTags = auto_decode_no_decrypt(request.substring(start, end));
-                    String modifiedRequest = request.substring(0, start) + selectionWithTags + request.substring(end);
-                    requestResponse.setRequest(HttpRequest.httpRequest(requestResponse.requestResponse().httpService(), modifiedRequest));
-                }
-            });
-            if(registration.isRegistered()) {
-                montoyaApi.logging().logToOutput("Successfully registered hotkey handler");
-                hasHotKey = true;
-            } else {
-                montoyaApi.logging().logToError("Failed to register hotkey handler");
-            }
+            registerAllHotkeys(montoyaApi, burp);
         }
+    }
+
+    private void registerAllHotkeys(MontoyaApi montoyaApi, Burp burp) {
+        List<HotkeyDefinition> hotkeys = Arrays.asList(
+            new HotkeyDefinition("Smart decode", "Ctrl+Alt+D", createAutoDecodeHandler()),
+            new HotkeyDefinition("Show tag store", "Ctrl+Alt+T", event -> TagStore.showTagStore())
+        );
+
+        for (HotkeyDefinition hotkey : hotkeys) {
+            registerHotkey(montoyaApi, burp, hotkey);
+        }
+    }
+
+    private static class HotkeyDefinition {
+        final String name;
+        final String keyCombo;
+        final HotKeyHandler handler;
+
+        HotkeyDefinition(String name, String keyCombo, HotKeyHandler handler) {
+            this.name = name;
+            this.keyCombo = keyCombo;
+            this.handler = handler;
+        }
+    }
+
+    private void registerHotkey(MontoyaApi montoyaApi, Burp burp, HotkeyDefinition hotkey) {
+        Registration registration;
+
+        if(burp.hasCapability(Burp.Capability.REGISTER_HOTKEY_WITH_NAME)) {
+            registration = montoyaApi.userInterface().registerHotKeyHandler(
+                HotKeyContext.HTTP_MESSAGE_EDITOR,
+                HotKey.hotKey(hotkey.name, hotkey.keyCombo),
+                hotkey.handler);
+        } else {
+            registration = montoyaApi.userInterface().registerHotKeyHandler(
+                HotKeyContext.HTTP_MESSAGE_EDITOR,
+                hotkey.keyCombo,
+                hotkey.handler);
+        }
+
+        if(registration.isRegistered()) {
+            montoyaApi.logging().logToOutput("Successfully registered hotkey: " + hotkey.name + " (" + hotkey.keyCombo + ")");
+            if(hotkey.name.equals("Auto decode")) {
+                hasHotKey = true;
+            }
+        } else {
+            montoyaApi.logging().logToError("Failed to register hotkey: " + hotkey.name + " (" + hotkey.keyCombo + ")");
+        }
+    }
+
+    private HotKeyHandler createAutoDecodeHandler() {
+        return event -> {
+            if (event.messageEditorRequestResponse().isEmpty()) {
+                return;
+            }
+            MessageEditorHttpRequestResponse requestResponse = event.messageEditorRequestResponse().get();
+            if(requestResponse.selectionOffsets().isPresent() &&
+               requestResponse.selectionContext().toString().equalsIgnoreCase("request")) {
+                String request = requestResponse.requestResponse().request().toString();
+                int start = requestResponse.selectionOffsets().get().startIndexInclusive();
+                int end = requestResponse.selectionOffsets().get().endIndexExclusive();
+                String selectionWithTags = auto_decode_no_decrypt(request.substring(start, end));
+                String modifiedRequest = request.substring(0, start) + selectionWithTags + request.substring(end);
+                requestResponse.setRequest(HttpRequest.httpRequest(
+                    requestResponse.requestResponse().httpService(), modifiedRequest));
+            }
+        };
     }
 }
