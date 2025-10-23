@@ -161,6 +161,13 @@ public class HackvertorContextMenu implements ContextMenuItemsProvider {
 
         JMenuItem convert = new JMenuItem("Convert tags");
         convert.addActionListener(e -> {
+            if (event.messageEditorRequestResponse().isEmpty()) {
+                return;
+            }
+            MessageEditorHttpRequestResponse requestResponse = event.messageEditorRequestResponse().get();
+            if(!requestResponse.selectionContext().toString().equalsIgnoreCase("request")) {
+                return;
+            }
             if (event.invocationType() == InvocationType.MESSAGE_EDITOR_REQUEST || event.invocationType()  == InvocationType.MESSAGE_VIEWER_REQUEST) {
                 if(event.messageEditorRequestResponse().isPresent()) {
                     HttpRequest request = event.messageEditorRequestResponse().get().requestResponse().request();

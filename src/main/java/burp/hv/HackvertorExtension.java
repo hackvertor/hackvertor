@@ -6,6 +6,7 @@ import burp.api.montoya.EnhancedCapability;
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.core.Registration;
 import burp.api.montoya.http.message.requests.HttpRequest;
+import burp.api.montoya.ui.contextmenu.InvocationType;
 import burp.api.montoya.ui.contextmenu.MessageEditorHttpRequestResponse;
 import burp.api.montoya.ui.hotkey.HotKey;
 import burp.api.montoya.ui.hotkey.HotKeyContext;
@@ -13,8 +14,10 @@ import burp.api.montoya.ui.hotkey.HotKeyHandler;
 import burp.hv.settings.Settings;
 import burp.hv.tags.CustomTags;
 import burp.hv.tags.Tag;
+import burp.hv.tags.TagAutomator;
 import burp.hv.tags.TagStore;
 import burp.hv.ui.*;
+import burp.hv.utils.TagUtils;
 import burp.hv.utils.Utils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
@@ -28,6 +31,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static burp.hv.Convertors.*;
+import static burp.hv.utils.TagUtils.generateTagActionListener;
 
 public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, IExtensionStateListener, IMessageEditorTabFactory {
     //TODO Unset on unload
@@ -66,6 +70,7 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
     private JMenuBar burpMenuBar;
 
     public static int MAX_POPULAR_TAGS = 10;
+    public static String lastTagUsed = null;
 
     @Override
     public Set<EnhancedCapability> enhancedCapabilities() {
@@ -181,6 +186,34 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
 
     private void registerAllHotkeys(MontoyaApi montoyaApi, Burp burp) {
         List<HotkeyDefinition> hotkeys = Arrays.asList(
+            new HotkeyDefinition("Convert", "Ctrl+Alt+C", event -> {
+                if (event.messageEditorRequestResponse().isEmpty()) {
+                    return;
+                }
+                MessageEditorHttpRequestResponse requestResponse = event.messageEditorRequestResponse().get();
+                if(!requestResponse.selectionContext().toString().equalsIgnoreCase("request")) {
+                    return;
+                }
+                if (event.invocationType() == InvocationType.MESSAGE_EDITOR_REQUEST || event.invocationType()  == InvocationType.MESSAGE_VIEWER_REQUEST) {
+                    if(event.messageEditorRequestResponse().isPresent()) {
+                        HttpRequest request = event.messageEditorRequestResponse().get().requestResponse().request();
+                        event.messageEditorRequestResponse().get().setRequest(HttpRequest.httpRequest(request.httpService(), HackvertorExtension.hackvertor.convert(request.toString(), HackvertorExtension.hackvertor)));
+                    }
+                }
+            }),
+            new HotkeyDefinition("Insert last tag", "Ctrl+Alt+I", event -> {
+                if(lastTagUsed == null) {
+                    return;
+                }
+                ArrayList<Tag> tags = HackvertorExtension.hackvertor.getTags();
+                Tag tagObj = TagUtils.getTagByTagName(tags, lastTagUsed);
+                //generateTagActionListener(event, tagObj).actionPerformed();
+            }),
+            new HotkeyDefinition("New custom tag", "Ctrl+Alt+N", event -> CustomTags.showCreateEditTagDialog(false, null)),
+            new HotkeyDefinition("List custom tags", "Ctrl+Alt+L", event -> CustomTags.showListTagsDialog()),
+            new HotkeyDefinition("Global variables", "Ctrl+Alt+V", event -> Variables.showGlobalVariablesWindow()),
+            new HotkeyDefinition("Tag Automator", "Ctrl+Alt+A", event -> TagAutomator.showRulesDialog()),
+            new HotkeyDefinition("Settings", "Ctrl+Alt+S", event -> Settings.showSettingsWindow()),
             new HotkeyDefinition("Smart decode", "Ctrl+Alt+D", createAutoDecodeHandler()),
             new HotkeyDefinition("Show tag store", "Ctrl+Alt+T", event -> TagStore.showTagStore())
         );

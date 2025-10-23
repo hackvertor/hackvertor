@@ -141,6 +141,7 @@ public class TagUtils {
                     modifiedRequest += tagEnd;
                     modifiedRequest += requestStr.substring(end);
                     event.messageEditorRequestResponse().get().setRequest(HttpRequest.httpRequest(request.httpService(), modifiedRequest));
+                    lastTagUsed = tagObj.name;
                 }
             }
         };

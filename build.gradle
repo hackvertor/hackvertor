@@ -15,10 +15,15 @@ repositories {
 }
 
 dependencies {
-    compileOnly files('libs/montoya-api-2025.11.2.jar')
+    def localMontoyaJar = file('libs/montoya-api-2025.11.2.jar')
+    if (localMontoyaJar.exists()) {
+        compileOnly files(localMontoyaJar)
+        testImplementation files(localMontoyaJar)
+    }
+    compileOnly 'net.portswigger.burp.extensions:montoya-api:2025.3'
     compileOnly 'net.portswigger.burp.extender:burp-extender-api:1.7.22'
     testImplementation(
-            files('libs/montoya-api-2025.11.2.jar'),
+            'net.portswigger.burp.extensions:montoya-api:2025.3',
             'net.portswigger.burp.extender:burp-extender-api:1.7.22',
             'org.assertj:assertj-swing-junit:3.17.1',
             'junit:junit:4.13.2',
