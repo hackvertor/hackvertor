@@ -6,7 +6,6 @@ import burp.api.montoya.EnhancedCapability;
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.core.Registration;
 import burp.api.montoya.http.message.requests.HttpRequest;
-import burp.api.montoya.ui.contextmenu.InvocationType;
 import burp.api.montoya.ui.contextmenu.MessageEditorHttpRequestResponse;
 import burp.api.montoya.ui.hotkey.HotKey;
 import burp.api.montoya.ui.hotkey.HotKeyContext;
@@ -36,7 +35,7 @@ import static burp.hv.utils.TagUtils.generateTagActionListener;
 public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, IExtensionStateListener, IMessageEditorTabFactory {
     //TODO Unset on unload
     public static String extensionName = "Hackvertor";
-    public static String version = "v2.1.26";
+    public static String version = "v2.1.27";
     public static JFrame HackvertorFrame = null;
     public static IBurpExtenderCallbacks callbacks;
     public static IExtensionHelpers helpers;
@@ -194,11 +193,9 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
                 if(!requestResponse.selectionContext().toString().equalsIgnoreCase("request")) {
                     return;
                 }
-                if (event.invocationType() == InvocationType.MESSAGE_EDITOR_REQUEST || event.invocationType()  == InvocationType.MESSAGE_VIEWER_REQUEST) {
-                    if(event.messageEditorRequestResponse().isPresent()) {
-                        HttpRequest request = event.messageEditorRequestResponse().get().requestResponse().request();
-                        event.messageEditorRequestResponse().get().setRequest(HttpRequest.httpRequest(request.httpService(), HackvertorExtension.hackvertor.convert(request.toString(), HackvertorExtension.hackvertor)));
-                    }
+                if(event.messageEditorRequestResponse().isPresent()) {
+                    HttpRequest request = event.messageEditorRequestResponse().get().requestResponse().request();
+                    event.messageEditorRequestResponse().get().setRequest(HttpRequest.httpRequest(request.httpService(), HackvertorExtension.hackvertor.convert(request.toString(), HackvertorExtension.hackvertor)));
                 }
             }),
             new HotkeyDefinition("Insert last tag", "Ctrl+Alt+I", event -> {
@@ -207,7 +204,7 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
                 }
                 ArrayList<Tag> tags = HackvertorExtension.hackvertor.getTags();
                 Tag tagObj = TagUtils.getTagByTagName(tags, lastTagUsed);
-                //generateTagActionListener(event, tagObj).actionPerformed();
+                generateTagActionListener(event, tagObj).actionPerformed(null);
             }),
             new HotkeyDefinition("New custom tag", "Ctrl+Alt+N", event -> CustomTags.showCreateEditTagDialog(false, null)),
             new HotkeyDefinition("List custom tags", "Ctrl+Alt+L", event -> CustomTags.showListTagsDialog()),

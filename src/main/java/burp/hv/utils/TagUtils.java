@@ -7,6 +7,7 @@ import burp.api.montoya.http.message.requests.HttpRequest;
 import burp.api.montoya.ui.contextmenu.ContextMenuEvent;
 import burp.api.montoya.ui.contextmenu.InvocationType;
 import burp.api.montoya.ui.contextmenu.MessageEditorHttpRequestResponse;
+import burp.api.montoya.ui.hotkey.HotKeyEvent;
 import burp.hv.Convertors;
 import burp.hv.HackvertorExtension;
 import burp.hv.settings.InvalidTypeSettingException;
@@ -24,6 +25,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.*;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -96,55 +98,72 @@ public class TagUtils {
         return tags.stream().filter(tag -> tagName.equals(tag.name)).findFirst().orElse(null);
     }
 
+    public static ActionListener generateTagActionListener(final HotKeyEvent event, Tag tagObj) {
+        return e -> applyTagToEvent(event.messageEditorRequestResponse(), tagObj, true);
+    }
+
     public static ActionListener generateTagActionListener(final ContextMenuEvent event, Tag tagObj) {
-        return  e -> {
-            boolean allowTagCount;
-            try {
-                allowTagCount = generalSettings.getBoolean("allowTagCount");
-            } catch (UnregisteredSettingException | InvalidTypeSettingException ex) {
-                callbacks.printError("Error loading settings:" + e);
-                throw new RuntimeException(ex);
-            }
-            String[] tagStartEnd = Convertors.generateTagStartEnd(tagObj);
-            String tagStart = tagStartEnd[0];
-            String tagEnd = tagStartEnd[1];
-            if (event.invocationType() == InvocationType.MESSAGE_EDITOR_REQUEST || event.invocationType() == InvocationType.MESSAGE_VIEWER_REQUEST || event.invocationType() == InvocationType.INTRUDER_PAYLOAD_POSITIONS) {
-                int start;
-                int end;
-                Optional<MessageEditorHttpRequestResponse> editor = event.messageEditorRequestResponse();
-                if (editor.get().selectionOffsets().isPresent()) {
-                    start = editor.get().selectionOffsets().get().startIndexInclusive();
-                    end = editor.get().selectionOffsets().get().endIndexExclusive();
-                } else {
-                    start = editor.get().caretPosition();
-                    end = editor.get().caretPosition();
-                }
-                if(allowTagCount) {
-                    String context = Utils.getContext(editor.get().requestResponse().request());
-                    if(contextTagCount.containsKey(context)) {
-                        int currentCount = contextTagCount.get(context).get(tagObj.name) == null ? 0 : contextTagCount.get(context).get(tagObj.name);
-                        contextTagCount.get(context).put(tagObj.name, currentCount + 1);
-                    }
-
-                    int count = tagCount.get(tagObj.name) == null ? 0 : tagCount.get(tagObj.name);
-                    tagCount.put(tagObj.name, count + 1);
-                }
-
-                if(event.messageEditorRequestResponse().isPresent()) {
-                    HttpRequest request = event.messageEditorRequestResponse().get().requestResponse().request();
-                    String requestStr = request.toString();
-                    String selection = requestStr.substring(start, end);
-                    String modifiedRequest = "";
-                    modifiedRequest += requestStr.substring(0, start);
-                    modifiedRequest += tagStart;
-                    modifiedRequest += selection;
-                    modifiedRequest += tagEnd;
-                    modifiedRequest += requestStr.substring(end);
-                    event.messageEditorRequestResponse().get().setRequest(HttpRequest.httpRequest(request.httpService(), modifiedRequest));
-                    lastTagUsed = tagObj.name;
-                }
+        return e -> {
+            boolean isValidInvocation = event.invocationType() == InvocationType.MESSAGE_EDITOR_REQUEST ||
+                                       event.invocationType() == InvocationType.MESSAGE_VIEWER_REQUEST ||
+                                       event.invocationType() == InvocationType.INTRUDER_PAYLOAD_POSITIONS;
+            if (isValidInvocation) {
+                applyTagToEvent(event.messageEditorRequestResponse(), tagObj, false);
             }
         };
+    }
+
+    private static void applyTagToEvent(Optional<MessageEditorHttpRequestResponse> editorOpt, Tag tagObj, boolean isHotKey) {
+        if (!editorOpt.isPresent()) {
+            return;
+        }
+
+        MessageEditorHttpRequestResponse editor = editorOpt.get();
+
+        boolean allowTagCount;
+        try {
+            allowTagCount = generalSettings.getBoolean("allowTagCount");
+        } catch (UnregisteredSettingException | InvalidTypeSettingException ex) {
+            callbacks.printError("Error loading settings:" + ex);
+            throw new RuntimeException(ex);
+        }
+
+        String[] tagStartEnd = Convertors.generateTagStartEnd(tagObj);
+        String tagStart = tagStartEnd[0];
+        String tagEnd = tagStartEnd[1];
+
+        int start;
+        int end;
+        if (editor.selectionOffsets().isPresent()) {
+            start = editor.selectionOffsets().get().startIndexInclusive();
+            end = editor.selectionOffsets().get().endIndexExclusive();
+        } else {
+            start = editor.caretPosition();
+            end = editor.caretPosition();
+        }
+
+        if(allowTagCount) {
+            String context = Utils.getContext(editor.requestResponse().request());
+            if(contextTagCount.containsKey(context)) {
+                int currentCount = contextTagCount.get(context).get(tagObj.name) == null ? 0 : contextTagCount.get(context).get(tagObj.name);
+                contextTagCount.get(context).put(tagObj.name, currentCount + 1);
+            }
+
+            int count = tagCount.get(tagObj.name) == null ? 0 : tagCount.get(tagObj.name);
+            tagCount.put(tagObj.name, count + 1);
+        }
+
+        HttpRequest request = editor.requestResponse().request();
+        String requestStr = request.toString();
+        String selection = requestStr.substring(start, end);
+        String modifiedRequest = "";
+        modifiedRequest += requestStr.substring(0, start);
+        modifiedRequest += tagStart;
+        modifiedRequest += selection;
+        modifiedRequest += tagEnd;
+        modifiedRequest += requestStr.substring(end);
+        editor.setRequest(HttpRequest.httpRequest(request.httpService(), modifiedRequest));
+        lastTagUsed = tagObj.name;
     }
 
     public static JMenu createTagMenuForCategory(List<Tag> tags, Tag.Category category, final ContextMenuEvent event, String searchTag, Boolean regex, Tag specificTag) {

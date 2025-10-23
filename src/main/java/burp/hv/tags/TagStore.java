@@ -78,11 +78,14 @@ public class TagStore {
         JTextComponent.removeKeymap("RTextAreaKeymap");
         HackvertorInput codeArea = new HackvertorInput();
         codeArea.setEditable(false);
+        codeArea.setLineWrap(true);
         codeArea.setText("Code goes here");
         JScrollPane codeScroller = new JScrollPane(codeArea);
         Utils.setMarginAndPadding(codeScroller, 10);
         JTextArea description = new JTextArea("Description goes here");
         description.setEditable(false);
+        description.setLineWrap(true);
+        description.setRows(4);
         description.putClientProperty("html.disable", Boolean.TRUE);
         JScrollPane descScroller = new JScrollPane(description, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         Utils.setMarginAndPadding(descScroller, 10);
