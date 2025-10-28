@@ -5,7 +5,7 @@ import burp.api.montoya.core.Version;
 public class Burp {
     public enum Capability {
         REGISTER_HOTKEY(20250300000037651L),
-        REGISTER_HOTKEY_WITH_NAME(20251000000042729L);
+        REGISTER_HOTKEY_WITH_NAME(20251001000042866L);
         private final long minimumSupportedBuildNumber;
 
         Capability(long minimumSupportedBuildNumber) {
