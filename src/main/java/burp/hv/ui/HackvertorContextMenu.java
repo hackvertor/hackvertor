@@ -29,10 +29,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static burp.hv.Convertors.auto_decode_no_decrypt;
-import static burp.hv.HackvertorExtension.hasHotKey;
-import static burp.hv.HackvertorExtension.montoyaApi;
+import static burp.hv.HackvertorExtension.*;
 import static burp.hv.tags.TagAutomator.getContextsFromRule;
 import static burp.hv.tags.TagAutomator.shouldApplyRules;
+import static burp.hv.utils.TagUtils.generateTagActionListener;
 
 public class HackvertorContextMenu implements ContextMenuItemsProvider {
     public List<Component> provideMenuItems(ContextMenuEvent event) {
@@ -150,6 +150,16 @@ public class HackvertorContextMenu implements ContextMenuItemsProvider {
                 return menuItemList;
         }
 
+        JMenuItem insertLastTagMenuItem = new JMenuItem("Insert last tag");
+        insertLastTagMenuItem.addActionListener(e -> {
+            if(lastTagUsed == null) {
+                return;
+            }
+            ArrayList<Tag> tags = HackvertorExtension.hackvertor.getTags();
+            Tag tagObj = TagUtils.getTagByTagName(tags, lastTagUsed);
+            generateTagActionListener(event, tagObj).actionPerformed(null);
+        });
+        menu.add(insertLastTagMenuItem);
         JMenuItem copyUrl = new JMenuItem("Copy URL");
         copyUrl.addActionListener(e -> {
             String converted = HackvertorExtension.hackvertor.convert(event.messageEditorRequestResponse().get().requestResponse().request().toString(), HackvertorExtension.hackvertor);
