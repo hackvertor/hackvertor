@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 import static burp.hv.HackvertorExtension.*;
 
 public class Hackvertor {
-    private ArrayList<Tag> tags = new ArrayList<Tag>();
+    private final ArrayList<Tag> tags = new ArrayList<Tag>();
     private JSONArray customTags = new JSONArray();
     private HttpRequest request;
 
@@ -44,7 +44,7 @@ public class Hackvertor {
         ));
 
         // Animal properties
-        FAKER_PROPERTIES.put("animal", Arrays.asList("$name"));
+        FAKER_PROPERTIES.put("animal", List.of("$name"));
 
         // App properties
         FAKER_PROPERTIES.put("app", Arrays.asList(
@@ -52,10 +52,10 @@ public class Hackvertor {
         ));
 
         // Artist properties
-        FAKER_PROPERTIES.put("artist", Arrays.asList("$name"));
+        FAKER_PROPERTIES.put("artist", List.of("$name"));
 
         // Avatar properties
-        FAKER_PROPERTIES.put("avatar", Arrays.asList("$image"));
+        FAKER_PROPERTIES.put("avatar", List.of("$image"));
 
         // Aviation properties
         FAKER_PROPERTIES.put("aviation", Arrays.asList(
@@ -68,7 +68,7 @@ public class Hackvertor {
         ));
 
         // Bool properties
-        FAKER_PROPERTIES.put("bool", Arrays.asList("$bool"));
+        FAKER_PROPERTIES.put("bool", List.of("$bool"));
 
         // Business properties
         FAKER_PROPERTIES.put("business", Arrays.asList("$creditCardExpiry", "$creditCardNumber", "$creditCardType"));
@@ -100,7 +100,7 @@ public class Hackvertor {
         FAKER_PROPERTIES.put("crypto", Arrays.asList("$md5", "$sha1", "$sha256", "$sha512"));
 
         // Date properties
-        FAKER_PROPERTIES.put("date", Arrays.asList("$birthday"));
+        FAKER_PROPERTIES.put("date", List.of("$birthday"));
 
         // Demographic properties
         FAKER_PROPERTIES.put("demographic", Arrays.asList(
@@ -171,7 +171,7 @@ public class Hackvertor {
         ));
 
         // Options properties
-        FAKER_PROPERTIES.put("options", Arrays.asList("$option"));
+        FAKER_PROPERTIES.put("options", List.of("$option"));
 
         // PhoneNumber properties
         FAKER_PROPERTIES.put("phoneNumber", Arrays.asList(
@@ -235,9 +235,7 @@ public class Hackvertor {
                     .filter(element -> element instanceof Element.TextElement)
                     .map(element -> ((Element.TextElement) element).getContent())
                     .collect(Collectors.joining());
-        }catch (ParseException ex){
-            //TODO Better error handling.
-            ex.printStackTrace();
+        }catch (ParseException ignored){
         }
         return input;
     }
@@ -311,7 +309,7 @@ public class Hackvertor {
 
         public Tag build() {
             Tag tag = new Tag(category, name, hasInput, description);
-            if (arguments.size() > 0) tag.argument1 = arguments.get(0);
+            if (!arguments.isEmpty()) tag.argument1 = arguments.get(0);
             if (arguments.size() > 1) tag.argument2 = arguments.get(1);
             if (arguments.size() > 2) tag.argument3 = arguments.get(2);
             if (arguments.size() > 3) tag.argument4 = arguments.get(3);
