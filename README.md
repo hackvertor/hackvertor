@@ -10,6 +10,13 @@ Tags also support arguments. The find tag allows you to find a string by regex a
 
 # Changelog
 
+## Version v2.2.3 (2025-10-30)
+
+- Large refactor
+- Removed reflection in fake tags
+- Added helper methods for tag creation
+- Created registry instead of large switch statement
+
 ## Version v2.1.28 (2025-10-29)
 
 - Added insert last tag context menu item
