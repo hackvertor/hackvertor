@@ -142,7 +142,7 @@ public class Convertors {
         return output;
     }
 
-    public static String callTag(HashMap<String, String> variableMap, JSONArray customTags, String tag, String output, ArrayList<String> arguments, Hackvertor hackvertor) throws ParseException {
+    private static void updateTagCount(String tag) {
         boolean allowTagCount;
         try {
             allowTagCount = generalSettings.getBoolean("allowTagCount");
@@ -154,494 +154,496 @@ public class Convertors {
             int count = tagCount.get(tag) == null ? 0 : tagCount.get(tag);
             tagCount.put(tag, count + 1);
         }
-        for(int i=0;i<arguments.size();i++) {
-           arguments.set(i, weakConvert(variableMap, customTags, arguments.get(i), hackvertor));
+    }
+
+    private static void processArguments(ArrayList<String> arguments, HashMap<String, String> variableMap,
+                                        JSONArray customTags, Hackvertor hackvertor) throws ParseException {
+        for(int i = 0; i < arguments.size(); i++) {
+            arguments.set(i, weakConvert(variableMap, customTags, arguments.get(i), hackvertor));
         }
-        switch (tag) {
+    }
+
+    private static String processFakeTag(String tag, ArrayList<String> arguments) {
+        return fake(tag, getString(arguments, 0), getString(arguments, 1));
+    }
+
+    private static String processCustomTag(String tag, String output, ArrayList<String> arguments,
+                                          HashMap<String, String> variableMap, JSONArray customTags,
+                                          Hackvertor hackvertor) throws ParseException {
+        for (int i = 0; i < customTags.length(); i++) {
+            JSONObject customTag = (JSONObject) customTags.get(i);
+            String customTagName = customTag.getString("tagName");
+            if(customTagName.equals(tag)) {
+                return executeCustomTag(customTag, output, arguments, variableMap, customTags, hackvertor);
+            }
+        }
+        return null;
+    }
+
+    private static String executeCustomTag(JSONObject customTag, String output, ArrayList<String> arguments,
+                                          HashMap<String, String> variableMap, JSONArray customTags,
+                                          Hackvertor hackvertor) throws ParseException {
+        int numberOfArgs = customTag.has("numberOfArgs") ? customTag.getInt("numberOfArgs") : 0;
+        String eKey;
+        JSONObject customTagOptions = new JSONObject();
+        customTagOptions.put("customTag", customTag);
+
+        if (numberOfArgs == 0) {
+            eKey = getString(arguments, 0);
+            customTagOptions = null;
+        } else if (numberOfArgs == 1) {
+            processCustomTagArgument(customTagOptions, customTag, arguments, 0, "param1", "argument1Type");
+            eKey = getString(arguments, 1);
+        } else if (numberOfArgs == 2) {
+            processCustomTagArgument(customTagOptions, customTag, arguments, 0, "param1", "argument1Type");
+            processCustomTagArgument(customTagOptions, customTag, arguments, 1, "param2", "argument2Type");
+            eKey = getString(arguments, 2);
+        } else {
+            eKey = getString(arguments, 0);
+        }
+
+        String language = customTag.getString("language").toLowerCase();
+        String code = customTag.getString("code");
+
+        switch (language) {
+            case "ai":
+                return ai_tag(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor, 1.0, false);
+            case "javascript":
+                return javascript(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
+            case "python":
+                return python(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
+            case "java":
+                return java(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
+            case "groovy":
+                return groovy(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
             default:
-                if (tag.startsWith("fake_")) {
-                    return fake(tag, getString(arguments, 0), getString(arguments, 1));
-                } else if (tag.startsWith("_")) {
-                    for (int i = 0; i < customTags.length(); i++) {
-                        JSONObject customTag = (JSONObject) customTags.get(i);
-                        String customTagName = customTag.getString("tagName");
-                        if(customTagName.equals(tag)) {
-                            int numberOfArgs = 0;
-                            if (customTag.has("numberOfArgs")) {
-                                numberOfArgs = customTag.getInt("numberOfArgs");
-                            }
-                            String eKey;
-                            JSONObject customTagOptions = new JSONObject();
-                            customTagOptions.put("customTag", customTag);
-                            if (numberOfArgs == 0) {
-                                eKey = getString(arguments, 0);
-                                customTagOptions = null;
-                            } else if (numberOfArgs == 1) {
-                                if (customTag.getString("argument1Type").equals("String")) {
-                                    customTagOptions.put("param1", getString(arguments, 0));
-                                } else if (customTag.getString("argument1Type").equals("Number")) {
-                                    customTagOptions.put("param1", getInt(arguments, 0));
-                                }
-                                eKey = getString(arguments, 1);
+                throw new ParseException("Unsupported language for custom tag: " + language);
+        }
+    }
 
-                            } else if (numberOfArgs == 2) {
-                                if (customTag.getString("argument1Type").equals("String")) {
-                                    customTagOptions.put("param1", getString(arguments, 0));
-                                } else if (customTag.getString("argument1Type").equals("Number")) {
-                                    customTagOptions.put("param1", getInt(arguments, 0));
-                                }
-                                if (customTag.getString("argument2Type").equals("String")) {
-                                    customTagOptions.put("param2", getString(arguments, 1));
-                                } else if (customTag.getString("argument2Type").equals("Number")) {
-                                    customTagOptions.put("param2", getInt(arguments, 1));
-                                }
-                                eKey = getString(arguments, 2);
-                            } else {
-                                eKey = getString(arguments, 0);
-                            }
-                            String language = customTag.getString("language").toLowerCase();
-                            String code = customTag.getString("code");
-                            if (language.equals("ai")) {
-                                return ai_tag(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor, 1.0, false);
-                            } else if (language.equals("javascript")) {
-                                return javascript(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
-                            } else if (language.equals("python")) {
-                                return python(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
-                            } else if (language.equals("java")) {
-                                return java(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
-                            } else if (language.equals("groovy")) {
-                                return groovy(variableMap, output, code, eKey, customTagOptions, customTags, hackvertor);
-                            }
-                            break;
-                        }
-                    }
-                }else if(tag.startsWith("set_")){ //Backwards compatibility with previous set_VARNAME tag format
-                    String varname = tag.replace("set_","");
-                    variableMap.put(varname, output);
-                    Boolean global = getBoolean(arguments, 0);
-                    if(global) {
-                        globalVariables.put(varname, output);
-                    }
-                    return output;
-                }else if(tag.startsWith("get_")){ //Backwards compatibility with previous get_VARNAME tag format
-                    String varname = tag.replace("get_","");
-                    if(globalVariables.containsKey(varname) && !variableMap.containsKey(varname)) {
-                        return globalVariables.getOrDefault(varname, StringUtils.isEmpty(output) ? null : output);
-                    }
-                    return variableMap.getOrDefault(varname, StringUtils.isEmpty(output) ? null : output);
-                } else {
-                    try {
-                        return charset_convert(output, "UTF-8", tag);
-                    } catch (UnsupportedEncodingException e) {
-                        //Not a valid tag. Check for old-style tag with _0 style ids.
-                        if(tag.matches(".*_\\d+$")) {
-                            String tagWithoutID = tag.replaceFirst("_\\d+$", "");
-                            try {
-                                return callTag(variableMap, customTags, tagWithoutID, output, arguments, null);
-                            } catch (ParseException e1) { }
-                        }
+    private static void processCustomTagArgument(JSONObject options, JSONObject customTag,
+                                                ArrayList<String> arguments, int argIndex,
+                                                String paramName, String typeKey) {
+        String argType = customTag.getString(typeKey);
+        if ("String".equals(argType)) {
+            options.put(paramName, getString(arguments, argIndex));
+        } else if ("Number".equals(argType)) {
+            options.put(paramName, getInt(arguments, argIndex));
+        }
+    }
 
-                        throw new ParseException("Unsupported Tag \"" + tag + "\"");
-                    }
-                }
-                return output;
-            case "set":
-            case "set_var":
-            case "set_variable":
-                variableMap.put(getString(arguments, 0), output);
-                return output;
-            case "get":
-            case "get_var":
-            case "get_variable":
-                return variableMap.getOrDefault(getString(arguments,0), StringUtils.isEmpty(output) ? "UNDEFINED" : output);
-            case "increment_var":
-                return increment_var(globalVariables, getInt(arguments, 0), getString(arguments, 1), getBoolean(arguments, 2));
-            case "decrement_var":
-                return decrement_var(globalVariables, getInt(arguments, 0), getString(arguments, 1), getBoolean(arguments, 2));
-            case "context_request":
-                return context_request(getString(arguments, 0), hackvertor);
-            case "context_url":
-                return context_url(getString(arguments,0), getString(arguments,1), hackvertor);
-            case "context_header":
-                return context_header(getString(arguments,0), getString(arguments,1), hackvertor);
-            case "context_body":
-                return context_body(getString(arguments,0), hackvertor);
-            case "context_param":
-                return context_param(getString(arguments,0),getString(arguments,1), hackvertor);
-            case "charset_convert": {
+    private static String processLegacySetTag(String tag, String output, ArrayList<String> arguments,
+                                             HashMap<String, String> variableMap) {
+        String varname = tag.replace("set_", "");
+        variableMap.put(varname, output);
+        Boolean global = getBoolean(arguments, 0);
+        if(global) {
+            globalVariables.put(varname, output);
+        }
+        return output;
+    }
+
+    private static String processLegacyGetTag(String tag, String output, HashMap<String, String> variableMap) {
+        String varname = tag.replace("get_", "");
+        if(globalVariables.containsKey(varname) && !variableMap.containsKey(varname)) {
+            return globalVariables.getOrDefault(varname, StringUtils.isEmpty(output) ? null : output);
+        }
+        return variableMap.getOrDefault(varname, StringUtils.isEmpty(output) ? null : output);
+    }
+
+    private static String handleUnsupportedTag(String tag, String output, ArrayList<String> arguments,
+                                              HashMap<String, String> variableMap, JSONArray customTags) throws ParseException {
+        try {
+            return charset_convert(output, "UTF-8", tag);
+        } catch (UnsupportedEncodingException e) {
+            if(tag.matches(".*_\\d+$")) {
+                String tagWithoutID = tag.replaceFirst("_\\d+$", "");
                 try {
-                    return charset_convert(output, getString(arguments, 0), getString(arguments, 1));
-                } catch (UnsupportedEncodingException e) {
-                    throw new ParseException("Unsupported encoding \"" + e.getCause().getMessage() + "\"");
+                    return callTag(variableMap, customTags, tagWithoutID, output, arguments, null);
+                } catch (ParseException e1) {
+                    // Fall through to throw unsupported tag error
                 }
             }
-            case "d_utf7":
-                return utf7Decode(output);
-            case "utf7":
-                return utf7(output, getString(arguments, 0));
-            case "brotli_decompress":
-                return brotli_decompress(output);
-            case "gzip_compress":
-                return gzip_compress(output);
-            case "gzip_decompress":
-                return gzip_decompress(output);
-            case "bzip2_compress":
-                return bzip2_compress(output);
-            case "bzip2_decompress":
-                return bzip2_decompress(output);
-            case "saml":
-                return saml(output);
-            case "d_saml":
-                return d_saml(output);
-            case "deflate_compress":
-                return deflate_compress(output, getBoolean(arguments, 0));
-            case "deflate_decompress":
-                return deflate_decompress(output, getBoolean(arguments, 0));
-            case "timestamp":
-                return timestamp();
-            case "date":
-                return date(getString(arguments, 0), getString(arguments, 1));
-            case "html_entities":
-                return html_entities(output);
-            case "d_html_entities":
-                return decode_html_entities(output);
-            case "html5_entities":
-                return html5_entities(output);
-            case "hex":
-                return hex(output, getString(arguments, 0));
-            case "hex_entities":
-                return hex_entities(output);
-            case "hex_escapes":
-                return hex_escapes(output);
-            case "octal_escapes":
-                return octal_escapes(output);
-            case "php_non_alpha":
-                return php_non_alpha(output);
-            case "php_chr":
-                return php_chr(output);
-            case "sql_hex":
-                return sql_hex(output);
-            case "rotN":
-                return rotN(output, getInt(arguments, 0));
-            case "aes_encrypt":
-                return aes_encrypt(output, getString(arguments, 0), getString(arguments, 1), getString(arguments, 2));
-            case "aes_decrypt":
-                return aes_decrypt(output, getString(arguments, 0), getString(arguments, 1), getString(arguments, 2));
-            case "rotN_bruteforce":
-                return rotN_bruteforce(output);
-            case "xor":
-                return xor(output, getString(arguments, 0));
-            case "xor_decrypt":
-                return xor_decrypt(output, getInt(arguments, 0), false);
-            case "xor_getkey":
-                return xor_getkey(output);
-            case "affine_encrypt":
-                return affine_encrypt(output, getInt(arguments, 0), getInt(arguments, 1));
-            case "affine_decrypt":
-                return affine_decrypt(output, getInt(arguments, 0), getInt(arguments, 1));
-            case "atbash_encrypt":
-                return atbash_encrypt(output);
-            case "atbash_decrypt":
-                return atbash_decrypt(output);
-            case "rail_fence_encrypt":
-                return rail_fence_encrypt(output, getInt(arguments, 0));
-            case "rail_fence_decrypt":
-                return rail_fence_decrypt(output, getInt(arguments, 0));
-            case "substitution_encrypt":
-                return substitution_encrypt(output, getString(arguments, 0));
-            case "substitution_decrypt":
-                return substitution_decrypt(output, getString(arguments, 0));
-            case "jwt":
-                return jwt(output, getString(arguments, 0), getString(arguments, 1));
-            case "quoted_printable":
-                return quoted_printable(output);
-            case "powershell":
-                return powershell(output);
-            case "js_string":
-                return js_string(output);
-            case "unicode_alternatives":
-                return unicode_alternatives(output);
-            case "d_quoted_printable":
-                return d_quoted_printable(output);
-            case "auto_decode":
-                return auto_decode(output);
-            case "auto_decode_no_decrypt":
-                return auto_decode_no_decrypt(output);
-            case "d_octal_escapes":
-                return decode_octal_escapes(output);
-            case "css_escapes":
-                return css_escapes(output);
-            case "css_escapes6":
-                return css_escapes6(output);
-            case "dec_entities":
-                return dec_entities(output);
-            case "unicode_escapes":
-                return unicode_escapes(output);
-            case "d_unicode_escapes":
-                return decode_js_string(output);
-            case "d_jwt_get_payload":
-                return d_jwt_get_payload(output);
-            case "d_jwt_get_header":
-                return d_jwt_get_header(output);
-            case "d_jwt_verify":
-                return d_jwt_verify(output, getString(arguments, 0));
-            case "d_js_string":
-                return decode_js_string(output);
-            case "d_html5_entities":
-                return decode_html5_entities(output);
-            case "base32":
-                return base32_encode(output);
-            case "d_base32":
-                return decode_base32(output);
-            case "base58":
-                return base58_encode(output);
-            case "d_base58":
-                return decode_base58(output);
-            case "base64":
-                return base64Encode(output);
-            case "d_base64":
-                return decode_base64(output);
-            case "base64url":
-                return base64urlEncode(output);
-            case "d_base64url":
-                return decode_base64url(output);
-            case "json_parse":
-                return json_parse(output, getString(arguments, 0));
-            case "burp_urlencode":
-                return burp_urlencode(output);
-            case "urlencode":
-                return urlencode(output);
-            case "urlencode_not_plus":
-                return urlencode_not_plus(output);
-            case "urlencode_all":
-                return urlencode_all(output);
-            case "d_burp_url":
-                return burp_decode_url(output);
-            case "d_url":
-                return decode_url(output);
-            case "d_css_escapes":
-                return decode_css_escapes(output);
-            case "uppercase":
-                return uppercase(output);
-            case "lowercase":
-                return lowercase(output);
-            case "unique":
-                return unique(output);
-            case "space":
-                return " ";
-            case "newline":
-                return "\n";
-            case "remove_output":
-                return remove_output(output);
-            case "capitalise":
-                return capitalise(output);
-            case "uncapitalise":
-                return uncapitalise(output);
-            case "from_charcode":
-                return from_charcode(output);
-            case "to_charcode":
-                return to_charcode(output);
-            case "reverse":
-                return reverse(output);
-            case "length":
-                return len(output);
-            case "find":
-                return find(output, getString(arguments, 0), getInt(arguments, 1));
-            case "replace":
-                return replace(output, getString(arguments, 0), getString(arguments, 1));
-            case "regex_replace":
-                return regex_replace(output, getString(arguments, 0), getString(arguments, 1));
-            case "repeat":
-                return repeat(output, getInt(arguments, 0));
-            case "substring":
-                return substring(output, getInt(arguments, 0), getInt(arguments, 1));
-            case "split_join":
-                return split_join(output, getString(arguments, 0), getString(arguments, 1));
-            case "is_like_english":
-                return Double.toString(is_like_english(output));
-            case "index_of_coincidence":
-                return Double.toString(index_of_coincidence(output));
-            case "guess_key_length":
-                return Integer.toString(guess_key_length(output));
-            case "if_regex":
-                return if_regex(output, getString(arguments, 0), getString(arguments, 1));
-            case "if_not_regex":
-                return if_not_regex(output, getString(arguments, 0), getString(arguments, 1));
-            case "chunked_dec2hex":
-                return chunked_dec2hex(output);
-            case "dec2hex":
-                return dec2hex(output, getString(arguments, 0));
-            case "dec2oct":
-                return dec2oct(output, getString(arguments, 0));
-            case "dec2bin":
-                return dec2bin(output, getString(arguments, 0));
-            case "hex2dec":
-                return hex2dec(output, getString(arguments, 0));
-            case "oct2dec":
-                return oct2dec(output, getString(arguments, 0));
-            case "bin2dec":
-                return bin2dec(output, getString(arguments, 0));
-            case "ascii2bin":
-                return ascii2bin(output);
-            case "bin2ascii":
-                return bin2ascii(output);
-            case "hex2ascii":
-                return hex2ascii(output);
-            case "ascii2hex":
-                return ascii2hex(output, getString(arguments, 0));
-            case "ascii2reverse_hex":
-                return ascii2reverse_hex(output, getString(arguments, 0));
-            case "hmac_md5":
-                return hmacmd5(output, getString(arguments, 0));
-            case "hmac_sha1":
-                return hmacsha1(output, getString(arguments, 0));
-            case "hmac_sha224":
-                return hmacsha224(output, getString(arguments, 0));
-            case "hmac_sha256":
-                return hmacsha256(output, getString(arguments, 0));
-            case "hmac_sha384":
-                return hmacsha384(output, getString(arguments, 0));
-            case "hmac_sha512":
-                return hmacsha512(output, getString(arguments, 0));
-            case "sha1":
-                return sha1(output);
-            case "sha224":
-                return sha224(output);
-            case "sha256":
-                return sha256(output);
-            case "sha384":
-                return sha384(output);
-            case "sha512":
-                return sha512(output);
-            case "sha3":
-                return sha3(output);
-            case "sha3_224":
-                return sha3_224(output);
-            case "sha3_256":
-                return sha3_256(output);
-            case "sha3_384":
-                return sha3_384(output);
-            case "sha3_512":
-                return sha3_512(output);
-            case "skein_256_128":
-                return skein_256_128(output);
-            case "skein_256_160":
-                return skein_256_160(output);
-            case "skein_256_224":
-                return skein_256_224(output);
-            case "skein_256_256":
-                return skein_256_256(output);
-            case "skein_512_128":
-                return skein_512_128(output);
-            case "skein_512_160":
-                return skein_512_160(output);
-            case "skein_512_224":
-                return skein_512_224(output);
-            case "skein_512_256":
-                return skein_512_256(output);
-            case "skein_512_384":
-                return skein_512_384(output);
-            case "skein_512_512":
-                return skein_512_512(output);
-            case "skein_1024_384":
-                return skein_1024_384(output);
-            case "skein_1024_512":
-                return skein_1024_512(output);
-            case "skein_1024_1024":
-                return skein_1024_1024(output);
-            case "sm3":
-                return sm3(output);
-            case "tiger":
-                return tiger(output);
-            case "md2":
-                return md2(output);
-            case "md4":
-                return md4(output);
-            case "md5":
-                return md5(output);
-            case "gost3411":
-                return gost3411(output);
-            case "ripemd128":
-                return ripemd128(output);
-            case "ripemd160":
-                return ripemd160(output);
-            case "ripemd256":
-                return ripemd256(output);
-            case "ripemd320":
-                return ripemd320(output);
-            case "whirlpool":
-                return whirlpool(output);
-            case "random":
-                return random(output, getInt(arguments, 0), getBoolean(arguments, 1));
-            case "random_alpha_lower":
-                return random_alpha_lower(getInt(arguments, 0));
-            case "random_alphanum_lower":
-                return random_alphanum_lower(getInt(arguments, 0));
-            case "random_alpha_upper":
-                return random_alpha_upper(getInt(arguments, 0));
-            case "random_alphanum_upper":
-                return random_alphanum_upper(getInt(arguments, 0));
-            case "random_alpha_mixed":
-                return random_alpha_mixed(getInt(arguments, 0));
-            case "random_alphanum_mixed":
-                return random_alphanum_mixed(getInt(arguments, 0));
-            case "random_hex":
-                return random_hex(getInt(arguments, 0));
-            case "random_hex_mixed":
-                return random_hex_mixed(getInt(arguments, 0));
-            case "random_num":
-                return random_num(getInt(arguments, 0));
-            case "random_unicode":
-                return random_unicode(getInt(arguments, 0), getInt(arguments, 1), getInt(arguments, 2));
-            case "range":
-                return range(output, getInt(arguments, 0), getInt(arguments, 1), getInt(arguments, 2));
-            case "total":
-                return total(output);
-            case "arithmetic":
-                return arithmetic(output, getInt(arguments, 0), getString(arguments, 1), getString(arguments, 2));
-            case "convert_base":
-                return convert_base(output, getString(arguments, 0), getInt(arguments, 1), getInt(arguments, 2));
-            case "zeropad":
-                return zeropad(output, getString(arguments, 0), getInt(arguments, 1));
-            case "uuid":
-                return uuid();
-            case "behavior":
-                return behavior(output);
-            case "css_expression":
-                return css_expression(output);
-            case "datasrc":
-                return datasrc(output);
-            case "eval_fromcharcode":
-                return eval_fromcharcode(output);
-            case "iframe_data_url":
-                return iframe_data_url(output);
-            case "script_data":
-                return script_data(output);
-            case "uppercase_script":
-                return uppercase_script(output);
-            case "iframe_src_doc":
-                return iframe_src_doc(output);
-            case "template_eval":
-                return template_eval(output);
-            case "throw_eval":
-                return throw_eval(output);
-            case "python":
-                return python(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags, hackvertor);
-            case "javascript":
-                return javascript(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags, hackvertor);
-            case "java":
-                return java(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags, hackvertor);
-            case "groovy":
-                return groovy(variableMap, output, getString(arguments, 0), getString(arguments, 1), null, customTags, hackvertor);
-            case "ai":
-                return ai_tag(variableMap, output, getString(arguments, 1), getString(arguments, 2), null, customTags, hackvertor, Double.parseDouble(getString(arguments, 0)), false);
-            case "read_url":
-                return read_url(output, getString(arguments, 0), getBoolean(arguments, 1), getString(arguments, 2));
-            case "read_file":
-                return read_file(output, getString(arguments, 0), getBoolean(arguments, 1), getString(arguments, 2));
-            case "system":
-                return system(output, getBoolean(arguments, 0), getString(arguments, 1));
+            throw new ParseException("Unsupported Tag \"" + tag + "\"");
         }
+    }
+
+    @FunctionalInterface
+    private interface TagProcessor {
+        String process(String output, ArrayList<String> arguments, HashMap<String, String> variableMap,
+                      JSONArray customTags, Hackvertor hackvertor) throws ParseException;
+    }
+
+    private static final Map<String, TagProcessor> TAG_REGISTRY = new HashMap<>();
+
+    static {
+        initializeTagRegistry();
+    }
+
+    private static void initializeTagRegistry() {
+        // Variable operations
+        TAG_REGISTRY.put("set", (output, args, vars, custom, hv) -> {
+            vars.put(getString(args, 0), output);
+            return output;
+        });
+        TAG_REGISTRY.put("set_var", TAG_REGISTRY.get("set"));
+        TAG_REGISTRY.put("set_variable", TAG_REGISTRY.get("set"));
+
+        TAG_REGISTRY.put("get", (output, args, vars, custom, hv) ->
+            vars.getOrDefault(getString(args, 0), StringUtils.isEmpty(output) ? "UNDEFINED" : output));
+        TAG_REGISTRY.put("get_var", TAG_REGISTRY.get("get"));
+        TAG_REGISTRY.put("get_variable", TAG_REGISTRY.get("get"));
+
+        TAG_REGISTRY.put("increment_var", (output, args, vars, custom, hv) ->
+            increment_var(globalVariables, getInt(args, 0), getString(args, 1), getBoolean(args, 2)));
+        TAG_REGISTRY.put("decrement_var", (output, args, vars, custom, hv) ->
+            decrement_var(globalVariables, getInt(args, 0), getString(args, 1), getBoolean(args, 2)));
+
+        // Context operations
+        TAG_REGISTRY.put("context_request", (output, args, vars, custom, hv) ->
+            context_request(getString(args, 0), hv));
+        TAG_REGISTRY.put("context_url", (output, args, vars, custom, hv) ->
+            context_url(getString(args, 0), getString(args, 1), hv));
+        TAG_REGISTRY.put("context_header", (output, args, vars, custom, hv) ->
+            context_header(getString(args, 0), getString(args, 1), hv));
+        TAG_REGISTRY.put("context_body", (output, args, vars, custom, hv) ->
+            context_body(getString(args, 0), hv));
+        TAG_REGISTRY.put("context_param", (output, args, vars, custom, hv) ->
+            context_param(getString(args, 0), getString(args, 1), hv));
+
+        // Charset operations
+        TAG_REGISTRY.put("charset_convert", (output, args, vars, custom, hv) -> {
+            try {
+                return charset_convert(output, getString(args, 0), getString(args, 1));
+            } catch (UnsupportedEncodingException e) {
+                throw new ParseException("Unsupported encoding \"" + e.getCause().getMessage() + "\"");
+            }
+        });
+
+        // UTF-7 encoding
+        TAG_REGISTRY.put("d_utf7", (output, args, vars, custom, hv) -> utf7Decode(output));
+        TAG_REGISTRY.put("utf7", (output, args, vars, custom, hv) -> utf7(output, getString(args, 0)));
+
+        // Compression operations
+        TAG_REGISTRY.put("brotli_decompress", (output, args, vars, custom, hv) -> brotli_decompress(output));
+        TAG_REGISTRY.put("gzip_compress", (output, args, vars, custom, hv) -> gzip_compress(output));
+        TAG_REGISTRY.put("gzip_decompress", (output, args, vars, custom, hv) -> gzip_decompress(output));
+        TAG_REGISTRY.put("bzip2_compress", (output, args, vars, custom, hv) -> bzip2_compress(output));
+        TAG_REGISTRY.put("bzip2_decompress", (output, args, vars, custom, hv) -> bzip2_decompress(output));
+        TAG_REGISTRY.put("deflate_compress", (output, args, vars, custom, hv) ->
+            deflate_compress(output, getBoolean(args, 0)));
+        TAG_REGISTRY.put("deflate_decompress", (output, args, vars, custom, hv) ->
+            deflate_decompress(output, getBoolean(args, 0)));
+
+        // SAML operations
+        TAG_REGISTRY.put("saml", (output, args, vars, custom, hv) -> saml(output));
+        TAG_REGISTRY.put("d_saml", (output, args, vars, custom, hv) -> d_saml(output));
+
+        // Date/Time operations
+        TAG_REGISTRY.put("timestamp", (output, args, vars, custom, hv) -> timestamp());
+        TAG_REGISTRY.put("date", (output, args, vars, custom, hv) -> date(getString(args, 0), getString(args, 1)));
+
+        // HTML entities
+        TAG_REGISTRY.put("html_entities", (output, args, vars, custom, hv) -> html_entities(output));
+        TAG_REGISTRY.put("d_html_entities", (output, args, vars, custom, hv) -> decode_html_entities(output));
+        TAG_REGISTRY.put("html5_entities", (output, args, vars, custom, hv) -> html5_entities(output));
+        TAG_REGISTRY.put("d_html5_entities", (output, args, vars, custom, hv) -> decode_html5_entities(output));
+
+        // Hex operations
+        TAG_REGISTRY.put("hex", (output, args, vars, custom, hv) -> hex(output, getString(args, 0)));
+        TAG_REGISTRY.put("hex_entities", (output, args, vars, custom, hv) -> hex_entities(output));
+        TAG_REGISTRY.put("hex_escapes", (output, args, vars, custom, hv) -> hex_escapes(output));
+
+        // Escaping operations
+        TAG_REGISTRY.put("octal_escapes", (output, args, vars, custom, hv) -> octal_escapes(output));
+        TAG_REGISTRY.put("d_octal_escapes", (output, args, vars, custom, hv) -> decode_octal_escapes(output));
+        TAG_REGISTRY.put("css_escapes", (output, args, vars, custom, hv) -> css_escapes(output));
+        TAG_REGISTRY.put("css_escapes6", (output, args, vars, custom, hv) -> css_escapes6(output));
+        TAG_REGISTRY.put("d_css_escapes", (output, args, vars, custom, hv) -> decode_css_escapes(output));
+        TAG_REGISTRY.put("dec_entities", (output, args, vars, custom, hv) -> dec_entities(output));
+        TAG_REGISTRY.put("unicode_escapes", (output, args, vars, custom, hv) -> unicode_escapes(output));
+        TAG_REGISTRY.put("d_unicode_escapes", (output, args, vars, custom, hv) -> decode_js_string(output));
+        TAG_REGISTRY.put("unicode_alternatives", (output, args, vars, custom, hv) -> unicode_alternatives(output));
+
+        // PHP operations
+        TAG_REGISTRY.put("php_non_alpha", (output, args, vars, custom, hv) -> php_non_alpha(output));
+        TAG_REGISTRY.put("php_chr", (output, args, vars, custom, hv) -> php_chr(output));
+        TAG_REGISTRY.put("sql_hex", (output, args, vars, custom, hv) -> sql_hex(output));
+
+        // Classical ciphers
+        TAG_REGISTRY.put("rotN", (output, args, vars, custom, hv) -> rotN(output, getInt(args, 0)));
+        TAG_REGISTRY.put("rotN_bruteforce", (output, args, vars, custom, hv) -> rotN_bruteforce(output));
+        TAG_REGISTRY.put("xor", (output, args, vars, custom, hv) -> xor(output, getString(args, 0)));
+        TAG_REGISTRY.put("xor_decrypt", (output, args, vars, custom, hv) -> xor_decrypt(output, getInt(args, 0), false));
+        TAG_REGISTRY.put("xor_getkey", (output, args, vars, custom, hv) -> xor_getkey(output));
+        TAG_REGISTRY.put("affine_encrypt", (output, args, vars, custom, hv) ->
+            affine_encrypt(output, getInt(args, 0), getInt(args, 1)));
+        TAG_REGISTRY.put("affine_decrypt", (output, args, vars, custom, hv) ->
+            affine_decrypt(output, getInt(args, 0), getInt(args, 1)));
+        TAG_REGISTRY.put("atbash_encrypt", (output, args, vars, custom, hv) -> atbash_encrypt(output));
+        TAG_REGISTRY.put("atbash_decrypt", (output, args, vars, custom, hv) -> atbash_decrypt(output));
+        TAG_REGISTRY.put("rail_fence_encrypt", (output, args, vars, custom, hv) ->
+            rail_fence_encrypt(output, getInt(args, 0)));
+        TAG_REGISTRY.put("rail_fence_decrypt", (output, args, vars, custom, hv) ->
+            rail_fence_decrypt(output, getInt(args, 0)));
+        TAG_REGISTRY.put("substitution_encrypt", (output, args, vars, custom, hv) ->
+            substitution_encrypt(output, getString(args, 0)));
+        TAG_REGISTRY.put("substitution_decrypt", (output, args, vars, custom, hv) ->
+            substitution_decrypt(output, getString(args, 0)));
+
+        // AES operations
+        TAG_REGISTRY.put("aes_encrypt", (output, args, vars, custom, hv) ->
+            aes_encrypt(output, getString(args, 0), getString(args, 1), getString(args, 2)));
+        TAG_REGISTRY.put("aes_decrypt", (output, args, vars, custom, hv) ->
+            aes_decrypt(output, getString(args, 0), getString(args, 1), getString(args, 2)));
+
+        // JWT operations
+        TAG_REGISTRY.put("jwt", (output, args, vars, custom, hv) ->
+            jwt(output, getString(args, 0), getString(args, 1)));
+        TAG_REGISTRY.put("d_jwt_get_payload", (output, args, vars, custom, hv) -> d_jwt_get_payload(output));
+        TAG_REGISTRY.put("d_jwt_get_header", (output, args, vars, custom, hv) -> d_jwt_get_header(output));
+        TAG_REGISTRY.put("d_jwt_verify", (output, args, vars, custom, hv) ->
+            d_jwt_verify(output, getString(args, 0)));
+
+        // String encoding operations
+        TAG_REGISTRY.put("quoted_printable", (output, args, vars, custom, hv) -> quoted_printable(output));
+        TAG_REGISTRY.put("d_quoted_printable", (output, args, vars, custom, hv) -> d_quoted_printable(output));
+        TAG_REGISTRY.put("powershell", (output, args, vars, custom, hv) -> powershell(output));
+        TAG_REGISTRY.put("js_string", (output, args, vars, custom, hv) -> js_string(output));
+        TAG_REGISTRY.put("d_js_string", (output, args, vars, custom, hv) -> decode_js_string(output));
+
+        // Auto decode operations
+        TAG_REGISTRY.put("auto_decode", (output, args, vars, custom, hv) -> auto_decode(output));
+        TAG_REGISTRY.put("auto_decode_no_decrypt", (output, args, vars, custom, hv) -> auto_decode_no_decrypt(output));
+
+        // Base encoding operations
+        TAG_REGISTRY.put("base32", (output, args, vars, custom, hv) -> base32_encode(output));
+        TAG_REGISTRY.put("d_base32", (output, args, vars, custom, hv) -> decode_base32(output));
+        TAG_REGISTRY.put("base58", (output, args, vars, custom, hv) -> base58_encode(output));
+        TAG_REGISTRY.put("d_base58", (output, args, vars, custom, hv) -> decode_base58(output));
+        TAG_REGISTRY.put("base64", (output, args, vars, custom, hv) -> base64Encode(output));
+        TAG_REGISTRY.put("d_base64", (output, args, vars, custom, hv) -> decode_base64(output));
+        TAG_REGISTRY.put("base64url", (output, args, vars, custom, hv) -> base64urlEncode(output));
+        TAG_REGISTRY.put("d_base64url", (output, args, vars, custom, hv) -> decode_base64url(output));
+
+        // JSON operations
+        TAG_REGISTRY.put("json_parse", (output, args, vars, custom, hv) ->
+            json_parse(output, getString(args, 0)));
+
+        // URL encoding operations
+        TAG_REGISTRY.put("burp_urlencode", (output, args, vars, custom, hv) -> burp_urlencode(output));
+        TAG_REGISTRY.put("urlencode", (output, args, vars, custom, hv) -> urlencode(output));
+        TAG_REGISTRY.put("urlencode_not_plus", (output, args, vars, custom, hv) -> urlencode_not_plus(output));
+        TAG_REGISTRY.put("urlencode_all", (output, args, vars, custom, hv) -> urlencode_all(output));
+        TAG_REGISTRY.put("d_burp_url", (output, args, vars, custom, hv) -> burp_decode_url(output));
+        TAG_REGISTRY.put("d_url", (output, args, vars, custom, hv) -> decode_url(output));
+
+        // String operations
+        TAG_REGISTRY.put("uppercase", (output, args, vars, custom, hv) -> uppercase(output));
+        TAG_REGISTRY.put("lowercase", (output, args, vars, custom, hv) -> lowercase(output));
+        TAG_REGISTRY.put("capitalise", (output, args, vars, custom, hv) -> capitalise(output));
+        TAG_REGISTRY.put("uncapitalise", (output, args, vars, custom, hv) -> uncapitalise(output));
+        TAG_REGISTRY.put("reverse", (output, args, vars, custom, hv) -> reverse(output));
+        TAG_REGISTRY.put("unique", (output, args, vars, custom, hv) -> unique(output));
+        TAG_REGISTRY.put("space", (output, args, vars, custom, hv) -> " ");
+        TAG_REGISTRY.put("newline", (output, args, vars, custom, hv) -> "\n");
+        TAG_REGISTRY.put("remove_output", (output, args, vars, custom, hv) -> remove_output(output));
+        TAG_REGISTRY.put("from_charcode", (output, args, vars, custom, hv) -> from_charcode(output));
+        TAG_REGISTRY.put("to_charcode", (output, args, vars, custom, hv) -> to_charcode(output));
+        TAG_REGISTRY.put("length", (output, args, vars, custom, hv) -> len(output));
+
+        // String search and replace
+        TAG_REGISTRY.put("find", (output, args, vars, custom, hv) ->
+            find(output, getString(args, 0), getInt(args, 1)));
+        TAG_REGISTRY.put("replace", (output, args, vars, custom, hv) ->
+            replace(output, getString(args, 0), getString(args, 1)));
+        TAG_REGISTRY.put("regex_replace", (output, args, vars, custom, hv) ->
+            regex_replace(output, getString(args, 0), getString(args, 1)));
+        TAG_REGISTRY.put("repeat", (output, args, vars, custom, hv) -> repeat(output, getInt(args, 0)));
+        TAG_REGISTRY.put("substring", (output, args, vars, custom, hv) ->
+            substring(output, getInt(args, 0), getInt(args, 1)));
+        TAG_REGISTRY.put("split_join", (output, args, vars, custom, hv) ->
+            split_join(output, getString(args, 0), getString(args, 1)));
+
+        // Analysis operations
+        TAG_REGISTRY.put("is_like_english", (output, args, vars, custom, hv) ->
+            Double.toString(is_like_english(output)));
+        TAG_REGISTRY.put("index_of_coincidence", (output, args, vars, custom, hv) ->
+            Double.toString(index_of_coincidence(output)));
+        TAG_REGISTRY.put("guess_key_length", (output, args, vars, custom, hv) ->
+            Integer.toString(guess_key_length(output)));
+
+        // Conditional operations
+        TAG_REGISTRY.put("if_regex", (output, args, vars, custom, hv) ->
+            if_regex(output, getString(args, 0), getString(args, 1)));
+        TAG_REGISTRY.put("if_not_regex", (output, args, vars, custom, hv) ->
+            if_not_regex(output, getString(args, 0), getString(args, 1)));
+
+        // Number conversion operations
+        TAG_REGISTRY.put("chunked_dec2hex", (output, args, vars, custom, hv) -> chunked_dec2hex(output));
+        TAG_REGISTRY.put("dec2hex", (output, args, vars, custom, hv) -> dec2hex(output, getString(args, 0)));
+        TAG_REGISTRY.put("dec2oct", (output, args, vars, custom, hv) -> dec2oct(output, getString(args, 0)));
+        TAG_REGISTRY.put("dec2bin", (output, args, vars, custom, hv) -> dec2bin(output, getString(args, 0)));
+        TAG_REGISTRY.put("hex2dec", (output, args, vars, custom, hv) -> hex2dec(output, getString(args, 0)));
+        TAG_REGISTRY.put("oct2dec", (output, args, vars, custom, hv) -> oct2dec(output, getString(args, 0)));
+        TAG_REGISTRY.put("bin2dec", (output, args, vars, custom, hv) -> bin2dec(output, getString(args, 0)));
+        TAG_REGISTRY.put("ascii2bin", (output, args, vars, custom, hv) -> ascii2bin(output));
+        TAG_REGISTRY.put("bin2ascii", (output, args, vars, custom, hv) -> bin2ascii(output));
+        TAG_REGISTRY.put("hex2ascii", (output, args, vars, custom, hv) -> hex2ascii(output));
+        TAG_REGISTRY.put("ascii2hex", (output, args, vars, custom, hv) -> ascii2hex(output, getString(args, 0)));
+        TAG_REGISTRY.put("ascii2reverse_hex", (output, args, vars, custom, hv) ->
+            ascii2reverse_hex(output, getString(args, 0)));
+
+        // HMAC operations
+        TAG_REGISTRY.put("hmac_md5", (output, args, vars, custom, hv) -> hmacmd5(output, getString(args, 0)));
+        TAG_REGISTRY.put("hmac_sha1", (output, args, vars, custom, hv) -> hmacsha1(output, getString(args, 0)));
+        TAG_REGISTRY.put("hmac_sha224", (output, args, vars, custom, hv) -> hmacsha224(output, getString(args, 0)));
+        TAG_REGISTRY.put("hmac_sha256", (output, args, vars, custom, hv) -> hmacsha256(output, getString(args, 0)));
+        TAG_REGISTRY.put("hmac_sha384", (output, args, vars, custom, hv) -> hmacsha384(output, getString(args, 0)));
+        TAG_REGISTRY.put("hmac_sha512", (output, args, vars, custom, hv) -> hmacsha512(output, getString(args, 0)));
+
+        // Hash operations
+        TAG_REGISTRY.put("sha1", (output, args, vars, custom, hv) -> sha1(output));
+        TAG_REGISTRY.put("sha224", (output, args, vars, custom, hv) -> sha224(output));
+        TAG_REGISTRY.put("sha256", (output, args, vars, custom, hv) -> sha256(output));
+        TAG_REGISTRY.put("sha384", (output, args, vars, custom, hv) -> sha384(output));
+        TAG_REGISTRY.put("sha512", (output, args, vars, custom, hv) -> sha512(output));
+        TAG_REGISTRY.put("sha3", (output, args, vars, custom, hv) -> sha3(output));
+        TAG_REGISTRY.put("sha3_224", (output, args, vars, custom, hv) -> sha3_224(output));
+        TAG_REGISTRY.put("sha3_256", (output, args, vars, custom, hv) -> sha3_256(output));
+        TAG_REGISTRY.put("sha3_384", (output, args, vars, custom, hv) -> sha3_384(output));
+        TAG_REGISTRY.put("sha3_512", (output, args, vars, custom, hv) -> sha3_512(output));
+        TAG_REGISTRY.put("md2", (output, args, vars, custom, hv) -> md2(output));
+        TAG_REGISTRY.put("md4", (output, args, vars, custom, hv) -> md4(output));
+        TAG_REGISTRY.put("md5", (output, args, vars, custom, hv) -> md5(output));
+        TAG_REGISTRY.put("tiger", (output, args, vars, custom, hv) -> tiger(output));
+        TAG_REGISTRY.put("whirlpool", (output, args, vars, custom, hv) -> whirlpool(output));
+        TAG_REGISTRY.put("gost3411", (output, args, vars, custom, hv) -> gost3411(output));
+        TAG_REGISTRY.put("sm3", (output, args, vars, custom, hv) -> sm3(output));
+        TAG_REGISTRY.put("ripemd128", (output, args, vars, custom, hv) -> ripemd128(output));
+        TAG_REGISTRY.put("ripemd160", (output, args, vars, custom, hv) -> ripemd160(output));
+        TAG_REGISTRY.put("ripemd256", (output, args, vars, custom, hv) -> ripemd256(output));
+        TAG_REGISTRY.put("ripemd320", (output, args, vars, custom, hv) -> ripemd320(output));
+
+        // Skein hash operations
+        TAG_REGISTRY.put("skein_256_128", (output, args, vars, custom, hv) -> skein_256_128(output));
+        TAG_REGISTRY.put("skein_256_160", (output, args, vars, custom, hv) -> skein_256_160(output));
+        TAG_REGISTRY.put("skein_256_224", (output, args, vars, custom, hv) -> skein_256_224(output));
+        TAG_REGISTRY.put("skein_256_256", (output, args, vars, custom, hv) -> skein_256_256(output));
+        TAG_REGISTRY.put("skein_512_128", (output, args, vars, custom, hv) -> skein_512_128(output));
+        TAG_REGISTRY.put("skein_512_160", (output, args, vars, custom, hv) -> skein_512_160(output));
+        TAG_REGISTRY.put("skein_512_224", (output, args, vars, custom, hv) -> skein_512_224(output));
+        TAG_REGISTRY.put("skein_512_256", (output, args, vars, custom, hv) -> skein_512_256(output));
+        TAG_REGISTRY.put("skein_512_384", (output, args, vars, custom, hv) -> skein_512_384(output));
+        TAG_REGISTRY.put("skein_512_512", (output, args, vars, custom, hv) -> skein_512_512(output));
+        TAG_REGISTRY.put("skein_1024_384", (output, args, vars, custom, hv) -> skein_1024_384(output));
+        TAG_REGISTRY.put("skein_1024_512", (output, args, vars, custom, hv) -> skein_1024_512(output));
+        TAG_REGISTRY.put("skein_1024_1024", (output, args, vars, custom, hv) -> skein_1024_1024(output));
+
+        // Random operations
+        TAG_REGISTRY.put("random", (output, args, vars, custom, hv) ->
+            random(output, getInt(args, 0), getBoolean(args, 1)));
+        TAG_REGISTRY.put("random_alpha_lower", (output, args, vars, custom, hv) ->
+            random_alpha_lower(getInt(args, 0)));
+        TAG_REGISTRY.put("random_alphanum_lower", (output, args, vars, custom, hv) ->
+            random_alphanum_lower(getInt(args, 0)));
+        TAG_REGISTRY.put("random_alpha_upper", (output, args, vars, custom, hv) ->
+            random_alpha_upper(getInt(args, 0)));
+        TAG_REGISTRY.put("random_alphanum_upper", (output, args, vars, custom, hv) ->
+            random_alphanum_upper(getInt(args, 0)));
+        TAG_REGISTRY.put("random_alpha_mixed", (output, args, vars, custom, hv) ->
+            random_alpha_mixed(getInt(args, 0)));
+        TAG_REGISTRY.put("random_alphanum_mixed", (output, args, vars, custom, hv) ->
+            random_alphanum_mixed(getInt(args, 0)));
+        TAG_REGISTRY.put("random_hex", (output, args, vars, custom, hv) -> random_hex(getInt(args, 0)));
+        TAG_REGISTRY.put("random_hex_mixed", (output, args, vars, custom, hv) ->
+            random_hex_mixed(getInt(args, 0)));
+        TAG_REGISTRY.put("random_num", (output, args, vars, custom, hv) -> random_num(getInt(args, 0)));
+        TAG_REGISTRY.put("random_unicode", (output, args, vars, custom, hv) ->
+            random_unicode(getInt(args, 0), getInt(args, 1), getInt(args, 2)));
+
+        // Math operations
+        TAG_REGISTRY.put("range", (output, args, vars, custom, hv) ->
+            range(output, getInt(args, 0), getInt(args, 1), getInt(args, 2)));
+        TAG_REGISTRY.put("total", (output, args, vars, custom, hv) -> total(output));
+        TAG_REGISTRY.put("arithmetic", (output, args, vars, custom, hv) ->
+            arithmetic(output, getInt(args, 0), getString(args, 1), getString(args, 2)));
+        TAG_REGISTRY.put("convert_base", (output, args, vars, custom, hv) ->
+            convert_base(output, getString(args, 0), getInt(args, 1), getInt(args, 2)));
+        TAG_REGISTRY.put("zeropad", (output, args, vars, custom, hv) ->
+            zeropad(output, getString(args, 0), getInt(args, 1)));
+        TAG_REGISTRY.put("uuid", (output, args, vars, custom, hv) -> uuid());
+
+        // XSS payload operations
+        TAG_REGISTRY.put("behavior", (output, args, vars, custom, hv) -> behavior(output));
+        TAG_REGISTRY.put("css_expression", (output, args, vars, custom, hv) -> css_expression(output));
+        TAG_REGISTRY.put("datasrc", (output, args, vars, custom, hv) -> datasrc(output));
+        TAG_REGISTRY.put("eval_fromcharcode", (output, args, vars, custom, hv) -> eval_fromcharcode(output));
+        TAG_REGISTRY.put("iframe_data_url", (output, args, vars, custom, hv) -> iframe_data_url(output));
+        TAG_REGISTRY.put("script_data", (output, args, vars, custom, hv) -> script_data(output));
+        TAG_REGISTRY.put("uppercase_script", (output, args, vars, custom, hv) -> uppercase_script(output));
+        TAG_REGISTRY.put("iframe_src_doc", (output, args, vars, custom, hv) -> iframe_src_doc(output));
+        TAG_REGISTRY.put("template_eval", (output, args, vars, custom, hv) -> template_eval(output));
+        TAG_REGISTRY.put("throw_eval", (output, args, vars, custom, hv) -> throw_eval(output));
+
+        // Script execution operations
+        TAG_REGISTRY.put("python", (output, args, vars, custom, hv) ->
+            python(vars, output, getString(args, 0), getString(args, 1), null, custom, hv));
+        TAG_REGISTRY.put("javascript", (output, args, vars, custom, hv) ->
+            javascript(vars, output, getString(args, 0), getString(args, 1), null, custom, hv));
+        TAG_REGISTRY.put("java", (output, args, vars, custom, hv) ->
+            java(vars, output, getString(args, 0), getString(args, 1), null, custom, hv));
+        TAG_REGISTRY.put("groovy", (output, args, vars, custom, hv) ->
+            groovy(vars, output, getString(args, 0), getString(args, 1), null, custom, hv));
+        TAG_REGISTRY.put("ai", (output, args, vars, custom, hv) ->
+            ai_tag(vars, output, getString(args, 1), getString(args, 2), null, custom, hv,
+                   Double.parseDouble(getString(args, 0)), false));
+
+        // System operations
+        TAG_REGISTRY.put("read_url", (output, args, vars, custom, hv) ->
+            read_url(output, getString(args, 0), getBoolean(args, 1), getString(args, 2)));
+        TAG_REGISTRY.put("read_file", (output, args, vars, custom, hv) ->
+            read_file(output, getString(args, 0), getBoolean(args, 1), getString(args, 2)));
+        TAG_REGISTRY.put("system", (output, args, vars, custom, hv) ->
+            system(output, getBoolean(args, 0), getString(args, 1)));
+    }
+
+    public static String callTag(HashMap<String, String> variableMap, JSONArray customTags, String tag, String output, ArrayList<String> arguments, Hackvertor hackvertor) throws ParseException {
+        // Update tag count if enabled
+        updateTagCount(tag);
+
+        // Process arguments recursively
+        processArguments(arguments, variableMap, customTags, hackvertor);
+
+        // First check if the tag is in the registry
+        TagProcessor processor = TAG_REGISTRY.get(tag);
+        if (processor != null) {
+            return processor.process(output, arguments, variableMap, customTags, hackvertor);
+        }
+
+        // Handle special case tags that are not in the registry
+        // Handle fake_ tags
+        if (tag.startsWith("fake_")) {
+            return processFakeTag(tag, arguments);
+        }
+        // Handle custom tags (starting with _)
+        else if (tag.startsWith("_")) {
+            String result = processCustomTag(tag, output, arguments, variableMap, customTags, hackvertor);
+            if (result != null) {
+                return result;
+            }
+        }
+        // Handle legacy set_ tags (but not set_var or set_variable which are in the registry)
+        else if(tag.startsWith("set_")) {
+            return processLegacySetTag(tag, output, arguments, variableMap);
+        }
+        // Handle legacy get_ tags (but not get_var or get_variable which are in the registry)
+        else if(tag.startsWith("get_")) {
+            return processLegacyGetTag(tag, output, variableMap);
+        }
+
+        // Handle unsupported tags or charset conversion fallback
+        return handleUnsupportedTag(tag, output, arguments, variableMap, customTags);
     }
 
     public static String[] generateTagStartEnd(Tag tagObj) {
@@ -2461,41 +2463,478 @@ public class Convertors {
         Faker faker = new Faker(new Locale(locale));
         name = name.replaceFirst("^fake_", "");
         name = name.replaceAll("[^\\w]+","");
-        Method[] methods = faker.getClass().getDeclaredMethods();;
-        for(Method method : methods) {
-            if(Hackvertor.shouldFilterMethod(method)) {
-                continue;
-            }
-            if(!method.getName().equals(name)) {
-                continue;
-            }
-            try {
-                Object obj = method.invoke(faker);
-                return replaceProperties(obj, replaceProperties(obj, properties));
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
-            } catch (InvocationTargetException e) {
-                throw new RuntimeException(e);
-            }
+
+        // Get the faker component and replace properties
+        Object fakerComponent = getFakerComponent(faker, name);
+        if (fakerComponent != null) {
+            return replaceFakerProperties(fakerComponent, name, properties);
         }
         return "";
     }
 
-    private static String replaceProperties(Object obj, String properties) {
-        Method[] methods = obj.getClass().getDeclaredMethods();
-        for(Method method : methods) {
-            if(Hackvertor.shouldFilterMethod(method)) {
-                continue;
-            }
-            try {
-                properties = properties.replaceAll("\\$"+method.getName(), method.invoke(obj).toString());
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
-            } catch (InvocationTargetException e) {
-                throw new RuntimeException(e);
+    private static Object getFakerComponent(Faker faker, String name) {
+        switch(name) {
+            case "address": return faker.address();
+            case "ancient": return faker.ancient();
+            case "animal": return faker.animal();
+            case "app": return faker.app();
+            case "artist": return faker.artist();
+            case "avatar": return faker.avatar();
+            case "aviation": return faker.aviation();
+            case "book": return faker.book();
+            case "bool": return faker.bool();
+            case "business": return faker.business();
+            case "code": return faker.code();
+            case "currency": return faker.currency();
+            case "color": return faker.color();
+            case "commerce": return faker.commerce();
+            case "company": return faker.company();
+            case "crypto": return faker.crypto();
+            case "date": return faker.date();
+            case "demographic": return faker.demographic();
+            case "educator": return faker.educator();
+            case "file": return faker.file();
+            case "finance": return faker.finance();
+            case "food": return faker.food();
+            case "hacker": return faker.hacker();
+            case "idNumber": return faker.idNumber();
+            case "internet": return faker.internet();
+            case "job": return faker.job();
+            case "lorem": return faker.lorem();
+            case "music": return faker.music();
+            case "name": return faker.name();
+            case "nation": return faker.nation();
+            case "number": return faker.number();
+            case "options": return faker.options();
+            case "phoneNumber": return faker.phoneNumber();
+            case "slackEmoji": return faker.slackEmoji();
+            case "space": return faker.space();
+            case "stock": return faker.stock();
+            case "team": return faker.team();
+            case "university": return faker.university();
+            case "weather": return faker.weather();
+            default: return null;
+        }
+    }
+
+    private static String replaceFakerProperties(Object component, String componentName, String properties) {
+        // For each property placeholder, replace with the actual value
+        String result = properties;
+
+        // Use Hackvertor's registry to get the list of available properties for this component
+        List<String> availableProperties = Hackvertor.getFakerProperties(componentName);
+        if (availableProperties == null) {
+            return properties;
+        }
+
+        // For each available property, try to get its value and replace in the string
+        for (String prop : availableProperties) {
+            String propName = prop.substring(1); // Remove the $ prefix
+            String value = getFakerPropertyValue(component, componentName, propName);
+            if (value != null) {
+                result = result.replace(prop, value);
             }
         }
-        return properties;
+
+        return result;
+    }
+
+    private static String getFakerPropertyValue(Object component, String componentName, String propertyName) {
+        try {
+            // Direct method calls based on component type and property name
+            // This avoids reflection completely
+            switch(componentName) {
+                case "address":
+                    com.github.javafaker.Address addr = (com.github.javafaker.Address) component;
+                    switch(propertyName) {
+                        case "buildingNumber": return addr.buildingNumber();
+                        case "city": return addr.city();
+                        case "cityName": return addr.cityName();
+                        case "cityPrefix": return addr.cityPrefix();
+                        case "citySuffix": return addr.citySuffix();
+                        case "country": return addr.country();
+                        case "countryCode": return addr.countryCode();
+                        case "firstName": return addr.firstName();
+                        case "fullAddress": return addr.fullAddress();
+                        case "lastName": return addr.lastName();
+                        case "latitude": return addr.latitude();
+                        case "longitude": return addr.longitude();
+                        case "secondaryAddress": return addr.secondaryAddress();
+                        case "state": return addr.state();
+                        case "stateAbbr": return addr.stateAbbr();
+                        case "streetAddress": return addr.streetAddress();
+                        case "streetAddressNumber": return addr.streetAddressNumber();
+                        case "streetName": return addr.streetName();
+                        case "streetPrefix": return addr.streetPrefix();
+                        case "streetSuffix": return addr.streetSuffix();
+                        case "timeZone": return addr.timeZone();
+                        case "zipCode": return addr.zipCode();
+                        case "zipCodePlus4": return addr.zipCodeByState(addr.stateAbbr());
+                    }
+                    break;
+                case "ancient":
+                    com.github.javafaker.Ancient ancient = (com.github.javafaker.Ancient) component;
+                    switch(propertyName) {
+                        case "god": return ancient.god();
+                        case "hero": return ancient.hero();
+                        case "primordial": return ancient.primordial();
+                        case "titan": return ancient.titan();
+                    }
+                    break;
+                case "animal":
+                    com.github.javafaker.Animal animal = (com.github.javafaker.Animal) component;
+                    if ("name".equals(propertyName)) return animal.name();
+                    break;
+                case "app":
+                    com.github.javafaker.App app = (com.github.javafaker.App) component;
+                    switch(propertyName) {
+                        case "author": return app.author();
+                        case "name": return app.name();
+                        case "version": return app.version();
+                    }
+                    break;
+                case "artist":
+                    com.github.javafaker.Artist artist = (com.github.javafaker.Artist) component;
+                    if ("name".equals(propertyName)) return artist.name();
+                    break;
+                case "avatar":
+                    com.github.javafaker.Avatar avatar = (com.github.javafaker.Avatar) component;
+                    if ("image".equals(propertyName)) return avatar.image();
+                    break;
+                case "aviation":
+                    com.github.javafaker.Aviation aviation = (com.github.javafaker.Aviation) component;
+                    switch(propertyName) {
+                        case "aircraft": return aviation.aircraft();
+                        case "airline": return null; // airline method doesn't exist in javafaker
+                        case "airport": return aviation.airport();
+                        case "METAR": return aviation.METAR();
+                    }
+                    break;
+                case "book":
+                    com.github.javafaker.Book book = (com.github.javafaker.Book) component;
+                    switch(propertyName) {
+                        case "author": return book.author();
+                        case "genre": return book.genre();
+                        case "publisher": return book.publisher();
+                        case "title": return book.title();
+                    }
+                    break;
+                case "bool":
+                    com.github.javafaker.Bool bool = (com.github.javafaker.Bool) component;
+                    if ("bool".equals(propertyName)) return String.valueOf(bool.bool());
+                    break;
+                case "business":
+                    com.github.javafaker.Business business = (com.github.javafaker.Business) component;
+                    switch(propertyName) {
+                        case "creditCardExpiry": return business.creditCardExpiry();
+                        case "creditCardNumber": return business.creditCardNumber();
+                        case "creditCardType": return business.creditCardType();
+                    }
+                    break;
+                case "code":
+                    com.github.javafaker.Code code = (com.github.javafaker.Code) component;
+                    switch(propertyName) {
+                        case "asin": return code.asin();
+                        case "ean13": return code.ean13();
+                        case "ean8": return code.ean8();
+                        case "gtin13": return code.gtin13();
+                        case "gtin8": return code.gtin8();
+                        case "imei": return code.imei();
+                        case "isbn10": return code.isbn10();
+                        case "isbn13": return code.isbn13();
+                        case "isbnGroup": return code.isbnGroup();
+                        case "isbnGs1": return code.isbnGs1();
+                        case "isbnRegistrant": return code.isbnRegistrant();
+                    }
+                    break;
+                case "currency":
+                    com.github.javafaker.Currency currency = (com.github.javafaker.Currency) component;
+                    switch(propertyName) {
+                        case "code": return currency.code();
+                        case "name": return currency.name();
+                    }
+                    break;
+                case "color":
+                    com.github.javafaker.Color color = (com.github.javafaker.Color) component;
+                    switch(propertyName) {
+                        case "hex": return color.hex();
+                        case "name": return color.name();
+                    }
+                    break;
+                case "commerce":
+                    com.github.javafaker.Commerce commerce = (com.github.javafaker.Commerce) component;
+                    switch(propertyName) {
+                        case "color": return commerce.color();
+                        case "department": return commerce.department();
+                        case "material": return commerce.material();
+                        case "price": return commerce.price();
+                        case "productName": return commerce.productName();
+                        case "promotionCode": return commerce.promotionCode();
+                    }
+                    break;
+                case "company":
+                    com.github.javafaker.Company company = (com.github.javafaker.Company) component;
+                    switch(propertyName) {
+                        case "bs": return company.bs();
+                        case "buzzword": return company.buzzword();
+                        case "catchPhrase": return company.catchPhrase();
+                        case "industry": return company.industry();
+                        case "logo": return company.logo();
+                        case "name": return company.name();
+                        case "profession": return company.profession();
+                        case "suffix": return company.suffix();
+                        case "url": return company.url();
+                    }
+                    break;
+                case "crypto":
+                    com.github.javafaker.Crypto crypto = (com.github.javafaker.Crypto) component;
+                    switch(propertyName) {
+                        case "md5": return crypto.md5();
+                        case "sha1": return crypto.sha1();
+                        case "sha256": return crypto.sha256();
+                        case "sha512": return crypto.sha512();
+                    }
+                    break;
+                case "date":
+                    com.github.javafaker.DateAndTime date = (com.github.javafaker.DateAndTime) component;
+                    if ("birthday".equals(propertyName)) return date.birthday().toString();
+                    break;
+                case "demographic":
+                    com.github.javafaker.Demographic demographic = (com.github.javafaker.Demographic) component;
+                    switch(propertyName) {
+                        case "demonym": return demographic.demonym();
+                        case "educationalAttainment": return demographic.educationalAttainment();
+                        case "maritalStatus": return demographic.maritalStatus();
+                        case "race": return demographic.race();
+                        case "sex": return demographic.sex();
+                    }
+                    break;
+                case "educator":
+                    com.github.javafaker.Educator educator = (com.github.javafaker.Educator) component;
+                    switch(propertyName) {
+                        case "campus": return educator.campus();
+                        case "course": return educator.course();
+                        case "secondarySchool": return educator.secondarySchool();
+                        case "university": return educator.university();
+                    }
+                    break;
+                case "file":
+                    com.github.javafaker.File file = (com.github.javafaker.File) component;
+                    switch(propertyName) {
+                        case "extension": return file.extension();
+                        case "fileName": return file.fileName();
+                        case "mimeType": return file.mimeType();
+                    }
+                    break;
+                case "finance":
+                    com.github.javafaker.Finance finance = (com.github.javafaker.Finance) component;
+                    switch(propertyName) {
+                        case "bic": return finance.bic();
+                        case "creditCard": return finance.creditCard();
+                        case "iban": return finance.iban();
+                    }
+                    break;
+                case "food":
+                    com.github.javafaker.Food food = (com.github.javafaker.Food) component;
+                    switch(propertyName) {
+                        case "dish": return food.dish();
+                        case "fruit": return food.fruit();
+                        case "ingredient": return food.ingredient();
+                        case "measurement": return food.measurement();
+                        case "spice": return food.spice();
+                        case "sushi": return food.sushi();
+                        case "vegetable": return food.vegetable();
+                    }
+                    break;
+                case "hacker":
+                    com.github.javafaker.Hacker hacker = (com.github.javafaker.Hacker) component;
+                    switch(propertyName) {
+                        case "abbreviation": return hacker.abbreviation();
+                        case "adjective": return hacker.adjective();
+                        case "ingverb": return hacker.ingverb();
+                        case "noun": return hacker.noun();
+                        case "verb": return hacker.verb();
+                    }
+                    break;
+                case "idNumber":
+                    com.github.javafaker.IdNumber idNumber = (com.github.javafaker.IdNumber) component;
+                    switch(propertyName) {
+                        case "invalid": return idNumber.invalid();
+                        case "invalidSvSeSsn": return idNumber.invalidSvSeSsn();
+                        case "ssnValid": return idNumber.ssnValid();
+                        case "valid": return idNumber.valid();
+                        case "validSvSeSsn": return idNumber.validSvSeSsn();
+                    }
+                    break;
+                case "internet":
+                    com.github.javafaker.Internet internet = (com.github.javafaker.Internet) component;
+                    switch(propertyName) {
+                        case "avatar": return internet.avatar();
+                        case "domainName": return internet.domainName();
+                        case "domainSuffix": return internet.domainSuffix();
+                        case "domainWord": return internet.domainWord();
+                        case "emailAddress": return internet.emailAddress();
+                        case "image": return internet.image();
+                        case "ipV4Address": return internet.ipV4Address();
+                        case "ipV4Cidr": return internet.ipV4Cidr();
+                        case "ipV6Address": return internet.ipV6Address();
+                        case "ipV6Cidr": return internet.ipV6Cidr();
+                        case "macAddress": return internet.macAddress();
+                        case "password": return internet.password();
+                        case "privateIpV4Address": return internet.privateIpV4Address();
+                        case "publicIpV4Address": return internet.publicIpV4Address();
+                        case "safeEmailAddress": return internet.safeEmailAddress();
+                        case "slug": return internet.slug();
+                        case "url": return internet.url();
+                        case "userAgent": return internet.userAgent(null);
+                        case "uuid": return internet.uuid();
+                    }
+                    break;
+                case "job":
+                    com.github.javafaker.Job job = (com.github.javafaker.Job) component;
+                    switch(propertyName) {
+                        case "field": return job.field();
+                        case "keySkills": return job.keySkills();
+                        case "position": return job.position();
+                        case "seniority": return job.seniority();
+                        case "title": return job.title();
+                    }
+                    break;
+                case "lorem":
+                    com.github.javafaker.Lorem lorem = (com.github.javafaker.Lorem) component;
+                    switch(propertyName) {
+                        case "character": return String.valueOf(lorem.character());
+                        case "characters": return lorem.characters();
+                        case "fixedString": return lorem.fixedString(10);
+                        case "paragraph": return lorem.paragraph();
+                        case "sentence": return lorem.sentence();
+                        case "word": return lorem.word();
+                    }
+                    break;
+                case "music":
+                    com.github.javafaker.Music music = (com.github.javafaker.Music) component;
+                    switch(propertyName) {
+                        case "chord": return music.chord();
+                        case "genre": return music.genre();
+                        case "instrument": return music.instrument();
+                        case "key": return music.key();
+                    }
+                    break;
+                case "name":
+                    com.github.javafaker.Name name = (com.github.javafaker.Name) component;
+                    switch(propertyName) {
+                        case "bloodGroup": return name.bloodGroup();
+                        case "firstName": return name.firstName();
+                        case "fullName": return name.fullName();
+                        case "lastName": return name.lastName();
+                        case "name": return name.name();
+                        case "nameWithMiddle": return name.nameWithMiddle();
+                        case "prefix": return name.prefix();
+                        case "suffix": return name.suffix();
+                        case "title": return name.title();
+                        case "username": return name.username();
+                    }
+                    break;
+                case "nation":
+                    com.github.javafaker.Nation nation = (com.github.javafaker.Nation) component;
+                    switch(propertyName) {
+                        case "capitalCity": return nation.capitalCity();
+                        case "flag": return nation.flag();
+                        case "language": return nation.language();
+                        case "nationality": return nation.nationality();
+                    }
+                    break;
+                case "number":
+                    com.github.javafaker.Number number = (com.github.javafaker.Number) component;
+                    switch(propertyName) {
+                        case "digit": return String.valueOf(number.digit());
+                        case "digits": return number.digits(5);
+                        case "negative": return String.valueOf(number.numberBetween(Integer.MIN_VALUE, -1));
+                        case "positive": return String.valueOf(number.numberBetween(1, Integer.MAX_VALUE));
+                    }
+                    break;
+                case "options":
+                    com.github.javafaker.Options options = (com.github.javafaker.Options) component;
+                    if ("option".equals(propertyName)) return options.option("option1", "option2", "option3");
+                    break;
+                case "phoneNumber":
+                    com.github.javafaker.PhoneNumber phoneNumber = (com.github.javafaker.PhoneNumber) component;
+                    switch(propertyName) {
+                        case "cellPhone": return phoneNumber.cellPhone();
+                        case "phoneNumber": return phoneNumber.phoneNumber();
+                        case "phoneNumberInternational": return phoneNumber.phoneNumber(); // Use phoneNumber as fallback
+                        case "phoneNumberNational": return phoneNumber.phoneNumber(); // Use phoneNumber as fallback
+                        case "phoneNumberWithExtension": return phoneNumber.subscriberNumber(5);
+                        case "tollFreePhoneNumber": return phoneNumber.cellPhone(); // No direct toll-free method
+                    }
+                    break;
+                case "slackEmoji":
+                    com.github.javafaker.SlackEmoji slackEmoji = (com.github.javafaker.SlackEmoji) component;
+                    switch(propertyName) {
+                        case "activity": return slackEmoji.activity();
+                        case "celebration": return slackEmoji.celebration();
+                        case "custom": return slackEmoji.custom();
+                        case "emoji": return slackEmoji.emoji();
+                        case "foodAndDrink": return slackEmoji.foodAndDrink();
+                        case "nature": return slackEmoji.nature();
+                        case "people": return slackEmoji.people();
+                    }
+                    break;
+                case "space":
+                    com.github.javafaker.Space space = (com.github.javafaker.Space) component;
+                    switch(propertyName) {
+                        case "agency": return space.agency();
+                        case "agencyAbbreviation": return space.agencyAbbreviation();
+                        case "company": return space.company();
+                        case "constellation": return space.constellation();
+                        case "distanceMeasurement": return space.distanceMeasurement();
+                        case "galaxy": return space.galaxy();
+                        case "meteorite": return space.meteorite();
+                        case "moon": return space.moon();
+                        case "nasaSpaceCraft": return space.nasaSpaceCraft();
+                        case "nebula": return space.nebula();
+                        case "planet": return space.planet();
+                        case "star": return space.star();
+                        case "starCluster": return space.starCluster();
+                    }
+                    break;
+                case "stock":
+                    com.github.javafaker.Stock stock = (com.github.javafaker.Stock) component;
+                    switch(propertyName) {
+                        case "nsdqSymbol": return stock.nsdqSymbol();
+                        case "nyseSymbol": return stock.nyseSymbol();
+                    }
+                    break;
+                case "team":
+                    com.github.javafaker.Team team = (com.github.javafaker.Team) component;
+                    switch(propertyName) {
+                        case "creature": return team.creature();
+                        case "name": return team.name();
+                        case "sport": return team.sport();
+                        case "state": return team.state();
+                    }
+                    break;
+                case "university":
+                    com.github.javafaker.University university = (com.github.javafaker.University) component;
+                    switch(propertyName) {
+                        case "name": return university.name();
+                        case "prefix": return university.prefix();
+                        case "suffix": return university.suffix();
+                    }
+                    break;
+                case "weather":
+                    com.github.javafaker.Weather weather = (com.github.javafaker.Weather) component;
+                    switch(propertyName) {
+                        case "description": return weather.description();
+                        case "temperatureCelsius": return weather.temperatureCelsius();
+                        case "temperatureFahrenheit": return weather.temperatureFahrenheit();
+                    }
+                    break;
+            }
+        } catch (Exception e) {
+            return null;
+        }
+        return null;
     }
 
     static String sha1(String str) {
