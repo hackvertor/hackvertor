@@ -3,6 +3,7 @@ import burp.api.montoya.http.message.requests.HttpRequest;
 import burp.hv.tags.CustomTags;
 import burp.hv.tags.Tag;
 import burp.hv.tags.TagArgument;
+import burp.hv.utils.TagUtils;
 import burp.parser.Element;
 import burp.parser.HackvertorParser;
 import burp.parser.ParseException;
@@ -330,6 +331,9 @@ public class Hackvertor {
                 continue;
             }
             for (String alias : charset.aliases()) {
+                if(!TagUtils.isValidTagName(alias)) {
+                    continue;
+                }
                 addTag(Tag.Category.Charsets, alias, true, alias + "(String input)");
             }
         }

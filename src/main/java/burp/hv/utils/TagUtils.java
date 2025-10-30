@@ -217,6 +217,10 @@ public class TagUtils {
         return !code.isEmpty();
     }
 
+    public static Boolean isValidTagName(String tagName) {
+        return tagName.matches("^[\\w-]+$");
+    }
+
     public static Boolean validateTagName(String code) {
         code = sanitizeTagName(code);
         return !code.isEmpty();
