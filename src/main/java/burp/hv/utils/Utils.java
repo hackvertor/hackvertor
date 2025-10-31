@@ -7,6 +7,7 @@ import burp.hv.tags.TagAutomator;
 import burp.hv.settings.Settings;
 import burp.hv.tags.TagStore;
 import burp.hv.Variables;
+import burp.hv.ui.HackvertorHistory;
 import burp.hv.ui.HackvertorInput;
 
 import javax.swing.*;
