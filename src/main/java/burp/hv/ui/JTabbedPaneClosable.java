@@ -120,7 +120,7 @@ public class JTabbedPaneClosable extends JTabbedPane {
             textField.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    if (e.getClickCount() == 3) {
+                    if (e.getClickCount() == 2) {
                         textField.setEditable(true);
                     }
                     if (e.getClickCount() == 1) {

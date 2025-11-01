@@ -512,10 +512,10 @@ public class HackvertorPanel extends JPanel {
             clearHistoryButton.setBackground(Color.black);
         }
 
+        buttonsPanel.add(clearButton);
         buttonsPanel.add(previousButton);
         buttonsPanel.add(nextButton);
         buttonsPanel.add(clearHistoryButton);
-        buttonsPanel.add(clearButton);
         buttonsPanel.add(clearTagsButton);
         buttonsPanel.add(rehydrateTagExecutionKey);
         if(!hideOutput) {
