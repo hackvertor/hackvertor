@@ -7,6 +7,8 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
+import static burp.hv.HackvertorExtension.montoyaApi;
+
 public class HackvertorHistory {
     private static final int MAX_HISTORY_SIZE = 1000;
     private static final int MAX_INPUT_LENGTH = 50000;
@@ -134,12 +136,12 @@ public class HackvertorHistory {
     }
 
     private List<HistoryEntry> loadHistory() {
-        if (HackvertorExtension.callbacks == null) {
+        if (montoyaApi == null) {
             return new ArrayList<>();
         }
 
         try {
-            String content = HackvertorExtension.callbacks.loadExtensionSetting(HISTORY_SETTING_KEY);
+            String content = montoyaApi.persistence().extensionData().getString(HISTORY_SETTING_KEY);
             if (content == null || content.isEmpty()) {
                 return new ArrayList<>();
             }
@@ -162,7 +164,7 @@ public class HackvertorHistory {
     }
 
     private void saveHistory() {
-        if (HackvertorExtension.callbacks == null) {
+        if (montoyaApi == null) {
             return;
         }
 
@@ -176,7 +178,7 @@ public class HackvertorHistory {
                 jsonArray.put(obj);
             }
 
-            HackvertorExtension.callbacks.saveExtensionSetting(HISTORY_SETTING_KEY, jsonArray.toString());
+            montoyaApi.persistence().extensionData().setString(HISTORY_SETTING_KEY, jsonArray.toString());
         } catch (Exception e) {
             System.err.println("Failed to save history: " + e.getMessage());
         }

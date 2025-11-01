@@ -120,6 +120,10 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
                 callbacks.addSuiteTab(this);
                 callbacks.registerMessageEditorTabFactory(HackvertorExtension.this);
                 callbacks.registerExtensionStateListener(this);
+                // Restore state after the UI is fully initialized
+                SwingUtilities.invokeLater(() -> {
+                    extensionPanel.restoreState();
+                });
             } catch (Exception ignored){
 
             }
@@ -143,6 +147,11 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
     }
 
     public void extensionUnloaded() {
+        // Save ExtensionPanel state before unloading
+        if (extensionPanel != null) {
+            extensionPanel.saveState();
+        }
+
         if(HackvertorFrame != null) {
             HackvertorFrame.removeAll();
             HackvertorFrame.dispose();
