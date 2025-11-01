@@ -47,7 +47,7 @@ public class HackvertorPanel extends JPanel {
     private String lastAddedInput = "";
     private String lastAddedOutput = "";
     
-    public HackvertorPanel(Hackvertor hackvertor, boolean showLogo, boolean hideOutput){
+    public HackvertorPanel(Hackvertor hackvertor, boolean showLogo, boolean hideOutput, boolean isMessageEditor){
         super(new GridBagLayout());
         this.hackvertor = hackvertor;
         this.inputArea = new HackvertorInput();
@@ -55,14 +55,14 @@ public class HackvertorPanel extends JPanel {
         this.history = new HackvertorHistory();
         Utils.configureTextArea(this.inputArea);
         Utils.configureTextArea(this.outputArea);
-        buildPanel(showLogo, hideOutput);
+        buildPanel(showLogo, hideOutput, isMessageEditor);
     }
 
     public JTabbedPane getTabs() {
         return tabs;
     }
 
-    private void buildPanel(boolean showLogo, boolean hideOutput){
+    private void buildPanel(boolean showLogo, boolean hideOutput, boolean isMessageEditor){
         tabs = buildTabbedPane(hideOutput);
         JPanel topBar = new JPanel(new GridBagLayout());
         topBar.setPreferredSize(new Dimension(-1, 100));
@@ -90,7 +90,7 @@ public class HackvertorPanel extends JPanel {
         final JScrollPane hexScroll = new JScrollPane(hexView);
         hexScroll.setPreferredSize(new Dimension(-1, 100));
         hexScroll.setMinimumSize(new Dimension(-1, 100));
-        JPanel buttonsPanel = new JPanel(new GridLayout(1, 0, 10, 0));
+        JPanel buttonsPanel = new JPanel(new GridLayout(isMessageEditor ? 2 : 1, 0, 5, 5));
         inputArea.setLineWrap(true);
         inputArea.setRows(0);
         final UndoManager undo = new UndoManager();
@@ -444,7 +444,7 @@ public class HackvertorPanel extends JPanel {
         });
 
         final JButton previousButton = new JButton("←");
-        previousButton.setToolTipText("Previous history (Ctrl+Up)");
+        previousButton.setToolTipText("Previous history");
         previousButton.setPreferredSize(new Dimension(50, previousButton.getPreferredSize().height));
         previousButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -457,7 +457,7 @@ public class HackvertorPanel extends JPanel {
         }
 
         final JButton nextButton = new JButton("→");
-        nextButton.setToolTipText("Next history (Ctrl+Down)");
+        nextButton.setToolTipText("Next history");
         nextButton.setPreferredSize(new Dimension(50, nextButton.getPreferredSize().height));
         nextButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -468,20 +468,6 @@ public class HackvertorPanel extends JPanel {
             nextButton.setForeground(Color.white);
             nextButton.setBackground(Color.black);
         }
-
-        inputArea.getInputMap().put(KeyStroke.getKeyStroke("control UP"), "previousHistory");
-        inputArea.getActionMap().put("previousHistory", new AbstractAction() {
-            public void actionPerformed(ActionEvent e) {
-                navigateHistory(true);
-            }
-        });
-
-        inputArea.getInputMap().put(KeyStroke.getKeyStroke("control DOWN"), "nextHistory");
-        inputArea.getActionMap().put("nextHistory", new AbstractAction() {
-            public void actionPerformed(ActionEvent e) {
-                navigateHistory(false);
-            }
-        });
 
         final JButton clearHistoryButton = new JButton("Clear history");
         clearHistoryButton.setToolTipText("Clear all Hackvertor history");

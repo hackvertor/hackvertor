@@ -10,6 +10,13 @@ Tags also support arguments. The find tag allows you to find a string by regex a
 
 # Changelog
 
+## Version v2.2.5 (2025-11-1)
+
+- Added Hackvertor history
+- Remembered tab state
+- UI fixes to tab panel
+- Added setting to show output in message editor
+
 ## Version v2.2.3 (2025-10-30)
 
 - Large refactor

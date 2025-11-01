@@ -3,12 +3,16 @@ package burp.hv.ui;
 import burp.hv.HackvertorExtension;
 import burp.hv.Hackvertor;
 import burp.IMessageEditorTab;
+import burp.hv.settings.InvalidTypeSettingException;
+import burp.hv.settings.UnregisteredSettingException;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.HierarchyEvent;
+
+import static burp.hv.HackvertorExtension.generalSettings;
 
 public class HackvertorMessageTab implements IMessageEditorTab {
     private final JPanel hackvertorContainer = new JPanel(new BorderLayout());
@@ -29,7 +33,13 @@ public class HackvertorMessageTab implements IMessageEditorTab {
                         return;
                     }
                     SwingUtilities.invokeLater(() -> {
-                        hackvertorPanel = new HackvertorPanel(hackvertor, false, true);
+                        boolean shouldShowOuput = false;
+                        try {
+                            shouldShowOuput = generalSettings.getBoolean("showOutputInMessageEditor");
+                        } catch (UnregisteredSettingException | InvalidTypeSettingException ex) {
+                            throw new RuntimeException(ex);
+                        }
+                        hackvertorPanel = new HackvertorPanel(hackvertor, false, !shouldShowOuput, true);
                         hackvertorPanel.getInputArea().getDocument().addDocumentListener(new DocumentListener() {
                             @Override
                             public void insertUpdate(DocumentEvent e1) {

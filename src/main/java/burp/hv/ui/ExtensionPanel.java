@@ -48,7 +48,7 @@ public class ExtensionPanel extends JTabbedPaneClosable {
         });
 
         //TODO Move to HackvertorPanel class
-        this.addTab("1", new HackvertorPanel(hackvertor, true, false));
+        this.addTab("1", new HackvertorPanel(hackvertor, true, false, false));
         this.addTab("...", new JPanel());
         this.addChangeListener(new ChangeListener() {
             public void stateChanged(ChangeEvent e) {
@@ -66,7 +66,7 @@ public class ExtensionPanel extends JTabbedPaneClosable {
                 }
                 if (ExtensionPanel.this.getTitleAt(ExtensionPanel.this.getSelectedIndex()).equals("...")) {
                     tabCounter++;
-                    HackvertorPanel panel = new HackvertorPanel(hackvertor, true, false);
+                    HackvertorPanel panel = new HackvertorPanel(hackvertor, true, false, false);
                     ExtensionPanel.this.remove(ExtensionPanel.this.getSelectedIndex());
                     ExtensionPanel.this.addTab(tabCounter + "", panel);
                     ExtensionPanel.this.addTab("...", new JPanel());
@@ -91,7 +91,7 @@ public class ExtensionPanel extends JTabbedPaneClosable {
     }
 
     public HackvertorPanel addNewPanel(){
-        HackvertorPanel panel = new HackvertorPanel(hackvertor, true, false);
+        HackvertorPanel panel = new HackvertorPanel(hackvertor, true, false, false);
         tabCounter++;
         this.insertTab(String.valueOf(tabCounter), null, panel, null, this.getTabCount() - 1);
         this.setSelectedIndex(this.getTabCount() - 2);
@@ -164,7 +164,7 @@ public class ExtensionPanel extends JTabbedPaneClosable {
                 String input = tabState.getString("input");
                 String output = tabState.getString("output");
 
-                HackvertorPanel panel = new HackvertorPanel(hackvertor, true, false);
+                HackvertorPanel panel = new HackvertorPanel(hackvertor, true, false, false);
                 panel.getInputArea().setText(input);
                 panel.getOutputArea().setText(output);
 
@@ -197,7 +197,7 @@ public class ExtensionPanel extends JTabbedPaneClosable {
             e.printStackTrace();
             // If restoration fails, ensure we have at least the default setup
             this.removeAll();
-            this.addTab("1", new HackvertorPanel(hackvertor, true, false));
+            this.addTab("1", new HackvertorPanel(hackvertor, true, false, false));
             this.addTab("...", new JPanel());
             tabCounter = 1;
         }
