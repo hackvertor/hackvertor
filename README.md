@@ -10,6 +10,11 @@ Tags also support arguments. The find tag allows you to find a string by regex a
 
 # Changelog
 
+## Version v2.2.6 (2025-11-6)
+
+- Made history local to message editor tab separate from global history. 
+- Disabled history when output is hidden.
+
 ## Version v2.2.5 (2025-11-1)
 
 - Added Hackvertor history
