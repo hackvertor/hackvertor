@@ -460,7 +460,7 @@ public class HackvertorPanel extends JPanel {
             previousButton.setBackground(Color.black);
         }
 
-        historyPositionLabel = new JLabel("0 / 0");
+        historyPositionLabel = new JLabel("0/0");
         historyPositionLabel.setEnabled(!hideOutput);
         historyPositionLabel.setHorizontalAlignment(SwingConstants.CENTER);
         historyPositionLabel.setToolTipText("History position");
@@ -722,12 +722,19 @@ public class HackvertorPanel extends JPanel {
         if (historyPositionLabel != null) {
             int size = history.size();
             if (size == 0) {
-                historyPositionLabel.setText("0 / 0");
+                historyPositionLabel.setText("0/0");
             } else {
                 int currentIndex = history.getCurrentIndex();
                 // Display as 1-based index for user friendliness
-                historyPositionLabel.setText((currentIndex + 1) + " / " + size);
+                historyPositionLabel.setText((currentIndex + 1) + "/" + size);
             }
+        }
+    }
+
+    public void refreshHistory() {
+        if (history != null) {
+            history.reloadFromPersistence();
+            updateHistoryPositionLabel();
         }
     }
 }

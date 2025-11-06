@@ -71,6 +71,16 @@ public class ExtensionPanel extends JTabbedPaneClosable {
                     ExtensionPanel.this.addTab(tabCounter + "", panel);
                     ExtensionPanel.this.addTab("...", new JPanel());
                     ExtensionPanel.this.setSelectedIndex(ExtensionPanel.this.getTabCount() - 2);
+                } else {
+                    // Refresh history when a regular tab is selected
+                    try {
+                        HackvertorPanel selectedPanel = (HackvertorPanel) ExtensionPanel.this.getComponentAt(ExtensionPanel.this.getSelectedIndex());
+                        if (selectedPanel != null) {
+                            selectedPanel.refreshHistory();
+                        }
+                    } catch (ClassCastException ex) {
+                        // Ignore if not a HackvertorPanel
+                    }
                 }
             }
         });

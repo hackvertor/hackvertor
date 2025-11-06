@@ -208,4 +208,45 @@ public class HackvertorHistory {
     public int getCurrentIndex() {
         return currentIndex;
     }
+
+    public void reloadFromPersistence() {
+        // Only reload for non-message editor histories
+        if (isMessageEditor) {
+            return;
+        }
+
+        List<HistoryEntry> newHistory = loadHistory();
+
+        // Preserve the current entry if possible
+        HistoryEntry currentEntry = null;
+        if (currentIndex >= 0 && currentIndex < history.size()) {
+            currentEntry = history.get(currentIndex);
+        }
+
+        // Replace the history with the reloaded one
+        history.clear();
+        history.addAll(newHistory);
+
+        // Try to find the same entry in the new history
+        if (currentEntry != null && !history.isEmpty()) {
+            int foundIndex = -1;
+            for (int i = history.size() - 1; i >= 0; i--) {
+                if (history.get(i).equals(currentEntry)) {
+                    foundIndex = i;
+                    break;
+                }
+            }
+
+            if (foundIndex >= 0) {
+                currentIndex = foundIndex;
+            } else {
+                // If not found, go to the latest entry
+                currentIndex = history.size() - 1;
+            }
+        } else if (!history.isEmpty()) {
+            currentIndex = history.size() - 1;
+        } else {
+            currentIndex = -1;
+        }
+    }
 }
