@@ -1,6 +1,5 @@
 package burp.hv.ui;
 
-import burp.hv.HackvertorExtension;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -17,6 +16,7 @@ public class HackvertorHistory {
 
     private final List<HistoryEntry> history;
     private int currentIndex = -1;
+    private final boolean isMessageEditor;
 
     public static class HistoryEntry {
         private final String input;
@@ -60,11 +60,16 @@ public class HackvertorHistory {
         }
     }
 
-    public HackvertorHistory() {
+    public HackvertorHistory(boolean isMessageEditor) {
+        this.isMessageEditor = isMessageEditor;
         this.history = loadHistory();
         if (!history.isEmpty()) {
             currentIndex = history.size() - 1;
         }
+    }
+
+    public HackvertorHistory() {
+        this(false);
     }
 
     public void addEntry(String input, String output) {
@@ -136,6 +141,11 @@ public class HackvertorHistory {
     }
 
     private List<HistoryEntry> loadHistory() {
+        // Message editor maintains local history only - don't load from persistence
+        if (isMessageEditor) {
+            return new ArrayList<>();
+        }
+
         if (montoyaApi == null) {
             return new ArrayList<>();
         }
@@ -164,6 +174,11 @@ public class HackvertorHistory {
     }
 
     private void saveHistory() {
+        // Message editor maintains local history only - don't save to persistence
+        if (isMessageEditor) {
+            return;
+        }
+
         if (montoyaApi == null) {
             return;
         }
@@ -188,5 +203,9 @@ public class HackvertorHistory {
         if (!history.isEmpty()) {
             currentIndex = history.size() - 1;
         }
+    }
+
+    public int getCurrentIndex() {
+        return currentIndex;
     }
 }

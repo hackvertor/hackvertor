@@ -46,13 +46,14 @@ public class HackvertorPanel extends JPanel {
     private boolean isNavigatingHistory = false;
     private String lastAddedInput = "";
     private String lastAddedOutput = "";
+    private JLabel historyPositionLabel;
     
     public HackvertorPanel(Hackvertor hackvertor, boolean showLogo, boolean hideOutput, boolean isMessageEditor){
         super(new GridBagLayout());
         this.hackvertor = hackvertor;
         this.inputArea = new HackvertorInput();
         this.outputArea = new HackvertorInput();
-        this.history = new HackvertorHistory();
+        this.history = new HackvertorHistory(isMessageEditor);
         Utils.configureTextArea(this.inputArea);
         Utils.configureTextArea(this.outputArea);
         buildPanel(showLogo, hideOutput, isMessageEditor);
@@ -179,6 +180,7 @@ public class HackvertorPanel extends JPanel {
                     scheduleUpdate();
                     if (!isNavigatingHistory) {
                         history.resetIndex();
+                        updateHistoryPositionLabel();
                     }
                 }
 
@@ -187,6 +189,7 @@ public class HackvertorPanel extends JPanel {
                     scheduleUpdate();
                     if (!isNavigatingHistory) {
                         history.resetIndex();
+                        updateHistoryPositionLabel();
                     }
                 }
 
@@ -444,6 +447,7 @@ public class HackvertorPanel extends JPanel {
         });
 
         final JButton previousButton = new JButton("←");
+        previousButton.setEnabled(!hideOutput);
         previousButton.setToolTipText("Previous history");
         previousButton.setPreferredSize(new Dimension(50, previousButton.getPreferredSize().height));
         previousButton.addActionListener(new ActionListener() {
@@ -456,8 +460,15 @@ public class HackvertorPanel extends JPanel {
             previousButton.setBackground(Color.black);
         }
 
+        historyPositionLabel = new JLabel("0 / 0");
+        historyPositionLabel.setEnabled(!hideOutput);
+        historyPositionLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        historyPositionLabel.setToolTipText("History position");
+        updateHistoryPositionLabel();
+
         final JButton nextButton = new JButton("→");
         nextButton.setToolTipText("Next history");
+        nextButton.setEnabled(!hideOutput);
         nextButton.setPreferredSize(new Dimension(50, nextButton.getPreferredSize().height));
         nextButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -484,6 +495,7 @@ public class HackvertorPanel extends JPanel {
                     history.clear();
                     lastAddedInput = "";
                     lastAddedOutput = "";
+                    updateHistoryPositionLabel();
                     JOptionPane.showMessageDialog(
                         HackvertorPanel.this,
                         "Hackvertor history has been cleared.",
@@ -500,6 +512,7 @@ public class HackvertorPanel extends JPanel {
 
         buttonsPanel.add(clearButton);
         buttonsPanel.add(previousButton);
+        buttonsPanel.add(historyPositionLabel);
         buttonsPanel.add(nextButton);
         buttonsPanel.add(clearHistoryButton);
         buttonsPanel.add(clearTagsButton);
@@ -681,6 +694,7 @@ public class HackvertorPanel extends JPanel {
             isNavigatingHistory = true;
             inputArea.setText(entry.getInput());
             outputArea.setText(entry.getOutput());
+            updateHistoryPositionLabel();
             SwingUtilities.invokeLater(() -> {
                 isNavigatingHistory = false;
             });
@@ -700,6 +714,20 @@ public class HackvertorPanel extends JPanel {
             history.addEntry(input, output);
             lastAddedInput = input;
             lastAddedOutput = output;
+            updateHistoryPositionLabel();
+        }
+    }
+
+    private void updateHistoryPositionLabel() {
+        if (historyPositionLabel != null) {
+            int size = history.size();
+            if (size == 0) {
+                historyPositionLabel.setText("0 / 0");
+            } else {
+                int currentIndex = history.getCurrentIndex();
+                // Display as 1-based index for user friendliness
+                historyPositionLabel.setText((currentIndex + 1) + " / " + size);
+            }
         }
     }
 }
