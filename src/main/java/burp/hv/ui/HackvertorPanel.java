@@ -297,6 +297,7 @@ public class HackvertorPanel extends JPanel {
             }
         });
         final JButton swapButton = new JButton("Swap");
+        swapButton.setToolTipText("Swap input and output content");
         if (!isNativeTheme && !isDarkTheme) {
             swapButton.setBackground(Color.black);
             swapButton.setForeground(Color.white);
@@ -310,6 +311,7 @@ public class HackvertorPanel extends JPanel {
         });
 
         final JButton selectInputButton = new JButton("Select input");
+        selectInputButton.setToolTipText("Select all text in the input area");
         selectInputButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 inputArea.requestFocus();
@@ -322,6 +324,7 @@ public class HackvertorPanel extends JPanel {
         }
 
         final JButton selectOutputButton = new JButton("Select output");
+        selectOutputButton.setToolTipText("Select all text in the output area");
         selectOutputButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 outputArea.requestFocus();
@@ -334,6 +337,7 @@ public class HackvertorPanel extends JPanel {
         }
 
         final JButton clearTagsButton = new JButton("Clear tags");
+        clearTagsButton.setToolTipText("Remove all Hackvertor tags from input");
         clearTagsButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 String input = inputArea.getText();
@@ -348,6 +352,7 @@ public class HackvertorPanel extends JPanel {
         }
 
         final JButton clearButton = new JButton("Clear");
+        clearButton.setToolTipText("Clear both input and output areas");
         clearButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 inputArea.setText("");
@@ -361,6 +366,7 @@ public class HackvertorPanel extends JPanel {
         }
 
         final JButton pasteInsideButton = new JButton("Paste inside tags");
+        pasteInsideButton.setToolTipText("Paste clipboard content inside existing Hackvertor tags");
         pasteInsideButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 outputArea.setText("");
@@ -409,6 +415,7 @@ public class HackvertorPanel extends JPanel {
         }
 
         final JButton convertButton = new JButton("Convert");
+        convertButton.setToolTipText("Manually convert input to output");
         convertButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 executorService.submit(() -> {
@@ -424,12 +431,14 @@ public class HackvertorPanel extends JPanel {
         }
 
         final JButton decode = new JButton("Smart Decode Ctrl+Alt+D");
+        decode.setToolTipText("Automatically decode selected text (Ctrl+Alt+D)");
         decode.setEnabled(false);
         inputArea.getInputMap().put(KeyStroke.getKeyStroke("control alt D"), "smartDecode");
         SmartDecodeAction smartDecodeAction = new SmartDecodeAction(this.inputArea, null, hackvertor);
         inputArea.getActionMap().put("smartDecode", smartDecodeAction);
         decode.addActionListener(smartDecodeAction);
         JButton rehydrateTagExecutionKey = new JButton("Rehydrate Tags");
+        rehydrateTagExecutionKey.setToolTipText("Replace tag execution keys in selected text with your current key");
         rehydrateTagExecutionKey.setEnabled(false);
         this.inputArea.addCaretListener(new CaretListener() {
             @Override
@@ -562,13 +571,23 @@ public class HackvertorPanel extends JPanel {
         }
 
         int fitIndices = 0;
-        fitIndices |= (1 << 1);
-        fitIndices |= (1 << 2);
-        fitIndices |= (1 << 3);
-        fitIndices |= (1 << 4);
-        fitIndices |= (1 << 5);
+        int decodeButtonIndex = -1;
+        if (!isMessageEditor) {
+            fitIndices |= (1 << 1);
+            fitIndices |= (1 << 2);
+            fitIndices |= (1 << 3);
+            fitIndices |= (1 << 4);
+            fitIndices |= (1 << 5);
+        } else {
+            for (int i = 0; i < buttonComponents.size(); i++) {
+                if (buttonComponents.get(i) == decode) {
+                    decodeButtonIndex = i;
+                    break;
+                }
+            }
+        }
 
-        GridLikeLayout.apply(buttonsPanel, buttonComponents, 1, fitIndices);
+        GridLikeLayout.apply(buttonsPanel, buttonComponents, isMessageEditor ? 2 : 1, fitIndices, decodeButtonIndex);
         GridBagConstraints c = GridbagUtils.createConstraints(1, 0, 1, GridBagConstraints.NONE, 0, 0, 0, 0, CENTER);
         c.anchor = FIRST_LINE_END;
         c.ipadx = 20;

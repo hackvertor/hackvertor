@@ -7,24 +7,34 @@ import java.util.List;
 public final class GridLikeLayout {
 
     public static void apply(JPanel target, List<? extends JComponent> components, int rows, int fitIndices) {
+        apply(target, components, rows, fitIndices, -1);
+    }
+
+    public static void apply(JPanel target, List<? extends JComponent> components, int rows, int fitIndices, int doubleWidthIndex) {
         if (rows < 1 || rows > 2) throw new IllegalArgumentException("rows must be 1 or 2");
         GridBagLayout gbl = (GridBagLayout) target.getLayout();
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(0, 5, 0, 5);
+        gbc.insets = new Insets(5, 5, 5, 5);
         gbc.gridy = 0;
         gbc.gridx = 0;
 
         int n = components.size();
         int cols = (rows == 1) ? n : (int) Math.ceil(n / 2.0);
 
+        int currentCol = 0;
+        int currentRow = 0;
+
         for (int i = 0; i < n; i++) {
             JComponent c = components.get(i);
 
-            int r = (rows == 1) ? 0 : (i / cols);
-            int cIdx = (rows == 1) ? i : (i % cols);
+            gbc.gridx = currentCol;
+            gbc.gridy = currentRow;
 
-            gbc.gridx = cIdx;
-            gbc.gridy = r;
+            if (rows == 2 && i == doubleWidthIndex) {
+                gbc.gridwidth = 2;
+            } else {
+                gbc.gridwidth = 1;
+            }
 
             boolean isFit = ((fitIndices >> i) & 1) == 1;
 
@@ -41,6 +51,12 @@ public final class GridLikeLayout {
             }
 
             target.add(c, gbc);
+
+            currentCol += gbc.gridwidth;
+            if (rows == 2 && currentCol >= cols) {
+                currentCol = 0;
+                currentRow++;
+            }
         }
 
         boolean allFit = (fitIndices == (1 << components.size()) - 1);
