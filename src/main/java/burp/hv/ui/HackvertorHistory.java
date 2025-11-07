@@ -126,6 +126,24 @@ public class HackvertorHistory {
         return history.get(currentIndex);
     }
 
+    public HistoryEntry getFirst() {
+        if (history.isEmpty()) {
+            return null;
+        }
+
+        currentIndex = 0;
+        return history.get(currentIndex);
+    }
+
+    public HistoryEntry getLast() {
+        if (history.isEmpty()) {
+            return null;
+        }
+
+        currentIndex = history.size() - 1;
+        return history.get(currentIndex);
+    }
+
     public void clear() {
         history.clear();
         currentIndex = -1;

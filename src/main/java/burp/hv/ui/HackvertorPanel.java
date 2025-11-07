@@ -446,6 +446,20 @@ public class HackvertorPanel extends JPanel {
             }
         });
 
+        final JButton firstButton = new JButton("⏮");
+        firstButton.setEnabled(!hideOutput);
+        firstButton.setToolTipText("First history entry");
+        firstButton.setPreferredSize(new Dimension(50, firstButton.getPreferredSize().height));
+        firstButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                navigateToFirst();
+            }
+        });
+        if (!isNativeTheme && !isDarkTheme) {
+            firstButton.setForeground(Color.white);
+            firstButton.setBackground(Color.black);
+        }
+
         final JButton previousButton = new JButton("←");
         previousButton.setEnabled(!hideOutput);
         previousButton.setToolTipText("Previous history");
@@ -480,6 +494,20 @@ public class HackvertorPanel extends JPanel {
             nextButton.setBackground(Color.black);
         }
 
+        final JButton lastButton = new JButton("⏭");
+        lastButton.setEnabled(!hideOutput);
+        lastButton.setToolTipText("Last history entry");
+        lastButton.setPreferredSize(new Dimension(50, lastButton.getPreferredSize().height));
+        lastButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                navigateToLast();
+            }
+        });
+        if (!isNativeTheme && !isDarkTheme) {
+            lastButton.setForeground(Color.white);
+            lastButton.setBackground(Color.black);
+        }
+
         final JButton clearHistoryButton = new JButton("Clear history");
         clearHistoryButton.setToolTipText("Clear all Hackvertor history");
         clearHistoryButton.addActionListener(new ActionListener() {
@@ -512,9 +540,11 @@ public class HackvertorPanel extends JPanel {
 
         java.util.List<JComponent> buttonComponents = new java.util.ArrayList<>();
         buttonComponents.add(clearButton);
+        buttonComponents.add(firstButton);
         buttonComponents.add(previousButton);
         buttonComponents.add(historyPositionLabel);
         buttonComponents.add(nextButton);
+        buttonComponents.add(lastButton);
         buttonComponents.add(clearHistoryButton);
         buttonComponents.add(clearTagsButton);
         buttonComponents.add(rehydrateTagExecutionKey);
@@ -535,6 +565,8 @@ public class HackvertorPanel extends JPanel {
         fitIndices |= (1 << 1);
         fitIndices |= (1 << 2);
         fitIndices |= (1 << 3);
+        fitIndices |= (1 << 4);
+        fitIndices |= (1 << 5);
 
         GridLikeLayout.apply(buttonsPanel, buttonComponents, 1, fitIndices);
         GridBagConstraints c = GridbagUtils.createConstraints(1, 0, 1, GridBagConstraints.NONE, 0, 0, 0, 0, CENTER);
@@ -698,6 +730,32 @@ public class HackvertorPanel extends JPanel {
 
     private void navigateHistory(boolean isPrevious) {
         HackvertorHistory.HistoryEntry entry = isPrevious ? history.getPrevious() : history.getNext();
+        if (entry != null) {
+            isNavigatingHistory = true;
+            inputArea.setText(entry.getInput());
+            outputArea.setText(entry.getOutput());
+            updateHistoryPositionLabel();
+            SwingUtilities.invokeLater(() -> {
+                isNavigatingHistory = false;
+            });
+        }
+    }
+
+    private void navigateToFirst() {
+        HackvertorHistory.HistoryEntry entry = history.getFirst();
+        if (entry != null) {
+            isNavigatingHistory = true;
+            inputArea.setText(entry.getInput());
+            outputArea.setText(entry.getOutput());
+            updateHistoryPositionLabel();
+            SwingUtilities.invokeLater(() -> {
+                isNavigatingHistory = false;
+            });
+        }
+    }
+
+    private void navigateToLast() {
+        HackvertorHistory.HistoryEntry entry = history.getLast();
         if (entry != null) {
             isNavigatingHistory = true;
             inputArea.setText(entry.getInput());
