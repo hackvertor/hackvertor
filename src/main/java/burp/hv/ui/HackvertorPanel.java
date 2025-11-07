@@ -91,7 +91,7 @@ public class HackvertorPanel extends JPanel {
         final JScrollPane hexScroll = new JScrollPane(hexView);
         hexScroll.setPreferredSize(new Dimension(-1, 100));
         hexScroll.setMinimumSize(new Dimension(-1, 100));
-        JPanel buttonsPanel = new JPanel(new GridLayout(isMessageEditor ? 2 : 1, 0, 5, 5));
+        JPanel buttonsPanel = new JPanel(new GridBagLayout());
         inputArea.setLineWrap(true);
         inputArea.setRows(0);
         final UndoManager undo = new UndoManager();
@@ -510,25 +510,33 @@ public class HackvertorPanel extends JPanel {
             clearHistoryButton.setBackground(Color.black);
         }
 
-        buttonsPanel.add(clearButton);
-        buttonsPanel.add(previousButton);
-        buttonsPanel.add(historyPositionLabel);
-        buttonsPanel.add(nextButton);
-        buttonsPanel.add(clearHistoryButton);
-        buttonsPanel.add(clearTagsButton);
-        buttonsPanel.add(rehydrateTagExecutionKey);
+        java.util.List<JComponent> buttonComponents = new java.util.ArrayList<>();
+        buttonComponents.add(clearButton);
+        buttonComponents.add(previousButton);
+        buttonComponents.add(historyPositionLabel);
+        buttonComponents.add(nextButton);
+        buttonComponents.add(clearHistoryButton);
+        buttonComponents.add(clearTagsButton);
+        buttonComponents.add(rehydrateTagExecutionKey);
         if(!hideOutput) {
-            buttonsPanel.add(swapButton);
+            buttonComponents.add(swapButton);
         }
-        buttonsPanel.add(selectInputButton);
+        buttonComponents.add(selectInputButton);
         if(!hideOutput) {
-            buttonsPanel.add(selectOutputButton);
-            buttonsPanel.add(pasteInsideButton);
-            buttonsPanel.add(decode);
-            buttonsPanel.add(convertButton);
+            buttonComponents.add(selectOutputButton);
+            buttonComponents.add(pasteInsideButton);
+            buttonComponents.add(decode);
+            buttonComponents.add(convertButton);
         } else {
-            buttonsPanel.add(decode);
+            buttonComponents.add(decode);
         }
+
+        int fitIndices = 0;
+        fitIndices |= (1 << 1);
+        fitIndices |= (1 << 2);
+        fitIndices |= (1 << 3);
+
+        GridLikeLayout.apply(buttonsPanel, buttonComponents, 1, fitIndices);
         GridBagConstraints c = GridbagUtils.createConstraints(1, 0, 1, GridBagConstraints.NONE, 0, 0, 0, 0, CENTER);
         c.anchor = FIRST_LINE_END;
         c.ipadx = 20;
