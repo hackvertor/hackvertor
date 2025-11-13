@@ -1,5 +1,6 @@
 package burp.hv;
 import burp.api.montoya.http.message.requests.HttpRequest;
+import burp.api.montoya.utilities.CompressionType;
 import burp.hv.tags.CustomTags;
 import burp.hv.tags.Tag;
 import burp.hv.tags.TagArgument;
@@ -342,6 +343,8 @@ public class Hackvertor {
     }
 
     private void initCompressionTags() {
+        //brotli compression not supported yet
+        //addTag(Tag.Category.Compression, "brotli_compress", true, "brotli_compress(String str)");
         addTag(Tag.Category.Compression, "brotli_decompress", true, "brotli_decompress(String str)");
         addTag(Tag.Category.Compression, "gzip_compress", true, "gzip_compress(String str)");
         addTag(Tag.Category.Compression, "gzip_decompress", true, "gzip_decompress(String str)");

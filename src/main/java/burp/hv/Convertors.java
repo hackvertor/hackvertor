@@ -2,9 +2,11 @@ package burp.hv;
 
 import bsh.EvalError;
 import bsh.Interpreter;
+import burp.api.montoya.core.ByteArray;
 import burp.api.montoya.http.message.HttpHeader;
 import burp.api.montoya.http.message.params.ParsedHttpParameter;
 import burp.api.montoya.http.message.requests.HttpRequest;
+import burp.api.montoya.utilities.CompressionType;
 import burp.hv.ai.AI;
 import burp.hv.settings.InvalidTypeSettingException;
 import burp.hv.settings.UnregisteredSettingException;
@@ -312,6 +314,7 @@ public class Convertors {
         TAG_REGISTRY.put("utf7", (output, args, vars, custom, hv) -> utf7(output, getString(args, 0)));
 
         // Compression operations
+        TAG_REGISTRY.put("brotli_compress", (output, args, vars, custom, hv) -> brotli_compress(output));
         TAG_REGISTRY.put("brotli_decompress", (output, args, vars, custom, hv) -> brotli_decompress(output));
         TAG_REGISTRY.put("gzip_compress", (output, args, vars, custom, hv) -> gzip_compress(output));
         TAG_REGISTRY.put("gzip_decompress", (output, args, vars, custom, hv) -> gzip_decompress(output));
@@ -1074,6 +1077,18 @@ public class Convertors {
     }
 
     static String brotli_decompress(String str) {
+        // Use Montoya API if available
+        if (HackvertorExtension.montoyaApi != null) {
+            try {
+                byte[] input = readUniBytes(str);
+                ByteArray decompressed = HackvertorExtension.montoyaApi.utilities().compressionUtils()
+                        .decompress(ByteArray.byteArray(input), CompressionType.BROTLI);
+                return new String(decompressed.getBytes());
+            } catch (Exception e) {
+                return "Error decompressing Brotli: " + e.toString();
+            }
+        }
+        // Fallback to legacy implementation for tests
         byte[] buffer = new byte[65536];
         ByteArrayInputStream input = new ByteArrayInputStream(readUniBytes(str));
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -1103,7 +1118,35 @@ public class Convertors {
         return output.toString();
     }
 
+    static String brotli_compress(String str) {
+        // Use Montoya API if available
+        if (HackvertorExtension.montoyaApi != null) {
+            try {
+                byte[] input = str.getBytes();
+                ByteArray compressed = HackvertorExtension.montoyaApi.utilities().compressionUtils()
+                        .compress(ByteArray.byteArray(input), CompressionType.BROTLI);
+                return helpers.bytesToString(compressed.getBytes());
+            } catch (Exception e) {
+                return "Error compressing Brotli: " + e.toString();
+            }
+        }
+        // Fallback - no legacy implementation for brotli_compress
+        return "Error: Brotli compression requires Burp Suite Montoya API";
+    }
+
     static String gzip_compress(String input) {
+        // Use Montoya API if available
+        if (HackvertorExtension.montoyaApi != null) {
+            try {
+                byte[] inputBytes = input.getBytes();
+                ByteArray compressed = HackvertorExtension.montoyaApi.utilities().compressionUtils()
+                        .compress(ByteArray.byteArray(inputBytes), CompressionType.GZIP);
+                return helpers.bytesToString(compressed.getBytes());
+            } catch (Exception e) {
+                return "Error compressing GZIP: " + e.toString();
+            }
+        }
+        // Fallback to legacy implementation for tests
         ByteArrayOutputStream bos = new ByteArrayOutputStream(input.length());
         GZIPOutputStream gzip;
         try {
@@ -1119,6 +1162,18 @@ public class Convertors {
     }
 
     static String gzip_decompress(String input) {
+        // Use Montoya API if available
+        if (HackvertorExtension.montoyaApi != null) {
+            try {
+                byte[] inputBytes = helpers.stringToBytes(input);
+                ByteArray decompressed = HackvertorExtension.montoyaApi.utilities().compressionUtils()
+                        .decompress(ByteArray.byteArray(inputBytes), CompressionType.GZIP);
+                return new String(decompressed.getBytes());
+            } catch (Exception e) {
+                return "Error decompressing GZIP: " + e.toString();
+            }
+        }
+        // Fallback to legacy implementation for tests
         ByteArrayInputStream bis = new ByteArrayInputStream(helpers.stringToBytes(input));
         GZIPInputStream gis;
         byte[] bytes;
@@ -1165,6 +1220,18 @@ public class Convertors {
     }
 
     static String deflate_compress(String input, Boolean includeHeader) {
+        // Use Montoya API if available
+        if (HackvertorExtension.montoyaApi != null) {
+            try {
+                byte[] inputBytes = input.getBytes();
+                ByteArray compressed = HackvertorExtension.montoyaApi.utilities().compressionUtils()
+                        .compress(ByteArray.byteArray(inputBytes), CompressionType.DEFLATE);
+                return helpers.bytesToString(compressed.getBytes());
+            } catch (Exception e) {
+                return "Error compressing DEFLATE: " + e.toString();
+            }
+        }
+        // Fallback to legacy implementation for tests
         ByteArrayOutputStream bos = new ByteArrayOutputStream(input.length());
         CompressorOutputStream cos;
         DeflateParameters params = new DeflateParameters();
@@ -1182,6 +1249,18 @@ public class Convertors {
     }
 
     static String deflate_decompress(String input, Boolean includeHeader) {
+        // Use Montoya API if available
+        if (HackvertorExtension.montoyaApi != null) {
+            try {
+                byte[] inputBytes = helpers.stringToBytes(input);
+                ByteArray decompressed = HackvertorExtension.montoyaApi.utilities().compressionUtils()
+                        .decompress(ByteArray.byteArray(inputBytes), CompressionType.DEFLATE);
+                return new String(decompressed.getBytes());
+            } catch (Exception e) {
+                return "Error decompressing DEFLATE: " + e.toString();
+            }
+        }
+        // Fallback to legacy implementation for tests
         ByteArrayInputStream bis = new ByteArrayInputStream(helpers.stringToBytes(input));
         DeflateCompressorInputStream cis;
         byte[] bytes;
