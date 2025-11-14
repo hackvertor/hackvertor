@@ -13,6 +13,7 @@ Tags also support arguments. The find tag allows you to find a string by regex a
 ## Version v2.2.13 (2025-11-13)
 
 - Used Montoya compression utils
+- Tag finder window
 
 ## Version v2.2.12 (2025-11-13)
 
