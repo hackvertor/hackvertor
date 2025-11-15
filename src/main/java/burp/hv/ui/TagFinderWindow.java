@@ -25,14 +25,6 @@ public class TagFinderWindow {
     private static final int CORNER_RADIUS = 20;
     private static final int COLUMN_COUNT = 3;
 
-    private static final Color COLOR_BACKGROUND = new Color(255, 255, 255);
-    private static final Color COLOR_BORDER = new Color(229, 231, 235);
-    private static final Color COLOR_TEXT = new Color(55, 65, 81);
-    private static final Color COLOR_TEXT_HOVER = new Color(99, 102, 241);
-    private static final Color COLOR_TEXT_MUTED = new Color(156, 163, 175);
-    private static final Color COLOR_LABEL = new Color(107, 114, 128);
-    private static final Color COLOR_INPUT_BORDER = new Color(209, 213, 219);
-
     private final MontoyaApi montoyaApi;
     private final HotKeyEvent event;
     private final JTextArea textArea;
@@ -58,11 +50,15 @@ public class TagFinderWindow {
     }
 
     public TagFinderWindow(JTextArea textArea, ArrayList<Tag> tags) {
-        this(textArea, tags, DEFAULT_WIDTH, DEFAULT_HEIGHT);
+        this(null, textArea, tags, DEFAULT_WIDTH, DEFAULT_HEIGHT);
     }
 
-    public TagFinderWindow(JTextArea textArea, ArrayList<Tag> tags, int width, int height) {
-        this.montoyaApi = null;
+    public TagFinderWindow(MontoyaApi montoyaApi, JTextArea textArea, ArrayList<Tag> tags) {
+        this(montoyaApi, textArea, tags, DEFAULT_WIDTH, DEFAULT_HEIGHT);
+    }
+
+    public TagFinderWindow(MontoyaApi montoyaApi, JTextArea textArea, ArrayList<Tag> tags, int width, int height) {
+        this.montoyaApi = montoyaApi;
         this.event = null;
         this.textArea = textArea;
         this.tags = tags;
@@ -99,15 +95,16 @@ public class TagFinderWindow {
             // Create search field
             JTextField searchField = new JTextField();
             searchField.setFont(new Font("Monospaced", Font.PLAIN, 14));
-            searchField.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(COLOR_INPUT_BORDER, 1),
-                BorderFactory.createEmptyBorder(6, 8, 6, 8)
-            ));
+            searchField.setBorder(BorderFactory.createEmptyBorder(6, 8, 6, 8));
+            if (montoyaApi != null) {
+                montoyaApi.userInterface().applyThemeToComponent(searchField);
+            }
 
             // Create tags panel
             JPanel tagsPanel = new JPanel(new GridBagLayout());
-            tagsPanel.setOpaque(true);
-            tagsPanel.setBackground(COLOR_BACKGROUND);
+            if (montoyaApi != null) {
+                montoyaApi.userInterface().applyThemeToComponent(tagsPanel);
+            }
 
             // Helper: Filter tags
             Function<String, ArrayList<Tag>> filterTags = searchText -> {
@@ -133,19 +130,10 @@ public class TagFinderWindow {
                 button.setCursor(new Cursor(Cursor.HAND_CURSOR));
                 button.setFocusPainted(false);
                 button.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
-                button.setContentAreaFilled(false);
-                button.setBorderPainted(false);
-                button.setOpaque(false);
-                button.setForeground(COLOR_TEXT);
 
-                button.addMouseListener(new java.awt.event.MouseAdapter() {
-                    public void mouseEntered(java.awt.event.MouseEvent evt) {
-                        button.setForeground(COLOR_TEXT_HOVER);
-                    }
-                    public void mouseExited(java.awt.event.MouseEvent evt) {
-                        button.setForeground(COLOR_TEXT);
-                    }
-                });
+                if (montoyaApi != null) {
+                    montoyaApi.userInterface().applyThemeToComponent(button);
+                }
 
                 button.addActionListener(e -> {
                     if (textArea != null) {
@@ -223,8 +211,10 @@ public class TagFinderWindow {
                     }
                 } else {
                     JLabel noResultsLabel = new JLabel("No tags found matching: " + searchField.getText());
-                    noResultsLabel.setForeground(COLOR_TEXT_MUTED);
                     noResultsLabel.setFont(new Font("Inter", Font.PLAIN, 13));
+                    if (montoyaApi != null) {
+                        montoyaApi.userInterface().applyThemeToComponent(noResultsLabel);
+                    }
 
                     GridBagConstraints gbc = new GridBagConstraints();
                     gbc.gridwidth = COLUMN_COUNT;
@@ -237,21 +227,22 @@ public class TagFinderWindow {
 
             // Build UI
             JPanel mainPanel = new JPanel(new BorderLayout());
-            mainPanel.setBackground(COLOR_BACKGROUND);
-            mainPanel.setOpaque(true);
-            mainPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(COLOR_BORDER, 1),
-                BorderFactory.createEmptyBorder(14, 14, 14, 14)
-            ));
+            mainPanel.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 14));
+            if (montoyaApi != null) {
+                montoyaApi.userInterface().applyThemeToComponent(mainPanel);
+            }
 
             JPanel searchPanel = new JPanel(new BorderLayout());
-            searchPanel.setBackground(COLOR_BACKGROUND);
-            searchPanel.setOpaque(true);
             searchPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 12, 0));
+            if (montoyaApi != null) {
+                montoyaApi.userInterface().applyThemeToComponent(searchPanel);
+            }
 
             JLabel searchLabel = new JLabel("Search tags: ");
-            searchLabel.setForeground(COLOR_LABEL);
             searchLabel.setFont(new Font("Inter", Font.PLAIN, 13));
+            if (montoyaApi != null) {
+                montoyaApi.userInterface().applyThemeToComponent(searchLabel);
+            }
 
             searchPanel.add(searchLabel, BorderLayout.WEST);
             searchPanel.add(searchField, BorderLayout.CENTER);
@@ -260,6 +251,9 @@ public class TagFinderWindow {
             scrollPane.setPreferredSize(new Dimension(windowWidth - 50, windowHeight - 100));
             scrollPane.setBorder(BorderFactory.createEmptyBorder());
             scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+            if (montoyaApi != null) {
+                montoyaApi.userInterface().applyThemeToComponent(scrollPane);
+            }
 
             mainPanel.add(searchPanel, BorderLayout.NORTH);
             mainPanel.add(scrollPane, BorderLayout.CENTER);
@@ -311,7 +305,10 @@ public class TagFinderWindow {
             // Initialize window
             applyRoundedCorners.run();
             findTagWindow.add(mainPanel);
+
+            // Apply theme to the window's content pane if available
             if (montoyaApi != null) {
+                montoyaApi.userInterface().applyThemeToComponent(findTagWindow.getContentPane());
                 findTagWindow.setLocationRelativeTo(montoyaApi.userInterface().swingUtils().suiteFrame());
             } else {
                 findTagWindow.setLocationRelativeTo(textArea);

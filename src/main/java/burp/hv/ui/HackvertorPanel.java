@@ -442,7 +442,7 @@ public class HackvertorPanel extends JPanel {
         inputArea.getActionMap().put("findTag", new AbstractAction("findTag") {
             public void actionPerformed(ActionEvent evt) {
                 ArrayList<Tag> tags = hackvertor.getTags();
-                TagFinderWindow finderWindow = new TagFinderWindow(inputArea, tags);
+                TagFinderWindow finderWindow = new TagFinderWindow(HackvertorExtension.montoyaApi, inputArea, tags);
                 finderWindow.show();
             }
         });
