@@ -5,6 +5,7 @@ import burp.hv.settings.InvalidTypeSettingException;
 import burp.hv.settings.UnregisteredSettingException;
 import burp.hv.tags.Tag;
 import burp.hv.tags.TagStore;
+import burp.hv.ui.TagFinderWindow;
 import burp.hv.utils.GridbagUtils;
 import burp.hv.utils.TagUtils;
 import burp.hv.utils.Utils;
@@ -436,6 +437,15 @@ public class HackvertorPanel extends JPanel {
         inputArea.getInputMap().put(KeyStroke.getKeyStroke("control alt D"), "smartDecode");
         SmartDecodeAction smartDecodeAction = new SmartDecodeAction(this.inputArea, null, hackvertor);
         inputArea.getActionMap().put("smartDecode", smartDecodeAction);
+
+        inputArea.getInputMap().put(KeyStroke.getKeyStroke("control alt F"), "findTag");
+        inputArea.getActionMap().put("findTag", new AbstractAction("findTag") {
+            public void actionPerformed(ActionEvent evt) {
+                ArrayList<Tag> tags = hackvertor.getTags();
+                TagFinderWindow finderWindow = new TagFinderWindow(inputArea, tags);
+                finderWindow.show();
+            }
+        });
         decode.addActionListener(smartDecodeAction);
         JButton rehydrateTagExecutionKey = new JButton("Rehydrate Tags");
         rehydrateTagExecutionKey.setToolTipText("Replace tag execution keys in selected text with your current key");

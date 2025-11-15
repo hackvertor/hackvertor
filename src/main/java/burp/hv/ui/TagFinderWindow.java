@@ -2,15 +2,18 @@ package burp.hv.ui;
 
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.ui.hotkey.HotKeyEvent;
+import burp.hv.Convertors;
 import burp.hv.HackvertorExtension;
 import burp.hv.tags.Tag;
 
 import javax.swing.*;
+import javax.swing.text.Highlighter;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.geom.RoundRectangle2D;
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -32,6 +35,7 @@ public class TagFinderWindow {
 
     private final MontoyaApi montoyaApi;
     private final HotKeyEvent event;
+    private final JTextArea textArea;
     private final ArrayList<Tag> tags;
     private final BiConsumer<String, JWindow> onTagSelected;
     private final int windowWidth;
@@ -46,8 +50,23 @@ public class TagFinderWindow {
                           BiConsumer<String, JWindow> onTagSelected, int width, int height) {
         this.montoyaApi = montoyaApi;
         this.event = event;
+        this.textArea = null;
         this.tags = tags;
         this.onTagSelected = onTagSelected;
+        this.windowWidth = width;
+        this.windowHeight = height;
+    }
+
+    public TagFinderWindow(JTextArea textArea, ArrayList<Tag> tags) {
+        this(textArea, tags, DEFAULT_WIDTH, DEFAULT_HEIGHT);
+    }
+
+    public TagFinderWindow(JTextArea textArea, ArrayList<Tag> tags, int width, int height) {
+        this.montoyaApi = null;
+        this.event = null;
+        this.textArea = textArea;
+        this.tags = tags;
+        this.onTagSelected = null;
         this.windowWidth = width;
         this.windowHeight = height;
     }
@@ -57,10 +76,14 @@ public class TagFinderWindow {
             final Tag[] firstVisibleTag = {null};
 
             // Create window
-            JWindow findTagWindow = new JWindow(montoyaApi.userInterface().swingUtils().suiteFrame());
+            JWindow findTagWindow;
+            if (montoyaApi != null) {
+                findTagWindow = new JWindow(montoyaApi.userInterface().swingUtils().suiteFrame());
+            } else {
+                findTagWindow = new JWindow(SwingUtilities.getWindowAncestor(textArea));
+            }
             findTagWindow.setLayout(new BorderLayout());
             findTagWindow.setSize(windowWidth, windowHeight);
-
             // Apply rounded corners
             Runnable applyRoundedCorners = () -> {
                 try {
@@ -125,7 +148,44 @@ public class TagFinderWindow {
                 });
 
                 button.addActionListener(e -> {
-                    generateTagActionListener(event, tag).actionPerformed(null);
+                    if (textArea != null) {
+                        // Insert tag into JTextArea (HackvertorPanel)
+                        String selectedText = textArea.getSelectedText();
+                        if (selectedText == null) {
+                            selectedText = "";
+                        }
+                        String[] tagStartEnd = Convertors.generateTagStartEnd(tag);
+                        String tagStart = tagStartEnd[0];
+                        String tagEnd = tagStartEnd[1];
+                        String replacedText = tagStart + selectedText + tagEnd;
+                        int start = textArea.getSelectionStart();
+                        int end = start + replacedText.length();
+                        textArea.replaceSelection(replacedText);
+                        textArea.select(start + tagStart.length(), end - tagEnd.length());
+
+                        // Handle any existing highlights (similar to TagUtils.createButtons)
+                        int selectionStart = textArea.getSelectionStart();
+                        int selectionEnd = textArea.getSelectionEnd();
+                        Highlighter.Highlight[] highlights = textArea.getHighlighter().getHighlights();
+                        for (Highlighter.Highlight highlight : highlights) {
+                            int highlightStart = highlight.getStartOffset();
+                            int highlightEnd = highlight.getEndOffset();
+                            if ((highlightStart < selectionEnd && highlightEnd > selectionStart)) {
+                                continue;
+                            }
+                            textArea.select(highlight.getStartOffset(), highlight.getEndOffset());
+                            selectedText = textArea.getSelectedText();
+                            if (selectedText != null) {
+                                tagStartEnd = Convertors.generateTagStartEnd(tag);
+                                tagStart = tagStartEnd[0];
+                                tagEnd = tagStartEnd[1];
+                                textArea.replaceSelection(tagStart + selectedText + tagEnd);
+                            }
+                        }
+                    } else {
+                        // Use existing behavior for message editor
+                        generateTagActionListener(event, tag).actionPerformed(null);
+                    }
                     HackvertorExtension.lastTagUsed = tag.name;
                     findTagWindow.dispose();
                 });
@@ -217,7 +277,24 @@ public class TagFinderWindow {
                     if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
                         findTagWindow.dispose();
                     } else if (e.getKeyCode() == KeyEvent.VK_ENTER && firstVisibleTag[0] != null) {
-                        generateTagActionListener(event, firstVisibleTag[0]).actionPerformed(null);
+                        if (textArea != null) {
+                            // Insert tag into JTextArea (HackvertorPanel)
+                            Tag tag = firstVisibleTag[0];
+                            String selectedText = textArea.getSelectedText();
+                            if (selectedText == null) {
+                                selectedText = "";
+                            }
+                            String[] tagStartEnd = Convertors.generateTagStartEnd(tag);
+                            String tagStart = tagStartEnd[0];
+                            String tagEnd = tagStartEnd[1];
+                            String replacedText = tagStart + selectedText + tagEnd;
+                            int start = textArea.getSelectionStart();
+                            int end = start + replacedText.length();
+                            textArea.replaceSelection(replacedText);
+                            textArea.select(start + tagStart.length(), end - tagEnd.length());
+                        } else {
+                            generateTagActionListener(event, firstVisibleTag[0]).actionPerformed(null);
+                        }
                         HackvertorExtension.lastTagUsed = firstVisibleTag[0].name;
                         findTagWindow.dispose();
                     }
@@ -234,7 +311,11 @@ public class TagFinderWindow {
             // Initialize window
             applyRoundedCorners.run();
             findTagWindow.add(mainPanel);
-            findTagWindow.setLocationRelativeTo(montoyaApi.userInterface().swingUtils().suiteFrame());
+            if (montoyaApi != null) {
+                findTagWindow.setLocationRelativeTo(montoyaApi.userInterface().swingUtils().suiteFrame());
+            } else {
+                findTagWindow.setLocationRelativeTo(textArea);
+            }
             updateTags.run();
             findTagWindow.setVisible(true);
             searchField.requestFocusInWindow();
