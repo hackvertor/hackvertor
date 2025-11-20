@@ -52,12 +52,12 @@ public class HackvertorHttpHandler implements burp.api.montoya.http.handler.Http
         if(!TagUtils.shouldProcessTags(req.toolSource().toolType())) return null;
 
         String requestStr = req.toString();
-        if (requestStr.contains("<@")) {
+        String tool = getToolFromToolType(req.toolSource().toolType());
+        boolean hasTagAutomatorRules = TagAutomator.shouldApplyRules("request", tool, "HTTP");
+        if (requestStr.contains("<@") || hasTagAutomatorRules) {
             HackvertorExtension.hackvertor.setRequest(req);
-
-            String tool = getToolFromToolType(req.toolSource().toolType());
             final String finalRequestStr = requestStr;
-            if(TagAutomator.shouldApplyRules("request", tool, "HTTP")) {
+            if(hasTagAutomatorRules) {
                 try {
                     requestStr = HackvertorExtension.executorService.submit(() -> TagAutomator.applyRules(finalRequestStr, "request", tool, "HTTP")).get();
                 } catch (Exception ignored) {}
@@ -104,7 +104,7 @@ public class HackvertorHttpHandler implements burp.api.montoya.http.handler.Http
             throw new RuntimeException(e);
         }
     }
-    
+
     private String getToolFromToolType(ToolType toolType) {
         switch(toolType) {
             case PROXY:
