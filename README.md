@@ -10,6 +10,10 @@ Tags also support arguments. The find tag allows you to find a string by regex a
 
 # Changelog
 
+## Version v2.2.16 (2025-11-20)
+
+- Changed HTTP handler to allow interception when there are Tag Automation rules
+
 ## Version v2.2.15 (2025-11-15)
 
 - Improved tag finder to be used within Hackvertor Panel
