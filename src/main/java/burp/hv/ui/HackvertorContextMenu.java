@@ -243,6 +243,34 @@ public class HackvertorContextMenu implements ContextMenuItemsProvider {
             }
         });
         menu.add(autodecodeConvert);
+
+        // Multi Encoder feature
+        JMenuItem multiEncoder = new JMenuItem("Multi Encoder (Ctrl+Alt+M)");
+        multiEncoder.setEnabled(start != end);
+        multiEncoder.addActionListener(e -> {
+            if (event.invocationType() == InvocationType.MESSAGE_EDITOR_REQUEST || event.invocationType() == InvocationType.MESSAGE_VIEWER_REQUEST) {
+                if(event.messageEditorRequestResponse().isPresent()) {
+                    HttpRequest request = event.messageEditorRequestResponse().get().requestResponse().request();
+                    String requestStr = request.toString();
+                    String selectedText = requestStr.substring(start, end);
+
+                    // Get all available tags
+                    ArrayList<Tag> tags = HackvertorExtension.hackvertor.getTags();
+
+                    // Show the Multi Encoder window
+                    MultiEncoderWindow multiEncoderWindow = new MultiEncoderWindow(
+                        montoyaApi,
+                        selectedText,
+                        tags,
+                        event.messageEditorRequestResponse().get(),
+                        event.messageEditorRequestResponse().get().requestResponse()
+                    );
+                    multiEncoderWindow.show();
+                }
+            }
+        });
+        menu.add(multiEncoder);
+
         menu.addSeparator();
         CustomTags.loadCustomTags();
         if(allowTagCount) {

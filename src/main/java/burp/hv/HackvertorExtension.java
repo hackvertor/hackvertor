@@ -10,7 +10,6 @@ import burp.api.montoya.ui.contextmenu.MessageEditorHttpRequestResponse;
 import burp.api.montoya.ui.hotkey.HotKey;
 import burp.api.montoya.ui.hotkey.HotKeyContext;
 import burp.api.montoya.ui.hotkey.HotKeyHandler;
-import burp.api.montoya.utilities.CompressionType;
 import burp.hv.settings.Settings;
 import burp.hv.tags.CustomTags;
 import burp.hv.tags.Tag;
@@ -36,7 +35,7 @@ import static burp.hv.utils.TagUtils.generateTagActionListener;
 public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, IExtensionStateListener, IMessageEditorTabFactory {
     //TODO Unset on unload
     public static String extensionName = "Hackvertor";
-    public static String version = "v2.2.17";
+    public static String version = "v2.2.18";
     public static JFrame HackvertorFrame = null;
     public static IBurpExtenderCallbacks callbacks;
     public static IExtensionHelpers helpers;
@@ -228,7 +227,8 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
             new HotkeyDefinition("Tag Automator", "Ctrl+Alt+A", event -> TagAutomator.showRulesDialog()),
             new HotkeyDefinition("Settings", "Ctrl+Alt+S", event -> Settings.showSettingsWindow()),
             new HotkeyDefinition("Smart decode", "Ctrl+Alt+D", createAutoDecodeHandler()),
-            new HotkeyDefinition("Show tag store", "Ctrl+Alt+T", event -> TagStore.showTagStore())
+            new HotkeyDefinition("Show tag store", "Ctrl+Alt+T", event -> TagStore.showTagStore()),
+            new HotkeyDefinition("Multi Encoder", "Ctrl+Alt+M", createMultiEncoderHandler(montoyaApi))
         );
 
         for (HotkeyDefinition hotkey : hotkeys) {
@@ -288,6 +288,36 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
                 String modifiedRequest = request.substring(0, start) + selectionWithTags + request.substring(end);
                 requestResponse.setRequest(HttpRequest.httpRequest(
                     requestResponse.requestResponse().httpService(), modifiedRequest));
+            }
+        };
+    }
+
+    private HotKeyHandler createMultiEncoderHandler(MontoyaApi montoyaApi) {
+        return event -> {
+            if (event.messageEditorRequestResponse().isEmpty()) {
+                return;
+            }
+            MessageEditorHttpRequestResponse requestResponse = event.messageEditorRequestResponse().get();
+            if(requestResponse.selectionOffsets().isPresent() &&
+               requestResponse.selectionContext().toString().equalsIgnoreCase("request")) {
+                String request = requestResponse.requestResponse().request().toString();
+                int start = requestResponse.selectionOffsets().get().startIndexInclusive();
+                int end = requestResponse.selectionOffsets().get().endIndexExclusive();
+
+                if (start != end) {
+                    String selectedText = request.substring(start, end);
+                    ArrayList<Tag> tags = HackvertorExtension.hackvertor.getTags();
+
+                    // Show the Multi Encoder window
+                    MultiEncoderWindow multiEncoderWindow = new MultiEncoderWindow(
+                        montoyaApi,
+                        selectedText,
+                        tags,
+                        requestResponse,
+                        requestResponse.requestResponse()
+                    );
+                    multiEncoderWindow.show();
+                }
             }
         };
     }
