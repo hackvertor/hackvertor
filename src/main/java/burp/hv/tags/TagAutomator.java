@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.List;
 
 import static burp.hv.HackvertorExtension.callbacks;
 
@@ -328,10 +329,18 @@ public class TagAutomator {
         JCheckBox requestCheckbox = new JCheckBox("Request");
         JCheckBox responseCheckbox = new JCheckBox("Response");
         
-        JLabel toolLabel = new JLabel("Tool:");
+        JLabel toolLabel = new JLabel("Tools:");
         String[] tools = {"Proxy", "Intruder", "Repeater", "Scanner", "Extensions"};
-        JComboBox<String> toolComboBox = new JComboBox<>(tools);
-        toolComboBox.setSelectedItem("Repeater");
+        JPanel toolPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        JCheckBox[] toolCheckBoxes = new JCheckBox[tools.length];
+
+        for (int i = 0; i < tools.length; i++) {
+            toolCheckBoxes[i] = new JCheckBox(tools[i]);
+            if (tools[i].equals("Repeater")) {
+                toolCheckBoxes[i].setSelected(true);
+            }
+            toolPanel.add(toolCheckBoxes[i]);
+        }
         
         if (isEdit && existingRule != null) {
             JSONArray contexts = existingRule.getJSONArray("contexts");
@@ -343,8 +352,34 @@ public class TagAutomator {
                     responseCheckbox.setSelected(true);
                 }
             }
-            String tool = existingRule.optString("tool", "Repeater");
-            toolComboBox.setSelectedItem(tool);
+            // Handle both single tool (string) and multiple tools (array) for backwards compatibility
+            ArrayList<String> selectedTools = new ArrayList<>();
+            if (existingRule.has("tool")) {
+                Object toolValue = existingRule.get("tool");
+                if (toolValue instanceof String) {
+                    selectedTools.add((String) toolValue);
+                } else if (toolValue instanceof JSONArray) {
+                    JSONArray toolsArray = (JSONArray) toolValue;
+                    for (int i = 0; i < toolsArray.length(); i++) {
+                        selectedTools.add(toolsArray.getString(i));
+                    }
+                }
+            } else {
+                selectedTools.add("Repeater");
+            }
+            // Clear all checkboxes first
+            for (JCheckBox checkBox : toolCheckBoxes) {
+                checkBox.setSelected(false);
+            }
+            // Set selected tools
+            for (String selectedTool : selectedTools) {
+                for (int i = 0; i < tools.length; i++) {
+                    if (tools[i].equals(selectedTool)) {
+                        toolCheckBoxes[i].setSelected(true);
+                        break;
+                    }
+                }
+            }
         } else {
             requestCheckbox.setSelected(true);
         }
@@ -377,8 +412,34 @@ public class TagAutomator {
                         }
                     }
 
-                    String tool = example.optString("tool", "Repeater");
-                    toolComboBox.setSelectedItem(tool);
+                    // Handle both single tool (string) and multiple tools (array) for backwards compatibility
+                    ArrayList<String> selectedTools = new ArrayList<>();
+                    if (example.has("tool")) {
+                        Object toolValue = example.get("tool");
+                        if (toolValue instanceof String) {
+                            selectedTools.add((String) toolValue);
+                        } else if (toolValue instanceof JSONArray) {
+                            JSONArray toolsArray = (JSONArray) toolValue;
+                            for (int i = 0; i < toolsArray.length(); i++) {
+                                selectedTools.add(toolsArray.getString(i));
+                            }
+                        }
+                    } else {
+                        selectedTools.add("Repeater");
+                    }
+                    // Clear all checkboxes first
+                    for (JCheckBox checkBox : toolCheckBoxes) {
+                        checkBox.setSelected(false);
+                    }
+                    // Set selected tools
+                    for (String selectedTool : selectedTools) {
+                        for (int i = 0; i < tools.length; i++) {
+                            if (tools[i].equals(selectedTool)) {
+                                toolCheckBoxes[i].setSelected(true);
+                                break;
+                            }
+                        }
+                    }
                 } else {
                     typeComboBox.setSelectedItem("Context Menu");
                     nameField.setText("");
@@ -462,7 +523,7 @@ public class TagAutomator {
         mainPanel.add(contextPanel, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.CENTER));
         
         mainPanel.add(toolLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST));
-        mainPanel.add(toolComboBox, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.WEST));
+        mainPanel.add(toolPanel, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.WEST));
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         JButton saveButton = new JButton(isEdit ? "Update" : "Create");
@@ -498,9 +559,31 @@ public class TagAutomator {
                         "Validation Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
-                String tool = toolComboBox.getSelectedItem().toString();
-                if(!tool.equals("Repeater")) {
-                    int confirm = JOptionPane.showConfirmDialog(null, "Running Python on every "+tool+" request or response can affect Burp's performance, are you sure?");
+                List<String> selectedTools = new ArrayList<>();
+                for (int i = 0; i < toolCheckBoxes.length; i++) {
+                    if (toolCheckBoxes[i].isSelected()) {
+                        selectedTools.add(tools[i]);
+                    }
+                }
+                if(selectedTools.isEmpty()) {
+                    JOptionPane.showMessageDialog(dialog, "At least one tool must be selected",
+                        "Validation Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                boolean hasNonRepeaterTool = false;
+                for(String tool : selectedTools) {
+                    if(!tool.equals("Repeater")) {
+                        hasNonRepeaterTool = true;
+                        break;
+                    }
+                }
+
+                if(hasNonRepeaterTool) {
+                    String toolsMessage = String.join(", ", selectedTools);
+                    int confirm = JOptionPane.showConfirmDialog(null,
+                        "Running Python on every request or response in " + toolsMessage +
+                        " can affect Burp's performance, are you sure?");
                     if(confirm != 0) {
                         return;
                     }
@@ -521,7 +604,12 @@ public class TagAutomator {
                 rule.put("modification", modification);
                 rule.put("contexts", contexts);
                 rule.put("enabled", enabledCheckbox.isSelected());
-                rule.put("tool", (String) toolComboBox.getSelectedItem());
+                // Save tools as array
+                JSONArray toolsArray = new JSONArray();
+                for(String tool : selectedTools) {
+                    toolsArray.put(tool);
+                }
+                rule.put("tool", toolsArray);
                 
                 if (isEdit) {
                     for (int i = 0; i < rules.length(); i++) {
@@ -593,7 +681,26 @@ public class TagAutomator {
             }
             if(!rule.getString("type").equals(type)) continue;
             JSONArray contexts = rule.getJSONArray("contexts");
-            String ruleTool = rule.optString("tool", "Repeater");
+
+            // Handle both single tool (string) and multiple tools (array) for backwards compatibility
+            boolean toolMatches = false;
+            if (rule.has("tool")) {
+                Object toolValue = rule.get("tool");
+                if (toolValue instanceof String) {
+                    toolMatches = ((String) toolValue).equalsIgnoreCase(tool);
+                } else if (toolValue instanceof JSONArray) {
+                    JSONArray toolsArray = (JSONArray) toolValue;
+                    for (int k = 0; k < toolsArray.length(); k++) {
+                        if (toolsArray.getString(k).equalsIgnoreCase(tool)) {
+                            toolMatches = true;
+                            break;
+                        }
+                    }
+                }
+            } else {
+                // Default to Repeater for backwards compatibility
+                toolMatches = "Repeater".equalsIgnoreCase(tool);
+            }
 
             boolean appliesTo = false;
             for (int j = 0; j < contexts.length(); j++) {
@@ -602,8 +709,6 @@ public class TagAutomator {
                     break;
                 }
             }
-
-            boolean toolMatches = ruleTool.equalsIgnoreCase(tool);
 
             if (appliesTo && toolMatches) {
                 return true;
@@ -633,7 +738,26 @@ public class TagAutomator {
             }
             
             JSONArray contexts = rule.getJSONArray("contexts");
-            String ruleTool = rule.optString("tool", "Repeater");
+
+            // Handle both single tool (string) and multiple tools (array) for backwards compatibility
+            boolean toolMatches = false;
+            if (rule.has("tool")) {
+                Object toolValue = rule.get("tool");
+                if (toolValue instanceof String) {
+                    toolMatches = ((String) toolValue).equalsIgnoreCase(tool);
+                } else if (toolValue instanceof JSONArray) {
+                    JSONArray toolsArray = (JSONArray) toolValue;
+                    for (int k = 0; k < toolsArray.length(); k++) {
+                        if (toolsArray.getString(k).equalsIgnoreCase(tool)) {
+                            toolMatches = true;
+                            break;
+                        }
+                    }
+                }
+            } else {
+                // Default to Repeater for backwards compatibility
+                toolMatches = "Repeater".equalsIgnoreCase(tool);
+            }
 
             boolean appliesTo = false;
             for (int j = 0; j < contexts.length(); j++) {
@@ -642,9 +766,7 @@ public class TagAutomator {
                     break;
                 }
             }
-            
-            boolean toolMatches = ruleTool.equalsIgnoreCase(tool);
-            
+
             if (appliesTo && toolMatches) {
                 String analysis = rule.getString("analysis");
                 String modification = rule.getString("modification");
