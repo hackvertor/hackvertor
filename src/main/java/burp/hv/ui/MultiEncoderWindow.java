@@ -3,6 +3,8 @@ package burp.hv.ui;
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.http.message.HttpRequestResponse;
 import burp.api.montoya.http.message.requests.HttpRequest;
+import burp.api.montoya.core.Range;
+import burp.api.montoya.intruder.HttpRequestTemplate;
 import burp.api.montoya.ui.contextmenu.MessageEditorHttpRequestResponse;
 import burp.hv.Convertors;
 import burp.hv.HackvertorExtension;
@@ -17,6 +19,7 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.geom.RoundRectangle2D;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -527,15 +530,10 @@ public class MultiEncoderWindow {
             return;
         }
 
-        // Create a payload marker for Intruder
-        String beforeMarker = requestStr.substring(0, startPos);
-        String afterMarker = requestStr.substring(endPos);
-        String markedRequest = beforeMarker + "§" + selectedText + "§" + afterMarker;
-
-        HttpRequest intruderRequest = HttpRequest.httpRequest(markedRequest);
-
-        // Send to Intruder
-        montoyaApi.intruder().sendToIntruder(intruderRequest);
+        Range insertionPoint = Range.range(startPos, endPos);
+        HttpRequestTemplate intruderTemplate = HttpRequestTemplate.httpRequestTemplate(baseRequest, Collections.singletonList(insertionPoint));
+        String tabName = "HV-Multi-" + selectedText.substring(0, Math.min(selectedText.length(), 10));
+        montoyaApi.intruder().sendToIntruder(baseRequestResponse.request().httpService(), intruderTemplate, tabName);
 
         // Generate payload list for Intruder
         StringBuilder payloads = new StringBuilder();
