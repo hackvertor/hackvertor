@@ -10,6 +10,18 @@ Tags also support arguments. The find tag allows you to find a string by regex a
 
 # Changelog
 
+## Version v2.2.24 (2025-11-25)
+
+- Updated TagAutomator rules to allow multiple tools per rule
+- Added multi encoder window
+- Added websockets setting and websocket handler
+- Added copy to clipboard button, clear button and select all checkbox to the MultiEncoderWindow.
+- Fixed send to intruder
+- Added layers to MultiEncoderWindow
+- Added MultiEncoderWindow to the HackvertorExtension panel and added sendToHackvertor button
+- Fixed the layers to work correctly. The layers now apply the nesting
+- Added limits to MultiEncoderWindow
+
 ## Version v2.2.16 (2025-11-20)
 
 - Changed HTTP handler to allow interception when there are Tag Automation rules
