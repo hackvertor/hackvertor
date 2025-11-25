@@ -24,8 +24,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import static burp.hv.HackvertorExtension.montoyaApi;
-
 public class MultiEncoderWindow {
     private static final int DEFAULT_WIDTH = 900;
     private static final int DEFAULT_HEIGHT = 600;
@@ -35,33 +33,49 @@ public class MultiEncoderWindow {
     private final MontoyaApi montoyaApi;
     private final String selectedText;
     private final ArrayList<Tag> tags;
-    private final Map<String, JCheckBox> tagCheckboxes;
     private final MessageEditorHttpRequestResponse messageEditor;
     private final HttpRequestResponse baseRequestResponse;
+    private final ArrayList<Layer> layers;
     private JTextArea previewArea;
     private JWindow window;
-    private ArrayList<Tag> selectedTags;
     private JComboBox<String> modeComboBox;
+    private JTabbedPane layerTabbedPane;
+    private int layerCounter = 1;
+
+    private class Layer {
+        final Map<String, JCheckBox> tagCheckboxes;
+        final ArrayList<Tag> selectedTags;
+        final JPanel tagsPanel;
+        final JTextField searchField;
+        final JCheckBox selectAllCheckbox;
+        final Runnable updateTags;
+
+        Layer(JPanel tagsPanel, JTextField searchField, JCheckBox selectAllCheckbox, Runnable updateTags) {
+            this.tagCheckboxes = new HashMap<>();
+            this.selectedTags = new ArrayList<>();
+            this.tagsPanel = tagsPanel;
+            this.searchField = searchField;
+            this.selectAllCheckbox = selectAllCheckbox;
+            this.updateTags = updateTags;
+        }
+    }
 
     public MultiEncoderWindow(MontoyaApi montoyaApi, String selectedText, ArrayList<Tag> tags,
                               MessageEditorHttpRequestResponse messageEditor, HttpRequestResponse baseRequestResponse) {
         this.montoyaApi = montoyaApi;
         this.selectedText = selectedText;
         this.tags = tags;
-        this.tagCheckboxes = new HashMap<>();
-        this.selectedTags = new ArrayList<>();
         this.messageEditor = messageEditor;
         this.baseRequestResponse = baseRequestResponse;
+        this.layers = new ArrayList<>();
     }
 
     public void show() {
         SwingUtilities.invokeLater(() -> {
-            // Create window
             window = new JWindow(montoyaApi.userInterface().swingUtils().suiteFrame());
             window.setLayout(new BorderLayout());
             window.setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
 
-            // Apply rounded corners
             Runnable applyRoundedCorners = () -> {
                 try {
                     window.setBackground(new Color(0, 0, 0, 0));
@@ -73,12 +87,10 @@ public class MultiEncoderWindow {
                 } catch (UnsupportedOperationException ignored) {}
             };
 
-            // Main panel with title
             JPanel mainPanel = new JPanel(new BorderLayout());
             mainPanel.setBorder(new EmptyBorder(14, 14, 14, 14));
             montoyaApi.userInterface().applyThemeToComponent(mainPanel);
 
-            // Add title panel
             JPanel titlePanel = new JPanel(new BorderLayout());
             JLabel titleLabel = new JLabel("Multi Encoder");
             titleLabel.setFont(new Font("Inter", Font.BOLD, 16));
@@ -87,52 +99,30 @@ public class MultiEncoderWindow {
             montoyaApi.userInterface().applyThemeToComponent(titlePanel);
             montoyaApi.userInterface().applyThemeToComponent(titleLabel);
 
-            // Create search and tags panel
             JPanel topPanel = new JPanel(new BorderLayout());
             topPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 12, 0));
             montoyaApi.userInterface().applyThemeToComponent(topPanel);
 
-            // Search field
-            JTextField searchField = new JTextField();
-            searchField.setFont(new Font("Monospaced", Font.PLAIN, 14));
-            searchField.setBorder(BorderFactory.createEmptyBorder(6, 8, 6, 8));
-            montoyaApi.userInterface().applyThemeToComponent(searchField);
+            layerTabbedPane = new JTabbedPane();
+            layerTabbedPane.setPreferredSize(new Dimension(DEFAULT_WIDTH - 50, 220));
+            montoyaApi.userInterface().applyThemeToComponent(layerTabbedPane);
 
-            JLabel searchLabel = new JLabel("Search tags: ");
-            searchLabel.setFont(new Font("Inter", Font.PLAIN, 13));
-            montoyaApi.userInterface().applyThemeToComponent(searchLabel);
+            JPanel layerButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+            JButton addLayerButton = new JButton("+ Add Layer");
+            addLayerButton.addActionListener(e -> addLayer());
+            montoyaApi.userInterface().applyThemeToComponent(addLayerButton);
 
-            JPanel searchPanel = new JPanel(new BorderLayout());
-            searchPanel.add(searchLabel, BorderLayout.WEST);
-            searchPanel.add(searchField, BorderLayout.CENTER);
-            montoyaApi.userInterface().applyThemeToComponent(searchPanel);
+            JButton removeLayerButton = new JButton("- Remove Layer");
+            removeLayerButton.addActionListener(e -> removeCurrentLayer());
+            montoyaApi.userInterface().applyThemeToComponent(removeLayerButton);
 
-            JCheckBox selectAllCheckbox = new JCheckBox("Select all");
-            selectAllCheckbox.setFont(new Font("Inter", Font.PLAIN, 12));
-            selectAllCheckbox.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            selectAllCheckbox.setBorder(BorderFactory.createEmptyBorder(8, 0, 8, 0));
-            montoyaApi.userInterface().applyThemeToComponent(selectAllCheckbox);
+            layerButtonPanel.add(addLayerButton);
+            layerButtonPanel.add(removeLayerButton);
+            montoyaApi.userInterface().applyThemeToComponent(layerButtonPanel);
 
-            JPanel searchAndSelectAllPanel = new JPanel(new BorderLayout());
-            searchAndSelectAllPanel.add(searchPanel, BorderLayout.CENTER);
-            searchAndSelectAllPanel.add(selectAllCheckbox, BorderLayout.SOUTH);
-            montoyaApi.userInterface().applyThemeToComponent(searchAndSelectAllPanel);
+            topPanel.add(layerButtonPanel, BorderLayout.NORTH);
+            topPanel.add(layerTabbedPane, BorderLayout.CENTER);
 
-            topPanel.add(searchAndSelectAllPanel, BorderLayout.NORTH);
-
-            // Tags panel with checkboxes
-            JPanel tagsPanel = new JPanel(new GridBagLayout());
-            montoyaApi.userInterface().applyThemeToComponent(tagsPanel);
-
-            JScrollPane tagsScrollPane = new JScrollPane(tagsPanel);
-            tagsScrollPane.setPreferredSize(new Dimension(DEFAULT_WIDTH - 50, 200));
-            tagsScrollPane.setBorder(BorderFactory.createTitledBorder("Select Tags"));
-            tagsScrollPane.getVerticalScrollBar().setUnitIncrement(16);
-            montoyaApi.userInterface().applyThemeToComponent(tagsScrollPane);
-
-            topPanel.add(tagsScrollPane, BorderLayout.CENTER);
-
-            // Preview section
             JPanel previewPanel = new JPanel(new BorderLayout());
             previewPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
 
@@ -142,17 +132,15 @@ public class MultiEncoderWindow {
             montoyaApi.userInterface().applyThemeToComponent(previewArea);
 
             JScrollPane previewScrollPane = new JScrollPane(previewArea);
-            previewScrollPane.setPreferredSize(new Dimension(DEFAULT_WIDTH - 50, 200));
+            previewScrollPane.setPreferredSize(new Dimension(DEFAULT_WIDTH - 50, 180));
             previewScrollPane.setBorder(BorderFactory.createTitledBorder("Preview"));
             montoyaApi.userInterface().applyThemeToComponent(previewScrollPane);
 
             previewPanel.add(previewScrollPane, BorderLayout.CENTER);
 
-            // Button panel
             JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
             montoyaApi.userInterface().applyThemeToComponent(buttonPanel);
 
-            // Add mode selection combo box
             JLabel modeLabel = new JLabel("Mode:");
             modeLabel.setFont(new Font("Inter", Font.PLAIN, 12));
             montoyaApi.userInterface().applyThemeToComponent(modeLabel);
@@ -181,43 +169,19 @@ public class MultiEncoderWindow {
 
             JButton clearButton = new JButton("Clear");
             clearButton.addActionListener(e -> {
-                for (JCheckBox checkbox : tagCheckboxes.values()) {
-                    checkbox.setSelected(false);
+                for (Layer layer : layers) {
+                    for (JCheckBox checkbox : layer.tagCheckboxes.values()) {
+                        checkbox.setSelected(false);
+                    }
+                    layer.selectedTags.clear();
+                    layer.selectAllCheckbox.setSelected(false);
                 }
-                selectedTags.clear();
-                selectAllCheckbox.setSelected(false);
                 previewArea.setText("");
             });
             montoyaApi.userInterface().applyThemeToComponent(clearButton);
 
             JButton copyButton = new JButton("Copy");
-            copyButton.addActionListener(e -> {
-                if (selectedTags.isEmpty()) {
-                    return;
-                }
-                StringBuilder output = new StringBuilder();
-                boolean shouldConvert = "Convert".equals(modeComboBox.getSelectedItem());
-                for (Tag tag : selectedTags) {
-                    String[] tagStartEnd = Convertors.generateTagStartEnd(tag);
-                    String tagStart = tagStartEnd[0];
-                    String tagEnd = tagStartEnd[1];
-                    String taggedText = tagStart + selectedText + tagEnd;
-                    String result;
-                    if (shouldConvert) {
-                        try {
-                            result = HackvertorExtension.hackvertor.convert(taggedText, HackvertorExtension.hackvertor);
-                        } catch (Exception ex) {
-                            result = "Error: " + ex.getMessage();
-                        }
-                    } else {
-                        result = taggedText;
-                    }
-                    output.append(result).append("\n");
-                }
-                StringSelection selection = new StringSelection(output.toString().trim());
-                Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-                clipboard.setContents(selection, null);
-            });
+            copyButton.addActionListener(e -> copyToClipboard());
             montoyaApi.userInterface().applyThemeToComponent(copyButton);
 
             buttonPanel.add(clearButton);
@@ -233,135 +197,6 @@ public class MultiEncoderWindow {
             buttonPanel.add(new JSeparator(SwingConstants.VERTICAL));
             buttonPanel.add(cancelButton);
 
-            // Helper: Filter tags
-            Function<String, ArrayList<Tag>> filterTags = searchText -> {
-                ArrayList<Tag> filtered = new ArrayList<>();
-                String lowerSearch = searchText.toLowerCase();
-                for (Tag tag : tags) {
-                    if (lowerSearch.isEmpty() ||
-                        tag.name.toLowerCase().contains(lowerSearch) ||
-                        tag.category.toString().toLowerCase().contains(lowerSearch) ||
-                        (tag.tooltip != null && tag.tooltip.toLowerCase().contains(lowerSearch))) {
-                        filtered.add(tag);
-                    }
-                }
-                filtered.sort((a, b) -> a.name.compareToIgnoreCase(b.name));
-                return filtered;
-            };
-
-            // Helper: Create tag checkbox
-            Function<Tag, JPanel> createTagCheckbox = tag -> {
-                JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
-                JCheckBox checkbox = new JCheckBox(tag.name);
-                checkbox.setToolTipText(tag.tooltip != null ? tag.tooltip : tag.category.toString());
-                checkbox.setFont(new Font("Inter", Font.PLAIN, 12));
-                checkbox.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-                montoyaApi.userInterface().applyThemeToComponent(checkbox);
-                montoyaApi.userInterface().applyThemeToComponent(panel);
-
-                tagCheckboxes.put(tag.name, checkbox);
-
-                checkbox.addActionListener(e -> {
-                    if (checkbox.isSelected()) {
-                        if (!selectedTags.contains(tag)) {
-                            selectedTags.add(tag);
-                        }
-                    } else {
-                        selectedTags.remove(tag);
-                    }
-                    updatePreview();
-                });
-
-                panel.add(checkbox);
-                return panel;
-            };
-
-            // Update tags display
-            Runnable updateTags = () -> {
-                tagsPanel.removeAll();
-                tagCheckboxes.clear();
-
-                ArrayList<Tag> filteredTags = filterTags.apply(searchField.getText());
-
-                if (!filteredTags.isEmpty()) {
-                    GridBagConstraints gbc = new GridBagConstraints();
-                    gbc.insets = new Insets(3, 3, 3, 3);
-                    gbc.anchor = GridBagConstraints.WEST;
-                    gbc.fill = GridBagConstraints.HORIZONTAL;
-                    gbc.gridy = 0;
-
-                    int currentColumn = 0;
-                    for (Tag tag : filteredTags) {
-                        JPanel tagPanel = createTagCheckbox.apply(tag);
-                        gbc.gridx = currentColumn;
-                        gbc.weightx = 1.0 / COLUMN_COUNT;
-                        tagsPanel.add(tagPanel, gbc);
-
-                        if (++currentColumn >= COLUMN_COUNT) {
-                            currentColumn = 0;
-                            gbc.gridy++;
-                        }
-                    }
-                } else {
-                    JLabel noResultsLabel = new JLabel("No tags found matching: " + searchField.getText());
-                    noResultsLabel.setFont(new Font("Inter", Font.PLAIN, 13));
-                    montoyaApi.userInterface().applyThemeToComponent(noResultsLabel);
-
-                    GridBagConstraints gbc = new GridBagConstraints();
-                    gbc.gridwidth = COLUMN_COUNT;
-                    tagsPanel.add(noResultsLabel, gbc);
-                }
-
-                tagsPanel.revalidate();
-                tagsPanel.repaint();
-            };
-
-            selectAllCheckbox.addActionListener(e -> {
-                ArrayList<Tag> filteredTags = filterTags.apply(searchField.getText());
-                boolean selectAll = selectAllCheckbox.isSelected();
-                for (Tag tag : filteredTags) {
-                    JCheckBox checkbox = tagCheckboxes.get(tag.name);
-                    if (checkbox != null && checkbox.isSelected() != selectAll) {
-                        checkbox.setSelected(selectAll);
-                        if (selectAll) {
-                            if (!selectedTags.contains(tag)) {
-                                selectedTags.add(tag);
-                            }
-                        } else {
-                            selectedTags.remove(tag);
-                        }
-                    }
-                }
-                updatePreview();
-            });
-
-            // Event listeners
-            searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-                public void insertUpdate(javax.swing.event.DocumentEvent e) {
-                    selectAllCheckbox.setSelected(false);
-                    updateTags.run();
-                }
-                public void removeUpdate(javax.swing.event.DocumentEvent e) {
-                    selectAllCheckbox.setSelected(false);
-                    updateTags.run();
-                }
-                public void changedUpdate(javax.swing.event.DocumentEvent e) {
-                    selectAllCheckbox.setSelected(false);
-                    updateTags.run();
-                }
-            });
-
-            searchField.addKeyListener(new KeyAdapter() {
-                @Override
-                public void keyPressed(KeyEvent e) {
-                    if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-                        window.dispose();
-                    }
-                }
-            });
-
-            // Add window focus listener - dispose when focus is lost
             window.addWindowFocusListener(new java.awt.event.WindowAdapter() {
                 @Override
                 public void windowLostFocus(java.awt.event.WindowEvent e) {
@@ -369,7 +204,6 @@ public class MultiEncoderWindow {
                 }
             });
 
-            // Assemble UI
             JPanel contentPanel = new JPanel(new BorderLayout());
             contentPanel.add(titlePanel, BorderLayout.NORTH);
             contentPanel.add(topPanel, BorderLayout.CENTER);
@@ -379,24 +213,279 @@ public class MultiEncoderWindow {
             mainPanel.add(previewPanel, BorderLayout.CENTER);
             mainPanel.add(buttonPanel, BorderLayout.SOUTH);
 
-            // Initialize window
             applyRoundedCorners.run();
             window.add(mainPanel);
 
-            // Apply theme to the window's content pane if available
             montoyaApi.userInterface().applyThemeToComponent(window.getContentPane());
             window.setLocationRelativeTo(montoyaApi.userInterface().swingUtils().suiteFrame());
 
-            // Initialize content and show
-            updateTags.run();
+            addLayer();
+
             window.setVisible(true);
-            searchField.requestFocusInWindow();
+            if (!layers.isEmpty()) {
+                layers.get(0).searchField.requestFocusInWindow();
+            }
         });
     }
 
+    private void addLayer() {
+        JPanel layerPanel = new JPanel(new BorderLayout());
+        layerPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        montoyaApi.userInterface().applyThemeToComponent(layerPanel);
+
+        JTextField searchField = new JTextField();
+        searchField.setFont(new Font("Monospaced", Font.PLAIN, 14));
+        searchField.setBorder(BorderFactory.createEmptyBorder(6, 8, 6, 8));
+        montoyaApi.userInterface().applyThemeToComponent(searchField);
+
+        JLabel searchLabel = new JLabel("Search tags: ");
+        searchLabel.setFont(new Font("Inter", Font.PLAIN, 13));
+        montoyaApi.userInterface().applyThemeToComponent(searchLabel);
+
+        JPanel searchPanel = new JPanel(new BorderLayout());
+        searchPanel.add(searchLabel, BorderLayout.WEST);
+        searchPanel.add(searchField, BorderLayout.CENTER);
+        montoyaApi.userInterface().applyThemeToComponent(searchPanel);
+
+        JCheckBox selectAllCheckbox = new JCheckBox("Select all");
+        selectAllCheckbox.setFont(new Font("Inter", Font.PLAIN, 12));
+        selectAllCheckbox.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        selectAllCheckbox.setBorder(BorderFactory.createEmptyBorder(8, 0, 8, 0));
+        montoyaApi.userInterface().applyThemeToComponent(selectAllCheckbox);
+
+        JPanel searchAndSelectAllPanel = new JPanel(new BorderLayout());
+        searchAndSelectAllPanel.add(searchPanel, BorderLayout.CENTER);
+        searchAndSelectAllPanel.add(selectAllCheckbox, BorderLayout.SOUTH);
+        montoyaApi.userInterface().applyThemeToComponent(searchAndSelectAllPanel);
+
+        JPanel tagsPanel = new JPanel(new GridBagLayout());
+        montoyaApi.userInterface().applyThemeToComponent(tagsPanel);
+
+        JScrollPane tagsScrollPane = new JScrollPane(tagsPanel);
+        tagsScrollPane.setBorder(BorderFactory.createTitledBorder("Select Tags"));
+        tagsScrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        montoyaApi.userInterface().applyThemeToComponent(tagsScrollPane);
+
+        layerPanel.add(searchAndSelectAllPanel, BorderLayout.NORTH);
+        layerPanel.add(tagsScrollPane, BorderLayout.CENTER);
+
+        Layer layer = new Layer(tagsPanel, searchField, selectAllCheckbox, null);
+
+        Function<String, ArrayList<Tag>> filterTags = searchText -> {
+            ArrayList<Tag> filtered = new ArrayList<>();
+            String lowerSearch = searchText.toLowerCase();
+            for (Tag tag : tags) {
+                if (lowerSearch.isEmpty() ||
+                    tag.name.toLowerCase().contains(lowerSearch) ||
+                    tag.category.toString().toLowerCase().contains(lowerSearch) ||
+                    (tag.tooltip != null && tag.tooltip.toLowerCase().contains(lowerSearch))) {
+                    filtered.add(tag);
+                }
+            }
+            filtered.sort((a, b) -> a.name.compareToIgnoreCase(b.name));
+            return filtered;
+        };
+
+        Function<Tag, JPanel> createTagCheckbox = tag -> {
+            JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+            JCheckBox checkbox = new JCheckBox(tag.name);
+            checkbox.setToolTipText(tag.tooltip != null ? tag.tooltip : tag.category.toString());
+            checkbox.setFont(new Font("Inter", Font.PLAIN, 12));
+            checkbox.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+            montoyaApi.userInterface().applyThemeToComponent(checkbox);
+            montoyaApi.userInterface().applyThemeToComponent(panel);
+
+            layer.tagCheckboxes.put(tag.name, checkbox);
+
+            checkbox.addActionListener(e -> {
+                if (checkbox.isSelected()) {
+                    if (!layer.selectedTags.contains(tag)) {
+                        layer.selectedTags.add(tag);
+                    }
+                } else {
+                    layer.selectedTags.remove(tag);
+                }
+                updatePreview();
+            });
+
+            panel.add(checkbox);
+            return panel;
+        };
+
+        Runnable updateTags = () -> {
+            tagsPanel.removeAll();
+            layer.tagCheckboxes.clear();
+
+            ArrayList<Tag> filteredTags = filterTags.apply(searchField.getText());
+
+            if (!filteredTags.isEmpty()) {
+                GridBagConstraints gbc = new GridBagConstraints();
+                gbc.insets = new Insets(3, 3, 3, 3);
+                gbc.anchor = GridBagConstraints.WEST;
+                gbc.fill = GridBagConstraints.HORIZONTAL;
+                gbc.gridy = 0;
+
+                int currentColumn = 0;
+                for (Tag tag : filteredTags) {
+                    JPanel tagPanel = createTagCheckbox.apply(tag);
+                    gbc.gridx = currentColumn;
+                    gbc.weightx = 1.0 / COLUMN_COUNT;
+                    tagsPanel.add(tagPanel, gbc);
+
+                    if (++currentColumn >= COLUMN_COUNT) {
+                        currentColumn = 0;
+                        gbc.gridy++;
+                    }
+                }
+            } else {
+                JLabel noResultsLabel = new JLabel("No tags found matching: " + searchField.getText());
+                noResultsLabel.setFont(new Font("Inter", Font.PLAIN, 13));
+                montoyaApi.userInterface().applyThemeToComponent(noResultsLabel);
+
+                GridBagConstraints gbc = new GridBagConstraints();
+                gbc.gridwidth = COLUMN_COUNT;
+                tagsPanel.add(noResultsLabel, gbc);
+            }
+
+            tagsPanel.revalidate();
+            tagsPanel.repaint();
+        };
+
+        selectAllCheckbox.addActionListener(e -> {
+            ArrayList<Tag> filteredTags = filterTags.apply(searchField.getText());
+            boolean selectAll = selectAllCheckbox.isSelected();
+            for (Tag tag : filteredTags) {
+                JCheckBox checkbox = layer.tagCheckboxes.get(tag.name);
+                if (checkbox != null && checkbox.isSelected() != selectAll) {
+                    checkbox.setSelected(selectAll);
+                    if (selectAll) {
+                        if (!layer.selectedTags.contains(tag)) {
+                            layer.selectedTags.add(tag);
+                        }
+                    } else {
+                        layer.selectedTags.remove(tag);
+                    }
+                }
+            }
+            updatePreview();
+        });
+
+        searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                selectAllCheckbox.setSelected(false);
+                updateTags.run();
+            }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                selectAllCheckbox.setSelected(false);
+                updateTags.run();
+            }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                selectAllCheckbox.setSelected(false);
+                updateTags.run();
+            }
+        });
+
+        searchField.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                    window.dispose();
+                }
+            }
+        });
+
+        layers.add(layer);
+        String tabTitle = "Layer " + layerCounter++;
+        layerTabbedPane.addTab(tabTitle, layerPanel);
+        layerTabbedPane.setSelectedIndex(layerTabbedPane.getTabCount() - 1);
+
+        updateTags.run();
+    }
+
+    private void removeCurrentLayer() {
+        if (layers.size() <= 1) {
+            return;
+        }
+        int selectedIndex = layerTabbedPane.getSelectedIndex();
+        if (selectedIndex >= 0 && selectedIndex < layers.size()) {
+            layers.remove(selectedIndex);
+            layerTabbedPane.removeTabAt(selectedIndex);
+            updatePreview();
+        }
+    }
+
+    private ArrayList<ArrayList<Tag>> getAllLayerTags() {
+        ArrayList<ArrayList<Tag>> allLayerTags = new ArrayList<>();
+        for (Layer layer : layers) {
+            if (!layer.selectedTags.isEmpty()) {
+                allLayerTags.add(new ArrayList<>(layer.selectedTags));
+            }
+        }
+        return allLayerTags;
+    }
+
+    private String applyLayeredTags(String input, boolean shouldConvert) {
+        ArrayList<ArrayList<Tag>> allLayerTags = getAllLayerTags();
+        if (allLayerTags.isEmpty()) {
+            return input;
+        }
+
+        StringBuilder tagStart = new StringBuilder();
+        StringBuilder tagEnd = new StringBuilder();
+
+        for (int i = allLayerTags.size() - 1; i >= 0; i--) {
+            ArrayList<Tag> layerTags = allLayerTags.get(i);
+            for (Tag tag : layerTags) {
+                String[] tagStartEnd = Convertors.generateTagStartEnd(tag);
+                tagStart.append(tagStartEnd[0]);
+                tagEnd.insert(0, tagStartEnd[1]);
+            }
+        }
+
+        String taggedText = tagStart.toString() + input + tagEnd;
+
+        if (shouldConvert) {
+            try {
+                return HackvertorExtension.hackvertor.convert(taggedText, HackvertorExtension.hackvertor);
+            } catch (Exception ex) {
+                return "Error: " + ex.getMessage();
+            }
+        }
+        return taggedText;
+    }
+
+    private String getLayersSummary() {
+        StringBuilder summary = new StringBuilder();
+        ArrayList<ArrayList<Tag>> allLayerTags = getAllLayerTags();
+        for (int i = 0; i < allLayerTags.size(); i++) {
+            ArrayList<Tag> layerTags = allLayerTags.get(i);
+            summary.append("Layer ").append(i + 1).append(": ");
+            for (int j = 0; j < layerTags.size(); j++) {
+                if (j > 0) summary.append(", ");
+                summary.append(layerTags.get(j).name);
+            }
+            summary.append("\n");
+        }
+        return summary.toString();
+    }
+
+    private void copyToClipboard() {
+        ArrayList<ArrayList<Tag>> allLayerTags = getAllLayerTags();
+        if (allLayerTags.isEmpty()) {
+            return;
+        }
+        boolean shouldConvert = "Convert".equals(modeComboBox.getSelectedItem());
+        String result = applyLayeredTags(selectedText, shouldConvert);
+        StringSelection selection = new StringSelection(result);
+        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+        clipboard.setContents(selection, null);
+    }
+
     private void updatePreview() {
-        if (selectedTags.isEmpty()) {
-            previewArea.setText("No tags selected. Please select at least one tag.");
+        ArrayList<ArrayList<Tag>> allLayerTags = getAllLayerTags();
+        if (allLayerTags.isEmpty()) {
+            previewArea.setText("No tags selected. Please select at least one tag in any layer.");
             return;
         }
 
@@ -404,36 +493,18 @@ public class MultiEncoderWindow {
         preview.append("Selected text: ").append(selectedText).append("\n");
         preview.append("Mode: ").append(modeComboBox.getSelectedItem()).append("\n");
         preview.append("=====================================\n\n");
+        preview.append(getLayersSummary());
+        preview.append("=====================================\n\n");
 
         boolean shouldConvert = "Convert".equals(modeComboBox.getSelectedItem());
+        String taggedText = applyLayeredTags(selectedText, false);
+        String result = applyLayeredTags(selectedText, shouldConvert);
 
-        for (Tag tag : selectedTags) {
-            String[] tagStartEnd = Convertors.generateTagStartEnd(tag);
-            String tagStart = tagStartEnd[0];
-            String tagEnd = tagStartEnd[1];
-            String taggedText = tagStart + selectedText + tagEnd;
-
-            String result;
-            if (shouldConvert) {
-                // Process through Hackvertor to get actual encoded result
-                try {
-                    result = HackvertorExtension.hackvertor.convert(taggedText, HackvertorExtension.hackvertor);
-                } catch (Exception ex) {
-                    result = "Error: " + ex.getMessage();
-                }
-            } else {
-                // Just add tags without converting
-                result = taggedText;
-            }
-
-            preview.append("Tag: ").append(tag.name).append("\n");
-            if (!shouldConvert) {
-                preview.append("Tagged: ").append(result).append("\n");
-            } else {
-                preview.append("Input: ").append(taggedText).append("\n");
-                preview.append("Result: ").append(result).append("\n");
-            }
-            preview.append("-------------------------------------\n");
+        if (!shouldConvert) {
+            preview.append("Tagged: ").append(result).append("\n");
+        } else {
+            preview.append("Input: ").append(taggedText).append("\n");
+            preview.append("Result: ").append(result).append("\n");
         }
 
         previewArea.setText(preview.toString());
@@ -441,7 +512,8 @@ public class MultiEncoderWindow {
     }
 
     private void sendToRepeater() {
-        if (selectedTags.isEmpty()) {
+        ArrayList<ArrayList<Tag>> allLayerTags = getAllLayerTags();
+        if (allLayerTags.isEmpty()) {
             JOptionPane.showMessageDialog(window,
                 "Please select at least one tag before sending to Repeater.",
                 "No Tags Selected",
@@ -461,37 +533,16 @@ public class MultiEncoderWindow {
         String requestStr = baseRequest.toString();
         boolean shouldConvert = "Convert".equals(modeComboBox.getSelectedItem());
 
-        for (Tag tag : selectedTags) {
-            String[] tagStartEnd = Convertors.generateTagStartEnd(tag);
-            String tagStart = tagStartEnd[0];
-            String tagEnd = tagStartEnd[1];
-            String taggedText = tagStart + selectedText + tagEnd;
+        String replacementText = applyLayeredTags(selectedText, shouldConvert);
+        String modifiedRequestStr = requestStr.replace(selectedText, replacementText);
+        HttpRequest modifiedRequest = HttpRequest.httpRequest(modifiedRequestStr);
 
-            String replacementText;
-            if (shouldConvert) {
-                // Process through Hackvertor to get actual encoded result
-                try {
-                    replacementText = HackvertorExtension.hackvertor.convert(taggedText, HackvertorExtension.hackvertor);
-                } catch (Exception ex) {
-                    replacementText = selectedText; // Fallback to original if error
-                }
-            } else {
-                // Just add tags without converting
-                replacementText = taggedText;
-            }
-
-            // Replace the selected text with the result
-            String modifiedRequestStr = requestStr.replace(selectedText, replacementText);
-            HttpRequest modifiedRequest = HttpRequest.httpRequest(modifiedRequestStr);
-
-            // Send to Repeater with a descriptive tab name
-            String modePrefix = shouldConvert ? "HV-" : "HVT-";
-            String tabName = modePrefix + tag.name + "-" + selectedText.substring(0, Math.min(selectedText.length(), 10));
-            montoyaApi.repeater().sendToRepeater(modifiedRequest, tabName);
-        }
+        String modePrefix = shouldConvert ? "HV-" : "HVT-";
+        String tabName = modePrefix + "Layers-" + selectedText.substring(0, Math.min(selectedText.length(), 10));
+        montoyaApi.repeater().sendToRepeater(modifiedRequest, tabName);
 
         JOptionPane.showMessageDialog(window,
-            "Sent " + selectedTags.size() + " requests to Repeater.",
+            "Sent request to Repeater.",
             "Success",
             JOptionPane.INFORMATION_MESSAGE);
 
@@ -499,7 +550,8 @@ public class MultiEncoderWindow {
     }
 
     private void sendToIntruder() {
-        if (selectedTags.isEmpty()) {
+        ArrayList<ArrayList<Tag>> allLayerTags = getAllLayerTags();
+        if (allLayerTags.isEmpty()) {
             JOptionPane.showMessageDialog(window,
                 "Please select at least one tag before sending to Intruder.",
                 "No Tags Selected",
@@ -518,7 +570,6 @@ public class MultiEncoderWindow {
         HttpRequest baseRequest = baseRequestResponse.request();
         String requestStr = baseRequest.toString();
 
-        // Find the position of the selected text in the request
         int startPos = requestStr.indexOf(selectedText);
         int endPos = startPos + selectedText.length();
 
@@ -532,40 +583,20 @@ public class MultiEncoderWindow {
 
         Range insertionPoint = Range.range(startPos, endPos);
         HttpRequestTemplate intruderTemplate = HttpRequestTemplate.httpRequestTemplate(baseRequest, Collections.singletonList(insertionPoint));
-        String tabName = "HV-Multi-" + selectedText.substring(0, Math.min(selectedText.length(), 10));
+        String tabName = "HV-Layers-" + selectedText.substring(0, Math.min(selectedText.length(), 10));
         montoyaApi.intruder().sendToIntruder(baseRequestResponse.request().httpService(), intruderTemplate, tabName);
 
-        // Generate payload list for Intruder
         StringBuilder payloads = new StringBuilder();
-        payloads.append("Hackvertor Multi-Encoder Payloads:\n");
+        payloads.append("Hackvertor Multi-Encoder Layered Payloads:\n");
 
         boolean shouldConvert = "Convert".equals(modeComboBox.getSelectedItem());
         payloads.append("Mode: ").append(modeComboBox.getSelectedItem()).append("\n");
-        payloads.append("Copy these payloads to use in Intruder:\n\n");
+        payloads.append(getLayersSummary());
+        payloads.append("Copy this payload to use in Intruder:\n\n");
 
-        for (Tag tag : selectedTags) {
-            String[] tagStartEnd = Convertors.generateTagStartEnd(tag);
-            String tagStart = tagStartEnd[0];
-            String tagEnd = tagStartEnd[1];
-            String taggedText = tagStart + selectedText + tagEnd;
+        String payloadResult = applyLayeredTags(selectedText, shouldConvert);
+        payloads.append(payloadResult).append("\n");
 
-            String payloadResult;
-            if (shouldConvert) {
-                // Process through Hackvertor to get actual encoded result
-                try {
-                    payloadResult = HackvertorExtension.hackvertor.convert(taggedText, HackvertorExtension.hackvertor);
-                } catch (Exception ex) {
-                    payloadResult = selectedText; // Fallback to original if error
-                }
-            } else {
-                // Just add tags without converting
-                payloadResult = taggedText;
-            }
-
-            payloads.append(payloadResult).append("\n");
-        }
-
-        // Show payloads in a window
         JTextArea payloadArea = new JTextArea(payloads.toString());
         payloadArea.setEditable(false);
         payloadArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
