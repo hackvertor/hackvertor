@@ -11,6 +11,8 @@ import burp.hv.tags.Tag;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.geom.RoundRectangle2D;
@@ -102,7 +104,18 @@ public class MultiEncoderWindow {
             searchPanel.add(searchField, BorderLayout.CENTER);
             montoyaApi.userInterface().applyThemeToComponent(searchPanel);
 
-            topPanel.add(searchPanel, BorderLayout.NORTH);
+            JCheckBox selectAllCheckbox = new JCheckBox("Select all");
+            selectAllCheckbox.setFont(new Font("Inter", Font.PLAIN, 12));
+            selectAllCheckbox.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            selectAllCheckbox.setBorder(BorderFactory.createEmptyBorder(8, 0, 8, 0));
+            montoyaApi.userInterface().applyThemeToComponent(selectAllCheckbox);
+
+            JPanel searchAndSelectAllPanel = new JPanel(new BorderLayout());
+            searchAndSelectAllPanel.add(searchPanel, BorderLayout.CENTER);
+            searchAndSelectAllPanel.add(selectAllCheckbox, BorderLayout.SOUTH);
+            montoyaApi.userInterface().applyThemeToComponent(searchAndSelectAllPanel);
+
+            topPanel.add(searchAndSelectAllPanel, BorderLayout.NORTH);
 
             // Tags panel with checkboxes
             JPanel tagsPanel = new JPanel(new GridBagLayout());
@@ -163,6 +176,50 @@ public class MultiEncoderWindow {
             cancelButton.addActionListener(e -> window.dispose());
             montoyaApi.userInterface().applyThemeToComponent(cancelButton);
 
+            JButton clearButton = new JButton("Clear");
+            clearButton.addActionListener(e -> {
+                for (JCheckBox checkbox : tagCheckboxes.values()) {
+                    checkbox.setSelected(false);
+                }
+                selectedTags.clear();
+                selectAllCheckbox.setSelected(false);
+                previewArea.setText("");
+            });
+            montoyaApi.userInterface().applyThemeToComponent(clearButton);
+
+            JButton copyButton = new JButton("Copy");
+            copyButton.addActionListener(e -> {
+                if (selectedTags.isEmpty()) {
+                    return;
+                }
+                StringBuilder output = new StringBuilder();
+                boolean shouldConvert = "Convert".equals(modeComboBox.getSelectedItem());
+                for (Tag tag : selectedTags) {
+                    String[] tagStartEnd = Convertors.generateTagStartEnd(tag);
+                    String tagStart = tagStartEnd[0];
+                    String tagEnd = tagStartEnd[1];
+                    String taggedText = tagStart + selectedText + tagEnd;
+                    String result;
+                    if (shouldConvert) {
+                        try {
+                            result = HackvertorExtension.hackvertor.convert(taggedText, HackvertorExtension.hackvertor);
+                        } catch (Exception ex) {
+                            result = "Error: " + ex.getMessage();
+                        }
+                    } else {
+                        result = taggedText;
+                    }
+                    output.append(result).append("\n");
+                }
+                StringSelection selection = new StringSelection(output.toString().trim());
+                Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+                clipboard.setContents(selection, null);
+            });
+            montoyaApi.userInterface().applyThemeToComponent(copyButton);
+
+            buttonPanel.add(clearButton);
+            buttonPanel.add(copyButton);
+            buttonPanel.add(new JSeparator(SwingConstants.VERTICAL));
             buttonPanel.add(modeLabel);
             buttonPanel.add(modeComboBox);
             buttonPanel.add(new JSeparator(SwingConstants.VERTICAL));
@@ -257,11 +314,39 @@ public class MultiEncoderWindow {
                 tagsPanel.repaint();
             };
 
+            selectAllCheckbox.addActionListener(e -> {
+                ArrayList<Tag> filteredTags = filterTags.apply(searchField.getText());
+                boolean selectAll = selectAllCheckbox.isSelected();
+                for (Tag tag : filteredTags) {
+                    JCheckBox checkbox = tagCheckboxes.get(tag.name);
+                    if (checkbox != null && checkbox.isSelected() != selectAll) {
+                        checkbox.setSelected(selectAll);
+                        if (selectAll) {
+                            if (!selectedTags.contains(tag)) {
+                                selectedTags.add(tag);
+                            }
+                        } else {
+                            selectedTags.remove(tag);
+                        }
+                    }
+                }
+                updatePreview();
+            });
+
             // Event listeners
             searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-                public void insertUpdate(javax.swing.event.DocumentEvent e) { updateTags.run(); }
-                public void removeUpdate(javax.swing.event.DocumentEvent e) { updateTags.run(); }
-                public void changedUpdate(javax.swing.event.DocumentEvent e) { updateTags.run(); }
+                public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                    selectAllCheckbox.setSelected(false);
+                    updateTags.run();
+                }
+                public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                    selectAllCheckbox.setSelected(false);
+                    updateTags.run();
+                }
+                public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                    selectAllCheckbox.setSelected(false);
+                    updateTags.run();
+                }
             });
 
             searchField.addKeyListener(new KeyAdapter() {
