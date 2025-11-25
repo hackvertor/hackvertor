@@ -446,6 +446,37 @@ public class HackvertorPanel extends JPanel {
                 finderWindow.show();
             }
         });
+
+        inputArea.getInputMap().put(KeyStroke.getKeyStroke("control alt M"), "multiEncoder");
+        inputArea.getActionMap().put("multiEncoder", new AbstractAction("multiEncoder") {
+            public void actionPerformed(ActionEvent evt) {
+                String selectedText = inputArea.getSelectedText();
+                boolean hasSelection = selectedText != null && !selectedText.isEmpty();
+                if (!hasSelection) {
+                    selectedText = inputArea.getText();
+                }
+                if (selectedText == null || selectedText.isEmpty()) {
+                    return;
+                }
+                ArrayList<Tag> tags = hackvertor.getTags();
+                String textToEncode = selectedText;
+                boolean replaceSelection = hasSelection;
+                MultiEncoderWindow encoderWindow = new MultiEncoderWindow(
+                    HackvertorExtension.montoyaApi,
+                    textToEncode,
+                    tags,
+                    result -> {
+                        if (replaceSelection) {
+                            inputArea.replaceSelection(result);
+                        } else {
+                            inputArea.setText(result);
+                        }
+                    }
+                );
+                encoderWindow.show();
+            }
+        });
+
         decode.addActionListener(smartDecodeAction);
         JButton rehydrateTagExecutionKey = new JButton("Rehydrate Tags");
         rehydrateTagExecutionKey.setToolTipText("Replace tag execution keys in selected text with your current key");

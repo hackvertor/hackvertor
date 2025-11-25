@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class MultiEncoderWindow {
@@ -36,6 +37,7 @@ public class MultiEncoderWindow {
     private final MessageEditorHttpRequestResponse messageEditor;
     private final HttpRequestResponse baseRequestResponse;
     private final ArrayList<Layer> layers;
+    private final Consumer<String> hackvertorCallback;
     private JTextArea previewArea;
     private JWindow window;
     private JComboBox<String> modeComboBox;
@@ -62,11 +64,23 @@ public class MultiEncoderWindow {
 
     public MultiEncoderWindow(MontoyaApi montoyaApi, String selectedText, ArrayList<Tag> tags,
                               MessageEditorHttpRequestResponse messageEditor, HttpRequestResponse baseRequestResponse) {
+        this(montoyaApi, selectedText, tags, messageEditor, baseRequestResponse, null);
+    }
+
+    public MultiEncoderWindow(MontoyaApi montoyaApi, String selectedText, ArrayList<Tag> tags,
+                              Consumer<String> hackvertorCallback) {
+        this(montoyaApi, selectedText, tags, null, null, hackvertorCallback);
+    }
+
+    private MultiEncoderWindow(MontoyaApi montoyaApi, String selectedText, ArrayList<Tag> tags,
+                               MessageEditorHttpRequestResponse messageEditor, HttpRequestResponse baseRequestResponse,
+                               Consumer<String> hackvertorCallback) {
         this.montoyaApi = montoyaApi;
         this.selectedText = selectedText;
         this.tags = tags;
         this.messageEditor = messageEditor;
         this.baseRequestResponse = baseRequestResponse;
+        this.hackvertorCallback = hackvertorCallback;
         this.layers = new ArrayList<>();
     }
 
@@ -155,14 +169,6 @@ public class MultiEncoderWindow {
             previewButton.addActionListener(e -> updatePreview());
             montoyaApi.userInterface().applyThemeToComponent(previewButton);
 
-            JButton sendToRepeaterButton = new JButton("Send to Repeater");
-            sendToRepeaterButton.addActionListener(e -> sendToRepeater());
-            montoyaApi.userInterface().applyThemeToComponent(sendToRepeaterButton);
-
-            JButton sendToIntruderButton = new JButton("Send to Intruder");
-            sendToIntruderButton.addActionListener(e -> sendToIntruder());
-            montoyaApi.userInterface().applyThemeToComponent(sendToIntruderButton);
-
             JButton cancelButton = new JButton("Cancel");
             cancelButton.addActionListener(e -> window.dispose());
             montoyaApi.userInterface().applyThemeToComponent(cancelButton);
@@ -192,8 +198,25 @@ public class MultiEncoderWindow {
             buttonPanel.add(new JSeparator(SwingConstants.VERTICAL));
             buttonPanel.add(previewButton);
             buttonPanel.add(new JSeparator(SwingConstants.VERTICAL));
-            buttonPanel.add(sendToRepeaterButton);
-            buttonPanel.add(sendToIntruderButton);
+
+            if (hackvertorCallback != null) {
+                JButton sendToHackvertorButton = new JButton("Send to Hackvertor");
+                sendToHackvertorButton.addActionListener(e -> sendToHackvertor());
+                montoyaApi.userInterface().applyThemeToComponent(sendToHackvertorButton);
+                buttonPanel.add(sendToHackvertorButton);
+            } else {
+                JButton sendToRepeaterButton = new JButton("Send to Repeater");
+                sendToRepeaterButton.addActionListener(e -> sendToRepeater());
+                montoyaApi.userInterface().applyThemeToComponent(sendToRepeaterButton);
+
+                JButton sendToIntruderButton = new JButton("Send to Intruder");
+                sendToIntruderButton.addActionListener(e -> sendToIntruder());
+                montoyaApi.userInterface().applyThemeToComponent(sendToIntruderButton);
+
+                buttonPanel.add(sendToRepeaterButton);
+                buttonPanel.add(sendToIntruderButton);
+            }
+
             buttonPanel.add(new JSeparator(SwingConstants.VERTICAL));
             buttonPanel.add(cancelButton);
 
@@ -509,6 +532,26 @@ public class MultiEncoderWindow {
 
         previewArea.setText(preview.toString());
         previewArea.setCaretPosition(0);
+    }
+
+    private void sendToHackvertor() {
+        ArrayList<ArrayList<Tag>> allLayerTags = getAllLayerTags();
+        if (allLayerTags.isEmpty()) {
+            JOptionPane.showMessageDialog(window,
+                "Please select at least one tag before sending to Hackvertor.",
+                "No Tags Selected",
+                JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        boolean shouldConvert = "Convert".equals(modeComboBox.getSelectedItem());
+        String result = applyLayeredTags(selectedText, shouldConvert);
+
+        if (hackvertorCallback != null) {
+            hackvertorCallback.accept(result);
+        }
+
+        window.dispose();
     }
 
     private void sendToRepeater() {
