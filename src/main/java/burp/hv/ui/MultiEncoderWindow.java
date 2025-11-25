@@ -448,34 +448,40 @@ public class MultiEncoderWindow {
         return allLayerTags;
     }
 
-    private String applyLayeredTags(String input, boolean shouldConvert) {
+    private ArrayList<String> generateAllVariants(String input, boolean shouldConvert) {
         ArrayList<ArrayList<Tag>> allLayerTags = getAllLayerTags();
         if (allLayerTags.isEmpty()) {
-            return input;
+            ArrayList<String> result = new ArrayList<>();
+            result.add(input);
+            return result;
         }
 
-        StringBuilder tagStart = new StringBuilder();
-        StringBuilder tagEnd = new StringBuilder();
+        ArrayList<String> currentVariants = new ArrayList<>();
+        currentVariants.add(input);
 
-        for (int i = allLayerTags.size() - 1; i >= 0; i--) {
-            ArrayList<Tag> layerTags = allLayerTags.get(i);
-            for (Tag tag : layerTags) {
-                String[] tagStartEnd = Convertors.generateTagStartEnd(tag);
-                tagStart.append(tagStartEnd[0]);
-                tagEnd.insert(0, tagStartEnd[1]);
+        for (ArrayList<Tag> layerTags : allLayerTags) {
+            ArrayList<String> newVariants = new ArrayList<>();
+            for (String variant : currentVariants) {
+                for (Tag tag : layerTags) {
+                    String[] tagStartEnd = Convertors.generateTagStartEnd(tag);
+                    String taggedText = tagStartEnd[0] + variant + tagStartEnd[1];
+
+                    if (shouldConvert) {
+                        try {
+                            String converted = HackvertorExtension.hackvertor.convert(taggedText, HackvertorExtension.hackvertor);
+                            newVariants.add(converted);
+                        } catch (Exception ex) {
+                            newVariants.add("Error: " + ex.getMessage());
+                        }
+                    } else {
+                        newVariants.add(taggedText);
+                    }
+                }
             }
+            currentVariants = newVariants;
         }
 
-        String taggedText = tagStart.toString() + input + tagEnd;
-
-        if (shouldConvert) {
-            try {
-                return HackvertorExtension.hackvertor.convert(taggedText, HackvertorExtension.hackvertor);
-            } catch (Exception ex) {
-                return "Error: " + ex.getMessage();
-            }
-        }
-        return taggedText;
+        return currentVariants;
     }
 
     private String getLayersSummary() {
@@ -499,8 +505,13 @@ public class MultiEncoderWindow {
             return;
         }
         boolean shouldConvert = "Convert".equals(modeComboBox.getSelectedItem());
-        String result = applyLayeredTags(selectedText, shouldConvert);
-        StringSelection selection = new StringSelection(result);
+        ArrayList<String> variants = generateAllVariants(selectedText, shouldConvert);
+        StringBuilder output = new StringBuilder();
+        for (int i = 0; i < variants.size(); i++) {
+            if (i > 0) output.append("\n");
+            output.append(variants.get(i));
+        }
+        StringSelection selection = new StringSelection(output.toString());
         Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
         clipboard.setContents(selection, null);
     }
@@ -517,17 +528,23 @@ public class MultiEncoderWindow {
         preview.append("Mode: ").append(modeComboBox.getSelectedItem()).append("\n");
         preview.append("=====================================\n\n");
         preview.append(getLayersSummary());
-        preview.append("=====================================\n\n");
 
         boolean shouldConvert = "Convert".equals(modeComboBox.getSelectedItem());
-        String taggedText = applyLayeredTags(selectedText, false);
-        String result = applyLayeredTags(selectedText, shouldConvert);
+        ArrayList<String> taggedVariants = generateAllVariants(selectedText, false);
+        ArrayList<String> resultVariants = generateAllVariants(selectedText, shouldConvert);
 
-        if (!shouldConvert) {
-            preview.append("Tagged: ").append(result).append("\n");
-        } else {
-            preview.append("Input: ").append(taggedText).append("\n");
-            preview.append("Result: ").append(result).append("\n");
+        preview.append("Total variants: ").append(resultVariants.size()).append("\n");
+        preview.append("=====================================\n\n");
+
+        for (int i = 0; i < resultVariants.size(); i++) {
+            preview.append("Variant ").append(i + 1).append(":\n");
+            if (!shouldConvert) {
+                preview.append("Tagged: ").append(resultVariants.get(i)).append("\n");
+            } else {
+                preview.append("Input: ").append(taggedVariants.get(i)).append("\n");
+                preview.append("Result: ").append(resultVariants.get(i)).append("\n");
+            }
+            preview.append("-------------------------------------\n");
         }
 
         previewArea.setText(preview.toString());
@@ -545,10 +562,15 @@ public class MultiEncoderWindow {
         }
 
         boolean shouldConvert = "Convert".equals(modeComboBox.getSelectedItem());
-        String result = applyLayeredTags(selectedText, shouldConvert);
+        ArrayList<String> variants = generateAllVariants(selectedText, shouldConvert);
 
         if (hackvertorCallback != null) {
-            hackvertorCallback.accept(result);
+            StringBuilder output = new StringBuilder();
+            for (int i = 0; i < variants.size(); i++) {
+                if (i > 0) output.append("\n");
+                output.append(variants.get(i));
+            }
+            hackvertorCallback.accept(output.toString());
         }
 
         window.dispose();
@@ -575,17 +597,20 @@ public class MultiEncoderWindow {
         HttpRequest baseRequest = baseRequestResponse.request();
         String requestStr = baseRequest.toString();
         boolean shouldConvert = "Convert".equals(modeComboBox.getSelectedItem());
-
-        String replacementText = applyLayeredTags(selectedText, shouldConvert);
-        String modifiedRequestStr = requestStr.replace(selectedText, replacementText);
-        HttpRequest modifiedRequest = HttpRequest.httpRequest(modifiedRequestStr);
+        ArrayList<String> variants = generateAllVariants(selectedText, shouldConvert);
 
         String modePrefix = shouldConvert ? "HV-" : "HVT-";
-        String tabName = modePrefix + "Layers-" + selectedText.substring(0, Math.min(selectedText.length(), 10));
-        montoyaApi.repeater().sendToRepeater(modifiedRequest, tabName);
+        int variantNum = 1;
+        for (String variant : variants) {
+            String modifiedRequestStr = requestStr.replace(selectedText, variant);
+            HttpRequest modifiedRequest = HttpRequest.httpRequest(modifiedRequestStr);
+            String tabName = modePrefix + "V" + variantNum + "-" + selectedText.substring(0, Math.min(selectedText.length(), 10));
+            montoyaApi.repeater().sendToRepeater(modifiedRequest, tabName);
+            variantNum++;
+        }
 
         JOptionPane.showMessageDialog(window,
-            "Sent request to Repeater.",
+            "Sent " + variants.size() + " variant(s) to Repeater.",
             "Success",
             JOptionPane.INFORMATION_MESSAGE);
 
@@ -635,10 +660,14 @@ public class MultiEncoderWindow {
         boolean shouldConvert = "Convert".equals(modeComboBox.getSelectedItem());
         payloads.append("Mode: ").append(modeComboBox.getSelectedItem()).append("\n");
         payloads.append(getLayersSummary());
-        payloads.append("Copy this payload to use in Intruder:\n\n");
 
-        String payloadResult = applyLayeredTags(selectedText, shouldConvert);
-        payloads.append(payloadResult).append("\n");
+        ArrayList<String> variants = generateAllVariants(selectedText, shouldConvert);
+        payloads.append("Total variants: ").append(variants.size()).append("\n");
+        payloads.append("Copy these payloads to use in Intruder:\n\n");
+
+        for (String variant : variants) {
+            payloads.append(variant).append("\n");
+        }
 
         JTextArea payloadArea = new JTextArea(payloads.toString());
         payloadArea.setEditable(false);
