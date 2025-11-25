@@ -74,6 +74,7 @@ public class Utils {
         settings.registerBooleanSetting("tagsInScanner", true, "Allow tags in Scanner", "Tag permissions", null);
         settings.registerBooleanSetting("tagsInExtensions", true, "Allow tags in Extensions", "Tag permissions", null);
         settings.registerBooleanSetting("tagsInResponse", false, "Allow tags in HTTP response", "Tag permissions", null);
+        settings.registerBooleanSetting("tagsInWebSockets", false, "Allow tags in WebSockets", "Tag permissions", null);
         settings.registerBooleanSetting("codeExecutionTagsEnabled", false, "Allow code execution tags", "Tag permissions", "Using code execution tags on untrusted requests can compromise your system, are you sure?");
         settings.registerBooleanSetting("autoUpdateContentLength", true, "Auto update content length", "Requests", null);
         settings.registerIntegerSetting("maxBodyLength", 3 * 1024 * 1024, "Maximum body length", "Requests");
