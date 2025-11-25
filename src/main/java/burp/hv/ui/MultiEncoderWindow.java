@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -30,6 +31,8 @@ public class MultiEncoderWindow {
     private static final int DEFAULT_HEIGHT = 600;
     private static final int CORNER_RADIUS = 20;
     private static final int COLUMN_COUNT = 3;
+    private static final int MAX_VARIANTS_DISPLAY = 100;
+    private static final int CONVERT_TIMEOUT_SECONDS = 20;
 
     private final MontoyaApi montoyaApi;
     private final String selectedText;
@@ -448,6 +451,24 @@ public class MultiEncoderWindow {
         return allLayerTags;
     }
 
+    private String convertWithTimeout(String taggedText) {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<String> future = executor.submit(() ->
+            HackvertorExtension.hackvertor.convert(taggedText, HackvertorExtension.hackvertor)
+        );
+
+        try {
+            return future.get(CONVERT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        } catch (TimeoutException e) {
+            future.cancel(true);
+            return "Error: Conversion timed out after " + CONVERT_TIMEOUT_SECONDS + " seconds";
+        } catch (Exception e) {
+            return "Error: " + e.getMessage();
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
     private ArrayList<String> generateAllVariants(String input, boolean shouldConvert) {
         ArrayList<ArrayList<Tag>> allLayerTags = getAllLayerTags();
         if (allLayerTags.isEmpty()) {
@@ -467,12 +488,8 @@ public class MultiEncoderWindow {
                     String taggedText = tagStartEnd[0] + variant + tagStartEnd[1];
 
                     if (shouldConvert) {
-                        try {
-                            String converted = HackvertorExtension.hackvertor.convert(taggedText, HackvertorExtension.hackvertor);
-                            newVariants.add(converted);
-                        } catch (Exception ex) {
-                            newVariants.add("Error: " + ex.getMessage());
-                        }
+                        String converted = convertWithTimeout(taggedText);
+                        newVariants.add(converted);
                     } else {
                         newVariants.add(taggedText);
                     }
@@ -534,9 +551,13 @@ public class MultiEncoderWindow {
         ArrayList<String> resultVariants = generateAllVariants(selectedText, shouldConvert);
 
         preview.append("Total variants: ").append(resultVariants.size()).append("\n");
+        if (resultVariants.size() > MAX_VARIANTS_DISPLAY) {
+            preview.append("Showing first ").append(MAX_VARIANTS_DISPLAY).append(" variants\n");
+        }
         preview.append("=====================================\n\n");
 
-        for (int i = 0; i < resultVariants.size(); i++) {
+        int displayLimit = Math.min(resultVariants.size(), MAX_VARIANTS_DISPLAY);
+        for (int i = 0; i < displayLimit; i++) {
             preview.append("Variant ").append(i + 1).append(":\n");
             if (!shouldConvert) {
                 preview.append("Tagged: ").append(resultVariants.get(i)).append("\n");
@@ -545,6 +566,11 @@ public class MultiEncoderWindow {
                 preview.append("Result: ").append(resultVariants.get(i)).append("\n");
             }
             preview.append("-------------------------------------\n");
+        }
+
+        if (resultVariants.size() > MAX_VARIANTS_DISPLAY) {
+            preview.append("\n... ").append(resultVariants.size() - MAX_VARIANTS_DISPLAY)
+                   .append(" more variants not shown ...\n");
         }
 
         previewArea.setText(preview.toString());
