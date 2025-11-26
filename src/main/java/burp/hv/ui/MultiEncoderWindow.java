@@ -32,6 +32,8 @@ public class MultiEncoderWindow {
     private static final int CORNER_RADIUS = 20;
     private static final int COLUMN_COUNT = 3;
     private static final int MAX_VARIANTS_DISPLAY = 100;
+    private static final int MAX_VARIANTS_TOTAL = 10000;
+    private static final int MAX_TAGS_PER_LAYER = 50;
     private static final int CONVERT_TIMEOUT_SECONDS = 20;
 
     private final MontoyaApi montoyaApi;
@@ -46,6 +48,8 @@ public class MultiEncoderWindow {
     private JComboBox<String> modeComboBox;
     private JTabbedPane layerTabbedPane;
     private int layerCounter = 1;
+    private JLabel statusLabel;
+    private Timer statusClearTimer;
 
     private class Layer {
         final Map<String, JCheckBox> tagCheckboxes;
@@ -155,6 +159,12 @@ public class MultiEncoderWindow {
 
             previewPanel.add(previewScrollPane, BorderLayout.CENTER);
 
+            statusLabel = new JLabel(" ");
+            statusLabel.setFont(new Font("Inter", Font.BOLD, 12));
+            statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            statusLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+            montoyaApi.userInterface().applyThemeToComponent(statusLabel);
+
             JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
             montoyaApi.userInterface().applyThemeToComponent(buttonPanel);
 
@@ -235,9 +245,14 @@ public class MultiEncoderWindow {
             contentPanel.add(topPanel, BorderLayout.CENTER);
             montoyaApi.userInterface().applyThemeToComponent(contentPanel);
 
+            JPanel southPanel = new JPanel(new BorderLayout());
+            southPanel.add(statusLabel, BorderLayout.NORTH);
+            southPanel.add(buttonPanel, BorderLayout.CENTER);
+            montoyaApi.userInterface().applyThemeToComponent(southPanel);
+
             mainPanel.add(contentPanel, BorderLayout.NORTH);
             mainPanel.add(previewPanel, BorderLayout.CENTER);
-            mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+            mainPanel.add(southPanel, BorderLayout.SOUTH);
 
             applyRoundedCorners.run();
             window.add(mainPanel);
@@ -378,24 +393,38 @@ public class MultiEncoderWindow {
             tagsPanel.repaint();
         };
 
-        selectAllCheckbox.addActionListener(e -> {
-            ArrayList<Tag> filteredTags = filterTags.apply(searchField.getText());
-            boolean selectAll = selectAllCheckbox.isSelected();
-            for (Tag tag : filteredTags) {
-                JCheckBox checkbox = layer.tagCheckboxes.get(tag.name);
-                if (checkbox != null && checkbox.isSelected() != selectAll) {
-                    checkbox.setSelected(selectAll);
-                    if (selectAll) {
-                        if (!layer.selectedTags.contains(tag)) {
-                            layer.selectedTags.add(tag);
-                        }
-                    } else {
-                        layer.selectedTags.remove(tag);
-                    }
+        java.awt.event.ActionListener selectAllListener = new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                ArrayList<Tag> filteredTags = filterTags.apply(searchField.getText());
+                boolean selectAll = selectAllCheckbox.isSelected();
+
+                if (selectAll && filteredTags.size() > MAX_TAGS_PER_LAYER) {
+                    showWarningMessage("Too many tags (" + filteredTags.size() + "). Max is " + MAX_TAGS_PER_LAYER + ". Use search to filter.");
                 }
+
+                int count = 0;
+                for (Tag tag : filteredTags) {
+                    if (selectAll && count >= MAX_TAGS_PER_LAYER) {
+                        break;
+                    }
+                    JCheckBox checkbox = layer.tagCheckboxes.get(tag.name);
+                    if (checkbox != null && checkbox.isSelected() != selectAll) {
+                        checkbox.setSelected(selectAll);
+                        if (selectAll) {
+                            if (!layer.selectedTags.contains(tag)) {
+                                layer.selectedTags.add(tag);
+                            }
+                        } else {
+                            layer.selectedTags.remove(tag);
+                        }
+                    }
+                    count++;
+                }
+                updatePreview();
             }
-            updatePreview();
-        });
+        };
+        selectAllCheckbox.addActionListener(selectAllListener);
 
         searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
             public void insertUpdate(javax.swing.event.DocumentEvent e) {
@@ -451,6 +480,32 @@ public class MultiEncoderWindow {
         return allLayerTags;
     }
 
+    private void showStatusMessage(String message, Color color) {
+        if (statusClearTimer != null && statusClearTimer.isRunning()) {
+            statusClearTimer.stop();
+        }
+        statusLabel.setText(message);
+        statusLabel.setForeground(color);
+        statusClearTimer = new Timer(5000, e -> {
+            statusLabel.setText(" ");
+            statusClearTimer.stop();
+        });
+        statusClearTimer.setRepeats(false);
+        statusClearTimer.start();
+    }
+
+    private void showWarningMessage(String message) {
+        showStatusMessage("⚠ " + message, new Color(255, 165, 0));
+    }
+
+    private void showInfoMessage(String message) {
+        showStatusMessage("✓ " + message, new Color(0, 128, 0));
+    }
+
+    private void showErrorMessage(String message) {
+        showStatusMessage("✗ " + message, new Color(200, 0, 0));
+    }
+
     private String convertWithTimeout(String taggedText) {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Future<String> future = executor.submit(() ->
@@ -469,6 +524,22 @@ public class MultiEncoderWindow {
         }
     }
 
+    private int calculateTotalVariants() {
+        ArrayList<ArrayList<Tag>> allLayerTags = getAllLayerTags();
+        if (allLayerTags.isEmpty()) {
+            return 1;
+        }
+        int total = 1;
+        for (ArrayList<Tag> layerTags : allLayerTags) {
+            int layerSize = Math.min(layerTags.size(), MAX_TAGS_PER_LAYER);
+            if (total > MAX_VARIANTS_TOTAL / layerSize) {
+                return MAX_VARIANTS_TOTAL + 1;
+            }
+            total *= layerSize;
+        }
+        return total;
+    }
+
     private ArrayList<String> generateAllVariants(String input, boolean shouldConvert) {
         ArrayList<ArrayList<Tag>> allLayerTags = getAllLayerTags();
         if (allLayerTags.isEmpty()) {
@@ -477,13 +548,27 @@ public class MultiEncoderWindow {
             return result;
         }
 
+        int estimatedTotal = calculateTotalVariants();
+        if (estimatedTotal > MAX_VARIANTS_TOTAL) {
+            ArrayList<String> result = new ArrayList<>();
+            result.add("Error: Too many variants (" + estimatedTotal + "+). Maximum allowed is " + MAX_VARIANTS_TOTAL + ". Please reduce tag selection.");
+            return result;
+        }
+
         ArrayList<String> currentVariants = new ArrayList<>();
         currentVariants.add(input);
 
         for (ArrayList<Tag> layerTags : allLayerTags) {
             ArrayList<String> newVariants = new ArrayList<>();
+            int tagCount = 0;
             for (String variant : currentVariants) {
                 for (Tag tag : layerTags) {
+                    if (tagCount >= MAX_TAGS_PER_LAYER) {
+                        break;
+                    }
+                    if (newVariants.size() >= MAX_VARIANTS_TOTAL) {
+                        break;
+                    }
                     String[] tagStartEnd = Convertors.generateTagStartEnd(tag);
                     String taggedText = tagStartEnd[0] + variant + tagStartEnd[1];
 
@@ -493,7 +578,16 @@ public class MultiEncoderWindow {
                     } else {
                         newVariants.add(taggedText);
                     }
+                    tagCount++;
                 }
+                if (newVariants.size() >= MAX_VARIANTS_TOTAL) {
+                    break;
+                }
+                tagCount = 0;
+            }
+            if (newVariants.size() >= MAX_VARIANTS_TOTAL) {
+                currentVariants = newVariants;
+                break;
             }
             currentVariants = newVariants;
         }
@@ -580,10 +674,7 @@ public class MultiEncoderWindow {
     private void sendToHackvertor() {
         ArrayList<ArrayList<Tag>> allLayerTags = getAllLayerTags();
         if (allLayerTags.isEmpty()) {
-            JOptionPane.showMessageDialog(window,
-                "Please select at least one tag before sending to Hackvertor.",
-                "No Tags Selected",
-                JOptionPane.WARNING_MESSAGE);
+            showWarningMessage("Please select at least one tag before sending to Hackvertor.");
             return;
         }
 
@@ -605,18 +696,12 @@ public class MultiEncoderWindow {
     private void sendToRepeater() {
         ArrayList<ArrayList<Tag>> allLayerTags = getAllLayerTags();
         if (allLayerTags.isEmpty()) {
-            JOptionPane.showMessageDialog(window,
-                "Please select at least one tag before sending to Repeater.",
-                "No Tags Selected",
-                JOptionPane.WARNING_MESSAGE);
+            showWarningMessage("Please select at least one tag before sending to Repeater.");
             return;
         }
 
         if (messageEditor == null || baseRequestResponse == null) {
-            JOptionPane.showMessageDialog(window,
-                "Unable to access the original request.",
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
+            showErrorMessage("Unable to access the original request.");
             return;
         }
 
@@ -635,29 +720,19 @@ public class MultiEncoderWindow {
             variantNum++;
         }
 
-        JOptionPane.showMessageDialog(window,
-            "Sent " + variants.size() + " variant(s) to Repeater.",
-            "Success",
-            JOptionPane.INFORMATION_MESSAGE);
-
+        showInfoMessage("Sent " + variants.size() + " variant(s) to Repeater.");
         window.dispose();
     }
 
     private void sendToIntruder() {
         ArrayList<ArrayList<Tag>> allLayerTags = getAllLayerTags();
         if (allLayerTags.isEmpty()) {
-            JOptionPane.showMessageDialog(window,
-                "Please select at least one tag before sending to Intruder.",
-                "No Tags Selected",
-                JOptionPane.WARNING_MESSAGE);
+            showWarningMessage("Please select at least one tag before sending to Intruder.");
             return;
         }
 
         if (messageEditor == null || baseRequestResponse == null) {
-            JOptionPane.showMessageDialog(window,
-                "Unable to access the original request.",
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
+            showErrorMessage("Unable to access the original request.");
             return;
         }
 
@@ -668,10 +743,7 @@ public class MultiEncoderWindow {
         int endPos = startPos + selectedText.length();
 
         if (startPos == -1) {
-            JOptionPane.showMessageDialog(window,
-                "Could not find the selected text in the request.",
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
+            showErrorMessage("Could not find the selected text in the request.");
             return;
         }
 
@@ -680,32 +752,19 @@ public class MultiEncoderWindow {
         String tabName = "HV-Layers-" + selectedText.substring(0, Math.min(selectedText.length(), 10));
         montoyaApi.intruder().sendToIntruder(baseRequestResponse.request().httpService(), intruderTemplate, tabName);
 
-        StringBuilder payloads = new StringBuilder();
-        payloads.append("Hackvertor Multi-Encoder Layered Payloads:\n");
-
         boolean shouldConvert = "Convert".equals(modeComboBox.getSelectedItem());
-        payloads.append("Mode: ").append(modeComboBox.getSelectedItem()).append("\n");
-        payloads.append(getLayersSummary());
-
         ArrayList<String> variants = generateAllVariants(selectedText, shouldConvert);
-        payloads.append("Total variants: ").append(variants.size()).append("\n");
-        payloads.append("Copy these payloads to use in Intruder:\n\n");
 
+        StringBuilder payloadList = new StringBuilder();
         for (String variant : variants) {
-            payloads.append(variant).append("\n");
+            payloadList.append(variant).append("\n");
         }
 
-        JTextArea payloadArea = new JTextArea(payloads.toString());
-        payloadArea.setEditable(false);
-        payloadArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
-        JScrollPane scrollPane = new JScrollPane(payloadArea);
-        scrollPane.setPreferredSize(new Dimension(600, 400));
+        StringSelection selection = new StringSelection(payloadList.toString());
+        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+        clipboard.setContents(selection, null);
 
-        JOptionPane.showMessageDialog(window,
-            scrollPane,
-            "Payloads for Intruder",
-            JOptionPane.INFORMATION_MESSAGE);
-
+        JOptionPane.showMessageDialog(window, "Sent to Intruder. " + variants.size() + " payload(s) copied to clipboard.", "Success", JOptionPane.INFORMATION_MESSAGE);
         window.dispose();
     }
 }

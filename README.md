@@ -10,6 +10,11 @@ Tags also support arguments. The find tag allows you to find a string by regex a
 
 # Changelog
 
+## Version v2.2.26 (2025-11-26)
+
+- Fixed dialog problems
+- Added limits for multiencoder
+
 ## Version v2.2.24 (2025-11-26)
 
 - Fixed deflate, base32 detection
