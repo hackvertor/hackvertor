@@ -99,7 +99,7 @@ public class StubCallbacks implements IBurpExtenderCallbacks {
 
             @Override
             public String base64Encode(String s) {
-                return Base64.getEncoder().encodeToString(s.getBytes());
+                return Base64.getEncoder().encodeToString(s.getBytes(StandardCharsets.ISO_8859_1));
             }
 
             @Override

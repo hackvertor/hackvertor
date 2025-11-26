@@ -64,7 +64,7 @@ public class StubExtensionHelpers implements IExtensionHelpers {
 
     @Override
     public String base64Encode(String data) {
-        return Base64.getEncoder().encodeToString(data.getBytes());
+        return Base64.getEncoder().encodeToString(data.getBytes(StandardCharsets.ISO_8859_1));
     }
 
     @Override

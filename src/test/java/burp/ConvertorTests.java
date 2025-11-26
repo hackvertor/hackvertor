@@ -582,4 +582,17 @@ public class ConvertorTests extends BaseHackvertorTest {
         String encoded = hackvertor.convert("<@base32><@deflate_compress('store')>foobar</@deflate_compress></@base32>", hackvertor);
         assertEquals("PAAQCBQA7H7WM33PMJQXECFLAJ5A====", encoded);
     }
+
+    @Test
+    void testBase64urlGzipOutput() {
+        String encoded = hackvertor.convert("<@base64url><@gzip_compress>foobar</@gzip_compress></@base64url>", hackvertor);
+        assertTrue(encoded.matches("^[A-Za-z0-9_-]+$"), "base64url output should only contain base64url characters, got: " + encoded);
+    }
+
+    @Test
+    void testAutoDecodeBase64urlGzip() {
+        String encoded = hackvertor.convert("<@base64url><@gzip_compress>foobar</@gzip_compress></@base64url>", hackvertor);
+        String decoded = hackvertor.convert("<@auto_decode_no_decrypt>" + encoded + "</@auto_decode_no_decrypt>", hackvertor);
+        assertEquals("<@base64url><@gzip_compress>foobar</@gzip_compress></@base64url>", decoded);
+    }
 }
