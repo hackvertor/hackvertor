@@ -504,4 +504,82 @@ public class ConvertorTests extends BaseHackvertorTest {
         String converted = hackvertor.convert(input, hackvertor);
         assertEquals("SGVsbG8= V29ybGQ=", converted);
     }
+
+    @Test
+    void testAutoDecodeGzipBase64() {
+        String encoded = hackvertor.convert("<@gzip_compress><@base64>foobar</@base64></@gzip_compress>", hackvertor);
+        String decoded = hackvertor.convert("<@auto_decode_no_decrypt>" + encoded + "</@auto_decode_no_decrypt>", hackvertor);
+        assertEquals("<@gzip_compress><@base64>foobar</@base64></@gzip_compress>", decoded);
+    }
+
+    @Test
+    void testAutoDecodeDeflateBase32() {
+        String encoded = hackvertor.convert("<@deflate_compress><@base32>foobar</@base32></@deflate_compress>", hackvertor);
+        String decoded = hackvertor.convert("<@auto_decode_no_decrypt>" + encoded + "</@auto_decode_no_decrypt>", hackvertor);
+        assertEquals("<@deflate_compress><@base32>foobar</@base32></@deflate_compress>", decoded);
+    }
+
+    @Test
+    void testAutoDecodeBase32ThenDeflate() {
+        String decoded = hackvertor.convert("<@auto_decode_no_decrypt>PCOALAFBBEAAAAGCN3KWAHPYP4MIHZQCBCVQE6Q=</@auto_decode_no_decrypt>", hackvertor);
+        assertEquals("<@base32><@deflate_compress>foobar</@deflate_compress></@base32>", decoded);
+    }
+
+    @Test
+    void testAutoDecodeBase32NotMisidentifiedAsBase64() {
+        String base32Encoded = hackvertor.convert("<@base32>test</@base32>", hackvertor);
+        assertEquals("ORSXG5A=", base32Encoded);
+        String decoded = hackvertor.convert("<@auto_decode_no_decrypt>" + base32Encoded + "</@auto_decode_no_decrypt>", hackvertor);
+        assertEquals("<@base32>test</@base32>", decoded);
+    }
+
+    @Test
+    void testAutoDecodeBase64() {
+        String base64Encoded = hackvertor.convert("<@base64>foobar</@base64>", hackvertor);
+        assertEquals("Zm9vYmFy", base64Encoded);
+        String decoded = hackvertor.convert("<@auto_decode_no_decrypt>" + base64Encoded + "</@auto_decode_no_decrypt>", hackvertor);
+        assertEquals("<@base64>foobar</@base64>", decoded);
+    }
+
+    @Test
+    void testDeflateCompressDecompressDynamic() {
+        String input = "foobar";
+        String compressed = hackvertor.convert("<@deflate_compress('dynamic')>" + input + "</@deflate_compress>", hackvertor);
+        String decompressed = hackvertor.convert("<@deflate_decompress>" + compressed + "</@deflate_decompress>", hackvertor);
+        assertEquals(input, decompressed);
+    }
+
+    @Test
+    void testDeflateCompressDecompressFixed() {
+        String input = "foobar";
+        String compressed = hackvertor.convert("<@deflate_compress('fixed')>" + input + "</@deflate_compress>", hackvertor);
+        String decompressed = hackvertor.convert("<@deflate_decompress>" + compressed + "</@deflate_decompress>", hackvertor);
+        assertEquals(input, decompressed);
+    }
+
+    @Test
+    void testDeflateCompressDecompressStore() {
+        String input = "foobar";
+        String compressed = hackvertor.convert("<@deflate_compress('store')>" + input + "</@deflate_compress>", hackvertor);
+        String decompressed = hackvertor.convert("<@deflate_decompress>" + compressed + "</@deflate_decompress>", hackvertor);
+        assertEquals(input, decompressed);
+    }
+
+    @Test
+    void testDeflateCompressDynamicBase32Output() {
+        String encoded = hackvertor.convert("<@base32><@deflate_compress('dynamic')>foobar</@deflate_compress></@base32>", hackvertor);
+        assertEquals("PDNEXS6PJ5FCYAQABCVQE6Q=", encoded);
+    }
+
+    @Test
+    void testDeflateCompressFixedBase32Output() {
+        String encoded = hackvertor.convert("<@base32><@deflate_compress('fixed')>foobar</@deflate_compress></@base32>", hackvertor);
+        assertEquals("PAAUXS6PJ5FCYAQABCVQE6Q=", encoded);
+    }
+
+    @Test
+    void testDeflateCompressStoreBase32Output() {
+        String encoded = hackvertor.convert("<@base32><@deflate_compress('store')>foobar</@deflate_compress></@base32>", hackvertor);
+        assertEquals("PAAQCBQA7H7WM33PMJQXECFLAJ5A====", encoded);
+    }
 }

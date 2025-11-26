@@ -1474,6 +1474,108 @@ public class HackvertorUiTest {
         Assertions.assertEquals("%74%65%73%74", outputText, "Output should contain all characters URL encoded");
     }
 
+    @Test
+    void testAutoDecodeGzipBase64Ui() throws Exception {
+        window.robot().waitForIdle();
+
+        Component[] allTextAreas = window.robot().finder()
+                .findAll(window.target(), component -> component instanceof JTextArea)
+                .toArray(new Component[0]);
+
+        JTextArea inputArea = null;
+        JTextArea outputArea = null;
+        int hackvertorInputCount = 0;
+
+        for (Component component : allTextAreas) {
+            if (component.getClass().getName().equals("burp.hv.ui.HackvertorInput")) {
+                if (hackvertorInputCount == 0) {
+                    inputArea = (JTextArea) component;
+                } else if (hackvertorInputCount == 1) {
+                    outputArea = (JTextArea) component;
+                }
+                hackvertorInputCount++;
+            }
+        }
+
+        Assertions.assertNotNull(inputArea, "Input area should be found");
+        Assertions.assertNotNull(outputArea, "Output area should be found");
+
+        window.robot().click(inputArea);
+        window.robot().waitForIdle();
+
+        final JTextArea finalInputArea = inputArea;
+        final JTextArea finalOutputArea = outputArea;
+        GuiActionRunner.execute(() -> finalInputArea.setText("<@gzip_compress><@base64>foobar</@base64></@gzip_compress>"));
+        window.robot().waitForIdle();
+
+        Thread.sleep(300);
+        window.robot().waitForIdle();
+
+        String encodedOutput = outputArea.getText();
+        Assertions.assertFalse(encodedOutput.isEmpty(), "Output should contain gzip+base64 encoded data");
+
+        GuiActionRunner.execute(() -> finalInputArea.setText("<@auto_decode_no_decrypt>" + finalOutputArea.getText() + "</@auto_decode_no_decrypt>"));
+        window.robot().waitForIdle();
+
+        Thread.sleep(300);
+        window.robot().waitForIdle();
+
+        String decodedOutput = outputArea.getText();
+        Assertions.assertEquals("<@gzip_compress><@base64>foobar</@base64></@gzip_compress>", decodedOutput,
+            "auto_decode_no_decrypt should produce correct gzip+base64 encoding tags");
+    }
+
+    @Test
+    void testAutoDecodeDeflateBase32Ui() throws Exception {
+        window.robot().waitForIdle();
+
+        Component[] allTextAreas = window.robot().finder()
+                .findAll(window.target(), component -> component instanceof JTextArea)
+                .toArray(new Component[0]);
+
+        JTextArea inputArea = null;
+        JTextArea outputArea = null;
+        int hackvertorInputCount = 0;
+
+        for (Component component : allTextAreas) {
+            if (component.getClass().getName().equals("burp.hv.ui.HackvertorInput")) {
+                if (hackvertorInputCount == 0) {
+                    inputArea = (JTextArea) component;
+                } else if (hackvertorInputCount == 1) {
+                    outputArea = (JTextArea) component;
+                }
+                hackvertorInputCount++;
+            }
+        }
+
+        Assertions.assertNotNull(inputArea, "Input area should be found");
+        Assertions.assertNotNull(outputArea, "Output area should be found");
+
+        window.robot().click(inputArea);
+        window.robot().waitForIdle();
+
+        final JTextArea finalInputArea = inputArea;
+        final JTextArea finalOutputArea = outputArea;
+        GuiActionRunner.execute(() -> finalInputArea.setText("<@deflate_compress><@base32>foobar</@base32></@deflate_compress>"));
+        window.robot().waitForIdle();
+
+        Thread.sleep(300);
+        window.robot().waitForIdle();
+
+        String encodedOutput = outputArea.getText();
+        Assertions.assertFalse(encodedOutput.isEmpty(), "Output should contain deflate+base32 encoded data");
+
+        GuiActionRunner.execute(() -> finalInputArea.setText("<@auto_decode_no_decrypt>" + finalOutputArea.getText() + "</@auto_decode_no_decrypt>"));
+        window.robot().waitForIdle();
+
+        Thread.sleep(300);
+        window.robot().waitForIdle();
+
+        String decodedOutput = outputArea.getText();
+        Assertions.assertEquals("<@deflate_compress><@base32>foobar</@base32></@deflate_compress>", decodedOutput,
+            "auto_decode_no_decrypt should produce correct deflate+base32 encoding tags");
+    }
+
     @AfterEach
     void checkForUncaughtExceptions() {
         // Check for uncaught exceptions and fail the test if any occurred

@@ -351,11 +351,10 @@ public class Hackvertor {
         addTag(Tag.Category.Compression, "bzip2_compress", true, "bzip2_compress(String str)");
         addTag(Tag.Category.Compression, "bzip2_decompress", true, "bzip2_decompress(String str)");
         addTag(Tag.Category.Compression, "deflate_compress", true,
-               "deflate_compress(String str, Boolean includeHeader)",
-               "boolean", "true");
+               "deflate_compress(String str, String compressionType)//fixed, store, dynamic",
+               "string", "fixed");
         addTag(Tag.Category.Compression, "deflate_decompress", true,
-               "deflate_decompress(String str, Boolean includeHeader)",
-               "boolean", "true");
+               "deflate_decompress(String str)");
     }
 
     private void initDateTags() {

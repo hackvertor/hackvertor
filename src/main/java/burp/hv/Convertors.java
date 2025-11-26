@@ -321,9 +321,9 @@ public class Convertors {
         TAG_REGISTRY.put("bzip2_compress", (output, args, vars, custom, hv) -> bzip2_compress(output));
         TAG_REGISTRY.put("bzip2_decompress", (output, args, vars, custom, hv) -> bzip2_decompress(output));
         TAG_REGISTRY.put("deflate_compress", (output, args, vars, custom, hv) ->
-            deflate_compress(output, getBoolean(args, 0)));
+            deflate_compress(output, getString(args, 0)));
         TAG_REGISTRY.put("deflate_decompress", (output, args, vars, custom, hv) ->
-            deflate_decompress(output, getBoolean(args, 0)));
+            deflate_decompress(output));
 
         // SAML operations
         TAG_REGISTRY.put("saml", (output, args, vars, custom, hv) -> saml(output));
@@ -1219,60 +1219,58 @@ public class Convertors {
         }
     }
 
-    static String deflate_compress(String input, Boolean includeHeader) {
-        // Use Montoya API if available
-        if (HackvertorExtension.montoyaApi != null) {
-            try {
-                byte[] inputBytes = input.getBytes();
-                ByteArray compressed = HackvertorExtension.montoyaApi.utilities().compressionUtils()
-                        .compress(ByteArray.byteArray(inputBytes), CompressionType.DEFLATE);
-                return helpers.bytesToString(compressed.getBytes());
-            } catch (Exception e) {
-                return "Error compressing DEFLATE: " + e.toString();
-            }
-        }
-        // Fallback to legacy implementation for tests
-        ByteArrayOutputStream bos = new ByteArrayOutputStream(input.length());
-        CompressorOutputStream cos;
-        DeflateParameters params = new DeflateParameters();
-        params.setWithZlibHeader(includeHeader);
-        cos = new DeflateCompressorOutputStream(bos, params);
+    static String deflate_compress(String input, String compressionType) {
         try {
-            cos.write(input.getBytes());
-            cos.close();
-            byte[] compressed = bos.toByteArray();
+            byte[] inputBytes = helpers.stringToBytes(input);
+            java.util.zip.Deflater deflater;
+
+            if ("store".equalsIgnoreCase(compressionType)) {
+                deflater = new java.util.zip.Deflater(java.util.zip.Deflater.NO_COMPRESSION);
+            } else if ("fixed".equalsIgnoreCase(compressionType)) {
+                deflater = new java.util.zip.Deflater(java.util.zip.Deflater.BEST_SPEED);
+                deflater.setStrategy(java.util.zip.Deflater.HUFFMAN_ONLY);
+            } else {
+                deflater = new java.util.zip.Deflater(java.util.zip.Deflater.BEST_COMPRESSION);
+            }
+
+            deflater.setInput(inputBytes);
+            deflater.finish();
+
+            ByteArrayOutputStream bos = new ByteArrayOutputStream(inputBytes.length);
+            byte[] buffer = new byte[1024];
+            while (!deflater.finished()) {
+                int count = deflater.deflate(buffer);
+                bos.write(buffer, 0, count);
+            }
+            deflater.end();
             bos.close();
-            return helpers.bytesToString(compressed);
-        } catch (IOException e) {
+
+            return helpers.bytesToString(bos.toByteArray());
+        } catch (Exception e) {
             return "Error:" + e;
         }
     }
 
-    static String deflate_decompress(String input, Boolean includeHeader) {
-        // Use Montoya API if available
-        if (HackvertorExtension.montoyaApi != null) {
-            try {
-                byte[] inputBytes = helpers.stringToBytes(input);
-                ByteArray decompressed = HackvertorExtension.montoyaApi.utilities().compressionUtils()
-                        .decompress(ByteArray.byteArray(inputBytes), CompressionType.DEFLATE);
-                return new String(decompressed.getBytes());
-            } catch (Exception e) {
-                return "Error decompressing DEFLATE: " + e.toString();
-            }
-        }
-        // Fallback to legacy implementation for tests
-        ByteArrayInputStream bis = new ByteArrayInputStream(helpers.stringToBytes(input));
-        DeflateCompressorInputStream cis;
-        byte[] bytes;
+    static String deflate_decompress(String input) {
         try {
-            DeflateParameters params = new DeflateParameters();
-            params.setWithZlibHeader(includeHeader);
-            cis = new DeflateCompressorInputStream(bis, params);
-            bytes = IOUtils.toByteArray(cis);
-            cis.close();
-            bis.close();
-            return new String(bytes);
-        } catch (IOException e) {
+            byte[] inputBytes = helpers.stringToBytes(input);
+            java.util.zip.Inflater inflater = new java.util.zip.Inflater();
+            inflater.setInput(inputBytes);
+
+            ByteArrayOutputStream bos = new ByteArrayOutputStream(inputBytes.length);
+            byte[] buffer = new byte[1024];
+            while (!inflater.finished()) {
+                int count = inflater.inflate(buffer);
+                if (count == 0 && inflater.needsInput()) {
+                    break;
+                }
+                bos.write(buffer, 0, count);
+            }
+            inflater.end();
+            bos.close();
+
+            return helpers.bytesToString(bos.toByteArray());
+        } catch (Exception e) {
             return "Error:" + e;
         }
     }
@@ -1337,14 +1335,61 @@ public class Convertors {
     }
 
     static String saml(String input) {
-        return urlencode(base64Encode(deflate_compress(input, false)));
+        return urlencode(base64Encode(deflate_compress_raw(input)));
     }
+
     static String d_saml(String input) {
         String decodedUrl = decode_url(input);
         if(isBase64(decodedUrl, true)) {
-            return deflate_decompress(decode_base64(decodedUrl), false);
+            return deflate_decompress_raw(decode_base64(decodedUrl));
         } else {
-            return deflate_decompress(decode_base64(input), false);
+            return deflate_decompress_raw(decode_base64(input));
+        }
+    }
+
+    static String deflate_compress_raw(String input) {
+        try {
+            byte[] inputBytes = helpers.stringToBytes(input);
+            java.util.zip.Deflater deflater = new java.util.zip.Deflater(java.util.zip.Deflater.DEFAULT_COMPRESSION, true);
+            deflater.setInput(inputBytes);
+            deflater.finish();
+
+            ByteArrayOutputStream bos = new ByteArrayOutputStream(inputBytes.length);
+            byte[] buffer = new byte[1024];
+            while (!deflater.finished()) {
+                int count = deflater.deflate(buffer);
+                bos.write(buffer, 0, count);
+            }
+            deflater.end();
+            bos.close();
+
+            return helpers.bytesToString(bos.toByteArray());
+        } catch (Exception e) {
+            return "Error:" + e;
+        }
+    }
+
+    static String deflate_decompress_raw(String input) {
+        try {
+            byte[] inputBytes = helpers.stringToBytes(input);
+            java.util.zip.Inflater inflater = new java.util.zip.Inflater(true);
+            inflater.setInput(inputBytes);
+
+            ByteArrayOutputStream bos = new ByteArrayOutputStream(inputBytes.length);
+            byte[] buffer = new byte[1024];
+            while (!inflater.finished()) {
+                int count = inflater.inflate(buffer);
+                if (count == 0 && inflater.needsInput()) {
+                    break;
+                }
+                bos.write(buffer, 0, count);
+            }
+            inflater.end();
+            bos.close();
+
+            return helpers.bytesToString(bos.toByteArray());
+        } catch (Exception e) {
+            return "Error:" + e;
         }
     }
 
@@ -3330,12 +3375,20 @@ public class Convertors {
         do {
             String startStr = str;
             matched = false;
-            int tagNo = new Random().nextInt(10000);
             if (Pattern.compile("^\\x1f\\x8b\\x08").matcher(str).find()) {
                 str = gzip_decompress(str);
                 matched = true;
                 encodingOpeningTags.append("<@gzip_compress>");
                 encodingClosingTags.insert(0, "</@gzip_compress>");
+            }
+            if (Pattern.compile("^\\x78[\\x01\\x5e\\x9c\\xda]").matcher(str).find()) {
+                test = deflate_decompress(str);
+                if (!test.startsWith("Error:") && Pattern.compile("^[\\x00-\\x7f]+$").matcher(test).find()) {
+                    str = test;
+                    matched = true;
+                    encodingOpeningTags.append("<@deflate_compress>");
+                    encodingClosingTags.insert(0, "</@deflate_compress>");
+                }
             }
             if (Pattern.compile("[01]{4,}\\s+[01]{4,}").matcher(str).find()) {
                 str = bin2ascii(str);
@@ -3431,23 +3484,28 @@ public class Convertors {
                     return d_jwt_get_header(str) + "\n" + d_jwt_get_payload(str) + "\n" + decode_base64url(parts[2]);
                 }
             }
-            if (isBase64(str, true)) {
-                test = decode_base64(str);
-                if (Pattern.compile("^[\\x00-\\x7f]+$", Pattern.CASE_INSENSITIVE).matcher(test).find()) {
-                    str = test;
-                    matched = true;
-                    encodingOpeningTags.append("<@base64>");
-                    encodingClosingTags.insert(0, "</@base64>");
-                }
-            }
-
-            if (Pattern.compile("[A-Z0-9+/]{4,}=*$", Pattern.CASE_INSENSITIVE).matcher(str).find() && str.length() % 4 == 0 && !matched) {
+            if (Pattern.compile("^[A-Z2-7]+=*$").matcher(str).find() && str.length() % 8 == 0) {
                 test = decode_base32(str);
-                if (Pattern.compile("^[\\x00-\\x7f]+$", Pattern.CASE_INSENSITIVE).matcher(test).find()) {
+                boolean isAscii = Pattern.compile("^[\\x00-\\x7f]+$").matcher(test).find();
+                boolean isGzip = Pattern.compile("^\\x1f\\x8b\\x08").matcher(test).find();
+                boolean isDeflate = Pattern.compile("^\\x78[\\x01\\x5e\\x9c\\xda]").matcher(test).find();
+                if (isAscii || isGzip || isDeflate) {
                     str = test;
                     matched = true;
                     encodingOpeningTags.append("<@base32>");
                     encodingClosingTags.insert(0, "</@base32>");
+                }
+            }
+            if (isBase64(str, true) && !matched) {
+                test = decode_base64(str);
+                boolean isAscii = Pattern.compile("^[\\x00-\\x7f]+$").matcher(test).find();
+                boolean isGzip = Pattern.compile("^\\x1f\\x8b\\x08").matcher(test).find();
+                boolean isDeflate = Pattern.compile("^\\x78[\\x01\\x5e\\x9c\\xda]").matcher(test).find();
+                if (isAscii || isGzip || isDeflate) {
+                    str = test;
+                    matched = true;
+                    encodingOpeningTags.append("<@base64>");
+                    encodingClosingTags.insert(0, "</@base64>");
                 }
             }
             if (decrypt) {
