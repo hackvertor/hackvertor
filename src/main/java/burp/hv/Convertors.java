@@ -3357,6 +3357,23 @@ public class Convertors {
     static Boolean isBase64(String str, Boolean checkStart) {
         return Pattern.compile((checkStart ? "^" : "") + "[a-zA-Z0-9+/]{4,}=*$", Pattern.CASE_INSENSITIVE).matcher(str).find() && str.length() % 4 == 0;
     }
+
+    private static boolean isAscii(String str) {
+        return Pattern.compile("^[\\x00-\\x7f]+$").matcher(str).find();
+    }
+
+    private static boolean isPrintableAscii(String str) {
+        return Pattern.compile("^[\\x09-\\x7f]+$").matcher(str).find();
+    }
+
+    private static boolean isGzip(String str) {
+        return Pattern.compile("^\\x1f\\x8b\\x08").matcher(str).find();
+    }
+
+    private static boolean isDeflate(String str) {
+        return Pattern.compile("^\\x78[\\x01\\x5e\\x9c\\xda]").matcher(str).find();
+    }
+
     static String auto_decode(String str) {
         return auto_decode_decrypt(str, true);
     }
@@ -3375,15 +3392,15 @@ public class Convertors {
         do {
             String startStr = str;
             matched = false;
-            if (Pattern.compile("^\\x1f\\x8b\\x08").matcher(str).find()) {
+            if (isGzip(str)) {
                 str = gzip_decompress(str);
                 matched = true;
                 encodingOpeningTags.append("<@gzip_compress>");
                 encodingClosingTags.insert(0, "</@gzip_compress>");
             }
-            if (Pattern.compile("^\\x78[\\x01\\x5e\\x9c\\xda]").matcher(str).find()) {
+            if (isDeflate(str)) {
                 test = deflate_decompress(str);
-                if (!test.startsWith("Error:") && Pattern.compile("^[\\x00-\\x7f]+$").matcher(test).find()) {
+                if (!test.startsWith("Error:") && isAscii(test)) {
                     str = test;
                     matched = true;
                     encodingOpeningTags.append("<@deflate_compress>");
@@ -3398,7 +3415,7 @@ public class Convertors {
             }
             if (Pattern.compile("(?:[0-9a-fA-F]{2}[\\s,\\-]?){3,}").matcher(str).find()) {
                 test = hex2ascii(str);
-                if (Pattern.compile("^[\\x09-\\x7f]+$", Pattern.CASE_INSENSITIVE).matcher(test).find()) {
+                if (isAscii(test) || isGzip(test) || isDeflate(test)) {
                     str = test;
                     encodingOpeningTags.append("<@ascii2hex(\" \")>");
                     encodingClosingTags.insert(0, "</@ascii2hex>");
@@ -3420,7 +3437,7 @@ public class Convertors {
             }
             if (Pattern.compile("(?:\\\\0{0,4}[0-9a-fA-F]{2}[\\s,\\-]?){3,}").matcher(str).find()) {
                 test = decode_css_escapes(str);
-                if (Pattern.compile("^[\\x09-\\x7f]+$", Pattern.CASE_INSENSITIVE).matcher(test).find()) {
+                if (isPrintableAscii(test)) {
                     str = test;
                     matched = true;
                     encodingOpeningTags.append("<@css_escapes>");
@@ -3429,7 +3446,7 @@ public class Convertors {
             }
             if (Pattern.compile("\\\\x[0-9a-f]{2}", Pattern.CASE_INSENSITIVE).matcher(str).find()) {
                 test = decode_js_string(str);
-                if (Pattern.compile("^[\\x09-\\x7f]+$", Pattern.CASE_INSENSITIVE).matcher(test).find()) {
+                if (isPrintableAscii(test)) {
                     str = test;
                     matched = true;
                     encodingOpeningTags.append("<@hex_escapes>");
@@ -3438,7 +3455,7 @@ public class Convertors {
             }
             if (Pattern.compile("\\\\[0-9]{1,3}").matcher(str).find()) {
                 test = decode_js_string(str);
-                if (Pattern.compile("^[\\x09-\\x7f]+$", Pattern.CASE_INSENSITIVE).matcher(test).find()) {
+                if (isPrintableAscii(test)) {
                     str = test;
                     matched = true;
                     encodingOpeningTags.append("<@octal_escapes>");
@@ -3447,7 +3464,7 @@ public class Convertors {
             }
             if (Pattern.compile("\\\\u[0-9a-f]{4}", Pattern.CASE_INSENSITIVE).matcher(str).find()) {
                 test = decode_js_string(str);
-                if (Pattern.compile("^[\\x09-\\x7f]+$", Pattern.CASE_INSENSITIVE).matcher(test).find()) {
+                if (isPrintableAscii(test)) {
                     str = test;
                     matched = true;
                     encodingOpeningTags.append("<@unicode_escapes>");
@@ -3486,10 +3503,7 @@ public class Convertors {
             }
             if (Pattern.compile("^[A-Z2-7]+=*$").matcher(str).find() && str.length() % 8 == 0) {
                 test = decode_base32(str);
-                boolean isAscii = Pattern.compile("^[\\x00-\\x7f]+$").matcher(test).find();
-                boolean isGzip = Pattern.compile("^\\x1f\\x8b\\x08").matcher(test).find();
-                boolean isDeflate = Pattern.compile("^\\x78[\\x01\\x5e\\x9c\\xda]").matcher(test).find();
-                if (isAscii || isGzip || isDeflate) {
+                if (isAscii(test) || isGzip(test) || isDeflate(test)) {
                     str = test;
                     matched = true;
                     encodingOpeningTags.append("<@base32>");
@@ -3498,10 +3512,7 @@ public class Convertors {
             }
             if (isBase64(str, true) && !matched) {
                 test = decode_base64(str);
-                boolean isAscii = Pattern.compile("^[\\x00-\\x7f]+$").matcher(test).find();
-                boolean isGzip = Pattern.compile("^\\x1f\\x8b\\x08").matcher(test).find();
-                boolean isDeflate = Pattern.compile("^\\x78[\\x01\\x5e\\x9c\\xda]").matcher(test).find();
-                if (isAscii || isGzip || isDeflate) {
+                if (isAscii(test) || isGzip(test) || isDeflate(test)) {
                     str = test;
                     matched = true;
                     encodingOpeningTags.append("<@base64>");
