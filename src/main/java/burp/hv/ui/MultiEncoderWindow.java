@@ -9,8 +9,12 @@ import burp.api.montoya.ui.contextmenu.MessageEditorHttpRequestResponse;
 import burp.hv.Convertors;
 import burp.hv.HackvertorExtension;
 import burp.hv.tags.Tag;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import javax.swing.*;
+import java.util.EnumSet;
+import java.util.Set;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
@@ -35,6 +39,12 @@ public class MultiEncoderWindow {
     private static final int MAX_VARIANTS_TOTAL = 10000;
     private static final int MAX_TAGS_PER_LAYER = 50;
     private static final int CONVERT_TIMEOUT_SECONDS = 20;
+    private static final Set<Tag.Category> DANGEROUS_CATEGORIES = EnumSet.of(
+            Tag.Category.Custom,
+            Tag.Category.System,
+            Tag.Category.Languages
+    );
+    private static final String PERSISTENCE_KEY = "multiEncoderState";
 
     private final MontoyaApi montoyaApi;
     private final String selectedText;
@@ -50,6 +60,8 @@ public class MultiEncoderWindow {
     private int layerCounter = 1;
     private JLabel statusLabel;
     private Timer statusClearTimer;
+    private final Set<Tag.Category> enabledDangerousCategories = EnumSet.noneOf(Tag.Category.class);
+    private final Map<Tag.Category, JCheckBox> dangerousCategoryCheckboxes = new HashMap<>();
 
     private class Layer {
         final Map<String, JCheckBox> tagCheckboxes;
@@ -57,15 +69,14 @@ public class MultiEncoderWindow {
         final JPanel tagsPanel;
         final JTextField searchField;
         final JCheckBox selectAllCheckbox;
-        final Runnable updateTags;
+        Runnable updateTags;
 
-        Layer(JPanel tagsPanel, JTextField searchField, JCheckBox selectAllCheckbox, Runnable updateTags) {
+        Layer(JPanel tagsPanel, JTextField searchField, JCheckBox selectAllCheckbox) {
             this.tagCheckboxes = new HashMap<>();
             this.selectedTags = new ArrayList<>();
             this.tagsPanel = tagsPanel;
             this.searchField = searchField;
             this.selectAllCheckbox = selectAllCheckbox;
-            this.updateTags = updateTags;
         }
     }
 
@@ -141,7 +152,40 @@ public class MultiEncoderWindow {
             layerButtonPanel.add(removeLayerButton);
             montoyaApi.userInterface().applyThemeToComponent(layerButtonPanel);
 
-            topPanel.add(layerButtonPanel, BorderLayout.NORTH);
+            loadState();
+
+            JPanel dangerousCategoriesPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+            JLabel dangerousLabel = new JLabel("Enable dangerous categories:");
+            dangerousLabel.setFont(new Font("Inter", Font.PLAIN, 12));
+            montoyaApi.userInterface().applyThemeToComponent(dangerousLabel);
+            dangerousCategoriesPanel.add(dangerousLabel);
+
+            for (Tag.Category category : DANGEROUS_CATEGORIES) {
+                JCheckBox categoryCheckbox = new JCheckBox(category.name());
+                categoryCheckbox.setFont(new Font("Inter", Font.PLAIN, 12));
+                categoryCheckbox.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                categoryCheckbox.setToolTipText("Enable " + category.name() + " tags (may execute code)");
+                categoryCheckbox.setSelected(enabledDangerousCategories.contains(category));
+                categoryCheckbox.addActionListener(e -> {
+                    if (categoryCheckbox.isSelected()) {
+                        enabledDangerousCategories.add(category);
+                    } else {
+                        enabledDangerousCategories.remove(category);
+                    }
+                    refreshAllLayers();
+                });
+                montoyaApi.userInterface().applyThemeToComponent(categoryCheckbox);
+                dangerousCategoriesPanel.add(categoryCheckbox);
+                dangerousCategoryCheckboxes.put(category, categoryCheckbox);
+            }
+            montoyaApi.userInterface().applyThemeToComponent(dangerousCategoriesPanel);
+
+            JPanel layerControlPanel = new JPanel(new BorderLayout());
+            layerControlPanel.add(layerButtonPanel, BorderLayout.WEST);
+            layerControlPanel.add(dangerousCategoriesPanel, BorderLayout.EAST);
+            montoyaApi.userInterface().applyThemeToComponent(layerControlPanel);
+
+            topPanel.add(layerControlPanel, BorderLayout.NORTH);
             topPanel.add(layerTabbedPane, BorderLayout.CENTER);
 
             JPanel previewPanel = new JPanel(new BorderLayout());
@@ -236,6 +280,7 @@ public class MultiEncoderWindow {
             window.addWindowFocusListener(new java.awt.event.WindowAdapter() {
                 @Override
                 public void windowLostFocus(java.awt.event.WindowEvent e) {
+                    saveState();
                     window.dispose();
                 }
             });
@@ -260,7 +305,15 @@ public class MultiEncoderWindow {
             montoyaApi.userInterface().applyThemeToComponent(window.getContentPane());
             window.setLocationRelativeTo(montoyaApi.userInterface().swingUtils().suiteFrame());
 
-            addLayer();
+            int savedLayerCount = getSavedLayerCount();
+            int layersToCreate = Math.max(1, savedLayerCount);
+            for (int i = 0; i < layersToCreate; i++) {
+                addLayer();
+                if (i < savedLayerCount) {
+                    loadLayerState(layers.get(i), i);
+                }
+            }
+            updatePreview();
 
             window.setVisible(true);
             if (!layers.isEmpty()) {
@@ -310,12 +363,16 @@ public class MultiEncoderWindow {
         layerPanel.add(searchAndSelectAllPanel, BorderLayout.NORTH);
         layerPanel.add(tagsScrollPane, BorderLayout.CENTER);
 
-        Layer layer = new Layer(tagsPanel, searchField, selectAllCheckbox, null);
+        Layer layer = new Layer(tagsPanel, searchField, selectAllCheckbox);
 
         Function<String, ArrayList<Tag>> filterTags = searchText -> {
             ArrayList<Tag> filtered = new ArrayList<>();
             String lowerSearch = searchText.toLowerCase();
             for (Tag tag : tags) {
+                if (DANGEROUS_CATEGORIES.contains(tag.category) &&
+                    !enabledDangerousCategories.contains(tag.category)) {
+                    continue;
+                }
                 if (lowerSearch.isEmpty() ||
                     tag.name.toLowerCase().contains(lowerSearch) ||
                     tag.category.toString().toLowerCase().contains(lowerSearch) ||
@@ -393,6 +450,8 @@ public class MultiEncoderWindow {
             tagsPanel.repaint();
         };
 
+        layer.updateTags = updateTags;
+
         java.awt.event.ActionListener selectAllListener = new java.awt.event.ActionListener() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
@@ -468,6 +527,17 @@ public class MultiEncoderWindow {
             layerTabbedPane.removeTabAt(selectedIndex);
             updatePreview();
         }
+    }
+
+    private void refreshAllLayers() {
+        for (Layer layer : layers) {
+            layer.selectedTags.removeIf(tag ->
+                    DANGEROUS_CATEGORIES.contains(tag.category) &&
+                    !enabledDangerousCategories.contains(tag.category)
+            );
+            layer.updateTags.run();
+        }
+        updatePreview();
     }
 
     private ArrayList<ArrayList<Tag>> getAllLayerTags() {
@@ -766,5 +836,127 @@ public class MultiEncoderWindow {
 
         JOptionPane.showMessageDialog(window, "Sent to Intruder. " + variants.size() + " payload(s) copied to clipboard.", "Success", JOptionPane.INFORMATION_MESSAGE);
         window.dispose();
+    }
+
+    private void saveState() {
+        try {
+            JSONObject state = new JSONObject();
+
+            JSONArray enabledCategories = new JSONArray();
+            for (Tag.Category category : enabledDangerousCategories) {
+                enabledCategories.put(category.name());
+            }
+            state.put("enabledDangerousCategories", enabledCategories);
+
+            JSONArray layersArray = new JSONArray();
+            for (Layer layer : layers) {
+                JSONObject layerObj = new JSONObject();
+                layerObj.put("searchText", layer.searchField.getText());
+
+                JSONArray selectedTagNames = new JSONArray();
+                for (Tag tag : layer.selectedTags) {
+                    selectedTagNames.put(tag.name);
+                }
+                layerObj.put("selectedTags", selectedTagNames);
+
+                layersArray.put(layerObj);
+            }
+            state.put("layers", layersArray);
+
+            montoyaApi.persistence().extensionData().setString(PERSISTENCE_KEY, state.toString());
+        } catch (Exception e) {
+            System.err.println("Failed to save MultiEncoder state: " + e.getMessage());
+        }
+    }
+
+    private void loadState() {
+        try {
+            String content = montoyaApi.persistence().extensionData().getString(PERSISTENCE_KEY);
+            if (content == null || content.isEmpty()) {
+                return;
+            }
+
+            JSONObject state = new JSONObject(content);
+
+            if (state.has("enabledDangerousCategories")) {
+                JSONArray enabledCategories = state.getJSONArray("enabledDangerousCategories");
+                for (int i = 0; i < enabledCategories.length(); i++) {
+                    String categoryName = enabledCategories.getString(i);
+                    try {
+                        Tag.Category category = Tag.Category.valueOf(categoryName);
+                        if (DANGEROUS_CATEGORIES.contains(category)) {
+                            enabledDangerousCategories.add(category);
+                        }
+                    } catch (IllegalArgumentException ignored) {
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to load MultiEncoder state: " + e.getMessage());
+        }
+    }
+
+    private void loadLayerState(Layer layer, int layerIndex) {
+        try {
+            String content = montoyaApi.persistence().extensionData().getString(PERSISTENCE_KEY);
+            if (content == null || content.isEmpty()) {
+                return;
+            }
+
+            JSONObject state = new JSONObject(content);
+            if (!state.has("layers")) {
+                return;
+            }
+
+            JSONArray layersArray = state.getJSONArray("layers");
+            if (layerIndex >= layersArray.length()) {
+                return;
+            }
+
+            JSONObject layerObj = layersArray.getJSONObject(layerIndex);
+
+            if (layerObj.has("searchText")) {
+                layer.searchField.setText(layerObj.getString("searchText"));
+            }
+
+            if (layerObj.has("selectedTags")) {
+                JSONArray selectedTagNames = layerObj.getJSONArray("selectedTags");
+                for (int i = 0; i < selectedTagNames.length(); i++) {
+                    String tagName = selectedTagNames.getString(i);
+                    JCheckBox checkbox = layer.tagCheckboxes.get(tagName);
+                    if (checkbox != null) {
+                        checkbox.setSelected(true);
+                        for (Tag tag : tags) {
+                            if (tag.name.equals(tagName)) {
+                                if (!layer.selectedTags.contains(tag)) {
+                                    layer.selectedTags.add(tag);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to load layer state: " + e.getMessage());
+        }
+    }
+
+    private int getSavedLayerCount() {
+        try {
+            String content = montoyaApi.persistence().extensionData().getString(PERSISTENCE_KEY);
+            if (content == null || content.isEmpty()) {
+                return 0;
+            }
+
+            JSONObject state = new JSONObject(content);
+            if (!state.has("layers")) {
+                return 0;
+            }
+
+            return state.getJSONArray("layers").length();
+        } catch (Exception e) {
+            return 0;
+        }
     }
 }
