@@ -47,6 +47,19 @@
     "language": "Python"
   },
   {
+    "tagName": "zipfile",
+    "description": "Create a zip file on the fly with one file in it, file name as argument 1, file content as input (raw by default, optionally in base64 - set second argument to 1)",
+    "author": "pentagridsec",
+    "numberOfArgs": 2,
+    "argument1": "filename",
+    "argument1Type": "String",
+    "argument1Default": "test.txt",
+    "argument2": "isBase64",
+    "argument2Type": "Number",
+    "argument2Default": "0",
+    "language": "Python"
+  },
+  {
     "tagName": "ip",
     "description": "Generates a random IP",
     "author": "Techbrunch",
