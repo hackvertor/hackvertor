@@ -781,13 +781,16 @@ public class MultiEncoderWindow {
         ArrayList<String> variants = generateAllVariants(selectedText, shouldConvert);
 
         String modePrefix = shouldConvert ? "HV-" : "HVT-";
-        int variantNum = 1;
-        for (String variant : variants) {
+        ArrayList<Tag> layer1Tags = allLayerTags.get(0);
+        int variantsPerLayer1Tag = variants.size() / layer1Tags.size();
+        for (int i = 0; i < variants.size(); i++) {
+            String variant = variants.get(i);
             String modifiedRequestStr = requestStr.replace(selectedText, variant);
             HttpRequest modifiedRequest = HttpRequest.httpRequest(modifiedRequestStr);
-            String tabName = modePrefix + "V" + variantNum + "-" + selectedText.substring(0, Math.min(selectedText.length(), 10));
+            int layer1TagIndex = i / variantsPerLayer1Tag;
+            String layer1TagName = layer1Tags.get(layer1TagIndex).name;
+            String tabName = modePrefix + layer1TagName + "-" + selectedText.substring(0, Math.min(selectedText.length(), 10));
             montoyaApi.repeater().sendToRepeater(modifiedRequest, tabName);
-            variantNum++;
         }
 
         showInfoMessage("Sent " + variants.size() + " variant(s) to Repeater.");
