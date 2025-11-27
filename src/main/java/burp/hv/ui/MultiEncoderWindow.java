@@ -32,10 +32,10 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class MultiEncoderWindow {
-    private static final int DEFAULT_WIDTH = 900;
-    private static final int DEFAULT_HEIGHT = 600;
+    private static final int DEFAULT_WIDTH = 1000;
+    private static final int DEFAULT_HEIGHT = 750;
     private static final int CORNER_RADIUS = 20;
-    private static final int COLUMN_COUNT = 3;
+    private static final int COLUMN_COUNT = 4;
     private static final int MAX_VARIANTS_DISPLAY = 100;
     private static final int MAX_VARIANTS_TOTAL = 10000;
     private static final int MAX_TAGS_PER_LAYER = 50;
@@ -710,15 +710,38 @@ public class MultiEncoderWindow {
             return;
         }
         boolean shouldConvert = "Convert".equals(modeComboBox.getSelectedItem());
-        ArrayList<String> variants = generateAllVariants(selectedText, shouldConvert);
+        ArrayList<String> taggedVariants = generateAllVariants(selectedText, false);
+        ArrayList<String> resultVariants = generateAllVariants(selectedText, shouldConvert);
+        String filterText = previewSearchField.getText().toLowerCase();
+
+        ArrayList<String> variantsToCopy = new ArrayList<>();
+        if (filterText.isEmpty()) {
+            variantsToCopy.addAll(resultVariants);
+        } else {
+            for (int i = 0; i < taggedVariants.size(); i++) {
+                if (taggedVariants.get(i).toLowerCase().contains(filterText)) {
+                    variantsToCopy.add(resultVariants.get(i));
+                }
+            }
+        }
+
+        if (variantsToCopy.isEmpty()) {
+            showWarningMessage("No variants match the filter.");
+            return;
+        }
+
         StringBuilder output = new StringBuilder();
-        for (int i = 0; i < variants.size(); i++) {
+        for (int i = 0; i < variantsToCopy.size(); i++) {
             if (i > 0) output.append("\n");
-            output.append(variants.get(i));
+            output.append(variantsToCopy.get(i));
         }
         StringSelection selection = new StringSelection(output.toString());
         Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
         clipboard.setContents(selection, null);
+
+        if (!filterText.isEmpty()) {
+            showInfoMessage("Copied " + variantsToCopy.size() + " filtered variant(s).");
+        }
     }
 
     private void updatePreview() {
@@ -899,20 +922,6 @@ public class MultiEncoderWindow {
         HttpRequestTemplate intruderTemplate = HttpRequestTemplate.httpRequestTemplate(baseRequest, Collections.singletonList(insertionPoint));
         String tabName = "HV-Layers-" + selectedText.substring(0, Math.min(selectedText.length(), 10));
         montoyaApi.intruder().sendToIntruder(baseRequestResponse.request().httpService(), intruderTemplate, tabName);
-
-        boolean shouldConvert = "Convert".equals(modeComboBox.getSelectedItem());
-        ArrayList<String> variants = generateAllVariants(selectedText, shouldConvert);
-
-        StringBuilder payloadList = new StringBuilder();
-        for (String variant : variants) {
-            payloadList.append(variant).append("\n");
-        }
-
-        StringSelection selection = new StringSelection(payloadList.toString());
-        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-        clipboard.setContents(selection, null);
-
-        JOptionPane.showMessageDialog(window, "Sent to Intruder. " + variants.size() + " payload(s) copied to clipboard.", "Success", JOptionPane.INFORMATION_MESSAGE);
         window.dispose();
     }
 
