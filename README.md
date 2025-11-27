@@ -10,6 +10,14 @@ Tags also support arguments. The find tag allows you to find a string by regex a
 
 # Changelog
 
+## Version v2.2.33 (2025-11-27)
+
+- Added category checkboxes and a message when all variants are copied, 
+- Made the filter using the tag name. Changed dimensions. 
+- Added filter to output preview 
+- Added the first layer tag as the name of the Repeater tab
+- Prevented dangerous categories from being shown in the MultiEncoderWindow. Added checkboxes to enable them. Made the window persist state in the project file when closed.
+
 ## Version v2.2.26 (2025-11-26)
 
 - Fixed dialog problems
