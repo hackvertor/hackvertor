@@ -1559,7 +1559,7 @@ public class HackvertorUiTest {
         GuiActionRunner.execute(() -> finalInputArea.setText("<@deflate_compress><@base32>foobar</@base32></@deflate_compress>"));
         window.robot().waitForIdle();
 
-        Thread.sleep(300);
+        Thread.sleep(500);
         window.robot().waitForIdle();
 
         String encodedOutput = outputArea.getText();
@@ -1568,7 +1568,7 @@ public class HackvertorUiTest {
         GuiActionRunner.execute(() -> finalInputArea.setText("<@auto_decode_no_decrypt>" + finalOutputArea.getText() + "</@auto_decode_no_decrypt>"));
         window.robot().waitForIdle();
 
-        Thread.sleep(300);
+        Thread.sleep(500);
         window.robot().waitForIdle();
 
         String decodedOutput = outputArea.getText();

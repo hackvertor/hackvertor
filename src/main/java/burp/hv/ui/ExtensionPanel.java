@@ -151,6 +151,9 @@ public class ExtensionPanel extends JTabbedPaneClosable {
     }
 
     public void restoreState() {
+        if(montoyaApi == null) {
+            return;
+        }
         try {
             String savedState = montoyaApi.persistence().extensionData().getString("extensionPanelState");
             if (savedState == null || savedState.isEmpty()) {
