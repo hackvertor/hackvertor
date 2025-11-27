@@ -1,6 +1,13 @@
-# Pentagrid AG
+# Pentagrid AG, pentagridsec
 
-import zipfile
+# Work around the problem that zipfile is the name of the standard library but also this file
+# Attention: Cursed Python ahead.
+import sys
+local = sys.path.pop(0)
+import zipfile as zipfileLibrary
+sys.path.insert(0, local)
+
+
 import time
 
 # argument 1, filename, default "test.png"
@@ -87,7 +94,7 @@ except ImportError:
         PYTHON2=True
 
 
-zf = zipfile.ZipFile(memory_buffer, mode='w', compression=zipfile.ZIP_DEFLATED)
+zf = zipfileLibrary.ZipFile(memory_buffer, mode='w', compression=zipfileLibrary.ZIP_DEFLATED)
 
 # Create empty directories if the file should be in directories
 if '/' in filename_from_argument:
@@ -95,14 +102,14 @@ if '/' in filename_from_argument:
     directories = splitted[:-1]
     parents = ""
     for directory in directories:
-        dir_info = zipfile.ZipInfo(parents + directory + "/")
+        dir_info = zipfileLibrary.ZipInfo(parents + directory + "/")
         parents += directory + "/"
         dir_info.date_time = time.localtime(time.time())[:6]
         dir_info.external_attr = 0o755 << 16
         zf.writestr(dir_info, '')
 
 # Put file in zip file
-info = zipfile.ZipInfo(filename_from_argument)
+info = zipfileLibrary.ZipInfo(filename_from_argument)
 info.date_time = time.localtime(time.time())[:6]
 info.external_attr = 0o777 << 16
 zf.writestr(info, file_content)
