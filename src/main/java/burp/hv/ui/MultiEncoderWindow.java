@@ -13,6 +13,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import javax.swing.*;
+import javax.swing.text.*;
 import java.util.EnumSet;
 import java.util.Set;
 import javax.swing.border.EmptyBorder;
@@ -53,7 +54,9 @@ public class MultiEncoderWindow {
     private final HttpRequestResponse baseRequestResponse;
     private final ArrayList<Layer> layers;
     private final Consumer<String> hackvertorCallback;
-    private JTextArea previewArea;
+    private JTextPane previewArea;
+    private JTextField previewSearchField;
+    private String lastPreviewContent = "";
     private JWindow window;
     private JComboBox<String> modeComboBox;
     private JTabbedPane layerTabbedPane;
@@ -191,7 +194,25 @@ public class MultiEncoderWindow {
             JPanel previewPanel = new JPanel(new BorderLayout());
             previewPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
 
-            previewArea = new JTextArea();
+            JPanel previewSearchPanel = new JPanel(new BorderLayout(5, 0));
+            previewSearchPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 5, 0));
+            JLabel previewSearchLabel = new JLabel("Filter:");
+            previewSearchLabel.setFont(new Font("Inter", Font.PLAIN, 12));
+            montoyaApi.userInterface().applyThemeToComponent(previewSearchLabel);
+            previewSearchField = new JTextField();
+            previewSearchField.setFont(new Font("Monospaced", Font.PLAIN, 12));
+            previewSearchField.addKeyListener(new KeyAdapter() {
+                @Override
+                public void keyReleased(KeyEvent e) {
+                    applyPreviewFilter();
+                }
+            });
+            montoyaApi.userInterface().applyThemeToComponent(previewSearchField);
+            previewSearchPanel.add(previewSearchLabel, BorderLayout.WEST);
+            previewSearchPanel.add(previewSearchField, BorderLayout.CENTER);
+            montoyaApi.userInterface().applyThemeToComponent(previewSearchPanel);
+
+            previewArea = new JTextPane();
             previewArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
             previewArea.setEditable(false);
             montoyaApi.userInterface().applyThemeToComponent(previewArea);
@@ -201,6 +222,7 @@ public class MultiEncoderWindow {
             previewScrollPane.setBorder(BorderFactory.createTitledBorder("Preview"));
             montoyaApi.userInterface().applyThemeToComponent(previewScrollPane);
 
+            previewPanel.add(previewSearchPanel, BorderLayout.NORTH);
             previewPanel.add(previewScrollPane, BorderLayout.CENTER);
 
             statusLabel = new JLabel(" ");
@@ -240,6 +262,8 @@ public class MultiEncoderWindow {
                     layer.selectAllCheckbox.setSelected(false);
                 }
                 previewArea.setText("");
+                lastPreviewContent = "";
+                previewSearchField.setText("");
             });
             montoyaApi.userInterface().applyThemeToComponent(clearButton);
 
@@ -700,7 +724,8 @@ public class MultiEncoderWindow {
     private void updatePreview() {
         ArrayList<ArrayList<Tag>> allLayerTags = getAllLayerTags();
         if (allLayerTags.isEmpty()) {
-            previewArea.setText("No tags selected. Please select at least one tag in any layer.");
+            lastPreviewContent = "No tags selected. Please select at least one tag in any layer.";
+            previewArea.setText(lastPreviewContent);
             return;
         }
 
@@ -737,7 +762,57 @@ public class MultiEncoderWindow {
                    .append(" more variants not shown ...\n");
         }
 
-        previewArea.setText(preview.toString());
+        lastPreviewContent = preview.toString();
+        applyPreviewFilter();
+    }
+
+    private void applyPreviewFilter() {
+        String filterText = previewSearchField.getText().toLowerCase();
+        StyledDocument doc = previewArea.getStyledDocument();
+
+        Style defaultStyle = previewArea.addStyle("default", null);
+        StyleConstants.setBackground(defaultStyle, previewArea.getBackground());
+
+        Style highlightStyle = previewArea.addStyle("highlight", null);
+        StyleConstants.setBackground(highlightStyle, new Color(255, 255, 0));
+        StyleConstants.setForeground(highlightStyle, Color.BLACK);
+
+        if (filterText.isEmpty()) {
+            previewArea.setText(lastPreviewContent);
+            previewArea.setCaretPosition(0);
+            return;
+        }
+
+        String[] lines = lastPreviewContent.split("\n");
+        StringBuilder filteredContent = new StringBuilder();
+        ArrayList<int[]> highlights = new ArrayList<>();
+
+        for (String line : lines) {
+            if (line.toLowerCase().contains(filterText)) {
+                int lineStart = filteredContent.length();
+                filteredContent.append(line).append("\n");
+
+                String lowerLine = line.toLowerCase();
+                int searchStart = 0;
+                int idx;
+                while ((idx = lowerLine.indexOf(filterText, searchStart)) != -1) {
+                    highlights.add(new int[]{lineStart + idx, filterText.length()});
+                    searchStart = idx + 1;
+                }
+            }
+        }
+
+        if (filteredContent.isEmpty()) {
+            previewArea.setText("No matches found for: " + previewSearchField.getText());
+            return;
+        }
+
+        previewArea.setText(filteredContent.toString());
+
+        for (int[] highlight : highlights) {
+            doc.setCharacterAttributes(highlight[0], highlight[1], highlightStyle, false);
+        }
+
         previewArea.setCaretPosition(0);
     }
 
