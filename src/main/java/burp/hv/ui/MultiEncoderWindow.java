@@ -64,7 +64,9 @@ public class MultiEncoderWindow {
     private JLabel statusLabel;
     private Timer statusClearTimer;
     private final Set<Tag.Category> enabledDangerousCategories = EnumSet.noneOf(Tag.Category.class);
+    private final Set<Tag.Category> enabledCategories = EnumSet.noneOf(Tag.Category.class);
     private final Map<Tag.Category, JCheckBox> dangerousCategoryCheckboxes = new HashMap<>();
+    private final Map<Tag.Category, JCheckBox> categoryCheckboxes = new HashMap<>();
 
     private class Layer {
         final Map<String, JCheckBox> tagCheckboxes;
@@ -158,7 +160,7 @@ public class MultiEncoderWindow {
             loadState();
 
             JPanel dangerousCategoriesPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-            JLabel dangerousLabel = new JLabel("Enable dangerous categories:");
+            JLabel dangerousLabel = new JLabel("Dangerous:");
             dangerousLabel.setFont(new Font("Inter", Font.PLAIN, 12));
             montoyaApi.userInterface().applyThemeToComponent(dangerousLabel);
             dangerousCategoriesPanel.add(dangerousLabel);
@@ -183,9 +185,47 @@ public class MultiEncoderWindow {
             }
             montoyaApi.userInterface().applyThemeToComponent(dangerousCategoriesPanel);
 
+            JPanel categoriesInnerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+            for (Tag.Category category : Tag.Category.values()) {
+                if (DANGEROUS_CATEGORIES.contains(category)) {
+                    continue;
+                }
+                enabledCategories.add(category);
+                JCheckBox categoryCheckbox = new JCheckBox(category.name());
+                categoryCheckbox.setFont(new Font("Inter", Font.PLAIN, 12));
+                categoryCheckbox.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                categoryCheckbox.setToolTipText("Show " + category.name() + " tags");
+                categoryCheckbox.setSelected(true);
+                categoryCheckbox.addActionListener(e -> {
+                    if (categoryCheckbox.isSelected()) {
+                        enabledCategories.add(category);
+                    } else {
+                        enabledCategories.remove(category);
+                    }
+                    refreshAllLayers();
+                });
+                montoyaApi.userInterface().applyThemeToComponent(categoryCheckbox);
+                categoriesInnerPanel.add(categoryCheckbox);
+                categoryCheckboxes.put(category, categoryCheckbox);
+            }
+            montoyaApi.userInterface().applyThemeToComponent(categoriesInnerPanel);
+
+            JScrollPane categoriesScrollPane = new JScrollPane(categoriesInnerPanel);
+            categoriesScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+            categoriesScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
+            categoriesScrollPane.setBorder(BorderFactory.createTitledBorder("Categories"));
+            categoriesScrollPane.setPreferredSize(new Dimension(DEFAULT_WIDTH - 50, 60));
+            categoriesScrollPane.getHorizontalScrollBar().setUnitIncrement(16);
+            montoyaApi.userInterface().applyThemeToComponent(categoriesScrollPane);
+
+            JPanel allCategoriesPanel = new JPanel(new BorderLayout());
+            allCategoriesPanel.add(categoriesScrollPane, BorderLayout.CENTER);
+            allCategoriesPanel.add(dangerousCategoriesPanel, BorderLayout.SOUTH);
+            montoyaApi.userInterface().applyThemeToComponent(allCategoriesPanel);
+
             JPanel layerControlPanel = new JPanel(new BorderLayout());
             layerControlPanel.add(layerButtonPanel, BorderLayout.WEST);
-            layerControlPanel.add(dangerousCategoriesPanel, BorderLayout.EAST);
+            layerControlPanel.add(allCategoriesPanel, BorderLayout.CENTER);
             montoyaApi.userInterface().applyThemeToComponent(layerControlPanel);
 
             topPanel.add(layerControlPanel, BorderLayout.NORTH);
@@ -393,9 +433,14 @@ public class MultiEncoderWindow {
             ArrayList<Tag> filtered = new ArrayList<>();
             String lowerSearch = searchText.toLowerCase();
             for (Tag tag : tags) {
-                if (DANGEROUS_CATEGORIES.contains(tag.category) &&
-                    !enabledDangerousCategories.contains(tag.category)) {
-                    continue;
+                if (DANGEROUS_CATEGORIES.contains(tag.category)) {
+                    if (!enabledDangerousCategories.contains(tag.category)) {
+                        continue;
+                    }
+                } else {
+                    if (!enabledCategories.contains(tag.category)) {
+                        continue;
+                    }
                 }
                 if (lowerSearch.isEmpty() ||
                     tag.name.toLowerCase().contains(lowerSearch) ||
@@ -555,10 +600,13 @@ public class MultiEncoderWindow {
 
     private void refreshAllLayers() {
         for (Layer layer : layers) {
-            layer.selectedTags.removeIf(tag ->
-                    DANGEROUS_CATEGORIES.contains(tag.category) &&
-                    !enabledDangerousCategories.contains(tag.category)
-            );
+            layer.selectedTags.removeIf(tag -> {
+                if (DANGEROUS_CATEGORIES.contains(tag.category)) {
+                    return !enabledDangerousCategories.contains(tag.category);
+                } else {
+                    return !enabledCategories.contains(tag.category);
+                }
+            });
             layer.updateTags.run();
         }
         updatePreview();
@@ -741,6 +789,8 @@ public class MultiEncoderWindow {
 
         if (!filterText.isEmpty()) {
             showInfoMessage("Copied " + variantsToCopy.size() + " filtered variant(s).");
+        } else {
+            showInfoMessage("Copied " + variantsToCopy.size() + " variant(s).");
         }
     }
 
