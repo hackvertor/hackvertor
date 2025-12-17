@@ -928,4 +928,64 @@ public class AutoDecodeNestedTests extends BaseHackvertorTest {
         String decoded = hackvertor.convert("<@auto_decode_no_decrypt>" + encoded + "</@auto_decode_no_decrypt>", hackvertor);
         assertEquals("<@unicode_escapes><@base64>" + crlf + "</@base64></@unicode_escapes>", decoded);
     }
+
+    @Test
+    void testAsciiHexNoSpaceToGzip_2Levels() {
+        String encoded = hackvertor.convert("<@ascii2hex('')><@gzip_compress>foobar</@gzip_compress></@ascii2hex>", hackvertor);
+        String decoded = hackvertor.convert("<@auto_decode_no_decrypt>" + encoded + "</@auto_decode_no_decrypt>", hackvertor);
+        assertEquals("<@ascii2hex(\"\")><@gzip_compress>foobar</@gzip_compress></@ascii2hex>", decoded);
+    }
+
+    @Test
+    void testAsciiHexNoSpaceToBase64_2Levels() {
+        String encoded = hackvertor.convert("<@ascii2hex('')><@base64>foobar</@base64></@ascii2hex>", hackvertor);
+        String decoded = hackvertor.convert("<@auto_decode_no_decrypt>" + encoded + "</@auto_decode_no_decrypt>", hackvertor);
+        assertEquals("<@ascii2hex(\"\")><@base64>foobar</@base64></@ascii2hex>", decoded);
+    }
+
+    @Test
+    void testAsciiHexNoSpaceToDeflate_2Levels() {
+        String encoded = hackvertor.convert("<@ascii2hex('')><@deflate_compress>foobar</@deflate_compress></@ascii2hex>", hackvertor);
+        String decoded = hackvertor.convert("<@auto_decode_no_decrypt>" + encoded + "</@auto_decode_no_decrypt>", hackvertor);
+        assertEquals("<@ascii2hex(\"\")><@deflate_compress>foobar</@deflate_compress></@ascii2hex>", decoded);
+    }
+
+    @Test
+    void testAsciiHexNoSpaceToBase32ToGzip_3Levels() {
+        String encoded = hackvertor.convert("<@ascii2hex('')><@base32><@gzip_compress>foobar</@gzip_compress></@base32></@ascii2hex>", hackvertor);
+        String decoded = hackvertor.convert("<@auto_decode_no_decrypt>" + encoded + "</@auto_decode_no_decrypt>", hackvertor);
+        assertEquals("<@ascii2hex(\"\")><@base32><@gzip_compress>foobar</@gzip_compress></@base32></@ascii2hex>", decoded);
+    }
+
+    @Test
+    void testAsciiHexNoSpaceJsonPayload() {
+        String json = "{\"stockApi\": \"http://api.weliketoshop.net:8080/product/stock/check?productId=test&storeId=test\"}";
+        String encoded = hackvertor.convert("<@ascii2hex('')><@gzip_compress>" + json + "</@gzip_compress></@ascii2hex>", hackvertor);
+        String decoded = hackvertor.convert("<@auto_decode_no_decrypt>" + encoded + "</@auto_decode_no_decrypt>", hackvertor);
+        assertEquals("<@ascii2hex(\"\")><@gzip_compress>" + json + "</@gzip_compress></@ascii2hex>", decoded);
+    }
+
+    @Test
+    void testAsciiHexSpaceJsonPayload() {
+        String json = "{\"stockApi\": \"http://api.weliketoshop.net:8080/product/stock/check?productId=test&storeId=test\"}";
+        String encoded = hackvertor.convert("<@ascii2hex(' ')><@gzip_compress>" + json + "</@gzip_compress></@ascii2hex>", hackvertor);
+        String decoded = hackvertor.convert("<@auto_decode_no_decrypt>" + encoded + "</@auto_decode_no_decrypt>", hackvertor);
+        assertEquals("<@ascii2hex(\" \")><@gzip_compress>" + json + "</@gzip_compress></@ascii2hex>", decoded);
+    }
+
+    @Test
+    void testAsciiHexNoSpaceSimpleString() {
+        String input = "hello world";
+        String encoded = hackvertor.convert("<@ascii2hex('')>" + input + "</@ascii2hex>", hackvertor);
+        String decoded = hackvertor.convert("<@auto_decode_no_decrypt>" + encoded + "</@auto_decode_no_decrypt>", hackvertor);
+        assertEquals("<@ascii2hex(\"\")>" + input + "</@ascii2hex>", decoded);
+    }
+
+    @Test
+    void testAsciiHexSpaceSimpleString() {
+        String input = "hello world";
+        String encoded = hackvertor.convert("<@ascii2hex(' ')>" + input + "</@ascii2hex>", hackvertor);
+        String decoded = hackvertor.convert("<@auto_decode_no_decrypt>" + encoded + "</@auto_decode_no_decrypt>", hackvertor);
+        assertEquals("<@ascii2hex(\" \")>" + input + "</@ascii2hex>", decoded);
+    }
 }

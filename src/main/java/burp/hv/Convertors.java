@@ -3363,7 +3363,7 @@ public class Convertors {
     private static final Pattern GZIP_PATTERN = Pattern.compile("^\\x1f\\x8b\\x08");
     private static final Pattern DEFLATE_PATTERN = Pattern.compile("^\\x78[\\x01\\x5e\\x9c\\xda]");
     private static final Pattern BINARY_PATTERN = Pattern.compile("[01]{4,}\\s+[01]{4,}");
-    private static final Pattern HEX_SPACED_PATTERN = Pattern.compile("(?:[0-9a-fA-F]{2}[\\s,\\-]?){3,}");
+    private static final Pattern HEX_SPACED_PATTERN = Pattern.compile("^(?:[0-9a-fA-F]{2}[\\s,\\-])+[0-9a-fA-F]{2}$");
     private static final Pattern HEX_PATTERN = Pattern.compile("^[0-9a-fA-F]+$");
     private static final Pattern CHARCODE_PATTERN = Pattern.compile("\\d+[,\\s]+");
     private static final Pattern NON_CHARCODE_PATTERN = Pattern.compile("[^\\d,\\s]");
@@ -3441,7 +3441,15 @@ public class Convertors {
                 matched = true;
                 appendTags(openTags, closeTags, "ascii2bin");
             }
-            if (HEX_SPACED_PATTERN.matcher(str).find()) {
+            if (HEX_PATTERN.matcher(str).matches() && str.length() % 2 == 0) {
+                test = hex2ascii(str);
+                if (isAsciiOrCompressed(test)) {
+                    str = test;
+                    matched = true;
+                    appendTags(openTags, closeTags, "ascii2hex(\"\")", "ascii2hex");
+                }
+            }
+            if (HEX_SPACED_PATTERN.matcher(str).matches()) {
                 test = hex2ascii(str);
                 if (isAsciiOrCompressed(test)) {
                     str = test;
@@ -3449,11 +3457,6 @@ public class Convertors {
                     repeat++;
                     continue;
                 }
-            }
-            if (HEX_PATTERN.matcher(str).find() && str.length() % 2 == 0) {
-                str = hex2ascii(str);
-                matched = true;
-                appendTags(openTags, closeTags, "ascii2hex(\"\")", "ascii2hex");
             }
             if (!NON_CHARCODE_PATTERN.matcher(str).find() && CHARCODE_PATTERN.matcher(str).find()) {
                 str = from_charcode(str);

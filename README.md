@@ -10,6 +10,11 @@ Tags also support arguments. The find tag allows you to find a string by regex a
 
 # Changelog
 
+## Version v2.2.34 (2025-12-17)
+
+- Fixed smart decoding bug 
+- Added more tag automator examples.
+
 ## Version v2.2.33 (2025-11-27)
 
 - Added category checkboxes and a message when all variants are copied, 

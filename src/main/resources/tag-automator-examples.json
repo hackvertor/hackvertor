@@ -25,5 +25,23 @@
     "modification": "temp = \"1.0\"\nprompt = \"Crack this hash\"\n\ndecoded = convert(\"<@ai('\" + temp + \"','\" + prompt + \"','\" + executionKey + \"')>\" + input + \"<\/@ai>\")\noutput = \"<@md5>\" + decoded + \"<\/@md5>\"",
     "enabled": true,
     "tool": "Repeater"
+  },
+  {
+    "name": "Rehydrate",
+    "contexts": ["request"],
+    "type": "Context Menu",
+    "analysis": "import re\n\nkeys = re.compile(r'[a-f0-9]{32}')\n\ndef find_positions(text):\n    positions = [\"{},{}\".format(m.start(), m.end()) for m in keys.finditer(text)]\n    return \";\".join(positions)\n\noutput = find_positions(input)",
+    "modification": "myOldKey = \"6ef6676067ccbe68e2e2cfea71d04e8a\"\noutput = input.replace(myOldKey, executionKey)",
+    "enabled": true,
+    "tool": ["Repeater"]
+  },
+  {
+    "name": "Copy JS variable in response to clipboard",
+    "contexts": ["response"],
+    "type": "HTTP",
+    "analysis": "import re\n\n# Matches: let data = '...'; const foo = \"...\"\n_var = re.compile(\n    r'\\b(?:let|var|const)\\s+[A-Za-z_$][A-Za-z0-9_$]*\\s*=\\s*[\\'\"][^\\'\"]*[\\'\"]'\n)\n\ndef find_positions(text):\n    positions = [\"{},{}\".format(m.start(), m.end()) for m in _var.finditer(text)]\n    return \";\".join(positions)\n\noutput = find_positions(input)",
+    "modification": "import subprocess\n\ndef copy_to_clipboard(text):\n    p = subprocess.Popen(['pbcopy'], stdin=subprocess.PIPE)\n    p.stdin.write(text)\n    p.stdin.close()\n\ncopy_to_clipboard(input)\noutput = input",
+    "enabled": true,
+    "tool": ["Repeater"]
   }
 ]
