@@ -58,7 +58,6 @@ Global variables can be used throughout Hackvertor.
 2. Click "Global variables"
 3. Enter variable name and value
 4. Click "Create/Update variable"
-5. 
 
 ## Edit a global variable
 
