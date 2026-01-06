@@ -35,7 +35,7 @@ import static burp.hv.utils.TagUtils.generateTagActionListener;
 public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, IExtensionStateListener, IMessageEditorTabFactory {
     //TODO Unset on unload
     public static String extensionName = "Hackvertor";
-    public static String version = "v2.2.34";
+    public static String version = "v2.2.36";
     public static JFrame HackvertorFrame = null;
     public static IBurpExtenderCallbacks callbacks;
     public static IExtensionHelpers helpers;
@@ -195,7 +195,7 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
 
     private void registerAllHotkeys(MontoyaApi montoyaApi, Burp burp) {
         List<HotkeyDefinition> hotkeys = Arrays.asList(
-            new HotkeyDefinition("Convert", "Ctrl+Alt+C", event -> {
+            new HotkeyDefinition("Convert", "Ctrl+Alt+H", event -> {
                 if (event.messageEditorRequestResponse().isEmpty()) {
                     return;
                 }
@@ -222,14 +222,26 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
                 Tag tagObj = TagUtils.getTagByTagName(tags, lastTagUsed);
                 generateTagActionListener(event, tagObj).actionPerformed(null);
             }),
-            new HotkeyDefinition("New custom tag", "Ctrl+Alt+N", event -> CustomTags.showCreateEditTagDialog(false, null)),
-            new HotkeyDefinition("List custom tags", "Ctrl+Alt+L", event -> CustomTags.showListTagsDialog()),
-            new HotkeyDefinition("Global variables", "Ctrl+Alt+V", event -> Variables.showGlobalVariablesWindow()),
-            new HotkeyDefinition("Tag Automator", "Ctrl+Alt+A", event -> TagAutomator.showRulesDialog()),
-            new HotkeyDefinition("Settings", "Ctrl+Alt+S", event -> Settings.showSettingsWindow()),
             new HotkeyDefinition("Smart decode", "Ctrl+Alt+D", createAutoDecodeHandler()),
-            new HotkeyDefinition("Show tag store", "Ctrl+Alt+T", event -> TagStore.showTagStore()),
-            new HotkeyDefinition("Multi Encoder", "Ctrl+Alt+M", createMultiEncoderHandler(montoyaApi))
+            new HotkeyDefinition("Multi Encoder", "Ctrl+Alt+M", createMultiEncoderHandler(montoyaApi)),
+            burp.hasCapability(Burp.Capability.REGISTER_HOTKEY_IN_ALL_CONTEXTS)
+                ? HotkeyDefinition.forAllContexts("New custom tag", "Ctrl+Alt+N", event -> CustomTags.showCreateEditTagDialog(false, null))
+                : new HotkeyDefinition("New custom tag", "Ctrl+Alt+N", event -> CustomTags.showCreateEditTagDialog(false, null)),
+            burp.hasCapability(Burp.Capability.REGISTER_HOTKEY_IN_ALL_CONTEXTS)
+                ? HotkeyDefinition.forAllContexts("List custom tags", "Ctrl+Alt+L", event -> CustomTags.showListTagsDialog())
+                : new HotkeyDefinition("List custom tags", "Ctrl+Alt+L", event -> CustomTags.showListTagsDialog()),
+            burp.hasCapability(Burp.Capability.REGISTER_HOTKEY_IN_ALL_CONTEXTS)
+                ? HotkeyDefinition.forAllContexts("Global variables", "Ctrl+Alt+V", event -> Variables.showGlobalVariablesWindow())
+                : new HotkeyDefinition("Global variables", "Ctrl+Alt+V", event -> Variables.showGlobalVariablesWindow()),
+            burp.hasCapability(Burp.Capability.REGISTER_HOTKEY_IN_ALL_CONTEXTS)
+                ? HotkeyDefinition.forAllContexts("Tag Automator", "Ctrl+Alt+A", event -> TagAutomator.showRulesDialog())
+                : new HotkeyDefinition("Tag Automator", "Ctrl+Alt+A", event -> TagAutomator.showRulesDialog()),
+            burp.hasCapability(Burp.Capability.REGISTER_HOTKEY_IN_ALL_CONTEXTS)
+                ? HotkeyDefinition.forAllContexts("Settings", "Ctrl+Alt+S", event -> Settings.showSettingsWindow())
+                : new HotkeyDefinition("Settings", "Ctrl+Alt+S", event -> Settings.showSettingsWindow()),
+            burp.hasCapability(Burp.Capability.REGISTER_HOTKEY_IN_ALL_CONTEXTS)
+                ? HotkeyDefinition.forAllContexts("Show tag store", "Ctrl+Alt+T", event -> TagStore.showTagStore())
+                : new HotkeyDefinition("Show tag store", "Ctrl+Alt+T", event -> TagStore.showTagStore())
         );
 
         for (HotkeyDefinition hotkey : hotkeys) {
@@ -241,36 +253,69 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
         final String name;
         final String keyCombo;
         final HotKeyHandler handler;
+        final HotKeyContext[] contexts;
+        final boolean allContexts;
 
         HotkeyDefinition(String name, String keyCombo, HotKeyHandler handler) {
+            this(name, keyCombo, handler, HotKeyContext.HTTP_MESSAGE_EDITOR);
+        }
+
+        HotkeyDefinition(String name, String keyCombo, HotKeyHandler handler, HotKeyContext... contexts) {
             this.name = name;
             this.keyCombo = keyCombo;
             this.handler = handler;
+            this.contexts = contexts;
+            this.allContexts = false;
+        }
+
+        static HotkeyDefinition forAllContexts(String name, String keyCombo, HotKeyHandler handler) {
+            return new HotkeyDefinition(name, keyCombo, handler, true);
+        }
+
+        private HotkeyDefinition(String name, String keyCombo, HotKeyHandler handler, boolean allContexts) {
+            this.name = name;
+            this.keyCombo = keyCombo;
+            this.handler = handler;
+            this.contexts = null;
+            this.allContexts = allContexts;
         }
     }
 
     private void registerHotkey(MontoyaApi montoyaApi, Burp burp, HotkeyDefinition hotkey) {
-        Registration registration;
-
-        if(burp.hasCapability(Burp.Capability.REGISTER_HOTKEY_WITH_NAME)) {
-            registration = montoyaApi.userInterface().registerHotKeyHandler(
-                HotKeyContext.HTTP_MESSAGE_EDITOR,
+        if (hotkey.allContexts) {
+            Registration registration = montoyaApi.userInterface().registerHotKeyHandler(
                 HotKey.hotKey(hotkey.name, hotkey.keyCombo),
                 hotkey.handler);
-        } else {
-            registration = montoyaApi.userInterface().registerHotKeyHandler(
-                HotKeyContext.HTTP_MESSAGE_EDITOR,
-                hotkey.keyCombo,
-                hotkey.handler);
+            if (registration.isRegistered()) {
+                montoyaApi.logging().logToOutput("Successfully registered hotkey: " + hotkey.name + " (" + hotkey.keyCombo + ") for all contexts");
+            } else {
+                montoyaApi.logging().logToError("Failed to register hotkey: " + hotkey.name + " (" + hotkey.keyCombo + ") for all contexts");
+            }
+            return;
         }
 
-        if(registration.isRegistered()) {
-            montoyaApi.logging().logToOutput("Successfully registered hotkey: " + hotkey.name + " (" + hotkey.keyCombo + ")");
-            if(hotkey.name.equals("Auto decode")) {
-                hasHotKey = true;
+        for (HotKeyContext context : hotkey.contexts) {
+            Registration registration;
+            if (burp.hasCapability(Burp.Capability.REGISTER_HOTKEY_WITH_NAME)) {
+                registration = montoyaApi.userInterface().registerHotKeyHandler(
+                    context,
+                    HotKey.hotKey(hotkey.name, hotkey.keyCombo),
+                    hotkey.handler);
+            } else {
+                registration = montoyaApi.userInterface().registerHotKeyHandler(
+                    context,
+                    hotkey.keyCombo,
+                    hotkey.handler);
             }
-        } else {
-            montoyaApi.logging().logToError("Failed to register hotkey: " + hotkey.name + " (" + hotkey.keyCombo + ")");
+
+            if (registration.isRegistered()) {
+                montoyaApi.logging().logToOutput("Successfully registered hotkey: " + hotkey.name + " (" + hotkey.keyCombo + ") for context: " + context);
+                if (hotkey.name.equals("Auto decode")) {
+                    hasHotKey = true;
+                }
+            } else {
+                montoyaApi.logging().logToError("Failed to register hotkey: " + hotkey.name + " (" + hotkey.keyCombo + ") for context: " + context);
+            }
         }
     }
 

@@ -145,11 +145,13 @@ public class MultiEncoderWindow {
             montoyaApi.userInterface().applyThemeToComponent(layerTabbedPane);
 
             JPanel layerButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-            JButton addLayerButton = new JButton("+ Add Layer");
+            JButton addLayerButton = new JButton("+");
+            addLayerButton.setToolTipText("Add Layer");
             addLayerButton.addActionListener(e -> addLayer());
             montoyaApi.userInterface().applyThemeToComponent(addLayerButton);
 
-            JButton removeLayerButton = new JButton("- Remove Layer");
+            JButton removeLayerButton = new JButton("-");
+            removeLayerButton.setToolTipText("Remove Layer");
             removeLayerButton.addActionListener(e -> removeCurrentLayer());
             montoyaApi.userInterface().applyThemeToComponent(removeLayerButton);
 
@@ -224,8 +226,8 @@ public class MultiEncoderWindow {
             montoyaApi.userInterface().applyThemeToComponent(allCategoriesPanel);
 
             JPanel layerControlPanel = new JPanel(new BorderLayout());
-            layerControlPanel.add(layerButtonPanel, BorderLayout.WEST);
             layerControlPanel.add(allCategoriesPanel, BorderLayout.CENTER);
+            layerControlPanel.add(layerButtonPanel, BorderLayout.SOUTH);
             montoyaApi.userInterface().applyThemeToComponent(layerControlPanel);
 
             topPanel.add(layerControlPanel, BorderLayout.NORTH);

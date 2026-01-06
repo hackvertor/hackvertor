@@ -3465,7 +3465,7 @@ public class Convertors {
             }
             if (CSS_ESCAPE_PATTERN.matcher(str).find()) {
                 test = decode_css_escapes(str);
-                if (isPrintableAscii(test)) {
+                if (isAsciiOrCompressed(test)) {
                     str = test;
                     matched = true;
                     appendTags(openTags, closeTags, "css_escapes");
@@ -3473,7 +3473,7 @@ public class Convertors {
             }
             if (HEX_ESCAPE_PATTERN.matcher(str).find()) {
                 test = decode_js_string(str);
-                if (isPrintableAscii(test)) {
+                if (isAsciiOrCompressed(test)) {
                     str = test;
                     matched = true;
                     appendTags(openTags, closeTags, "hex_escapes");
@@ -3481,7 +3481,7 @@ public class Convertors {
             }
             if (OCTAL_ESCAPE_PATTERN.matcher(str).find()) {
                 test = decode_js_string(str);
-                if (isPrintableAscii(test)) {
+                if (isAsciiOrCompressed(test)) {
                     str = test;
                     matched = true;
                     appendTags(openTags, closeTags, "octal_escapes");
@@ -3489,7 +3489,7 @@ public class Convertors {
             }
             if (UNICODE_ESCAPE_PATTERN.matcher(str).find()) {
                 test = decode_js_string(str);
-                if (isPrintableAscii(test)) {
+                if (isAsciiOrCompressed(test)) {
                     str = test;
                     matched = true;
                     appendTags(openTags, closeTags, "unicode_escapes");
@@ -3543,7 +3543,7 @@ public class Convertors {
             }
             if (BASE58_PATTERN.matcher(str).find() && str.length() >= 4 && !matched) {
                 test = decode_base58(str);
-                if (isPrintableAscii(test)) {
+                if (isAsciiOrCompressed(test)) {
                     str = test;
                     matched = true;
                     appendTags(openTags, closeTags, "base58");
@@ -3551,7 +3551,7 @@ public class Convertors {
             }
             if (QUOTED_PRINTABLE_PATTERN.matcher(str).find() && !matched) {
                 test = d_quoted_printable(str);
-                if (!test.startsWith("Error") && isPrintableAscii(test)) {
+                if (!test.startsWith("Error") && isAsciiOrCompressed(test)) {
                     str = test;
                     matched = true;
                     appendTags(openTags, closeTags, "quoted_printable");
@@ -3559,7 +3559,7 @@ public class Convertors {
             }
             if (UTF7_PATTERN.matcher(str).find() && !matched) {
                 test = utf7Decode(str);
-                if (isPrintableAscii(test) && !test.equals(str)) {
+                if (isAsciiOrCompressed(test) && !test.equals(str)) {
                     str = test;
                     matched = true;
                     appendTags(openTags, closeTags, "utf7", "utf7");
