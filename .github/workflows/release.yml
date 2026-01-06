@@ -7,6 +7,13 @@ on:
       - main
     paths:
       - 'src/main/java/burp/hv/HackvertorExtension.java'
+  workflow_dispatch:
+    inputs:
+      force_release:
+        description: 'Force release even if version unchanged'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   check-version:
@@ -47,7 +54,12 @@ jobs:
           echo "Previous version: $PREV_VERSION"
           echo "Current version: $CURRENT_VERSION"
           
-          if [ "$PREV_VERSION" != "$CURRENT_VERSION" ]; then
+          FORCE_RELEASE="${{ github.event.inputs.force_release }}"
+
+          if [ "$FORCE_RELEASE" == "true" ]; then
+            echo "Force release requested via manual trigger"
+            echo "changed=true" >> $GITHUB_OUTPUT
+          elif [ "$PREV_VERSION" != "$CURRENT_VERSION" ]; then
             echo "Version changed from $PREV_VERSION to $CURRENT_VERSION"
             echo "changed=true" >> $GITHUB_OUTPUT
           else
