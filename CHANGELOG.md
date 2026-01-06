@@ -1,5 +1,12 @@
 # Changelog
 
+## Version v2.2.36 (2026-01-06)
+
+- Fixed autodecoder to detect compressed headers Renamed add and remove layer buttons. Moved layers buttons and made categories spread across
+- Updated Github workflow
+- Update README.md
+- Moved changelog to separate file
+
 # Changelog
 
 ## Version v2.2.34 (2025-12-17)
