@@ -77,11 +77,12 @@ public class HackvertorContextMenu implements ContextMenuItemsProvider {
         Action hackvertorAction;
         if (event.invocationType() == InvocationType.MESSAGE_VIEWER_RESPONSE) {
             hackvertorAction = new HackvertorAction("Send response body to Hackvertor", HackvertorExtension.extensionPanel, event);
-        } else {
-            hackvertorAction = new HackvertorAction("Send to Hackvertor", HackvertorExtension.extensionPanel, event);
+            JMenuItem sendToHackvertor = new JMenuItem(hackvertorAction);
+            menu.add(sendToHackvertor);
         }
-        JMenuItem sendToHackvertor = new JMenuItem(hackvertorAction);
-        menu.add(sendToHackvertor);
+        hackvertorAction = new HackvertorAction("Send selection to Hackvertor", HackvertorExtension.extensionPanel, event);
+        JMenuItem sendSelectionToHackvertor = new JMenuItem(hackvertorAction);
+        menu.add(sendSelectionToHackvertor);
 
         TagAutomator.loadRules();
         JSONArray rules = TagAutomator.getRules();
