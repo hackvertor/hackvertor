@@ -1,5 +1,13 @@
 # Changelog
 
+## Version v2.2.38 (2026-01-06)
+
+- Updated github workflow to allow manual dispatch
+- Bumped the version
+- Merge remote-tracking branch 'origin/master'
+- Added send selection to Hackvertor for responses and requests.
+- Update CHANGELOG.md for v2.2.36
+
 ## Version v2.2.36 (2026-01-06)
 
 - Fixed autodecoder to detect compressed headers Renamed add and remove layer buttons. Moved layers buttons and made categories spread across
