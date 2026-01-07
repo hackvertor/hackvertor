@@ -189,18 +189,25 @@ jobs:
           COMMITS: ${{ needs.check-version.outputs.commits }}
         run: |
           DATE=$(date +%Y-%m-%d)
-          {
-            echo "# Changelog"
-            echo ""
-            echo "## Version $VERSION ($DATE)"
-            echo ""
-            echo "$COMMITS"
-            echo ""
-            if [ -f CHANGELOG.md ]; then
+          if [ -f CHANGELOG.md ]; then
+            {
+              head -n 2 CHANGELOG.md
+              echo "## Version $VERSION ($DATE)"
+              echo ""
+              echo "$COMMITS"
+              echo ""
               tail -n +3 CHANGELOG.md
-            fi
-          } > CHANGELOG.md.new
-          mv CHANGELOG.md.new CHANGELOG.md
+            } > CHANGELOG.md.new
+            mv CHANGELOG.md.new CHANGELOG.md
+          else
+            {
+              echo "# Changelog"
+              echo ""
+              echo "## Version $VERSION ($DATE)"
+              echo ""
+              echo "$COMMITS"
+            } > CHANGELOG.md
+          fi
 
       - name: Commit and push CHANGELOG.md
         run: |

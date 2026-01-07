@@ -15,8 +15,6 @@
 - Update README.md
 - Moved changelog to separate file
 
-# Changelog
-
 ## Version v2.2.34 (2025-12-17)
 
 - Fixed smart decoding bug
