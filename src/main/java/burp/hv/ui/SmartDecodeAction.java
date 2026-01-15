@@ -16,13 +16,17 @@ public class SmartDecodeAction extends AbstractAction  {
     }
 
     public void actionPerformed(ActionEvent e) {
-        if(inputArea.getSelectionStart() == inputArea.getSelectionEnd()) {
-            return;
-        }
-        if(outputArea == null) {
-            inputArea.replaceSelection(hackvertor.convert("<@auto_decode_no_decrypt>" + inputArea.getSelectedText() + "</@auto_decode_no_decrypt>", hackvertor));
+        boolean hasSelection = inputArea.getSelectionStart() != inputArea.getSelectionEnd();
+        if (hasSelection) {
+            String converted = hackvertor.convert("<@auto_decode_no_decrypt>" + inputArea.getSelectedText() + "</@auto_decode_no_decrypt>", hackvertor);
+            if (outputArea == null) {
+                inputArea.replaceSelection(converted);
+            } else {
+                outputArea.replaceSelection(converted);
+            }
         } else {
-            outputArea.replaceSelection(hackvertor.convert("<@auto_decode_no_decrypt>" + inputArea.getSelectedText() + "</@auto_decode_no_decrypt>", hackvertor));
+            String converted = hackvertor.convert("<@auto_decode_partial>" + inputArea.getText() + "</@auto_decode_partial>", hackvertor);
+            inputArea.setText(converted);
         }
     }
 }

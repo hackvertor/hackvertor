@@ -211,7 +211,6 @@ public class HackvertorContextMenu implements ContextMenuItemsProvider {
         });
         menu.add(learnFromThisRequest);
         JMenuItem autodecodeConvert;
-        Burp burp = new Burp(montoyaApi.burpSuite().version());
         if(hasHotKey) {
             autodecodeConvert = new JMenuItem("Smart decode (CTRL+Alt+D)");
         } else {
@@ -229,40 +228,24 @@ public class HackvertorContextMenu implements ContextMenuItemsProvider {
             start = -1;
         }
 
-        autodecodeConvert.setEnabled(start != end);
+        boolean hasSelection = start != end;
         autodecodeConvert.addActionListener(e -> {
             if (event.invocationType() == InvocationType.MESSAGE_EDITOR_REQUEST || event.invocationType() == InvocationType.MESSAGE_VIEWER_REQUEST) {
                 if(event.messageEditorRequestResponse().isPresent()) {
                     HttpRequest request = event.messageEditorRequestResponse().get().requestResponse().request();
                     String requestStr = request.toString();
-                    String convertedSelection = auto_decode_no_decrypt(requestStr.substring(start, end));
-                    String modifiedRequest = "";
-                    modifiedRequest += requestStr.substring(0, start);
-                    modifiedRequest += convertedSelection;
-                    modifiedRequest += requestStr.substring(end);
+                    String modifiedRequest;
+                    if (hasSelection) {
+                        String convertedSelection = auto_decode_no_decrypt(requestStr.substring(start, end));
+                        modifiedRequest = requestStr.substring(0, start) + convertedSelection + requestStr.substring(end);
+                    } else {
+                        modifiedRequest = auto_decode_partial(requestStr);
+                    }
                     event.messageEditorRequestResponse().get().setRequest(HttpRequest.httpRequest(request.httpService(), modifiedRequest));
                 }
             }
         });
         menu.add(autodecodeConvert);
-
-        JMenuItem superDecodeConvert = new JMenuItem("Super decode (Ctrl+Alt+P)");
-        superDecodeConvert.setEnabled(start != end);
-        superDecodeConvert.addActionListener(e -> {
-            if (event.invocationType() == InvocationType.MESSAGE_EDITOR_REQUEST || event.invocationType() == InvocationType.MESSAGE_VIEWER_REQUEST) {
-                if(event.messageEditorRequestResponse().isPresent()) {
-                    HttpRequest request = event.messageEditorRequestResponse().get().requestResponse().request();
-                    String requestStr = request.toString();
-                    String convertedSelection = auto_decode_partial(requestStr.substring(start, end));
-                    String modifiedRequest = "";
-                    modifiedRequest += requestStr.substring(0, start);
-                    modifiedRequest += convertedSelection;
-                    modifiedRequest += requestStr.substring(end);
-                    event.messageEditorRequestResponse().get().setRequest(HttpRequest.httpRequest(request.httpService(), modifiedRequest));
-                }
-            }
-        });
-        menu.add(superDecodeConvert);
 
         // Multi Encoder feature
         JMenuItem multiEncoder = new JMenuItem("Multi Encoder (Ctrl+Alt+M)");

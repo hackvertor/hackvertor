@@ -222,8 +222,7 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
                 Tag tagObj = TagUtils.getTagByTagName(tags, lastTagUsed);
                 generateTagActionListener(event, tagObj).actionPerformed(null);
             }),
-            new HotkeyDefinition("Smart decode", "Ctrl+Alt+D", createAutoDecodeHandler()),
-            new HotkeyDefinition("Super decode", "Ctrl+Alt+P", createSuperDecodeHandler()),
+            new HotkeyDefinition("Smart decode", "Ctrl+Alt+D", createSmartDecodeHandler()),
             new HotkeyDefinition("Multi Encoder", "Ctrl+Alt+M", createMultiEncoderHandler(montoyaApi)),
             burp.hasCapability(Burp.Capability.REGISTER_HOTKEY_IN_ALL_CONTEXTS)
                 ? HotkeyDefinition.forAllContexts("New custom tag", "Ctrl+Alt+N", event -> CustomTags.showCreateEditTagDialog(false, null))
@@ -320,41 +319,31 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
         }
     }
 
-    private HotKeyHandler createAutoDecodeHandler() {
+    private HotKeyHandler createSmartDecodeHandler() {
         return event -> {
             if (event.messageEditorRequestResponse().isEmpty()) {
                 return;
             }
             MessageEditorHttpRequestResponse requestResponse = event.messageEditorRequestResponse().get();
-            if(requestResponse.selectionOffsets().isPresent() &&
-               requestResponse.selectionContext().toString().equalsIgnoreCase("request")) {
-                String request = requestResponse.requestResponse().request().toString();
-                int start = requestResponse.selectionOffsets().get().startIndexInclusive();
-                int end = requestResponse.selectionOffsets().get().endIndexExclusive();
-                String selectionWithTags = auto_decode_no_decrypt(request.substring(start, end));
-                String modifiedRequest = request.substring(0, start) + selectionWithTags + request.substring(end);
-                requestResponse.setRequest(HttpRequest.httpRequest(
-                    requestResponse.requestResponse().httpService(), modifiedRequest));
-            }
-        };
-    }
-
-    private HotKeyHandler createSuperDecodeHandler() {
-        return event -> {
-            if (event.messageEditorRequestResponse().isEmpty()) {
+            if (!requestResponse.selectionContext().toString().equalsIgnoreCase("request")) {
                 return;
             }
-            MessageEditorHttpRequestResponse requestResponse = event.messageEditorRequestResponse().get();
-            if(requestResponse.selectionOffsets().isPresent() &&
-               requestResponse.selectionContext().toString().equalsIgnoreCase("request")) {
-                String request = requestResponse.requestResponse().request().toString();
+            String request = requestResponse.requestResponse().request().toString();
+            String modifiedRequest;
+            if (requestResponse.selectionOffsets().isPresent()) {
                 int start = requestResponse.selectionOffsets().get().startIndexInclusive();
                 int end = requestResponse.selectionOffsets().get().endIndexExclusive();
-                String selectionWithTags = auto_decode_partial(request.substring(start, end));
-                String modifiedRequest = request.substring(0, start) + selectionWithTags + request.substring(end);
-                requestResponse.setRequest(HttpRequest.httpRequest(
-                    requestResponse.requestResponse().httpService(), modifiedRequest));
+                if (start != end) {
+                    String decoded = auto_decode_no_decrypt(request.substring(start, end));
+                    modifiedRequest = request.substring(0, start) + decoded + request.substring(end);
+                } else {
+                    modifiedRequest = auto_decode_partial(request);
+                }
+            } else {
+                modifiedRequest = auto_decode_partial(request);
             }
+            requestResponse.setRequest(HttpRequest.httpRequest(
+                requestResponse.requestResponse().httpService(), modifiedRequest));
         };
     }
 

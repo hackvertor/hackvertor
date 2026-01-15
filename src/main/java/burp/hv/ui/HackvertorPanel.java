@@ -441,18 +441,10 @@ public class HackvertorPanel extends JPanel {
         }
 
         final JButton decode = new JButton("Smart Decode");
-        decode.setToolTipText("Automatically decode selected text (Ctrl+Alt+D)");
-        decode.setEnabled(false);
+        decode.setToolTipText("Decode selected text, or decode partial matches in full input if nothing selected (Ctrl+Alt+D)");
         inputArea.getInputMap().put(KeyStroke.getKeyStroke("control alt D"), "smartDecode");
         SmartDecodeAction smartDecodeAction = new SmartDecodeAction(this.inputArea, null, hackvertor);
         inputArea.getActionMap().put("smartDecode", smartDecodeAction);
-
-        final JButton superDecode = new JButton("Super Decode");
-        superDecode.setToolTipText("Decode selected text including partial matches (Ctrl+Alt+P)");
-        superDecode.setEnabled(false);
-        inputArea.getInputMap().put(KeyStroke.getKeyStroke("control alt P"), "superDecode");
-        SuperDecodeAction superDecodeAction = new SuperDecodeAction(this.inputArea, null, hackvertor);
-        inputArea.getActionMap().put("superDecode", superDecodeAction);
 
         inputArea.getInputMap().put(KeyStroke.getKeyStroke("control alt F"), "findTag");
         inputArea.getActionMap().put("findTag", new AbstractAction("findTag") {
@@ -494,12 +486,10 @@ public class HackvertorPanel extends JPanel {
         });
 
         decode.addActionListener(smartDecodeAction);
-        superDecode.addActionListener(superDecodeAction);
 
         JPanel decodePanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 2, 0));
         decodePanel.setOpaque(false);
         decodePanel.add(decode);
-        decodePanel.add(superDecode);
 
         JButton rehydrateTagExecutionKey = new JButton("Rehydrate Tags");
         rehydrateTagExecutionKey.setToolTipText("Replace tag execution keys in selected text with your current key");
@@ -508,8 +498,6 @@ public class HackvertorPanel extends JPanel {
             @Override
             public void caretUpdate(CaretEvent e) {
                 boolean hasSelection = inputArea.getSelectionStart() != inputArea.getSelectionEnd();
-                decode.setEnabled(hasSelection);
-                superDecode.setEnabled(hasSelection);
                 rehydrateTagExecutionKey.setEnabled(hasSelection);
             }
         });
