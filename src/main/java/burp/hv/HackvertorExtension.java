@@ -35,7 +35,7 @@ import static burp.hv.utils.TagUtils.generateTagActionListener;
 public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, IExtensionStateListener, IMessageEditorTabFactory {
     //TODO Unset on unload
     public static String extensionName = "Hackvertor";
-    public static String version = "v2.2.38";
+    public static String version = "v2.2.39";
     public static JFrame HackvertorFrame = null;
     public static IBurpExtenderCallbacks callbacks;
     public static IExtensionHelpers helpers;
@@ -223,6 +223,7 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
                 generateTagActionListener(event, tagObj).actionPerformed(null);
             }),
             new HotkeyDefinition("Smart decode", "Ctrl+Alt+D", createAutoDecodeHandler()),
+            new HotkeyDefinition("Super decode", "Ctrl+Alt+P", createSuperDecodeHandler()),
             new HotkeyDefinition("Multi Encoder", "Ctrl+Alt+M", createMultiEncoderHandler(montoyaApi)),
             burp.hasCapability(Burp.Capability.REGISTER_HOTKEY_IN_ALL_CONTEXTS)
                 ? HotkeyDefinition.forAllContexts("New custom tag", "Ctrl+Alt+N", event -> CustomTags.showCreateEditTagDialog(false, null))
@@ -331,6 +332,25 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
                 int start = requestResponse.selectionOffsets().get().startIndexInclusive();
                 int end = requestResponse.selectionOffsets().get().endIndexExclusive();
                 String selectionWithTags = auto_decode_no_decrypt(request.substring(start, end));
+                String modifiedRequest = request.substring(0, start) + selectionWithTags + request.substring(end);
+                requestResponse.setRequest(HttpRequest.httpRequest(
+                    requestResponse.requestResponse().httpService(), modifiedRequest));
+            }
+        };
+    }
+
+    private HotKeyHandler createSuperDecodeHandler() {
+        return event -> {
+            if (event.messageEditorRequestResponse().isEmpty()) {
+                return;
+            }
+            MessageEditorHttpRequestResponse requestResponse = event.messageEditorRequestResponse().get();
+            if(requestResponse.selectionOffsets().isPresent() &&
+               requestResponse.selectionContext().toString().equalsIgnoreCase("request")) {
+                String request = requestResponse.requestResponse().request().toString();
+                int start = requestResponse.selectionOffsets().get().startIndexInclusive();
+                int end = requestResponse.selectionOffsets().get().endIndexExclusive();
+                String selectionWithTags = auto_decode_partial(request.substring(start, end));
                 String modifiedRequest = request.substring(0, start) + selectionWithTags + request.substring(end);
                 requestResponse.setRequest(HttpRequest.httpRequest(
                     requestResponse.requestResponse().httpService(), modifiedRequest));

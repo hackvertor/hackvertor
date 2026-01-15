@@ -452,6 +452,7 @@ public class Hackvertor {
         // Auto decode
         addTag(Tag.Category.Decode, "auto_decode", true, "auto_decode(String str)");
         addTag(Tag.Category.Decode, "auto_decode_no_decrypt", true, "auto_decode_no_decrypt(String str)");
+        addTag(Tag.Category.Decode, "auto_decode_partial", true, "auto_decode_partial(String str)");
 
         // UTF7
         addTag(Tag.Category.Decode, "d_utf7", true, "utf7Decode(String str)");

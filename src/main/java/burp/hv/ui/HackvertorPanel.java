@@ -92,7 +92,7 @@ public class HackvertorPanel extends JPanel {
         final JScrollPane hexScroll = new JScrollPane(hexView);
         hexScroll.setPreferredSize(new Dimension(-1, 100));
         hexScroll.setMinimumSize(new Dimension(-1, 100));
-        JPanel buttonsPanel = new JPanel(new GridBagLayout());
+        JPanel buttonsPanel = new JPanel(new WrapLayout(FlowLayout.LEFT, 5, 5));
         inputArea.setLineWrap(true);
         inputArea.setRows(0);
         final UndoManager undo = new UndoManager();
@@ -431,12 +431,28 @@ public class HackvertorPanel extends JPanel {
             convertButton.setForeground(Color.white);
         }
 
-        final JButton decode = new JButton("Smart Decode Ctrl+Alt+D");
+        JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 2, 0));
+        actionsPanel.setOpaque(false);
+        actionsPanel.add(selectInputButton);
+        if (!hideOutput) {
+            actionsPanel.add(selectOutputButton);
+            actionsPanel.add(pasteInsideButton);
+            actionsPanel.add(convertButton);
+        }
+
+        final JButton decode = new JButton("Smart Decode");
         decode.setToolTipText("Automatically decode selected text (Ctrl+Alt+D)");
         decode.setEnabled(false);
         inputArea.getInputMap().put(KeyStroke.getKeyStroke("control alt D"), "smartDecode");
         SmartDecodeAction smartDecodeAction = new SmartDecodeAction(this.inputArea, null, hackvertor);
         inputArea.getActionMap().put("smartDecode", smartDecodeAction);
+
+        final JButton superDecode = new JButton("Super Decode");
+        superDecode.setToolTipText("Decode selected text including partial matches (Ctrl+Alt+P)");
+        superDecode.setEnabled(false);
+        inputArea.getInputMap().put(KeyStroke.getKeyStroke("control alt P"), "superDecode");
+        SuperDecodeAction superDecodeAction = new SuperDecodeAction(this.inputArea, null, hackvertor);
+        inputArea.getActionMap().put("superDecode", superDecodeAction);
 
         inputArea.getInputMap().put(KeyStroke.getKeyStroke("control alt F"), "findTag");
         inputArea.getActionMap().put("findTag", new AbstractAction("findTag") {
@@ -478,14 +494,23 @@ public class HackvertorPanel extends JPanel {
         });
 
         decode.addActionListener(smartDecodeAction);
+        superDecode.addActionListener(superDecodeAction);
+
+        JPanel decodePanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 2, 0));
+        decodePanel.setOpaque(false);
+        decodePanel.add(decode);
+        decodePanel.add(superDecode);
+
         JButton rehydrateTagExecutionKey = new JButton("Rehydrate Tags");
         rehydrateTagExecutionKey.setToolTipText("Replace tag execution keys in selected text with your current key");
         rehydrateTagExecutionKey.setEnabled(false);
         this.inputArea.addCaretListener(new CaretListener() {
             @Override
             public void caretUpdate(CaretEvent e) {
-                decode.setEnabled(inputArea.getSelectionStart() != inputArea.getSelectionEnd());
-                rehydrateTagExecutionKey.setEnabled(inputArea.getSelectionStart() != inputArea.getSelectionEnd());
+                boolean hasSelection = inputArea.getSelectionStart() != inputArea.getSelectionEnd();
+                decode.setEnabled(hasSelection);
+                superDecode.setEnabled(hasSelection);
+                rehydrateTagExecutionKey.setEnabled(hasSelection);
             }
         });
         rehydrateTagExecutionKey.addActionListener((x) -> {
@@ -558,6 +583,14 @@ public class HackvertorPanel extends JPanel {
             lastButton.setBackground(Color.black);
         }
 
+        JPanel historyPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 2, 0));
+        historyPanel.setOpaque(false);
+        historyPanel.add(firstButton);
+        historyPanel.add(previousButton);
+        historyPanel.add(historyPositionLabel);
+        historyPanel.add(nextButton);
+        historyPanel.add(lastButton);
+
         final JButton clearHistoryButton = new JButton("Clear history");
         clearHistoryButton.setToolTipText("Clear all Hackvertor history");
         clearHistoryButton.addActionListener(new ActionListener() {
@@ -590,45 +623,19 @@ public class HackvertorPanel extends JPanel {
 
         java.util.List<JComponent> buttonComponents = new java.util.ArrayList<>();
         buttonComponents.add(clearButton);
-        buttonComponents.add(firstButton);
-        buttonComponents.add(previousButton);
-        buttonComponents.add(historyPositionLabel);
-        buttonComponents.add(nextButton);
-        buttonComponents.add(lastButton);
+        buttonComponents.add(historyPanel);
         buttonComponents.add(clearHistoryButton);
         buttonComponents.add(clearTagsButton);
         buttonComponents.add(rehydrateTagExecutionKey);
         if(!hideOutput) {
             buttonComponents.add(swapButton);
         }
-        buttonComponents.add(selectInputButton);
-        if(!hideOutput) {
-            buttonComponents.add(selectOutputButton);
-            buttonComponents.add(pasteInsideButton);
-            buttonComponents.add(decode);
-            buttonComponents.add(convertButton);
-        } else {
-            buttonComponents.add(decode);
-        }
+        buttonComponents.add(actionsPanel);
+        buttonComponents.add(decodePanel);
 
-        int fitIndices = 0;
-        int decodeButtonIndex = -1;
-        if (!isMessageEditor) {
-            fitIndices |= (1 << 1);
-            fitIndices |= (1 << 2);
-            fitIndices |= (1 << 3);
-            fitIndices |= (1 << 4);
-            fitIndices |= (1 << 5);
-        } else {
-            for (int i = 0; i < buttonComponents.size(); i++) {
-                if (buttonComponents.get(i) == decode) {
-                    decodeButtonIndex = i;
-                    break;
-                }
-            }
+        for (JComponent component : buttonComponents) {
+            buttonsPanel.add(component);
         }
-
-        GridLikeLayout.apply(buttonsPanel, buttonComponents, isMessageEditor ? 2 : 1, fitIndices, decodeButtonIndex);
         GridBagConstraints c = GridbagUtils.createConstraints(1, 0, 1, GridBagConstraints.NONE, 0, 0, 0, 0, CENTER);
         c.anchor = FIRST_LINE_END;
         c.ipadx = 20;

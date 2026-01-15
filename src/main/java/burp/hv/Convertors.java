@@ -405,6 +405,7 @@ public class Convertors {
         // Auto decode operations
         TAG_REGISTRY.put("auto_decode", (output, args, vars, custom, hv) -> auto_decode(output));
         TAG_REGISTRY.put("auto_decode_no_decrypt", (output, args, vars, custom, hv) -> auto_decode_no_decrypt(output));
+        TAG_REGISTRY.put("auto_decode_partial", (output, args, vars, custom, hv) -> auto_decode_partial(output));
 
         // Base encoding operations
         TAG_REGISTRY.put("base32", (output, args, vars, custom, hv) -> base32_encode(output));
@@ -3385,6 +3386,18 @@ public class Convertors {
     private static final Pattern QUOTED_PRINTABLE_PATTERN = Pattern.compile("=[0-9A-Fa-f]{2}");
     private static final Pattern UTF7_PATTERN = Pattern.compile("\\+[A-Za-z0-9+/]*-");
 
+    private static final Pattern HEX_ESCAPE_SEQUENCE_PATTERN = Pattern.compile("(?:\\\\x[0-9a-fA-F]{2})+");
+    private static final Pattern OCTAL_ESCAPE_SEQUENCE_PATTERN = Pattern.compile("(?:\\\\[0-3]?[0-7]{1,2})+");
+    private static final Pattern UNICODE_ESCAPE_SEQUENCE_PATTERN = Pattern.compile("(?:\\\\u[0-9a-fA-F]{4})+");
+    private static final Pattern URL_ENCODE_SEQUENCE_PATTERN = Pattern.compile("(?:%[0-9a-fA-F]{2})+");
+    private static final Pattern HTML_ENTITY_SEQUENCE_PATTERN = Pattern.compile("(?:&[a-zA-Z]+;)+");
+    private static final Pattern HEX_ENTITY_SEQUENCE_PATTERN = Pattern.compile("(?:&#x?[0-9a-fA-F]+;?)+");
+    private static final Pattern QUOTED_PRINTABLE_SEQUENCE_PATTERN = Pattern.compile("(?:=[0-9A-Fa-f]{2})+");
+    private static final Pattern BINARY_SEQUENCE_PATTERN = Pattern.compile("(?:[01]{8}\\s+)+[01]{8}");
+    private static final Pattern HEX_SPACED_SEQUENCE_PATTERN = Pattern.compile("(?:[0-9a-fA-F]{2}[\\s,\\-])+[0-9a-fA-F]{2}");
+    private static final Pattern UTF7_SEQUENCE_PATTERN = Pattern.compile("\\+[A-Za-z0-9+/]+-");
+    private static final Pattern CHARCODE_SEQUENCE_PATTERN = Pattern.compile("(?:\\d{2,3}[,\\s])+\\d{2,3}");
+
     private static boolean isAscii(String str) {
         return ASCII_PATTERN.matcher(str).find();
     }
@@ -3411,6 +3424,203 @@ public class Convertors {
 
     public static String auto_decode_no_decrypt(String str) {
         return auto_decode_decrypt(str, false);
+    }
+
+    public static String auto_decode_partial(String str) {
+        int maxIterations = 20;
+        int iteration = 0;
+        String previousStr;
+
+        do {
+            previousStr = str;
+            str = decodePartialEncodings(str);
+            iteration++;
+        } while (!str.equals(previousStr) && iteration < maxIterations);
+
+        return str;
+    }
+
+    private static String decodePartialEncodings(String str) {
+        List<EncodedMatch> matches = new ArrayList<>();
+
+        findMatches(str, HEX_ESCAPE_SEQUENCE_PATTERN, "hex_escape", matches);
+        findMatches(str, UNICODE_ESCAPE_SEQUENCE_PATTERN, "unicode_escape", matches);
+        findMatches(str, OCTAL_ESCAPE_SEQUENCE_PATTERN, "octal_escape", matches);
+        findMatches(str, URL_ENCODE_SEQUENCE_PATTERN, "url_encode", matches);
+        findMatches(str, HTML_ENTITY_SEQUENCE_PATTERN, "html_entity", matches);
+        findMatches(str, HEX_ENTITY_SEQUENCE_PATTERN, "hex_entity", matches);
+        findMatches(str, QUOTED_PRINTABLE_SEQUENCE_PATTERN, "quoted_printable", matches);
+        findMatches(str, BINARY_SEQUENCE_PATTERN, "binary", matches);
+        findMatches(str, HEX_SPACED_SEQUENCE_PATTERN, "hex_spaced", matches);
+        findMatches(str, UTF7_SEQUENCE_PATTERN, "utf7", matches);
+        findMatches(str, CHARCODE_SEQUENCE_PATTERN, "charcode", matches);
+
+        if (matches.isEmpty()) {
+            return str;
+        }
+
+        matches.sort(Comparator.comparingInt(m -> m.start));
+
+        StringBuilder result = new StringBuilder();
+        int lastEnd = 0;
+
+        for (EncodedMatch match : matches) {
+            if (match.start < lastEnd) {
+                continue;
+            }
+
+            result.append(str, lastEnd, match.start);
+
+            DecodeResult decodeResult = decodeMatchedSequence(match.matched, match.type);
+            if (decodeResult != null && !decodeResult.decoded.equals(match.matched) && isAsciiOrCompressed(decodeResult.decoded)) {
+                DecompressResult decompressResult = decompressIfNeeded(decodeResult.decoded);
+                result.append(decodeResult.openTag);
+                result.append(decompressResult.openTags);
+                result.append(decompressResult.decoded);
+                result.append(decompressResult.closeTags);
+                result.append(decodeResult.closeTag);
+            } else {
+                result.append(match.matched);
+            }
+
+            lastEnd = match.end;
+        }
+
+        result.append(str.substring(lastEnd));
+        return result.toString();
+    }
+
+    private static void findMatches(String str, Pattern pattern, String type, List<EncodedMatch> matches) {
+        Matcher matcher = pattern.matcher(str);
+        while (matcher.find()) {
+            matches.add(new EncodedMatch(matcher.start(), matcher.end(), matcher.group(), type));
+        }
+    }
+
+    private static DecodeResult decodeMatchedSequence(String encoded, String type) {
+        String decoded;
+        String tagName;
+        switch (type) {
+            case "hex_escape":
+                decoded = decode_js_string(encoded);
+                tagName = "hex_escapes";
+                break;
+            case "unicode_escape":
+                decoded = decode_js_string(encoded);
+                tagName = "unicode_escapes";
+                break;
+            case "octal_escape":
+                decoded = decode_js_string(encoded);
+                tagName = "octal_escapes";
+                break;
+            case "url_encode":
+                decoded = decode_url(encoded);
+                tagName = encoded.contains("+") ? "urlencode" : "urlencode_not_plus";
+                break;
+            case "html_entity":
+                decoded = decode_html5_entities(encoded);
+                tagName = "html_entities";
+                break;
+            case "hex_entity":
+                decoded = decode_html5_entities(encoded);
+                tagName = "hex_entities";
+                break;
+            case "quoted_printable":
+                decoded = d_quoted_printable(encoded);
+                if (decoded.startsWith("Error")) {
+                    return null;
+                }
+                tagName = "quoted_printable";
+                break;
+            case "binary":
+                decoded = bin2ascii(encoded);
+                tagName = "ascii2bin";
+                break;
+            case "hex_spaced":
+                decoded = hex2ascii(encoded);
+                tagName = "ascii2hex(\" \")";
+                break;
+            case "utf7":
+                decoded = utf7Decode(encoded);
+                if (decoded.equals(encoded)) {
+                    return null;
+                }
+                tagName = "utf7";
+                break;
+            case "charcode":
+                decoded = from_charcode(encoded);
+                tagName = "to_charcode";
+                break;
+            default:
+                return null;
+        }
+        return new DecodeResult(decoded, "<@" + tagName + ">", "</@" + tagName.split("\\(")[0] + ">");
+    }
+
+    private static DecompressResult decompressIfNeeded(String decoded) {
+        StringBuilder openTags = new StringBuilder();
+        StringBuilder closeTags = new StringBuilder();
+
+        while (true) {
+            if (isGzip(decoded)) {
+                String decompressed = gzip_decompress(decoded);
+                if (isAsciiOrCompressed(decompressed)) {
+                    openTags.append("<@gzip_compress>");
+                    closeTags.insert(0, "</@gzip_compress>");
+                    decoded = decompressed;
+                    continue;
+                }
+            }
+            if (isDeflate(decoded)) {
+                String decompressed = deflate_decompress(decoded);
+                if (!decompressed.startsWith("Error:") && isAsciiOrCompressed(decompressed)) {
+                    openTags.append("<@deflate_compress>");
+                    closeTags.insert(0, "</@deflate_compress>");
+                    decoded = decompressed;
+                    continue;
+                }
+            }
+            break;
+        }
+        return new DecompressResult(decoded, openTags.toString(), closeTags.toString());
+    }
+
+    private static class DecodeResult {
+        final String decoded;
+        final String openTag;
+        final String closeTag;
+
+        DecodeResult(String decoded, String openTag, String closeTag) {
+            this.decoded = decoded;
+            this.openTag = openTag;
+            this.closeTag = closeTag;
+        }
+    }
+
+    private static class DecompressResult {
+        final String decoded;
+        final String openTags;
+        final String closeTags;
+
+        DecompressResult(String decoded, String openTags, String closeTags) {
+            this.decoded = decoded;
+            this.openTags = openTags;
+            this.closeTags = closeTags;
+        }
+    }
+
+    private static class EncodedMatch {
+        final int start;
+        final int end;
+        final String matched;
+        final String type;
+
+        EncodedMatch(int start, int end, String matched, String type) {
+            this.start = start;
+            this.end = end;
+            this.matched = matched;
+            this.type = type;
+        }
     }
 
     static String auto_decode_decrypt(String str, Boolean decrypt) {

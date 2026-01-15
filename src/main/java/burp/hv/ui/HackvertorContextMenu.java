@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static burp.hv.Convertors.auto_decode_no_decrypt;
+import static burp.hv.Convertors.auto_decode_partial;
 import static burp.hv.HackvertorExtension.*;
 import static burp.hv.tags.TagAutomator.getContextsFromRule;
 import static burp.hv.tags.TagAutomator.shouldApplyRules;
@@ -244,6 +245,24 @@ public class HackvertorContextMenu implements ContextMenuItemsProvider {
             }
         });
         menu.add(autodecodeConvert);
+
+        JMenuItem superDecodeConvert = new JMenuItem("Super decode (Ctrl+Alt+P)");
+        superDecodeConvert.setEnabled(start != end);
+        superDecodeConvert.addActionListener(e -> {
+            if (event.invocationType() == InvocationType.MESSAGE_EDITOR_REQUEST || event.invocationType() == InvocationType.MESSAGE_VIEWER_REQUEST) {
+                if(event.messageEditorRequestResponse().isPresent()) {
+                    HttpRequest request = event.messageEditorRequestResponse().get().requestResponse().request();
+                    String requestStr = request.toString();
+                    String convertedSelection = auto_decode_partial(requestStr.substring(start, end));
+                    String modifiedRequest = "";
+                    modifiedRequest += requestStr.substring(0, start);
+                    modifiedRequest += convertedSelection;
+                    modifiedRequest += requestStr.substring(end);
+                    event.messageEditorRequestResponse().get().setRequest(HttpRequest.httpRequest(request.httpService(), modifiedRequest));
+                }
+            }
+        });
+        menu.add(superDecodeConvert);
 
         // Multi Encoder feature
         JMenuItem multiEncoder = new JMenuItem("Multi Encoder (Ctrl+Alt+M)");
