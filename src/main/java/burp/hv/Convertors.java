@@ -3386,17 +3386,17 @@ public class Convertors {
     private static final Pattern QUOTED_PRINTABLE_PATTERN = Pattern.compile("=[0-9A-Fa-f]{2}");
     private static final Pattern UTF7_PATTERN = Pattern.compile("\\+[A-Za-z0-9+/]*-");
 
-    private static final Pattern HEX_ESCAPE_SEQUENCE_PATTERN = Pattern.compile("(?:\\\\x[0-9a-fA-F]{2})+");
-    private static final Pattern OCTAL_ESCAPE_SEQUENCE_PATTERN = Pattern.compile("(?:\\\\[0-3]?[0-7]{1,2})+");
-    private static final Pattern UNICODE_ESCAPE_SEQUENCE_PATTERN = Pattern.compile("(?:\\\\u[0-9a-fA-F]{4})+");
-    private static final Pattern URL_ENCODE_SEQUENCE_PATTERN = Pattern.compile("(?:%[0-9a-fA-F]{2})+");
-    private static final Pattern HTML_ENTITY_SEQUENCE_PATTERN = Pattern.compile("(?:&[a-zA-Z]+;)+");
-    private static final Pattern HEX_ENTITY_SEQUENCE_PATTERN = Pattern.compile("(?:&#x?[0-9a-fA-F]+;?)+");
-    private static final Pattern QUOTED_PRINTABLE_SEQUENCE_PATTERN = Pattern.compile("(?:=[0-9A-Fa-f]{2})+");
-    private static final Pattern BINARY_SEQUENCE_PATTERN = Pattern.compile("(?:[01]{8}\\s+)+[01]{8}");
-    private static final Pattern HEX_SPACED_SEQUENCE_PATTERN = Pattern.compile("(?:[0-9a-fA-F]{2}[\\s,\\-])+[0-9a-fA-F]{2}");
-    private static final Pattern UTF7_SEQUENCE_PATTERN = Pattern.compile("\\+[A-Za-z0-9+/]+-");
-    private static final Pattern CHARCODE_SEQUENCE_PATTERN = Pattern.compile("(?:\\d{2,3}[,\\s])+\\d{2,3}");
+    private static final Pattern HEX_ESCAPE_SEQUENCE_PATTERN = Pattern.compile("(?:\\\\x[0-9a-fA-F]{2}){2,}");
+    private static final Pattern OCTAL_ESCAPE_SEQUENCE_PATTERN = Pattern.compile("(?:\\\\[0-3]?[0-7]{1,2}){2,}");
+    private static final Pattern UNICODE_ESCAPE_SEQUENCE_PATTERN = Pattern.compile("(?:\\\\u[0-9a-fA-F]{4}){2,}");
+    private static final Pattern URL_ENCODE_SEQUENCE_PATTERN = Pattern.compile("(?:%[0-9a-fA-F]{2}){2,}");
+    private static final Pattern HTML_ENTITY_SEQUENCE_PATTERN = Pattern.compile("(?:&[a-zA-Z]+;){2,}");
+    private static final Pattern HEX_ENTITY_SEQUENCE_PATTERN = Pattern.compile("(?:&#x?[0-9a-fA-F]+;){2,}");
+    private static final Pattern QUOTED_PRINTABLE_SEQUENCE_PATTERN = Pattern.compile("(?:=[0-9A-Fa-f]{2}){2,}");
+    private static final Pattern BINARY_SEQUENCE_PATTERN = Pattern.compile("(?:[01]{8}\\s+){3,}[01]{8}");
+    private static final Pattern HEX_SPACED_SEQUENCE_PATTERN = Pattern.compile("(?:[0-9a-fA-F]{2}[ ]){3,}[0-9a-fA-F]{2}");
+    private static final Pattern UTF7_SEQUENCE_PATTERN = Pattern.compile("\\+[A-Za-z0-9+/]{2,}+-");
+    private static final Pattern CHARCODE_SEQUENCE_PATTERN = Pattern.compile("(?:\\d{2,3}[,]\\s*){3,}\\d{2,3}");
 
     private static boolean isAscii(String str) {
         return ASCII_PATTERN.matcher(str).find();
