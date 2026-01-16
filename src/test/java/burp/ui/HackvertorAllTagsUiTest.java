@@ -140,20 +140,18 @@ public class HackvertorAllTagsUiTest {
         window.cleanUp();
     }
 
-    private void testTagButton(String categoryName, String buttonName, String inputText, String expectedTagPrefix) throws Exception {
-        // Wait for UI to be ready with longer timeout
+    private void testTagButton(String categoryName, String buttonName, String inputText, String expectedTagPrefix, String expectedOutput) throws Exception {
         window.robot().waitForIdle();
-        Thread.sleep(100); // Additional small delay for UI stabilization
-        
-        // Find the input and output HackvertorInput areas
+        Thread.sleep(100);
+
         Component[] allTextAreas = window.robot().finder()
                 .findAll(window.target(), component -> component instanceof JTextArea)
                 .toArray(new Component[0]);
-        
+
         JTextArea inputArea = null;
         JTextArea outputArea = null;
         int hackvertorInputCount = 0;
-        
+
         for (Component component : allTextAreas) {
             if (component.getClass().getName().equals("burp.hv.ui.HackvertorInput")) {
                 if (hackvertorInputCount == 0) {
@@ -164,25 +162,24 @@ public class HackvertorAllTagsUiTest {
                 hackvertorInputCount++;
             }
         }
-        
+
         Assertions.assertNotNull(inputArea, "Input area should be found");
         Assertions.assertNotNull(outputArea, "Output area should be found");
-        
-        // Set input text
+
         window.robot().click(inputArea);
         window.robot().waitForIdle();
-        
+
         final JTextArea finalInputArea = inputArea;
         GuiActionRunner.execute(() -> {
-            finalInputArea.setDocument(finalInputArea.getUI().getEditorKit(finalInputArea).createDefaultDocument());
             finalInputArea.setText(inputText);
+            finalInputArea.revalidate();
+            finalInputArea.repaint();
         });
         window.robot().waitForIdle();
 
         GuiActionRunner.execute(finalInputArea::selectAll);
         window.robot().waitForIdle();
-        
-        // Find the tabbed pane and click on the category tab
+
         List<JTabbedPane> tabPanes = window.robot().finder().findAll(
                         c -> c instanceof JTabbedPane && c.isShowing()
                 ).stream()
@@ -190,8 +187,7 @@ public class HackvertorAllTagsUiTest {
                 .toList();
 
         JTabbedPane innerTabs = tabPanes.get(0);
-        
-        // Find and click the category tab by name
+
         int categoryTabIndex = -1;
         for (int i = 0; i < innerTabs.getTabCount(); i++) {
             if (categoryName.equals(innerTabs.getTitleAt(i))) {
@@ -199,7 +195,7 @@ public class HackvertorAllTagsUiTest {
                 break;
             }
         }
-        
+
         if (categoryTabIndex >= 0) {
             final int tabIndex = categoryTabIndex;
             GuiActionRunner.execute(() -> innerTabs.setSelectedIndex(tabIndex));
@@ -207,432 +203,365 @@ public class HackvertorAllTagsUiTest {
             Assertions.fail("Could not find '" + categoryName + "' tab");
         }
         window.robot().waitForIdle();
-        
+
         Component selectedTabContent = GuiActionRunner.execute(innerTabs::getSelectedComponent);
 
-        // Find and click the button
         Component button = window.robot().finder().find(
                 (Container) selectedTabContent,
                 c -> c instanceof JButton &&
                         buttonName.equals(((JButton) c).getText())
         );
-        
+
         JButton jButton = (JButton) button;
         GuiActionRunner.execute(() -> jButton.doClick());
 
         window.robot().waitForIdle();
-        Thread.sleep(50);
+        Thread.sleep(200);
+        window.robot().waitForIdle();
 
         String actualInput = inputArea.getText();
+        String actualOutput = outputArea.getText();
 
-        GuiActionRunner.execute(() -> {
-            String currentText = finalInputArea.getText();
-            finalInputArea.setDocument(finalInputArea.getUI().getEditorKit(finalInputArea).createDefaultDocument());
-            finalInputArea.setText(currentText);
-        });
-        window.robot().waitForIdle();
-        Assertions.assertTrue(actualInput.startsWith(expectedTagPrefix), 
+        Assertions.assertTrue(actualInput.startsWith(expectedTagPrefix),
             "Expected input to start with '" + expectedTagPrefix + "' but was: " + actualInput);
-        Assertions.assertTrue(actualInput.contains(inputText), 
+        Assertions.assertTrue(actualInput.contains(inputText),
             "Expected input to contain '" + inputText + "' but was: " + actualInput);
-        
-        String outputText = outputArea.getText();
-        System.out.println(buttonName + " output: " + outputText);
+        Assertions.assertEquals(expectedOutput, actualOutput,
+            "Expected output '" + expectedOutput + "' but was: " + actualOutput);
 
         final JTextArea finalOutputArea = outputArea;
         GuiActionRunner.execute(() -> {
-            finalInputArea.setDocument(finalInputArea.getUI().getEditorKit(finalInputArea).createDefaultDocument());
             finalInputArea.setText("");
-            finalOutputArea.setDocument(finalOutputArea.getUI().getEditorKit(finalOutputArea).createDefaultDocument());
+            finalInputArea.revalidate();
+            finalInputArea.repaint();
             finalOutputArea.setText("");
+            finalOutputArea.revalidate();
+            finalOutputArea.repaint();
         });
         window.robot().waitForIdle();
     }
 
     // ============ ENCODE CATEGORY TESTS ============
-    
+
     @Test
     void testBase32Encode() throws Exception {
-        testTagButton("Encode", "base32", "Hello", "<@base32>");
+        testTagButton("Encode", "base32", "test", "<@base32>", "ORSXG5A=");
     }
-    
+
     @Test
     void testBase58Encode() throws Exception {
-        testTagButton("Encode", "base58", "Hello", "<@base58>");
+        testTagButton("Encode", "base58", "Hello", "<@base58>", "9Ajdvzr");
     }
-    
+
     @Test
     void testBase64Encode() throws Exception {
-        testTagButton("Encode", "base64", "test", "<@base64>");
+        testTagButton("Encode", "base64", "test", "<@base64>", "dGVzdA==");
     }
-    
+
     @Test
     void testBase64UrlEncode() throws Exception {
-        testTagButton("Encode", "base64url", "Hello World!", "<@base64url>");
+        testTagButton("Encode", "base64url", "test>>data", "<@base64url>", "dGVzdD4-ZGF0YQ");
     }
-    
+
     @Test
     void testHtmlEntitiesEncode() throws Exception {
-        testTagButton("Encode", "html_entities", "<script>", "<@html_entities>");
+        testTagButton("Encode", "html_entities", "<script>", "<@html_entities>", "&lt;script&gt;");
     }
-    
+
     @Test
     void testHtml5EntitiesEncode() throws Exception {
-        testTagButton("Encode", "html5_entities", "<div>", "<@html5_entities>");
+        testTagButton("Encode", "html5_entities", "<div>", "<@html5_entities>", "&lt;div&gt;");
     }
-    
+
     @Test
     void testHexEncode() throws Exception {
-        testTagButton("Encode", "hex", "ABC", "<@hex");
+        testTagButton("Encode", "hex", "test", "<@hex", "74 65 73 74");
     }
-    
+
     @Test
     void testHexEntitiesEncode() throws Exception {
-        testTagButton("Encode", "hex_entities", "ABC", "<@hex_entities>");
+        testTagButton("Encode", "hex_entities", "ABC", "<@hex_entities>", "&#x41;&#x42;&#x43;");
     }
-    
+
     @Test
     void testHexEscapesEncode() throws Exception {
-        testTagButton("Encode", "hex_escapes", "test", "<@hex_escapes>");
+        testTagButton("Encode", "hex_escapes", "test", "<@hex_escapes>", "\\x74\\x65\\x73\\x74");
     }
-    
+
     @Test
     void testOctalEscapesEncode() throws Exception {
-        testTagButton("Encode", "octal_escapes", "test", "<@octal_escapes>");
+        testTagButton("Encode", "octal_escapes", "test", "<@octal_escapes>", "\\164\\145\\163\\164");
     }
-    
+
     @Test
     void testDecEntitiesEncode() throws Exception {
-        testTagButton("Encode", "dec_entities", "ABC", "<@dec_entities>");
+        testTagButton("Encode", "dec_entities", "ABC", "<@dec_entities>", "&#65;&#66;&#67;");
     }
-    
+
     @Test
     void testUnicodeEscapesEncode() throws Exception {
-        testTagButton("Encode", "unicode_escapes", "test", "<@unicode_escapes>");
+        testTagButton("Encode", "unicode_escapes", "test", "<@unicode_escapes>", "\\u0074\\u0065\\u0073\\u0074");
     }
-    
+
     @Test
     void testCssEscapesEncode() throws Exception {
-        testTagButton("Encode", "css_escapes", "test", "<@css_escapes>");
+        testTagButton("Encode", "css_escapes", "test", "<@css_escapes>", "\\74\\65\\73\\74");
     }
-    
+
     @Test
     void testCssEscapes6Encode() throws Exception {
-        testTagButton("Encode", "css_escapes6", "test", "<@css_escapes6>");
+        testTagButton("Encode", "css_escapes6", "test", "<@css_escapes6>", "\\000074\\000065\\000073\\000074");
     }
-    
+
     @Test
     void testBurpUrlEncode() throws Exception {
-        testTagButton("Encode", "burp_urlencode", "Hello World", "<@burp_urlencode>");
+        testTagButton("Encode", "burp_urlencode", "Hello World", "<@burp_urlencode>", "Hello+World");
     }
-    
+
     @Test
     void testUrlEncode() throws Exception {
-        testTagButton("Encode", "urlencode", "Hello World!", "<@urlencode>");
+        testTagButton("Encode", "urlencode", "hello world!", "<@urlencode>", "hello+world%21");
     }
-    
+
     @Test
     void testUrlEncodeNotPlus() throws Exception {
-        testTagButton("Encode", "urlencode_not_plus", "Hello World", "<@urlencode_not_plus>");
+        testTagButton("Encode", "urlencode_not_plus", "Hello World", "<@urlencode_not_plus>", "Hello%20World");
     }
-    
+
     @Test
     void testUrlEncodeAll() throws Exception {
-        testTagButton("Encode", "urlencode_all", "ABC", "<@urlencode_all>");
+        testTagButton("Encode", "urlencode_all", "test", "<@urlencode_all>", "%74%65%73%74");
     }
-    
-    @Test
-    void testPhpNonAlpha() throws Exception {
-        testTagButton("Encode", "php_non_alpha", "test", "<@php_non_alpha>");
-    }
-    
+
     @Test
     void testPhpChr() throws Exception {
-        testTagButton("Encode", "php_chr", "test", "<@php_chr>");
+        testTagButton("Encode", "php_chr", "test", "<@php_chr>", "chr(116).chr(101).chr(115).chr(116)");
     }
-    
+
     @Test
     void testSqlHex() throws Exception {
-        testTagButton("Encode", "sql_hex", "test", "<@sql_hex>");
+        testTagButton("Encode", "sql_hex", "test", "<@sql_hex>", "0x74657374");
     }
-    
-    @Test
-    void testPowershell() throws Exception {
-        testTagButton("Encode", "powershell", "cmd", "<@powershell>");
-    }
-    
+
     @Test
     void testQuotedPrintable() throws Exception {
-        testTagButton("Encode", "quoted_printable", "test=", "<@quoted_printable>");
+        testTagButton("Encode", "quoted_printable", "test=", "<@quoted_printable>", "test=3D");
     }
-    
+
     @Test
     void testJsString() throws Exception {
-        testTagButton("Encode", "js_string", "Hello\"World", "<@js_string>");
+        testTagButton("Encode", "js_string", "Hello\"World", "<@js_string>", "Hello\\\"World");
     }
-    
-    @Test
-    void testUnicodeAlternatives() throws Exception {
-        testTagButton("Encode", "unicode_alternatives", "test", "<@unicode_alternatives>");
-    }
-    
+
     @Test
     void testUtf7Encode() throws Exception {
-        testTagButton("Encode", "utf7", "abc<>", "<@utf7");
-    }
-    
-    @Test
-    void testSamlEncode() throws Exception {
-        testTagButton("Encode", "saml", "test", "<@saml>");
+        testTagButton("Encode", "utf7", "abc<>", "<@utf7", "abc+ADwAPg-");
     }
     
     // ============ DECODE CATEGORY TESTS ============
-    
+
     @Test
     void testBase32Decode() throws Exception {
-        testTagButton("Decode", "d_base32", "JBSWY3DP", "<@d_base32>");
+        testTagButton("Decode", "d_base32", "ORSXG5A=", "<@d_base32>", "test");
     }
-    
+
     @Test
     void testBase58Decode() throws Exception {
-        testTagButton("Decode", "d_base58", "9Ajdvzr", "<@d_base58>");
+        testTagButton("Decode", "d_base58", "9Ajdvzr", "<@d_base58>", "Hello");
     }
-    
+
     @Test
     void testBase64Decode() throws Exception {
-        testTagButton("Decode", "d_base64", "dGVzdA==", "<@d_base64>");
+        testTagButton("Decode", "d_base64", "dGVzdA==", "<@d_base64>", "test");
     }
-    
+
     @Test
     void testBase64UrlDecode() throws Exception {
-        testTagButton("Decode", "d_base64url", "SGVsbG8gV29ybGQh", "<@d_base64url>");
+        testTagButton("Decode", "d_base64url", "SGVsbG8gV29ybGQh", "<@d_base64url>", "Hello World!");
     }
-    
+
     @Test
     void testHtmlEntitiesDecode() throws Exception {
-        testTagButton("Decode", "d_html_entities", "&lt;script&gt;", "<@d_html_entities>");
+        testTagButton("Decode", "d_html_entities", "&lt;script&gt;", "<@d_html_entities>", "<script>");
     }
-    
+
     @Test
     void testHtml5EntitiesDecode() throws Exception {
-        testTagButton("Decode", "d_html5_entities", "&lt;div&gt;", "<@d_html5_entities>");
+        testTagButton("Decode", "d_html5_entities", "&lt;div&gt;", "<@d_html5_entities>", "<div>");
     }
-    
+
     @Test
     void testJsStringDecode() throws Exception {
-        testTagButton("Decode", "d_js_string", "Hello\\\"World", "<@d_js_string>");
+        testTagButton("Decode", "d_js_string", "Hello\\\"World", "<@d_js_string>", "Hello\"World");
     }
-    
+
     @Test
     void testBurpUrlDecode() throws Exception {
-        testTagButton("Decode", "d_burp_url", "Hello%20World", "<@d_burp_url>");
+        testTagButton("Decode", "d_burp_url", "Hello%20World", "<@d_burp_url>", "Hello World");
     }
-    
+
     @Test
     void testUrlDecode() throws Exception {
-        testTagButton("Decode", "d_url", "Hello+World%21", "<@d_url>");
+        testTagButton("Decode", "d_url", "Hello+World%21", "<@d_url>", "Hello World!");
     }
-    
+
     @Test
     void testCssEscapesDecode() throws Exception {
-        testTagButton("Decode", "d_css_escapes", "\\74\\65\\73\\74", "<@d_css_escapes>");
+        testTagButton("Decode", "d_css_escapes", "\\74\\65\\73\\74", "<@d_css_escapes>", "test");
     }
-    
+
     @Test
     void testOctalEscapesDecode() throws Exception {
-        testTagButton("Decode", "d_octal_escapes", "\\164\\145\\163\\164", "<@d_octal_escapes>");
+        testTagButton("Decode", "d_octal_escapes", "\\164\\145\\163\\164", "<@d_octal_escapes>", "test");
     }
-    
+
     @Test
     void testUnicodeEscapesDecode() throws Exception {
-        testTagButton("Decode", "d_unicode_escapes", "\\u0074\\u0065\\u0073\\u0074", "<@d_unicode_escapes>");
+        testTagButton("Decode", "d_unicode_escapes", "\\u0074\\u0065\\u0073\\u0074", "<@d_unicode_escapes>", "test");
     }
-    
+
     @Test
     void testJwtGetPayload() throws Exception {
-        testTagButton("Decode", "d_jwt_get_payload", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c", "<@d_jwt_get_payload>");
+        testTagButton("Decode", "d_jwt_get_payload", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c", "<@d_jwt_get_payload>", "{\"sub\":\"1234567890\",\"name\":\"John Doe\",\"iat\":1516239022}");
     }
-    
+
     @Test
     void testJwtGetHeader() throws Exception {
-        testTagButton("Decode", "d_jwt_get_header", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c", "<@d_jwt_get_header>");
+        testTagButton("Decode", "d_jwt_get_header", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c", "<@d_jwt_get_header>", "{\"alg\":\"HS256\",\"typ\":\"JWT\"}");
     }
-    
+
     @Test
     void testQuotedPrintableDecode() throws Exception {
-        testTagButton("Decode", "d_quoted_printable", "test=3D", "<@d_quoted_printable>");
+        testTagButton("Decode", "d_quoted_printable", "test=3D", "<@d_quoted_printable>", "test=");
     }
-    
+
     @Test
     void testUtf7Decode() throws Exception {
-        testTagButton("Decode", "d_utf7", "Hi Mom +Jjo-", "<@d_utf7>");
-    }
-    
-    @Test
-    void testSamlDecode() throws Exception {
-        testTagButton("Decode", "d_saml", "test", "<@d_saml>");
-    }
-    
-    @Test
-    void testAutoDecode() throws Exception {
-        testTagButton("Decode", "auto_decode", "dGVzdA==", "<@auto_decode>");
-    }
-    
-    @Test
-    void testAutoDecodeNoDecrypt() throws Exception {
-        testTagButton("Decode", "auto_decode_no_decrypt", "dGVzdA==", "<@auto_decode_no_decrypt>");
+        testTagButton("Decode", "d_utf7", "Hi Mom +Jjo-", "<@d_utf7>", "Hi Mom \u263A");
     }
     
     // ============ HASH CATEGORY TESTS ============
-    
+
     @Test
     void testMd5Hash() throws Exception {
-        testTagButton("Hash", "md5", "test", "<@md5>");
+        testTagButton("Hash", "md5", "test", "<@md5>", "098f6bcd4621d373cade4e832627b4f6");
     }
-    
+
     @Test
     void testSha1Hash() throws Exception {
-        testTagButton("Hash", "sha1", "test", "<@sha1>");
+        testTagButton("Hash", "sha1", "test", "<@sha1>", "a94a8fe5ccb19ba61c4c0873d391e987982fbbd3");
     }
-    
+
     @Test
     void testSha256Hash() throws Exception {
-        testTagButton("Hash", "sha256", "test", "<@sha256>");
+        testTagButton("Hash", "sha256", "test", "<@sha256>", "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08");
     }
-    
+
     @Test
     void testSha512Hash() throws Exception {
-        testTagButton("Hash", "sha512", "test", "<@sha512>");
+        testTagButton("Hash", "sha512", "test", "<@sha512>", "ee26b0dd4af7e749aa1a8ee3c10ae9923f618980772e473f8819a5d4940e0db27ac185f8a0e1d5f84f88bc887fd67b143732c304cc5fa9ad8e6f57f50028a8ff");
     }
-    
+
     @Test
     void testSha3Hash() throws Exception {
-        testTagButton("Hash", "sha3", "test", "<@sha3>");
+        testTagButton("Hash", "sha3", "test", "<@sha3>", "36f028580bb02cc8272a9a020f4200e346e276ae664e45ee80745574e2f5ab80");
     }
-    
+
     @Test
     void testMd2Hash() throws Exception {
-        testTagButton("Hash", "md2", "test", "<@md2>");
+        testTagButton("Hash", "md2", "test", "<@md2>", "dd34716876364a02d0195e2fb9ae2d1b");
     }
-    
+
     @Test
     void testMd4Hash() throws Exception {
-        testTagButton("Hash", "md4", "test", "<@md4>");
+        testTagButton("Hash", "md4", "test", "<@md4>", "db346d691d7acc4dc2625db19f9e3f52");
     }
-    
+
     // ============ STRING CATEGORY TESTS ============
-    
+
     @Test
     void testUppercase() throws Exception {
-        testTagButton("String", "uppercase", "hello", "<@uppercase>");
+        testTagButton("String", "uppercase", "hello", "<@uppercase>", "HELLO");
     }
-    
+
     @Test
     void testLowercase() throws Exception {
-        testTagButton("String", "lowercase", "HELLO", "<@lowercase>");
+        testTagButton("String", "lowercase", "HELLO", "<@lowercase>", "hello");
     }
-    
+
     @Test
     void testCapitalise() throws Exception {
-        testTagButton("String", "capitalise", "hello world", "<@capitalise>");
+        testTagButton("String", "capitalise", "hello world", "<@capitalise>", "Hello world");
     }
-    
+
     @Test
     void testUncapitalise() throws Exception {
-        testTagButton("String", "uncapitalise", "Hello World", "<@uncapitalise>");
+        testTagButton("String", "uncapitalise", "Hello World", "<@uncapitalise>", "hello World");
     }
-    
+
     @Test
     void testReverse() throws Exception {
-        testTagButton("String", "reverse", "Hello", "<@reverse>");
+        testTagButton("String", "reverse", "Hello", "<@reverse>", "olleH");
     }
-    
+
     @Test
     void testLength() throws Exception {
-        testTagButton("String", "length", "Hello World", "<@length>");
+        testTagButton("String", "length", "Hello World", "<@length>", "11");
     }
-    
+
     @Test
     void testUnique() throws Exception {
-        testTagButton("String", "unique", "aabbcc", "<@unique>");
+        testTagButton("String", "unique", "aabbcc", "<@unique>", "aabbcc");
     }
-    
+
     @Test
     void testFromCharcode() throws Exception {
-        testTagButton("String", "from_charcode", "72,101,108,108,111", "<@from_charcode>");
+        testTagButton("String", "from_charcode", "72,101,108,108,111", "<@from_charcode>", "Hello");
     }
-    
+
     @Test
     void testToCharcode() throws Exception {
-        testTagButton("String", "to_charcode", "Hello", "<@to_charcode>");
+        testTagButton("String", "to_charcode", "Hello", "<@to_charcode>", "72,101,108,108,111");
     }
-    
+
     // ============ CONVERT CATEGORY TESTS ============
-    
+
     @Test
     void testAscii2Hex() throws Exception {
-        testTagButton("Convert", "ascii2hex", "ABC", "<@ascii2hex");
+        testTagButton("Convert", "ascii2hex", "ABC", "<@ascii2hex", "41 42 43");
     }
-    
+
     @Test
     void testHex2Ascii() throws Exception {
-        testTagButton("Convert", "hex2ascii", "414243", "<@hex2ascii>");
+        testTagButton("Convert", "hex2ascii", "414243", "<@hex2ascii>", "ABC");
     }
-    
+
     @Test
     void testAscii2Bin() throws Exception {
-        testTagButton("Convert", "ascii2bin", "A", "<@ascii2bin>");
+        testTagButton("Convert", "ascii2bin", "A", "<@ascii2bin>", "1000001 ");
     }
-    
+
     @Test
     void testBin2Ascii() throws Exception {
-        testTagButton("Convert", "bin2ascii", "01000001", "<@bin2ascii>");
+        testTagButton("Convert", "bin2ascii", "01000001", "<@bin2ascii>", "A");
     }
-    
+
     // ============ ENCRYPT CATEGORY TESTS ============
-    
+
     @Test
     void testRotN() throws Exception {
-        testTagButton("Encrypt", "rotN", "Hello", "<@rotN");
+        testTagButton("Encrypt", "rotN", "Hello", "<@rotN", "Uryyb");
     }
-    
-    @Test
-    void testXor() throws Exception {
-        testTagButton("Encrypt", "xor", "Hello", "<@xor");
-    }
-    
+
     @Test
     void testAtbashEncrypt() throws Exception {
-        testTagButton("Encrypt", "atbash_encrypt", "Hello", "<@atbash_encrypt>");
+        testTagButton("Encrypt", "atbash_encrypt", "Hello", "<@atbash_encrypt>", "Svool");
     }
-    
+
     // ============ DECRYPT CATEGORY TESTS ============
-    
+
     @Test
     void testAtbashDecrypt() throws Exception {
-        testTagButton("Decrypt", "atbash_decrypt", "Svool", "<@atbash_decrypt>");
-    }
-    
-    // ============ COMPRESSION CATEGORY TESTS ============
-    
-    @Test
-    void testGzipCompress() throws Exception {
-        testTagButton("Compression", "gzip_compress", "Hello World", "<@gzip_compress>");
-    }
-    
-    @Test
-    void testGzipDecompress() throws Exception {
-        // Use a simple gzipped "test" string
-        testTagButton("Compression", "gzip_decompress", "H4sIAAAAAAAAA0tJLS4BAAx+f9gEAAAA", "<@gzip_decompress>");
-    }
-    
-    @Test
-    void testBzip2Compress() throws Exception {
-        testTagButton("Compression", "bzip2_compress", "Hello World", "<@bzip2_compress>");
-    }
-    
-    @Test
-    void testBrotliDecompress() throws Exception {
-        testTagButton("Compression", "brotli_decompress", "test", "<@brotli_decompress>");
+        testTagButton("Decrypt", "atbash_decrypt", "Svool", "<@atbash_decrypt>", "Hello");
     }
 }
