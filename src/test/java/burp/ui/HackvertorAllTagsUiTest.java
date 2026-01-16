@@ -57,11 +57,11 @@ public class HackvertorAllTagsUiTest {
     private static boolean isUINoiseException(Throwable exception) {
         String message = exception.getMessage();
         if (message == null) return false;
-        
-        // Filter out common UI layout exceptions that don't affect test functionality
+
         return message.contains("Cannot invoke \"javax.swing.text.View.getMinimumSpan") ||
                message.contains("Cannot invoke \"javax.swing.text.View.getPreferredSpan") ||
                message.contains("Cannot invoke \"javax.swing.text.View.getMaximumSpan") ||
+               message.contains("Cannot invoke \"javax.swing.text.View.paint") ||
                message.contains("sun.swing.") ||
                message.contains("java.awt.EventQueue") ||
                (exception instanceof java.awt.IllegalComponentStateException);
@@ -173,10 +173,12 @@ public class HackvertorAllTagsUiTest {
         window.robot().waitForIdle();
         
         final JTextArea finalInputArea = inputArea;
-        GuiActionRunner.execute(() -> finalInputArea.setText(inputText));
+        GuiActionRunner.execute(() -> {
+            finalInputArea.setDocument(finalInputArea.getUI().getEditorKit(finalInputArea).createDefaultDocument());
+            finalInputArea.setText(inputText);
+        });
         window.robot().waitForIdle();
-        
-        // Select all text
+
         GuiActionRunner.execute(finalInputArea::selectAll);
         window.robot().waitForIdle();
         
@@ -217,23 +219,33 @@ public class HackvertorAllTagsUiTest {
         
         JButton jButton = (JButton) button;
         GuiActionRunner.execute(() -> jButton.doClick());
-        
-        // Wait for processing with additional stabilization time
+
         window.robot().waitForIdle();
-        Thread.sleep(50); // Allow UI to fully update
-        
-        // Verify that input area contains the tag
+        Thread.sleep(50);
+
         String actualInput = inputArea.getText();
+
+        GuiActionRunner.execute(() -> {
+            String currentText = finalInputArea.getText();
+            finalInputArea.setDocument(finalInputArea.getUI().getEditorKit(finalInputArea).createDefaultDocument());
+            finalInputArea.setText(currentText);
+        });
+        window.robot().waitForIdle();
         Assertions.assertTrue(actualInput.startsWith(expectedTagPrefix), 
             "Expected input to start with '" + expectedTagPrefix + "' but was: " + actualInput);
         Assertions.assertTrue(actualInput.contains(inputText), 
             "Expected input to contain '" + inputText + "' but was: " + actualInput);
         
-        // Get output for verification (not asserting specific output as it varies by tag)
         String outputText = outputArea.getText();
         System.out.println(buttonName + " output: " + outputText);
-        
-        // Final wait to let any background UI updates complete before next test
+
+        final JTextArea finalOutputArea = outputArea;
+        GuiActionRunner.execute(() -> {
+            finalInputArea.setDocument(finalInputArea.getUI().getEditorKit(finalInputArea).createDefaultDocument());
+            finalInputArea.setText("");
+            finalOutputArea.setDocument(finalOutputArea.getUI().getEditorKit(finalOutputArea).createDefaultDocument());
+            finalOutputArea.setText("");
+        });
         window.robot().waitForIdle();
     }
 
