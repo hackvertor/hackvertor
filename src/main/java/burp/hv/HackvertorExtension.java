@@ -6,6 +6,7 @@ import burp.api.montoya.EnhancedCapability;
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.core.Registration;
 import burp.api.montoya.http.message.requests.HttpRequest;
+import burp.api.montoya.ui.Theme;
 import burp.api.montoya.ui.contextmenu.MessageEditorHttpRequestResponse;
 import burp.api.montoya.ui.hotkey.HotKey;
 import burp.api.montoya.ui.hotkey.HotKeyContext;
@@ -35,7 +36,7 @@ import static burp.hv.utils.TagUtils.generateTagActionListener;
 public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, IExtensionStateListener, IMessageEditorTabFactory {
     //TODO Unset on unload
     public static String extensionName = "Hackvertor";
-    public static String version = "v2.2.39";
+    public static String version = "v2.2.40";
     public static JFrame HackvertorFrame = null;
     public static IBurpExtenderCallbacks callbacks;
     public static IExtensionHelpers helpers;
@@ -46,10 +47,7 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
     public static MontoyaApi montoyaApi;
     public static Settings generalSettings;
     public static HashMap<String,String>globalVariables = new HashMap<>();
-    public static boolean isNativeTheme;
     public static boolean isDarkTheme;
-    private List<String> NATIVE_LOOK_AND_FEELS = Arrays.asList("GTK","Windows","Aqua","FlatLaf - Burp Light");
-    public static List<String> DARK_THEMES = Arrays.asList("Darcula","FlatLaf - Burp Dark");
 
     public static Hackvertor hackvertor;
     public static ExtensionPanel extensionPanel;
@@ -128,9 +126,6 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
 
             }
         });
-        //callbacks.printOutput("Look And Feel: "+UIManager.getLookAndFeel().getID());
-        isNativeTheme = NATIVE_LOOK_AND_FEELS.contains(UIManager.getLookAndFeel().getID());
-        isDarkTheme = DARK_THEMES.contains(UIManager.getLookAndFeel().getID());
     }
 
     void registerPayloadProcessors() {
@@ -182,6 +177,7 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
     @Override
     public void initialize(MontoyaApi montoyaApi) {
         HackvertorExtension.montoyaApi = montoyaApi;
+        isDarkTheme = montoyaApi.userInterface().currentTheme().equals(Theme.DARK);
         montoyaApi.userInterface().menuBar().registerMenu(Utils.generateHackvertorMenuBar());
         Burp burp = new Burp(montoyaApi.burpSuite().version());
         montoyaApi.http().registerHttpHandler(new HackvertorHttpHandler());

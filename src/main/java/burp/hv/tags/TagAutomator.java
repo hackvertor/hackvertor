@@ -512,7 +512,7 @@ public class TagAutomator {
                 }
             }
         });
-        if (!HackvertorExtension.isNativeTheme && !HackvertorExtension.isDarkTheme) {
+        if (!HackvertorExtension.isDarkTheme) {
             testModificationButton.setBackground(Color.decode("#005a70"));
             testModificationButton.setForeground(Color.white);
         }

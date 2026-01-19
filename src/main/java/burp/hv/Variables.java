@@ -69,7 +69,7 @@ public class Variables {
                 saveGlobalVariables();
             }
         });
-        if (!HackvertorExtension.isNativeTheme && !HackvertorExtension.isDarkTheme) {
+        if (!HackvertorExtension.isDarkTheme) {
             createButton.setBackground(Color.decode("#005a70"));
             createButton.setForeground(Color.white);
             closeButton.setBackground(Color.decode("#005a70"));

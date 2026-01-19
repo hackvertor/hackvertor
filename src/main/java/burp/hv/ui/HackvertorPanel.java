@@ -299,7 +299,7 @@ public class HackvertorPanel extends JPanel {
         });
         final JButton swapButton = new JButton("Swap");
         swapButton.setToolTipText("Swap input and output content");
-        if (!isNativeTheme && !isDarkTheme) {
+        if (!isDarkTheme) {
             swapButton.setBackground(Color.black);
             swapButton.setForeground(Color.white);
         }
@@ -319,7 +319,7 @@ public class HackvertorPanel extends JPanel {
                 inputArea.selectAll();
             }
         });
-        if (!isNativeTheme && !isDarkTheme) {
+        if (!isDarkTheme) {
             selectInputButton.setForeground(Color.white);
             selectInputButton.setBackground(Color.black);
         }
@@ -332,7 +332,7 @@ public class HackvertorPanel extends JPanel {
                 outputArea.selectAll();
             }
         });
-        if (!isNativeTheme && !isDarkTheme) {
+        if (!isDarkTheme) {
             selectOutputButton.setForeground(Color.white);
             selectOutputButton.setBackground(Color.black);
         }
@@ -347,7 +347,7 @@ public class HackvertorPanel extends JPanel {
                 inputArea.requestFocus();
             }
         });
-        if (!isNativeTheme && !isDarkTheme) {
+        if (!isDarkTheme) {
             clearTagsButton.setForeground(Color.white);
             clearTagsButton.setBackground(Color.black);
         }
@@ -361,7 +361,7 @@ public class HackvertorPanel extends JPanel {
                 inputArea.requestFocus();
             }
         });
-        if (!isNativeTheme && !isDarkTheme) {
+        if (!isDarkTheme) {
             clearButton.setForeground(Color.white);
             clearButton.setBackground(Color.black);
         }
@@ -410,7 +410,7 @@ public class HackvertorPanel extends JPanel {
                 inputArea.setText(TagUtils.elementSequenceToString(inputElements));
             }
         });
-        if (!isNativeTheme && !isDarkTheme) {
+        if (!isDarkTheme) {
             pasteInsideButton.setForeground(Color.white);
             pasteInsideButton.setBackground(Color.black);
         }
@@ -426,7 +426,7 @@ public class HackvertorPanel extends JPanel {
 
             }
         });
-        if (!isNativeTheme && !isDarkTheme) {
+        if (!isDarkTheme) {
             convertButton.setBackground(Color.decode("#005a70"));
             convertButton.setForeground(Color.white);
         }
@@ -518,7 +518,7 @@ public class HackvertorPanel extends JPanel {
                 navigateToFirst();
             }
         });
-        if (!isNativeTheme && !isDarkTheme) {
+        if (!isDarkTheme) {
             firstButton.setForeground(Color.white);
             firstButton.setBackground(Color.black);
         }
@@ -532,7 +532,7 @@ public class HackvertorPanel extends JPanel {
                 navigateHistory(true);
             }
         });
-        if (!isNativeTheme && !isDarkTheme) {
+        if (!isDarkTheme) {
             previousButton.setForeground(Color.white);
             previousButton.setBackground(Color.black);
         }
@@ -552,7 +552,7 @@ public class HackvertorPanel extends JPanel {
                 navigateHistory(false);
             }
         });
-        if (!isNativeTheme && !isDarkTheme) {
+        if (!isDarkTheme) {
             nextButton.setForeground(Color.white);
             nextButton.setBackground(Color.black);
         }
@@ -566,7 +566,7 @@ public class HackvertorPanel extends JPanel {
                 navigateToLast();
             }
         });
-        if (!isNativeTheme && !isDarkTheme) {
+        if (!isDarkTheme) {
             lastButton.setForeground(Color.white);
             lastButton.setBackground(Color.black);
         }
@@ -604,7 +604,7 @@ public class HackvertorPanel extends JPanel {
                 }
             }
         });
-        if (!isNativeTheme && !isDarkTheme) {
+        if (!isDarkTheme) {
             clearHistoryButton.setForeground(Color.white);
             clearHistoryButton.setBackground(Color.black);
         }

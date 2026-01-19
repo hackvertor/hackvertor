@@ -1,5 +1,6 @@
 package burp.hv.ui;
 
+import burp.api.montoya.ui.Theme;
 import burp.hv.HackvertorExtension;
 import burp.IParameter;
 import burp.IRequestInfo;
@@ -13,8 +14,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
 
-import static burp.hv.HackvertorExtension.callbacks;
-import static burp.hv.HackvertorExtension.helpers;
+import static burp.hv.HackvertorExtension.*;
 
 public class HackvertorInput extends JTextArea {
     public HackvertorInput() {
@@ -67,7 +67,7 @@ public class HackvertorInput extends JTextArea {
     }
     public void updateUI() {
         super.updateUI();
-        HackvertorExtension.isDarkTheme = HackvertorExtension.DARK_THEMES.contains(UIManager.getLookAndFeel().getID());
+        HackvertorExtension.isDarkTheme = montoyaApi.userInterface().currentTheme().equals(Theme.DARK);
         SwingUtilities.invokeLater(() -> {
             getFontSizeFromBurp();
         });

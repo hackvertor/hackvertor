@@ -286,7 +286,7 @@ public class CustomTags {
             y++;
         }
         JButton cancelButton = new JButton("Cancel");
-        if (!HackvertorExtension.isNativeTheme && !HackvertorExtension.isDarkTheme) {
+        if (!HackvertorExtension.isDarkTheme) {
             cancelButton.setBackground(Color.decode("#005a70"));
             cancelButton.setForeground(Color.white);
         }
@@ -510,7 +510,7 @@ public class CustomTags {
                 service.shutdown();
             }
         });
-        if (!HackvertorExtension.isNativeTheme && !HackvertorExtension.isDarkTheme) {
+        if (!HackvertorExtension.isDarkTheme) {
             createButton.setBackground(Color.decode("#005a70"));
             createButton.setForeground(Color.white);
             testButton.setBackground(Color.decode("#005a70"));
@@ -842,7 +842,7 @@ public class CustomTags {
             }
             HackvertorExtension.extensionPanel.refresh();
         });
-        if (!HackvertorExtension.isNativeTheme && !HackvertorExtension.isDarkTheme) {
+        if (!HackvertorExtension.isDarkTheme) {
             deleteButton.setBackground(Color.decode("#005a70"));
             deleteButton.setForeground(Color.white);
             editButton.setBackground(Color.decode("#005a70"));
