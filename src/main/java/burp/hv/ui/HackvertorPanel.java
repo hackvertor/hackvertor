@@ -431,15 +431,6 @@ public class HackvertorPanel extends JPanel {
             convertButton.setForeground(Color.white);
         }
 
-        JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 2, 0));
-        actionsPanel.setOpaque(false);
-        actionsPanel.add(selectInputButton);
-        if (!hideOutput) {
-            actionsPanel.add(selectOutputButton);
-            actionsPanel.add(pasteInsideButton);
-            actionsPanel.add(convertButton);
-        }
-
         final JButton decode = new JButton("Smart Decode");
         decode.setToolTipText("Decode selected text, or decode partial matches in full input if nothing selected (Ctrl+Alt+D)");
         inputArea.getInputMap().put(KeyStroke.getKeyStroke("control alt D"), "smartDecode");
@@ -486,11 +477,6 @@ public class HackvertorPanel extends JPanel {
         });
 
         decode.addActionListener(smartDecodeAction);
-
-        JPanel decodePanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 2, 0));
-        decodePanel.setOpaque(false);
-        decodePanel.add(decode);
-
         JButton rehydrateTagExecutionKey = new JButton("Rehydrate Tags");
         rehydrateTagExecutionKey.setToolTipText("Replace tag execution keys in selected text with your current key");
         rehydrateTagExecutionKey.setEnabled(false);
@@ -571,14 +557,6 @@ public class HackvertorPanel extends JPanel {
             lastButton.setBackground(Color.black);
         }
 
-        JPanel historyPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 2, 0));
-        historyPanel.setOpaque(false);
-        historyPanel.add(firstButton);
-        historyPanel.add(previousButton);
-        historyPanel.add(historyPositionLabel);
-        historyPanel.add(nextButton);
-        historyPanel.add(lastButton);
-
         final JButton clearHistoryButton = new JButton("Clear history");
         clearHistoryButton.setToolTipText("Clear all Hackvertor history");
         clearHistoryButton.addActionListener(new ActionListener() {
@@ -611,15 +589,24 @@ public class HackvertorPanel extends JPanel {
 
         java.util.List<JComponent> buttonComponents = new java.util.ArrayList<>();
         buttonComponents.add(clearButton);
-        buttonComponents.add(historyPanel);
+        buttonComponents.add(firstButton);
+        buttonComponents.add(previousButton);
+        buttonComponents.add(historyPositionLabel);
+        buttonComponents.add(nextButton);
+        buttonComponents.add(lastButton);
         buttonComponents.add(clearHistoryButton);
         buttonComponents.add(clearTagsButton);
         buttonComponents.add(rehydrateTagExecutionKey);
         if(!hideOutput) {
             buttonComponents.add(swapButton);
         }
-        buttonComponents.add(actionsPanel);
-        buttonComponents.add(decodePanel);
+        buttonComponents.add(selectInputButton);
+        if (!hideOutput) {
+            buttonComponents.add(selectOutputButton);
+            buttonComponents.add(pasteInsideButton);
+            buttonComponents.add(convertButton);
+        }
+        buttonComponents.add(decode);
 
         for (JComponent component : buttonComponents) {
             buttonsPanel.add(component);

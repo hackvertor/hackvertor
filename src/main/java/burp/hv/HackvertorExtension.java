@@ -36,7 +36,7 @@ import static burp.hv.utils.TagUtils.generateTagActionListener;
 public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, IExtensionStateListener, IMessageEditorTabFactory {
     //TODO Unset on unload
     public static String extensionName = "Hackvertor";
-    public static String version = "v2.2.40";
+    public static String version = "v2.2.41";
     public static JFrame HackvertorFrame = null;
     public static IBurpExtenderCallbacks callbacks;
     public static IExtensionHelpers helpers;
@@ -110,7 +110,6 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
         SwingUtilities.invokeLater(() -> {
             try {
                 hackvertor = new Hackvertor();
-                stdout.println(extensionName + " " + version);
                 CustomTags.loadCustomTags();
                 Variables.loadGlobalVariables();
                 registerPayloadProcessors();
@@ -176,6 +175,7 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
 
     @Override
     public void initialize(MontoyaApi montoyaApi) {
+        montoyaApi.logging().logToOutput(extensionName + " " + version);
         HackvertorExtension.montoyaApi = montoyaApi;
         isDarkTheme = montoyaApi.userInterface().currentTheme().equals(Theme.DARK);
         montoyaApi.userInterface().menuBar().registerMenu(Utils.generateHackvertorMenuBar());
