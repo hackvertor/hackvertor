@@ -512,10 +512,6 @@ public class TagAutomator {
                 }
             }
         });
-        if (!HackvertorExtension.isDarkTheme) {
-            testModificationButton.setBackground(Color.decode("#005a70"));
-            testModificationButton.setForeground(Color.white);
-        }
         mainPanel.add(new JLabel(), GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST));
         mainPanel.add(testModificationButton, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.WEST));
         

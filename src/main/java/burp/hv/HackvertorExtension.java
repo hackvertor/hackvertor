@@ -47,7 +47,7 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
     public static MontoyaApi montoyaApi;
     public static Settings generalSettings;
     public static HashMap<String,String>globalVariables = new HashMap<>();
-    public static boolean isDarkTheme;
+    public static boolean isDarkTheme = false;
 
     public static Hackvertor hackvertor;
     public static ExtensionPanel extensionPanel;

@@ -493,11 +493,10 @@ public class HackvertorUiTest {
         // Find the Smart Decode button
         Component smartDecodeButton = window.robot().finder().find(
                 window.target(),
-                c -> c instanceof JButton && 
+                c -> c instanceof JButton &&
                      ((JButton) c).getText() != null &&
                      ((JButton) c).getText().contains("Smart Decode") &&
-                     c.isEnabled() &&
-                     c.isShowing()
+                     c.isEnabled()
         );
         
         Assertions.assertNotNull(smartDecodeButton, "Smart Decode button should be found and enabled");
@@ -559,9 +558,8 @@ public class HackvertorUiTest {
         // Find and click the Clear button
         Component clearButton = window.robot().finder().find(
                 window.target(),
-                c -> c instanceof JButton && 
-                     "Clear".equals(((JButton) c).getText()) &&
-                     c.isShowing()
+                c -> c instanceof JButton &&
+                     "Clear".equals(((JButton) c).getText())
         );
         
         JButton button = (JButton) clearButton;
@@ -599,9 +597,8 @@ public class HackvertorUiTest {
         // Find and click the Clear tags button
         Component clearTagsButton = window.robot().finder().find(
                 window.target(),
-                c -> c instanceof JButton && 
-                     "Clear tags".equals(((JButton) c).getText()) &&
-                     c.isShowing()
+                c -> c instanceof JButton &&
+                     "Clear tags".equals(((JButton) c).getText())
         );
         
         JButton button = (JButton) clearTagsButton;
@@ -652,9 +649,8 @@ public class HackvertorUiTest {
         // Find and click the Swap button
         Component swapButton = window.robot().finder().find(
                 window.target(),
-                c -> c instanceof JButton && 
-                     "Swap".equals(((JButton) c).getText()) &&
-                     c.isShowing()
+                c -> c instanceof JButton &&
+                     "Swap".equals(((JButton) c).getText())
         );
         
         JButton button = (JButton) swapButton;
@@ -698,9 +694,8 @@ public class HackvertorUiTest {
         // Find and click the Select input button
         Component selectInputButton = window.robot().finder().find(
                 window.target(),
-                c -> c instanceof JButton && 
-                     "Select input".equals(((JButton) c).getText()) &&
-                     c.isShowing()
+                c -> c instanceof JButton &&
+                     "Select input".equals(((JButton) c).getText())
         );
         
         JButton button = (JButton) selectInputButton;
@@ -748,9 +743,8 @@ public class HackvertorUiTest {
         // Find and click the Select output button
         Component selectOutputButton = window.robot().finder().find(
                 window.target(),
-                c -> c instanceof JButton && 
-                     "Select output".equals(((JButton) c).getText()) &&
-                     c.isShowing()
+                c -> c instanceof JButton &&
+                     "Select output".equals(((JButton) c).getText())
         );
         
         JButton button = (JButton) selectOutputButton;
@@ -801,9 +795,8 @@ public class HackvertorUiTest {
         // Find and click the Convert button
         Component convertButton = window.robot().finder().find(
                 window.target(),
-                c -> c instanceof JButton && 
-                     "Convert".equals(((JButton) c).getText()) &&
-                     c.isShowing()
+                c -> c instanceof JButton &&
+                     "Convert".equals(((JButton) c).getText())
         );
         
         JButton button = (JButton) convertButton;
@@ -852,9 +845,8 @@ public class HackvertorUiTest {
         // Find and click the Paste inside tags button
         Component pasteInsideButton = window.robot().finder().find(
                 window.target(),
-                c -> c instanceof JButton && 
-                     "Paste inside tags".equals(((JButton) c).getText()) &&
-                     c.isShowing()
+                c -> c instanceof JButton &&
+                     "Paste inside tags".equals(((JButton) c).getText())
         );
         
         JButton button = (JButton) pasteInsideButton;

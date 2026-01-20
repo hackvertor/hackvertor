@@ -69,12 +69,6 @@ public class Variables {
                 saveGlobalVariables();
             }
         });
-        if (!HackvertorExtension.isDarkTheme) {
-            createButton.setBackground(Color.decode("#005a70"));
-            createButton.setForeground(Color.white);
-            closeButton.setBackground(Color.decode("#005a70"));
-            closeButton.setForeground(Color.white);
-        }
 
         JLabel tagLabel = new JLabel("Variable");
         tagLabel.setPreferredSize(new Dimension(50, 25));

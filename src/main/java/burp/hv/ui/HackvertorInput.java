@@ -67,7 +67,6 @@ public class HackvertorInput extends JTextArea {
     }
     public void updateUI() {
         super.updateUI();
-        HackvertorExtension.isDarkTheme = montoyaApi.userInterface().currentTheme().equals(Theme.DARK);
         SwingUtilities.invokeLater(() -> {
             getFontSizeFromBurp();
         });

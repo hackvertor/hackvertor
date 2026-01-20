@@ -47,10 +47,6 @@ public class TagUtils {
             btn.setToolTipText(tagObj.tooltip);
 
             if ((displayCategory != null && displayCategory.equals(tagObj.category)) || (StringUtils.isNotEmpty(searchTag) && (regex ? Pattern.compile(searchTag).matcher(tagObj.name).find() : tagObj.name.contains(searchTag)))) {
-                if (!isDarkTheme) {
-                    btn.setBackground(Color.decode("#005a70"));
-                    btn.setForeground(Color.white);
-                }
                 btn.putClientProperty("tag", tagObj);
                 btn.addActionListener(e -> {
                     String selectedText = inputArea.getSelectedText();
