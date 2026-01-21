@@ -1,7 +1,5 @@
 package burp.hv.ui;
 
-import burp.api.montoya.ui.Theme;
-import burp.hv.HackvertorExtension;
 import burp.IParameter;
 import burp.IRequestInfo;
 
@@ -67,9 +65,7 @@ public class HackvertorInput extends JTextArea {
     }
     public void updateUI() {
         super.updateUI();
-        SwingUtilities.invokeLater(() -> {
-            getFontSizeFromBurp();
-        });
+        SwingUtilities.invokeLater(this::getFontSizeFromBurp);
     }
 
     public void getFontSizeFromBurp() {

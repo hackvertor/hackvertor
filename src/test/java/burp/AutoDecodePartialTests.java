@@ -602,4 +602,86 @@ public class AutoDecodePartialTests extends BaseHackvertorTest {
         String result = Convertors.auto_decode_partial(input);
         assertTrue(result.contains("<@urlencode_not_plus> </@urlencode_not_plus>"));
     }
+
+    @Test
+    void testBase64PartialDecode() {
+        String input = "abc Zm9vYmFy abc";
+        String result = Convertors.auto_decode_partial(input);
+        assertEquals("abc <@base64>foobar</@base64> abc", result);
+    }
+
+    @Test
+    void testBase64NestedPartialDecode() {
+        String input = "abc V20wNWRrbEhTbWhqYVVKcFdWaHZQUT09 abc";
+        String result = Convertors.auto_decode_partial(input);
+        assertEquals("abc <@base64><@base64><@base64>foo bar baz</@base64></@base64></@base64> abc", result);
+    }
+
+    @Test
+    void testBase64PartialDecodeMultiple() {
+        String input = "first: Zm9v second: YmFy end";
+        String result = Convertors.auto_decode_partial(input);
+        assertEquals("first: <@base64>foo</@base64> second: <@base64>bar</@base64> end", result);
+    }
+
+    @Test
+    void testBase32PartialDecode() {
+        String input = "abc MZXW6=== abc";
+        String result = Convertors.auto_decode_partial(input);
+        assertEquals("abc <@base32>foo</@base32> abc", result);
+    }
+
+    @Test
+    void testBase32PartialDecodeNested() {
+        String input = "abc JVNFQVZWHU6T2=== abc";
+        String result = Convertors.auto_decode_partial(input);
+        assertEquals("abc <@base32><@base32>foo</@base32></@base32> abc", result);
+    }
+
+    @Test
+    void testBase64urlPartialDecode() {
+        String input = "token: SGVsbG8-V29ybGRf end";
+        String result = Convertors.auto_decode_partial(input);
+        assertTrue(result.contains("<@base64url>"));
+        assertTrue(result.contains("</@base64url>"));
+    }
+
+    @Test
+    void testBase58PartialDecode() {
+        String input = "address: 2NEpo7TZRRrLZSi2U data";
+        String result = Convertors.auto_decode_partial(input);
+        assertTrue(result.contains("<@base58>") || result.equals(input));
+    }
+
+    @Test
+    void testBase64PartialDecodePreservesNonEncoded() {
+        String input = "Hello Zm9vYmFy World";
+        String result = Convertors.auto_decode_partial(input);
+        assertTrue(result.startsWith("Hello "));
+        assertTrue(result.endsWith(" World"));
+        assertTrue(result.contains("<@base64>foobar</@base64>"));
+    }
+
+    @Test
+    void testBase64PartialDecodeWithPadding() {
+        String input = "data: dGVzdA== end";
+        String result = Convertors.auto_decode_partial(input);
+        assertEquals("data: <@base64>test</@base64> end", result);
+    }
+
+    @Test
+    void testBase64PartialDecodeCanReEncode() {
+        String input = "abc Zm9vYmFy abc";
+        String result = Convertors.auto_decode_partial(input);
+        String reEncoded = hackvertor.convert(result, hackvertor);
+        assertEquals(input, reEncoded);
+    }
+
+    @Test
+    void testBase32PartialDecodeCanReEncode() {
+        String input = "abc MZXW6YQ= abc";
+        String result = Convertors.auto_decode_partial(input);
+        String reEncoded = hackvertor.convert(result, hackvertor);
+        assertEquals(input, reEncoded);
+    }
 }

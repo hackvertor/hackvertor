@@ -5,7 +5,6 @@ import burp.hv.settings.InvalidTypeSettingException;
 import burp.hv.settings.UnregisteredSettingException;
 import burp.hv.tags.Tag;
 import burp.hv.tags.TagStore;
-import burp.hv.ui.TagFinderWindow;
 import burp.hv.utils.GridbagUtils;
 import burp.hv.utils.TagUtils;
 import burp.hv.utils.Utils;
@@ -94,11 +93,7 @@ public class HackvertorPanel extends JPanel {
         final UndoManager undo = new UndoManager();
         Document doc = inputArea.getDocument();
 
-        doc.addUndoableEditListener(new UndoableEditListener() {
-            public void undoableEditHappened(UndoableEditEvent evt) {
-                undo.addEdit(evt.getEdit());
-            }
-        });
+        doc.addUndoableEditListener(evt -> undo.addEdit(evt.getEdit()));
         inputArea.getActionMap().put("Undo",
                 new AbstractAction("Undo") {
                     public void actionPerformed(ActionEvent evt) {
@@ -106,7 +101,7 @@ public class HackvertorPanel extends JPanel {
                             if (undo.canUndo()) {
                                 undo.undo();
                             }
-                        } catch (CannotUndoException e) {
+                        } catch (CannotUndoException ignored) {
                         }
                     }
                 });
@@ -118,7 +113,7 @@ public class HackvertorPanel extends JPanel {
                             if (undo.canRedo()) {
                                 undo.redo();
                             }
-                        } catch (CannotRedoException e) {
+                        } catch (CannotRedoException ignored) {
                         }
                     }
                 });

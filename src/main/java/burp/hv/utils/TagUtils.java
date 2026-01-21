@@ -1,7 +1,5 @@
 package burp.hv.utils;
 
-import burp.IContextMenuInvocation;
-import burp.IRequestInfo;
 import burp.api.montoya.core.ToolType;
 import burp.api.montoya.http.message.requests.HttpRequest;
 import burp.api.montoya.ui.contextmenu.ContextMenuEvent;
@@ -21,15 +19,12 @@ import javax.swing.*;
 import javax.swing.text.Highlighter;
 import java.awt.*;
 import java.awt.event.ActionListener;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.*;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static burp.hv.Convertors.auto_decode_no_decrypt;
 import static burp.hv.HackvertorExtension.*;
 
 public class TagUtils {
@@ -110,7 +105,7 @@ public class TagUtils {
     }
 
     private static void applyTagToEvent(Optional<MessageEditorHttpRequestResponse> editorOpt, Tag tagObj, boolean isHotKey) {
-        if (!editorOpt.isPresent()) {
+        if (editorOpt.isEmpty()) {
             return;
         }
 
@@ -179,7 +174,7 @@ public class TagUtils {
         for (final Tag tagObj : tags) {
             final JMenuItem menu = new JMenuItem(tagObj.name);
             menu.setToolTipText(tagObj.tooltip);
-            if ((category != null && category.equals(tagObj.category)) || (searchTag.length() > 0 && (regex ? tagObj.name.matches(searchTag) : tagObj.name.contains(searchTag)))) {
+            if (category.equals(tagObj.category) || !searchTag.isEmpty() && (regex ? tagObj.name.matches(searchTag) : tagObj.name.contains(searchTag))) {
                 menu.addActionListener(generateTagActionListener(event, tagObj));
                 if (tagCount > 40) {
                     for (int i = 0; i < parentMenu.getItemCount(); i++) {
@@ -227,20 +222,14 @@ public class TagUtils {
     }
 
     public static String getExtensionFromLanguage(String language) {
-        switch (language) {
-            case "AI":
-                return ".ai";
-            case "Python":
-                return ".py";
-            case "JavaScript":
-                return ".js";
-            case "Java":
-                return ".java";
-            case "Groovy":
-                return ".groovy";
-            default:
-                return null;
-        }
+        return switch (language) {
+            case "AI" -> ".ai";
+            case "Python" -> ".py";
+            case "JavaScript" -> ".js";
+            case "Java" -> ".java";
+            case "Groovy" -> ".groovy";
+            default -> null;
+        };
     }
 
     public static boolean shouldProcessTags(ToolType toolType) {
