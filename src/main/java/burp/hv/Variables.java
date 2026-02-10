@@ -131,9 +131,7 @@ public class Variables {
         createVariablePanel.add(closeButton);
         createVariablePanel.add(createButton);
         pane.add(createVariablePanel);
-        createVariableWindow.pack();
-        createVariableWindow.setLocationRelativeTo(null);
-        createVariableWindow.setVisible(true);
+        Utils.makeWindowVisible(createVariableWindow);
     }
 
     public static void saveGlobalVariables() {

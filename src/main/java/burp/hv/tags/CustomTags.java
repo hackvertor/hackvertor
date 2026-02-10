@@ -612,9 +612,7 @@ public class CustomTags {
         y++;
         createTagPanel.add(errorMessage, GridbagUtils.addMarginToGbc(GridbagUtils.createConstraints(0, y, 3, GridBagConstraints.NONE, 0, 0, 5, 5, CENTER), 2, 2, 2, 2));
         pane.add(createTagPanel);
-        createTagWindow.pack();
-        createTagWindow.setLocationRelativeTo(null);
-        createTagWindow.setVisible(true);
+        Utils.makeWindowVisible(createTagWindow);
     }
 
     public static void showListTagsDialog() {
@@ -834,9 +832,7 @@ public class CustomTags {
         listTagsPanel.add(loadFromJsonButton);
         listTagsPanel.add(exportToJsonButton);
         listTagsWindow.add(listTagsPanel);
-        listTagsWindow.pack();
-        listTagsWindow.setLocationRelativeTo(null);
-        listTagsWindow.setVisible(true);
+        Utils.makeWindowVisible(listTagsWindow);
     }
 
     public static void loadCustomTags() {

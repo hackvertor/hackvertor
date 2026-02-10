@@ -239,9 +239,7 @@ public class TagAutomator {
         rulesPanel.add(buttonPanel, BorderLayout.SOUTH);
         
         rulesWindow.add(rulesPanel);
-        rulesWindow.pack();
-        rulesWindow.setLocationRelativeTo(null);
-        rulesWindow.setVisible(true);
+        Utils.makeWindowVisible(rulesWindow);
     }
     
     private static JSONArray loadExamples() {

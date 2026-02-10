@@ -207,9 +207,7 @@ public class TagStore {
         tagStoreWindow.add(tagStorePanel);
         tagStoreWindow.setResizable(true);
         tagStoreWindow.setPreferredSize(new Dimension(1000, 700));
-        tagStoreWindow.pack();
-        tagStoreWindow.setLocationRelativeTo(null);
-        tagStoreWindow.setVisible(true);
+        Utils.makeWindowVisible(tagStoreWindow);
     }
 
     public static String makeHttpRequest(String requestUrl, String method) {

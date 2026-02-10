@@ -59,9 +59,7 @@ public class Settings {
             HackvertorExtension.callbacks.printError(Arrays.toString(e.getStackTrace()));
             throw new RuntimeException(e);
         }
-        settingsWindow.pack();
-        settingsWindow.setLocationRelativeTo(null);
-        settingsWindow.setVisible(true);
+        Utils.makeWindowVisible(settingsWindow);
     }
 
     public enum SettingType  {
@@ -465,9 +463,7 @@ public class Settings {
         });
         buttonsContainer.add(status, GridbagUtils.addMarginToGbc(GridbagUtils.createConstraints(0, 1, 5, GridBagConstraints.NONE, 0, 0, 5, 5, CENTER), 2, 2, 2, 2));
         settingsPanel.add(buttonsContainer, createConstraints(0, containerRow, 2, GridBagConstraints.NONE, 0, 0, spacing, spacing, GridBagConstraints.CENTER));
-        settingsWindow.pack();
-        settingsWindow.setLocationRelativeTo(null);
-        settingsWindow.setVisible(true);
+        Utils.makeWindowVisible(settingsWindow);
         return settingsPanel;
     }
 }
