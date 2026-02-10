@@ -10,7 +10,6 @@ import burp.hv.ui.HackvertorPanel;
  * Montoya WebSocket message handler that logs processing and shows the Hackvertor panel for messages.
  */
 public class HackvertorMontoyaMessageHandler implements MessageHandler {
-    private final String connectionId;
 
     // Helper logging wrappers that are defensive: Montoya logging may be unavailable in some contexts
     private static void safeLogOutput(String msg) {
@@ -74,11 +73,6 @@ public class HackvertorMontoyaMessageHandler implements MessageHandler {
     }
 
     public HackvertorMontoyaMessageHandler() {
-        this.connectionId = "unknown@0";
-    }
-
-    public HackvertorMontoyaMessageHandler(String connectionId) {
-        this.connectionId = connectionId == null ? "unknown@0" : connectionId;
     }
 
     @Override
@@ -133,7 +127,7 @@ public class HackvertorMontoyaMessageHandler implements MessageHandler {
                 java.io.StringWriter sw = new java.io.StringWriter();
                 t.printStackTrace(new java.io.PrintWriter(sw));
                 String stack = sw.toString();
-                String msg = "Error converting websocket payload for connection " + connectionId + ": " + t.getMessage();
+                String msg = "Error converting websocket payload: " + t.getMessage();
                 try {
                     safeLogError(msg);
                     safeLogError(stack);
@@ -149,7 +143,7 @@ public class HackvertorMontoyaMessageHandler implements MessageHandler {
             }
 
             // String header = "Hackvertor processed websocket text message:";
-            // String details = String.format("   (direction=%s, tags=%s, id=%s, lenBefore=%d, lenAfter=%d)", direction, hadTags, connectionId, lenBefore, lenAfter);
+            // String details = String.format("   (direction=%s, tags=%s, lenBefore=%d, lenAfter=%d)", direction, hadTags, lenBefore, lenAfter);
             // try {
             //     safeLogOutput(header);
             //     safeLogOutput(details);

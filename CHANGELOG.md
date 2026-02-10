@@ -1,5 +1,10 @@
 # Changelog
 
+## Version v2.2.43 (2026-01-21)
+- Improved hex UI
+- Added support to websockets using Montoya API
+- Bumped the version
+
 ## Version v2.2.42 (2026-01-21)
 
 - Improved auto decoding

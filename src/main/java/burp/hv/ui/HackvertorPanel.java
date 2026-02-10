@@ -77,26 +77,26 @@ public class HackvertorPanel extends JPanel {
         if (!showLogo) {
             logoLabel = new JLabel();
         }
-    final JTextArea hexView = new JTextArea();
+        final JTextArea hexView = new JTextArea();
         // Use a generic monospaced font for hex display/editing
         hexView.setFont(new Font(Font.MONOSPACED, Font.PLAIN, hexView.getFont().getSize()));
         hexView.setRows(0);
         hexView.setOpaque(true);
-    // Allow editing so users can paste or type hex directly
-    hexView.setEditable(true);
-    // Enable line wrap but avoid breaking in the middle of words/bytes
-    hexView.setLineWrap(true);
-    hexView.setWrapStyleWord(true);
+        // Allow editing so users can paste or type hex directly
+        hexView.setEditable(true);
+        // Enable line wrap but avoid breaking in the middle of words/bytes
+        hexView.setLineWrap(true);
+        hexView.setWrapStyleWord(true);
         hexView.setVisible(false);
         final JScrollPane hexScroll = new JScrollPane(hexView);
         hexScroll.setPreferredSize(new Dimension(-1, 100));
         hexScroll.setMinimumSize(new Dimension(-1, 100));
-    // Split buttons into left and right sections so we can align important actions (like Smart Decode / Apply hex)
-    // Use GridBagLayout so button groups can reflow vertically when horizontal space is limited.
-    JPanel buttonsPanel = new JPanel(new GridBagLayout());
-    JPanel leftButtons = new JPanel(new WrapLayout(FlowLayout.LEFT, 5, 5));
-    // use WrapLayout for the right side too so buttons wrap into additional rows when needed
-    JPanel rightButtons = new JPanel(new WrapLayout(FlowLayout.RIGHT, 5, 5));
+        // Split buttons into left and right sections so we can align important actions (like Smart Decode / Apply hex)
+        // Use GridBagLayout so button groups can reflow vertically when horizontal space is limited.
+        JPanel buttonsPanel = new JPanel(new GridBagLayout());
+        JPanel leftButtons = new JPanel(new WrapLayout(FlowLayout.LEFT, 5, 5));
+        // use WrapLayout for the right side too so buttons wrap into additional rows when needed
+        JPanel rightButtons = new JPanel(new WrapLayout(FlowLayout.RIGHT, 5, 5));
         inputArea.setLineWrap(true);
         inputArea.setRows(0);
         final UndoManager undo = new UndoManager();
