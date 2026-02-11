@@ -78,10 +78,10 @@ TOKEN_MGR_DECLS : {
     | <ST_ERR: ~[]> : DEFAULT
 }
 
-//<InsideTag> SPECIAL_TOKEN :
-//{
-//  < (<WHITESPACE>)+ >
-//}
+<InsideTag> SPECIAL_TOKEN :
+{
+  < (<WHITESPACE>)+ >
+}
 
 <InsideTag> TOKEN : {
     <ARGS_START: "("> : Args

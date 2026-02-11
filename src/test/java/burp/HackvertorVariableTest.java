@@ -118,4 +118,18 @@ public class HackvertorVariableTest extends BaseHackvertorTest {
         String result = hackvertor.convert(input, hackvertor);
         assertEquals("line1\nline2\nline3\nline1\nline2\nline3", result);
     }
+
+    @Test
+    void testSelfClosingTagWithSpace() {
+        String input = "<@set_x(false)>123</@set_x><@get_x />";
+        String result = hackvertor.convert(input, hackvertor);
+        assertEquals("123123", result);
+    }
+
+    @Test
+    void testSelfClosingTagWithoutSpace() {
+        String input = "<@set_x(false)>123</@set_x><@get_x/>";
+        String result = hackvertor.convert(input, hackvertor);
+        assertEquals("123123", result);
+    }
 }
