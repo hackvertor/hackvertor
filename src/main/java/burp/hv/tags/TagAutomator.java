@@ -575,7 +575,7 @@ public class TagAutomator {
 
                 if(hasNonRepeaterTool) {
                     String toolsMessage = String.join(", ", selectedTools);
-                    int confirm = JOptionPane.showConfirmDialog(null,
+                    int confirm = JOptionPane.showConfirmDialog(mainPanel,
                         "Running Python on every request or response in " + toolsMessage +
                         " can affect Burp's performance, are you sure?");
                     if(confirm != 0) {

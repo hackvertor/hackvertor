@@ -430,7 +430,7 @@ public class Settings {
         JButton closeSettingsBtn = new JButton("Close");
         JButton resetSettingsBtn = new JButton("Reset");
         resetSettingsBtn.addActionListener(e -> {
-            int confirm = JOptionPane.showConfirmDialog(null, "Are you sure you want to reset your settings?");
+            int confirm = JOptionPane.showConfirmDialog(settingsWindow, "Are you sure you want to reset your settings?");
             if(confirm == 0) {
                 this.resetSettings();
                 this.save();
@@ -453,7 +453,7 @@ public class Settings {
         buttonsContainer.add(new Label(), GridbagUtils.createConstraints(4, 0, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, CENTER));
         closeSettingsBtn.addActionListener(e -> {
             if(isModified) {
-                int confirm = JOptionPane.showConfirmDialog(null, "Are you sure you have unsaved settings?");
+                int confirm = JOptionPane.showConfirmDialog(settingsWindow, "Are you sure you have unsaved settings?");
                 if(confirm != 0) {
                     return;
                 }

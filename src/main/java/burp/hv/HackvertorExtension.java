@@ -161,7 +161,7 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
     }
 
     public static void alert(String msg) {
-        JOptionPane.showMessageDialog(null, msg);
+        JOptionPane.showMessageDialog(KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusedWindow(), msg);
     }
 
     public Component getUiComponent() {
