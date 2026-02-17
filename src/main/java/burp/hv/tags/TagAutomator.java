@@ -239,9 +239,7 @@ public class TagAutomator {
         rulesPanel.add(buttonPanel, BorderLayout.SOUTH);
         
         rulesWindow.add(rulesPanel);
-        rulesWindow.pack();
-        rulesWindow.setLocationRelativeTo(null);
-        rulesWindow.setVisible(true);
+        Utils.makeWindowVisible(rulesWindow);
     }
     
     private static JSONArray loadExamples() {
@@ -577,7 +575,7 @@ public class TagAutomator {
 
                 if(hasNonRepeaterTool) {
                     String toolsMessage = String.join(", ", selectedTools);
-                    int confirm = JOptionPane.showConfirmDialog(null,
+                    int confirm = JOptionPane.showConfirmDialog(mainPanel,
                         "Running Python on every request or response in " + toolsMessage +
                         " can affect Burp's performance, are you sure?");
                     if(confirm != 0) {
