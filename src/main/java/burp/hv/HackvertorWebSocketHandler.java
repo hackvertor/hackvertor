@@ -7,6 +7,6 @@ public class HackvertorWebSocketHandler implements WebSocketCreatedHandler {
 
     @Override
     public void handleWebSocketCreated(WebSocketCreated webSocketCreated) {
-        webSocketCreated.webSocket().registerMessageHandler(new HackvertorMessageHandler());
+        webSocketCreated.webSocket().registerMessageHandler(new HackvertorMontoyaMessageHandler());
     }
 }

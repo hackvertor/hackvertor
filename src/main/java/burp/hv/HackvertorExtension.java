@@ -5,6 +5,17 @@ import burp.api.montoya.BurpExtension;
 import burp.api.montoya.EnhancedCapability;
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.core.Registration;
+import burp.api.montoya.core.ByteArray;
+import burp.api.montoya.proxy.websocket.TextMessageReceivedAction;
+import burp.api.montoya.proxy.websocket.TextMessageToBeSentAction;
+import burp.api.montoya.proxy.websocket.BinaryMessageReceivedAction;
+import burp.api.montoya.proxy.websocket.BinaryMessageToBeSentAction;
+import burp.api.montoya.proxy.websocket.ProxyWebSocketCreationHandler;
+import burp.api.montoya.proxy.websocket.ProxyWebSocketCreation;
+import burp.api.montoya.proxy.websocket.ProxyWebSocket;
+import burp.api.montoya.proxy.websocket.ProxyMessageHandler;
+import burp.api.montoya.proxy.websocket.InterceptedTextMessage;
+import burp.api.montoya.proxy.websocket.InterceptedBinaryMessage;
 import burp.api.montoya.http.message.requests.HttpRequest;
 import burp.api.montoya.ui.Theme;
 import burp.api.montoya.ui.contextmenu.MessageEditorHttpRequestResponse;
@@ -36,7 +47,7 @@ import static burp.hv.utils.TagUtils.generateTagActionListener;
 public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, IExtensionStateListener, IMessageEditorTabFactory {
     //TODO Unset on unload
     public static String extensionName = "Hackvertor";
-    public static String version = "v2.2.42";
+    public static String version = "v2.2.43";
     public static JFrame HackvertorFrame = null;
     public static IBurpExtenderCallbacks callbacks;
     public static IExtensionHelpers helpers;
@@ -107,12 +118,17 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
         tagCodeExecutionKey = CustomTags.generateRandomCodeExecutionKey();
         callbacks.setExtensionName(extensionName);
         Security.addProvider(new BouncyCastleProvider());
+        // Initialize core hackvertor data structures early so network handlers can use tag processing
+        // even before the Swing UI finishes initializing. UI components are created on the EDT below.
+        try {
+            hackvertor = new Hackvertor();
+            CustomTags.loadCustomTags();
+            Variables.loadGlobalVariables();
+            registerPayloadProcessors();
+        } catch (Exception ignored) {}
+
         SwingUtilities.invokeLater(() -> {
             try {
-                hackvertor = new Hackvertor();
-                CustomTags.loadCustomTags();
-                Variables.loadGlobalVariables();
-                registerPayloadProcessors();
                 extensionPanel = new ExtensionPanel(hackvertor);
                 callbacks.addSuiteTab(this);
                 callbacks.registerMessageEditorTabFactory(HackvertorExtension.this);
@@ -182,6 +198,7 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
         Burp burp = new Burp(montoyaApi.burpSuite().version());
         montoyaApi.http().registerHttpHandler(new HackvertorHttpHandler());
         montoyaApi.websockets().registerWebSocketCreatedHandler(new HackvertorWebSocketHandler());
+        montoyaApi.userInterface().registerWebSocketMessageEditorProvider(new HackvertorWebSocketEditorProvider());
         montoyaApi.userInterface().registerContextMenuItemsProvider(new HackvertorContextMenu());
 
         if(burp.hasCapability(Burp.Capability.REGISTER_HOTKEY)) {

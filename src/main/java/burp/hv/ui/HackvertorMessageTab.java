@@ -58,7 +58,9 @@ public class HackvertorMessageTab implements IMessageEditorTab {
                         });
                         hackvertorContainer.add(hackvertorPanel);
                         if (currentMessage != null) {
+                            // Set the text programmatically and avoid marking the tab as "changed".
                             hackvertorPanel.getInputArea().setText(HackvertorExtension.helpers.bytesToString(currentMessage));
+                            changed = false;
                         }
                         interfaceCreated = true;
                         hackvertorPanel.getInputArea().requestFocusInWindow();
@@ -89,7 +91,9 @@ public class HackvertorMessageTab implements IMessageEditorTab {
             changed = false;
         } else {
             if (hackvertorPanel != null) {
+                // Set text programmatically; don't treat this as a user edit.
                 hackvertorPanel.getInputArea().setText(HackvertorExtension.helpers.bytesToString(content));
+                changed = false;
             }
         }
         currentMessage = content;

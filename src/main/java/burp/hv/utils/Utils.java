@@ -87,6 +87,7 @@ public class Utils {
         settings.registerBooleanSetting("sortTagCategories", true, "Alphabetically sort tag categories", "Misc", null);
         settings.registerBooleanSetting("allowAutoConvertClipboard", false, "Auto convert clipboard","Misc", null);
         settings.registerBooleanSetting("showOutputInMessageEditor", false, "Show the output panel in the message editor","Misc", null);
+        settings.registerBooleanSetting("fixWebsocketMojibake", false, "Attempt to undo common UTF-8 mojibake in WebSocket text payloads", "Misc", "This attempts to reverse double-encoding when binary is treated as text. Use with caution.");
         settings.registerStringSetting("pythonModulePath", "", "Python module path","System");
     }
 
