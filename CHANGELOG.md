@@ -1,5 +1,18 @@
 # Changelog
 
+## Version v2.2.43 (2026-02-18)
+
+- Merge pull request #156 from snooze6/master
+- reverted bappmanifest.bmf
+- Merge pull request #157 from psalire/master
+- Fixed parser bug with self-closing tags and space. Added tests to cover it.
+- Center JDialog/JOption relative to parent
+- Center new JFrames on the current screen
+- fix format, bump version and remove unused id
+- fix websockets
+- improving hex
+- Update CHANGELOG.md for v2.2.42
+
 ## Version v2.2.43 (2026-01-21)
 - Improved hex UI
 - Added support to websockets using Montoya API
