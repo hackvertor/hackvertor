@@ -1,5 +1,12 @@
 # Changelog
 
+## Version v2.2.45 (2026-02-19)
+
+- Bumped version
+- Fixed UI issues
+- Fixed UI issues
+- Update CHANGELOG.md for v2.2.43
+
 ## Version v2.2.43 (2026-02-18)
 
 - Merge pull request #156 from snooze6/master
