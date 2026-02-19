@@ -25,6 +25,7 @@ import java.net.URL;
 import java.util.HashMap;
 
 import static burp.hv.HackvertorExtension.montoyaApi;
+import static burp.hv.ui.UIUtils.applyPrimaryStyle;
 
 public class TagStore {
     public static void showTagStore() {
@@ -65,6 +66,7 @@ public class TagStore {
         JPanel buttonsPanel = new JPanel(new BorderLayout());
         Utils.setMarginAndPadding(buttonsPanel, 10);
         JButton installButton = new JButton("Install tag");
+        applyPrimaryStyle(installButton);
         JButton closeButton = new JButton("Close");
         buttonsPanel.add(closeButton, BorderLayout.WEST);
         buttonsPanel.add(installButton, BorderLayout.EAST);

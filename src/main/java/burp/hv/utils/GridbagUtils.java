@@ -21,4 +21,10 @@ public class GridbagUtils {
         c.anchor = anchor;
         return c;
     }
+
+    public static GridBagConstraints createConstraints(int x, int y, int gridWidth, int fill, double weightx, double weighty, int ipadx, int ipady, int anchor, int margin) {
+        GridBagConstraints c = createConstraints(x, y, gridWidth, fill, weightx, weighty, ipadx, ipady, anchor);
+        c.insets = new Insets(margin, margin, margin, margin);
+        return c;
+    }
 }

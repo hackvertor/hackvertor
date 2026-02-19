@@ -13,11 +13,14 @@ import java.awt.event.MouseEvent;
 import java.util.List;
 
 import static burp.hv.HackvertorExtension.*;
+import static burp.hv.ui.UIUtils.PRIMARY_COLOR;
+import static burp.hv.ui.UIUtils.applyHackvertorInputStyle;
 
 public class HackvertorInput extends JTextArea {
     public HackvertorInput() {
         super();
         HackvertorInput that = this;
+        applyHackvertorInputStyle(this);
         this.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {

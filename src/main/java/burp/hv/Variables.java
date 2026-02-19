@@ -12,6 +12,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Iterator;
 
+import static burp.hv.ui.UIUtils.applyPrimaryStyle;
+
 public class Variables {
     public static void showGlobalVariablesWindow() {
         JPanel createVariablePanel = new JPanel();
@@ -47,6 +49,7 @@ public class Variables {
             }
         });
         JButton createButton = new JButton("Create/Update variable");
+        applyPrimaryStyle(createButton);
         createButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {

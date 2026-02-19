@@ -15,6 +15,7 @@ import java.awt.*;
 import java.awt.event.ItemEvent;
 import java.util.*;
 
+import static burp.hv.ui.UIUtils.applyPrimaryStyle;
 import static burp.hv.utils.GridbagUtils.addMarginToGbc;
 import static burp.hv.utils.GridbagUtils.createConstraints;
 import static burp.hv.HackvertorExtension.*;
@@ -272,11 +273,7 @@ public class Settings {
         JLabel status = new JLabel(" ");
         Settings settings = this;
         JLabel logoLabel;
-        if (isDarkTheme) {
-            logoLabel = new JLabel(createImageIcon("/images/logo-dark.png", "logo"));
-        } else {
-            logoLabel = new JLabel(createImageIcon("/images/logo-light.png", "logo"));
-        }
+        logoLabel = new JLabel(createImageIcon("/images/logo-light.png", "logo"));
         JPanel logoContainer = new JPanel(new GridBagLayout());
         logoContainer.add(logoLabel, GridbagUtils.createConstraints(0, 0, 1, 1, 0, 0, 0, 0, GridBagConstraints.NORTH));
         JLabel versionLabel = new JLabel(version);
@@ -440,6 +437,7 @@ public class Settings {
             }
         });
         JButton updateSettingsBtn = new JButton("Update");
+        applyPrimaryStyle(updateSettingsBtn);
         updateSettingsBtn.addActionListener(e -> {
             this.save();
             loadSettingObject.load();

@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static burp.hv.HackvertorExtension.callbacks;
+import static burp.hv.ui.UIUtils.applyPrimaryStyle;
+import static burp.hv.ui.UIUtils.applyTextAreaBorderStyle;
 
 public class TagAutomator {
     private static final String warningMsg = "Warning: These rules can slow down Burp Suite and increase memory usage. Be very careful with the Python you write. Avoid enabling them across many tools, and keep the number of rules as low as possible to reduce performance impact.";
@@ -96,7 +98,9 @@ public class TagAutomator {
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         JButton newButton = new JButton("New Rule");
+        applyPrimaryStyle(newButton);
         JButton editButton = new JButton("Edit Rule");
+        applyPrimaryStyle(editButton);
         JButton deleteButton = new JButton("Delete Rule");
         JButton exportButton = new JButton("Export to Clipboard");
         JButton importButton = new JButton("Import from Clipboard");
@@ -306,6 +310,7 @@ public class TagAutomator {
 
         JLabel analysisLabel = new JLabel("Analysis(Python):");
         JTextArea analysisArea = new JTextArea(6, 50);
+        applyTextAreaBorderStyle(analysisArea);
         analysisArea.setLineWrap(true);
         analysisArea.setWrapStyleWord(true);
         JScrollPane analysisScroll = new JScrollPane(analysisArea);
@@ -315,6 +320,7 @@ public class TagAutomator {
 
         JLabel modificationLabel = new JLabel("Modification(Python):");
         JTextArea modificationArea = new JTextArea(8, 50);
+        applyTextAreaBorderStyle(modificationArea);
         modificationArea.setLineWrap(true);
         modificationArea.setWrapStyleWord(true);
         JScrollPane modificationScroll = new JScrollPane(modificationArea);
@@ -451,21 +457,21 @@ public class TagAutomator {
         });
 
         int y = 0;
-        mainPanel.add(buildWarning(warningMsg), GridbagUtils.createConstraints(0, y++, 2, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST));
-        mainPanel.add(examplesLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST));
-        mainPanel.add(examplesComboBox, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.WEST));
+        mainPanel.add(buildWarning(warningMsg), GridbagUtils.createConstraints(0, y++, 2, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST, 5));
+        mainPanel.add(examplesLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST, 5));
+        mainPanel.add(examplesComboBox, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.WEST, 5));
 
-        mainPanel.add(typeLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST));
-        mainPanel.add(typeComboBox, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.WEST));
-        
-        mainPanel.add(nameLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST));
-        mainPanel.add(nameField, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.CENTER));
-        
-        mainPanel.add(enabledLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST));
-        mainPanel.add(enabledCheckbox, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.WEST));
-        
-        mainPanel.add(analysisLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.NORTHWEST));
-        mainPanel.add(analysisScroll, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0.3, 5, 5, GridBagConstraints.CENTER));
+        mainPanel.add(typeLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST, 5));
+        mainPanel.add(typeComboBox, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.WEST, 5));
+
+        mainPanel.add(nameLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST, 5));
+        mainPanel.add(nameField, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.CENTER, 5));
+
+        mainPanel.add(enabledLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST, 5));
+        mainPanel.add(enabledCheckbox, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.WEST, 5));
+
+        mainPanel.add(analysisLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.NORTHWEST, 5));
+        mainPanel.add(analysisScroll, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0.3, 5, 5, GridBagConstraints.CENTER, 5));
 
         JButton testAnalysisButton = new JButton("Test Analysis");
         testAnalysisButton.addActionListener(new ActionListener() {
@@ -485,11 +491,11 @@ public class TagAutomator {
                 }
             }
         });
-        mainPanel.add(new JLabel(), GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST));
-        mainPanel.add(testAnalysisButton, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.WEST));
-        
-        mainPanel.add(modificationLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.NORTHWEST));
-        mainPanel.add(modificationScroll, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0.5, 5, 5, GridBagConstraints.CENTER));
+        mainPanel.add(new JLabel(), GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST, 5));
+        mainPanel.add(testAnalysisButton, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.WEST, 5));
+
+        mainPanel.add(modificationLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.NORTHWEST, 5));
+        mainPanel.add(modificationScroll, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0.5, 5, 5, GridBagConstraints.CENTER, 5));
 
         JButton testModificationButton = new JButton("Test Modification");
         testModificationButton.addActionListener(new ActionListener() {
@@ -510,14 +516,14 @@ public class TagAutomator {
                 }
             }
         });
-        mainPanel.add(new JLabel(), GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST));
-        mainPanel.add(testModificationButton, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.WEST));
-        
-        mainPanel.add(contextLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST));
-        mainPanel.add(contextPanel, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.CENTER));
-        
-        mainPanel.add(toolLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST));
-        mainPanel.add(toolPanel, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.WEST));
+        mainPanel.add(new JLabel(), GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST, 5));
+        mainPanel.add(testModificationButton, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.WEST, 5));
+
+        mainPanel.add(contextLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST, 5));
+        mainPanel.add(contextPanel, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.CENTER, 5));
+
+        mainPanel.add(toolLabel, GridbagUtils.createConstraints(0, y, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, GridBagConstraints.WEST, 5));
+        mainPanel.add(toolPanel, GridbagUtils.createConstraints(1, y++, 1, GridBagConstraints.BOTH, 1, 0, 5, 5, GridBagConstraints.WEST, 5));
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         JButton saveButton = new JButton(isEdit ? "Update" : "Create");

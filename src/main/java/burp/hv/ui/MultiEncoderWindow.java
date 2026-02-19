@@ -31,6 +31,8 @@ import java.util.concurrent.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static burp.hv.ui.UIUtils.applyPrimaryStyle;
+
 public class MultiEncoderWindow {
     private static final int DEFAULT_WIDTH = 1000;
     private static final int DEFAULT_HEIGHT = 750;
@@ -324,15 +326,18 @@ public class MultiEncoderWindow {
 
             if (hackvertorCallback != null) {
                 JButton sendToHackvertorButton = new JButton("Send to Hackvertor");
+                applyPrimaryStyle(sendToHackvertorButton);
                 sendToHackvertorButton.addActionListener(e -> sendToHackvertor());
                 montoyaApi.userInterface().applyThemeToComponent(sendToHackvertorButton);
                 buttonPanel.add(sendToHackvertorButton);
             } else {
                 JButton sendToRepeaterButton = new JButton("Send to Repeater");
+                applyPrimaryStyle(sendToRepeaterButton);
                 sendToRepeaterButton.addActionListener(e -> sendToRepeater());
                 montoyaApi.userInterface().applyThemeToComponent(sendToRepeaterButton);
 
                 JButton sendToIntruderButton = new JButton("Send to Intruder");
+                applyPrimaryStyle(sendToIntruderButton);
                 sendToIntruderButton.addActionListener(e -> sendToIntruder());
                 montoyaApi.userInterface().applyThemeToComponent(sendToIntruderButton);
 

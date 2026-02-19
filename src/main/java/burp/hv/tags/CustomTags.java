@@ -41,6 +41,8 @@ import static burp.hv.Convertors.*;
 import static burp.hv.HackvertorExtension.*;
 import static burp.hv.HackvertorExtension.tagCodeExecutionKey;
 import static burp.hv.ai.AI.featureMessage;
+import static burp.hv.ui.UIUtils.applyPrimaryStyle;
+import static burp.hv.ui.UIUtils.applyTextAreaBorderStyle;
 import static java.awt.GridBagConstraints.CENTER;
 
 public class CustomTags {
@@ -276,6 +278,7 @@ public class CustomTags {
         int y = 6;
         if(customTag != null && customTag.has("summary")) {
             JTextArea summary = new JTextArea(customTag.getString("summary"));
+            applyTextAreaBorderStyle(summary);
             summary.setPreferredSize(new Dimension(800, 200));
             summary.setLineWrap(true);
             summary.setWrapStyleWord(true);
@@ -296,6 +299,7 @@ public class CustomTags {
         JLabel errorMessage = new JLabel();
         errorMessage.setForeground(Color.red);
         JButton createButton = new JButton("Create tag");
+        applyPrimaryStyle(createButton);
         JButton exportButton = new JButton("Export to tag store");
         JSONObject finalCustomTag = customTag;
         exportButton.addActionListener(e -> {
@@ -640,6 +644,7 @@ public class CustomTags {
             tagCombo.addItem(tag);
         }
         JButton editButton = new JButton("Edit tag");
+        applyPrimaryStyle(editButton);
         editButton.addActionListener(e -> {
             if (tagCombo.getSelectedIndex() == -1) {
                 return;

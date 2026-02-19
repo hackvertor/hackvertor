@@ -33,6 +33,8 @@ import java.util.concurrent.*;
 
 import static burp.hv.HackvertorExtension.*;
 import static burp.hv.Convertors.*;
+import static burp.hv.ui.UIUtils.*;
+import static burp.hv.ui.UIUtils.applyLengthStyle;
 import static java.awt.GridBagConstraints.*;
 import static java.awt.GridBagConstraints.BOTH;
 
@@ -69,15 +71,12 @@ public class HackvertorPanel extends JPanel {
         topBar.setPreferredSize(new Dimension(-1, 100));
         topBar.setMinimumSize(new Dimension(-1, 100));
         JLabel logoLabel;
-        if (isDarkTheme) {
-            logoLabel = new JLabel(createImageIcon("/images/logo-dark.png", "logo"));
-        } else {
-            logoLabel = new JLabel(createImageIcon("/images/logo-light.png", "logo"));
-        }
+        logoLabel = new JLabel(createImageIcon("/images/logo-light.png", "logo"));
         if (!showLogo) {
             logoLabel = new JLabel();
         }
         final JTextArea hexView = new JTextArea();
+        applyTextAreaBorderStyle(hexView);
         // Use a generic monospaced font for hex display/editing
         hexView.setFont(new Font(Font.MONOSPACED, Font.PLAIN, hexView.getFont().getSize()));
         hexView.setRows(0);
@@ -96,7 +95,6 @@ public class HackvertorPanel extends JPanel {
         JPanel buttonsPanel = new JPanel(new GridBagLayout());
         JPanel leftButtons = new JPanel(new WrapLayout(FlowLayout.LEFT, 5, 5));
         // use WrapLayout for the right side too so buttons wrap into additional rows when needed
-        JPanel rightButtons = new JPanel(new WrapLayout(FlowLayout.RIGHT, 5, 5));
         inputArea.setLineWrap(true);
         inputArea.setRows(0);
         final UndoManager undo = new UndoManager();
@@ -131,7 +129,9 @@ public class HackvertorPanel extends JPanel {
         final JScrollPane inputScroll = new JScrollPane(inputArea);
         final JLabel inputLabel = new JLabel("Input:");
         final JLabel inputLenLabel = new JLabel("0");
+        applyLengthStyle(inputLenLabel);
         final JLabel inputRealLenLabel = new JLabel("0");
+        applyUnicodeLengthStyle(inputRealLenLabel);
         inputRealLenLabel.setOpaque(true);
         inputLenLabel.setOpaque(true);
         if(!hideOutput) {
@@ -234,7 +234,9 @@ public class HackvertorPanel extends JPanel {
         final JScrollPane outputScroll = new JScrollPane(outputArea);
         final JLabel outputLabel = new JLabel("Output:");
         final JLabel outputLenLabel = new JLabel("0");
+        applyLengthStyle(outputLenLabel);
         final JLabel outputRealLenLabel = new JLabel("0");
+        applyUnicodeLengthStyle(outputRealLenLabel);
         outputRealLenLabel.setOpaque(true);
         outputLenLabel.setOpaque(true);
         DocumentListener documentListener2 = new DocumentListener() {
@@ -378,6 +380,7 @@ public class HackvertorPanel extends JPanel {
         });
 
         final JButton decode = new JButton("Smart Decode");
+        UIUtils.applyPrimaryStyle(decode);
         decode.setToolTipText("Decode selected text, or decode partial matches in full input if nothing selected (Ctrl+Alt+D)");
         inputArea.getInputMap().put(KeyStroke.getKeyStroke("control alt D"), "smartDecode");
         SmartDecodeAction smartDecodeAction = new SmartDecodeAction(this.inputArea, null, hackvertor);
@@ -567,8 +570,8 @@ public class HackvertorPanel extends JPanel {
         leftButtons.add(decode);
 
         // Move the Convert button to the right panel (keep Smart Decode on the left)
-        rightButtons.add(convertButton);
-        rightButtons.add(applyHex);
+        leftButtons.add(convertButton);
+        leftButtons.add(applyHex);
 
     // place left and right groups into buttonsPanel using GridBag so they can wrap and grow vertically
     GridBagConstraints gbc = new GridBagConstraints();
@@ -578,14 +581,6 @@ public class HackvertorPanel extends JPanel {
     gbc.fill = GridBagConstraints.HORIZONTAL;
     gbc.anchor = GridBagConstraints.WEST;
     buttonsPanel.add(leftButtons, gbc);
-
-    gbc = new GridBagConstraints();
-    gbc.gridx = 1;
-    gbc.gridy = 0;
-    gbc.weightx = 0.0;
-    gbc.fill = GridBagConstraints.NONE;
-    gbc.anchor = GridBagConstraints.EAST;
-    buttonsPanel.add(rightButtons, gbc);
         GridBagConstraints c = GridbagUtils.createConstraints(1, 0, 1, GridBagConstraints.NONE, 0, 0, 0, 0, CENTER);
         c.anchor = FIRST_LINE_END;
         c.ipadx = 20;
@@ -684,7 +679,8 @@ public class HackvertorPanel extends JPanel {
         }
 
         JPanel tagStoreContainer = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JButton tagStoreButton = new JButton("Open tag Store");
+        JButton tagStoreButton = new JButton("Open");
+        tagStoreButton.setToolTipText("Open tag store");
         tagStoreButton.setPreferredSize(new Dimension(120, 25));
         tagStoreButton.addActionListener((e) -> {
             TagStore.showTagStore();
