@@ -77,6 +77,6 @@ public class HackvertorInput extends JTextArea {
     }
 
     public void changeFontSize(int fontSize) {
-        this.setFont(new Font("Courier New", Font.PLAIN, fontSize));
+        this.setFont(this.getFont());
     }
 }
