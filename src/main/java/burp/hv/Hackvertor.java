@@ -719,7 +719,7 @@ public class Hackvertor {
 
         // File operations
         addTag(Tag.Category.System, "read_file", true, "read_file(String filepath, String charset, Boolean enabled, String codeExecuteKey)",
-               "string", "UTF-8", "boolean", "false", "string", tagCodeExecutionKey);
+               "string", "ISO-8859-1", "boolean", "false", "string", tagCodeExecutionKey);
 
         // System commands
         addTag(Tag.Category.System, "system", true, "system(String cmd, Boolean enabled, String codeExecuteKey)",
