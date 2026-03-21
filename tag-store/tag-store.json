@@ -240,5 +240,12 @@
     "argument2": "notused",
     "argument2Type": "String",
     "argument2Default": ""
+  },
+  {
+    "description": "Replace newlines with spaces",
+    "language": "Python",
+    "tagName": "remove_newlines",
+    "author": "psalire",
+    "numberOfArgs": 0
   }
 ]
