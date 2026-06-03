@@ -2,6 +2,19 @@
 
 ## Version v2.2.60 (2026-06-03)
 
+- Merge pull request #46 from hackvertor/master
+- Merge branch 'master' into master
+- Update CHANGELOG.md for v2.2.60
+- Bumped version
+- Fixed bug in HTTP message editor where smart paste didn't work
+- Merge remote-tracking branch 'origin/master'
+- Fixed smart paste to use the same logic as the smart decode. Added some tests to cover it.
+- Update CHANGELOG.md for v2.2.57
+- Added smart paste feature in the UI and in Repeater
+- Merge remote-tracking branch 'origin/master'
+
+## Version v2.2.60 (2026-06-03)
+
 - Bumped version
 - Fixed bug in HTTP message editor where smart paste didn't work
 - Merge remote-tracking branch 'origin/master'
