@@ -1,17 +1,34 @@
 # Changelog
 
-## Version v2.2.51 (2026-05-21)
+## Version v2.2.60 (2026-06-03)
 
-- Merge branch 'hackvertor-master'
-- Resolve merge conflicts
-- Update CHANGELOG.md for v2.2.51
-- - Made request/response available in Tag Automator - Fixed UTF-8 issues in requests - Fixed context body to convert tags
+- Bumped version
+- Fixed bug in HTTP message editor where smart paste didn't work
 - Merge remote-tracking branch 'origin/master'
-- Changed shared get tag execution key to be a Supplier instead of Function
-- Update CHANGELOG.md for v2.2.47
-- Added shared get tag execution key function and updated bambda code
-- Update CHANGELOG.md for v2.2.46
-- Added copy Bambda to clipboard option and a shared Hackvertor function
+- Fixed smart paste to use the same logic as the smart decode. Added some tests to cover it.
+- Update CHANGELOG.md for v2.2.57
+
+## Version v2.2.57 (2026-06-03)
+
+- Added smart paste feature in the UI and in Repeater
+- Merge remote-tracking branch 'origin/master'
+- Added more email decoding tests and improved smart decode further
+- Update CHANGELOG.md for v2.2.54
+
+## Version v2.2.54 (2026-05-28)
+
+- Improved base64 detection
+- Merge remote-tracking branch 'origin/master'
+- Further improved base64 decoding with new lines
+- Update CHANGELOG.md for v2.2.52
+
+## Version v2.2.52 (2026-05-28)
+
+- Improved smart decoder to decode base64 separated by new lines which is common in SMTP messages.
+- Added comment to Bambda code so it's clear where and how to use it
+- Merge remote-tracking branch 'origin/master'
+- Updated BApp description
+- Update CHANGELOG.md for v2.2.51
 
 ## Version v2.2.51 (2026-05-20)
 

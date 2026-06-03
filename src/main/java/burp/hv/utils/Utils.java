@@ -189,6 +189,20 @@ public class Utils {
                         "var hackvertorGetTagExecutionKey = (java.util.function.Supplier) System.getProperties().get(\"hackvertor.getTagExecutionKey\");\n" +
                         "if(hackvertorConvert != null && hackvertorGetTagExecutionKey != null) {\n" +
                         "  var executionKey = (String) hackvertorGetTagExecutionKey.get();\n" +
+                        "\n" +
+                        "  // Basic base64 encoding. Tags like base64 don't run code, so no execution key is needed.\n" +
+                        "  logging().logToOutput(hackvertorConvert.apply(\"<@base64>test</@base64>\"));\n" +
+                        "\n" +
+                        "  // Smart decode: automatically detect and decode the encoding of the input.\n" +
+                        "  logging().logToOutput(hackvertorConvert.apply(\"<@auto_decode>dGVzdA==</@auto_decode>\"));\n" +
+                        "\n" +
+                        "  // Smart decode without decrypting, useful when you only want to peel off encodings.\n" +
+                        "  logging().logToOutput(hackvertorConvert.apply(\"<@auto_decode_no_decrypt>dGVzdA==</@auto_decode_no_decrypt>\"));\n" +
+                        "\n" +
+                        "  // Smart decode partial: only decode the encoded portions found within the input.\n" +
+                        "  logging().logToOutput(hackvertorConvert.apply(\"<@auto_decode_partial>id=dGVzdA==&name=hackvertor</@auto_decode_partial>\"));\n" +
+                        "\n" +
+                        "  // Code-executing tag (python). These require the execution key passed as the last argument.\n" +
                         "  logging().logToOutput(hackvertorConvert.apply(\"<@python('output = input.upper()','\" + executionKey + \"')>test</@python>\"));\n" +
                         "}";
                 Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(bambdaCode), null);

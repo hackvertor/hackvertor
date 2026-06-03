@@ -34,6 +34,8 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.*;
 import java.security.Security;
 import java.util.*;
@@ -49,7 +51,7 @@ import static burp.hv.utils.TagUtils.generateTagActionListener;
 public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, IExtensionStateListener, IMessageEditorTabFactory {
     //TODO Unset on unload
     public static String extensionName = "Hackvertor";
-    public static String version = "v2.2.51";
+    public static String version = "v2.2.60";
     public static Supplier<String> sharedGetTagExecutionKey = null;
     public static Function<String, String> sharedConvert = null;
     public static JFrame HackvertorFrame = null;
@@ -249,6 +251,7 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
                 generateTagActionListener(event, tagObj).actionPerformed(null);
             }),
             new HotkeyDefinition("Smart decode", "Ctrl+Alt+D", createSmartDecodeHandler()),
+            new HotkeyDefinition("Smart paste", "Ctrl+Shift+V", createSmartPasteHandler()),
             new HotkeyDefinition("Multi Encoder", "Ctrl+Alt+M", createMultiEncoderHandler(montoyaApi)),
             burp.hasCapability(Burp.Capability.REGISTER_HOTKEY_IN_ALL_CONTEXTS)
                 ? HotkeyDefinition.forAllContexts("New custom tag", "Ctrl+Alt+N", event -> CustomTags.showCreateEditTagDialog(false, null))
@@ -371,6 +374,66 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
             requestResponse.setRequest(HttpRequest.httpRequest(
                 requestResponse.requestResponse().httpService(), modifiedRequest));
         };
+    }
+
+    private HotKeyHandler createSmartPasteHandler() {
+        return event -> {
+            String clipboard = readClipboardString();
+            if (clipboard == null) {
+                return;
+            }
+            String decoded = smartDecode(clipboard);
+
+            HackvertorInput hackvertorInput = event.inputEvent() == null
+                ? null
+                : findHackvertorInput(event.inputEvent().getComponent());
+            if (hackvertorInput != null) {
+                SwingUtilities.invokeLater(() -> hackvertorInput.replaceSelection(decoded));
+                return;
+            }
+
+            if (event.messageEditorRequestResponse().isEmpty()) {
+                return;
+            }
+            MessageEditorHttpRequestResponse requestResponse = event.messageEditorRequestResponse().get();
+            if (!requestResponse.selectionContext().toString().equalsIgnoreCase("request")) {
+                return;
+            }
+            String request = requestResponse.requestResponse().request().toString();
+            int start;
+            int end;
+            if (requestResponse.selectionOffsets().isPresent()) {
+                start = requestResponse.selectionOffsets().get().startIndexInclusive();
+                end = requestResponse.selectionOffsets().get().endIndexExclusive();
+            } else {
+                start = requestResponse.caretPosition();
+                end = start;
+            }
+            if (start < 0 || end > request.length()) {
+                return;
+            }
+            String modifiedRequest = request.substring(0, start) + decoded + request.substring(end);
+            requestResponse.setRequest(HttpRequest.httpRequest(
+                requestResponse.requestResponse().httpService(), modifiedRequest));
+        };
+    }
+
+    public static String readClipboardString() {
+        try {
+            return (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
+        } catch (UnsupportedFlavorException | IOException e) {
+            return null;
+        }
+    }
+
+    private static HackvertorInput findHackvertorInput(Component component) {
+        while (component != null) {
+            if (component instanceof HackvertorInput) {
+                return (HackvertorInput) component;
+            }
+            component = component.getParent();
+        }
+        return null;
     }
 
     private HotKeyHandler createMultiEncoderHandler(MontoyaApi montoyaApi) {

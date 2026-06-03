@@ -25,7 +25,11 @@ public class SmartDecodeAction extends AbstractAction  {
                 outputArea.replaceSelection(converted);
             }
         } else {
-            String converted = hackvertor.convert("<@auto_decode_partial>" + inputArea.getText() + "</@auto_decode_partial>", hackvertor);
+            String text = inputArea.getText();
+            String full = hackvertor.convert("<@auto_decode_no_decrypt>" + text + "</@auto_decode_no_decrypt>", hackvertor);
+            String converted = full.equals(text)
+                    ? hackvertor.convert("<@auto_decode_partial>" + text + "</@auto_decode_partial>", hackvertor)
+                    : full;
             inputArea.setText(converted);
         }
     }

@@ -684,4 +684,90 @@ public class AutoDecodePartialTests extends BaseHackvertorTest {
         String reEncoded = hackvertor.convert(result, hackvertor);
         assertEquals(input, reEncoded);
     }
+
+    @Test
+    void testBase64MultilinePartialDecode() {
+        String original = "Hello, this is a longer message split across multiple lines like SMTP";
+        String b64 = hackvertor.convert("<@base64>" + original + "</@base64>", hackvertor);
+        String multilineB64 = b64.substring(0, 40) + "\n" + b64.substring(40);
+        String input = "before\n" + multilineB64 + "\nafter";
+        String result = Convertors.auto_decode_partial(input);
+        assertEquals("before\n<@base64>" + original + "</@base64>\nafter", result);
+    }
+
+    @Test
+    void testBase64MultilinePartialDecodeCrlf() {
+        String original = "Another multi-line base64 example with CRLF line endings";
+        String b64 = hackvertor.convert("<@base64>" + original + "</@base64>", hackvertor);
+        String multilineB64 = b64.substring(0, 36) + "\r\n" + b64.substring(36);
+        String input = "header\r\n" + multilineB64 + "\r\nfooter";
+        String result = Convertors.auto_decode_partial(input);
+        assertEquals("header\r\n<@base64>" + original + "</@base64>\r\nfooter", result);
+    }
+
+    @Test
+    void testBase64MultilinePartialDecodeManyLines() {
+        String original = "The quick brown fox jumps over the lazy dog. ".repeat(4);
+        String b64 = hackvertor.convert("<@base64>" + original + "</@base64>", hackvertor);
+        StringBuilder wrapped = new StringBuilder();
+        for (int i = 0; i < b64.length(); i += 76) {
+            if (i > 0) wrapped.append("\r\n");
+            wrapped.append(b64, i, Math.min(i + 76, b64.length()));
+        }
+        String input = "Body:\r\n" + wrapped + "\r\nEnd";
+        String result = Convertors.auto_decode_partial(input);
+        assertEquals("Body:\r\n<@base64>" + original + "</@base64>\r\nEnd", result);
+    }
+
+    @Test
+    void testBase64MultilinePartialDecodePaddingOnOwnLine() {
+        String original = "a".repeat(515);
+        String b64 = hackvertor.convert("<@base64>" + original + "</@base64>", hackvertor);
+        StringBuilder wrapped = new StringBuilder();
+        for (int i = 0; i < b64.length(); i += 76) {
+            if (i > 0) wrapped.append("\n");
+            wrapped.append(b64, i, Math.min(i + 76, b64.length()));
+        }
+        assertTrue(wrapped.toString().endsWith("="));
+        String result = Convertors.auto_decode_partial(wrapped.toString());
+        assertEquals("<@base64>" + original + "</@base64>", result);
+    }
+
+    @Test
+    void testBase64MultilineWithUtf8CharDecodesAsSingleTag() {
+        String block = "UG9ydFN3aWdnZXIKICAgIFlvdXIgdmVyaWZpY2F0aW9uIGNvZGUKICAgIFlvdXIgdmVyaWZpY2F0\n" +
+                "aW9uIGNvZGUgZm9yIGJwNHRka2t2c2p4NXJ0ZmE5OWoyb3M5M251dGxoYzUxQHBzcmVzLm5ldCBp\n" +
+                "czoKICAgICAgICAgIDU5NzI1NwogICAgVGhpcyBjb2RlIHdpbGwgZXhwaXJlIGluIDUgbWludXRl\n" +
+                "cy4KICAgICAgICAgICAgICDCqSAyMDI2IFBvcnRTd2lnZ2VyIEx0ZC4gQWxsIHJpZ2h0cyByZXNl\n" +
+                "cnZlZC4K";
+        String input = "Content-Transfer-Encoding: base64\n\n" + block;
+        String result = Convertors.auto_decode_partial(input);
+        assertEquals(1, countOccurrences(result, "<@base64>"));
+        assertEquals(1, countOccurrences(result, "</@base64>"));
+        assertTrue(result.contains("PortSwigger"));
+        assertTrue(result.contains("597257"));
+        assertTrue(result.contains("© 2026 PortSwigger Ltd. All rights reserved."));
+    }
+
+    @Test
+    void testBase64MultilineWithUtf8CharDoesNotBreakIntoParts() {
+        String block = "UG9ydFN3aWdnZXIKICAgIFlvdXIgdmVyaWZpY2F0aW9uIGNvZGUKICAgIFlvdXIgdmVyaWZpY2F0\n" +
+                "aW9uIGNvZGUgZm9yIGJwNHRka2t2c2p4NXJ0ZmE5OWoyb3M5M251dGxoYzUxQHBzcmVzLm5ldCBp\n" +
+                "czoKICAgICAgICAgIDU5NzI1NwogICAgVGhpcyBjb2RlIHdpbGwgZXhwaXJlIGluIDUgbWludXRl\n" +
+                "cy4KICAgICAgICAgICAgICDCqSAyMDI2IFBvcnRTd2lnZ2VyIEx0ZC4gQWxsIHJpZ2h0cyByZXNl\n" +
+                "cnZlZC4K";
+        String result = assertDoesNotThrow(() -> Convertors.auto_decode_partial(block));
+        assertTrue(result.startsWith("<@base64>"));
+        assertTrue(result.endsWith("</@base64>"));
+    }
+
+    private static int countOccurrences(String haystack, String needle) {
+        int count = 0;
+        int index = 0;
+        while ((index = haystack.indexOf(needle, index)) != -1) {
+            count++;
+            index += needle.length();
+        }
+        return count;
+    }
 }

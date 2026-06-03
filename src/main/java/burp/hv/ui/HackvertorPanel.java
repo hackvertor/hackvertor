@@ -386,6 +386,15 @@ public class HackvertorPanel extends JPanel {
         SmartDecodeAction smartDecodeAction = new SmartDecodeAction(this.inputArea, null, hackvertor);
         inputArea.getActionMap().put("smartDecode", smartDecodeAction);
 
+        SmartPasteAction smartPasteAction = new SmartPasteAction(this.inputArea);
+        inputArea.getInputMap().put(KeyStroke.getKeyStroke("control shift V"), "smartPaste");
+        inputArea.getInputMap().put(KeyStroke.getKeyStroke("meta shift V"), "smartPaste");
+        inputArea.getActionMap().put("smartPaste", smartPasteAction);
+
+        final JButton smartPaste = new JButton("Smart Paste");
+        smartPaste.setToolTipText("Partial smart decode the clipboard and paste it at the caret (Ctrl+Shift+V)");
+        smartPaste.addActionListener(smartPasteAction);
+
         inputArea.getInputMap().put(KeyStroke.getKeyStroke("control alt F"), "findTag");
         inputArea.getActionMap().put("findTag", new AbstractAction("findTag") {
             public void actionPerformed(ActionEvent evt) {
@@ -567,6 +576,7 @@ public class HackvertorPanel extends JPanel {
             leftButtons.add(selectOutputButton);
             leftButtons.add(pasteInsideButton);
         }
+        leftButtons.add(smartPaste);
         leftButtons.add(decode);
 
         // Move the Convert button to the right panel (keep Smart Decode on the left)

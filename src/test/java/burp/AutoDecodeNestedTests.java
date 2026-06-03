@@ -988,4 +988,81 @@ public class AutoDecodeNestedTests extends BaseHackvertorTest {
         String decoded = hackvertor.convert("<@auto_decode_no_decrypt>" + encoded + "</@auto_decode_no_decrypt>", hackvertor);
         assertEquals("<@ascii2hex(\" \")>" + input + "</@ascii2hex>", decoded);
     }
+
+    @Test
+    void testMultilineBase64Lf() {
+        String input = "Hello, this is a test message for multi-line base64 decoding from SMTP";
+        String b64 = hackvertor.convert("<@base64>" + input + "</@base64>", hackvertor);
+        String multilineB64 = b64.substring(0, 40) + "\n" + b64.substring(40);
+        String decoded = hackvertor.convert("<@auto_decode_no_decrypt>" + multilineB64 + "</@auto_decode_no_decrypt>", hackvertor);
+        assertEquals("<@base64>" + input + "</@base64>", decoded);
+    }
+
+    @Test
+    void testMultilineBase64Crlf() {
+        String input = "Another test string encoded as base64 and split across SMTP lines";
+        String b64 = hackvertor.convert("<@base64>" + input + "</@base64>", hackvertor);
+        String multilineB64 = b64.substring(0, 36) + "\r\n" + b64.substring(36);
+        String decoded = hackvertor.convert("<@auto_decode_no_decrypt>" + multilineB64 + "</@auto_decode_no_decrypt>", hackvertor);
+        assertEquals("<@base64>" + input + "</@base64>", decoded);
+    }
+
+    @Test
+    void testMultilineBase64ManyLines() {
+        String input = "The quick brown fox jumps over the lazy dog. ".repeat(4);
+        String b64 = hackvertor.convert("<@base64>" + input + "</@base64>", hackvertor);
+        StringBuilder wrapped = new StringBuilder();
+        for (int i = 0; i < b64.length(); i += 76) {
+            if (i > 0) wrapped.append("\r\n");
+            wrapped.append(b64, i, Math.min(i + 76, b64.length()));
+        }
+        String decoded = hackvertor.convert("<@auto_decode_no_decrypt>" + wrapped + "</@auto_decode_no_decrypt>", hackvertor);
+        assertEquals("<@base64>" + input + "</@base64>", decoded);
+    }
+
+    @Test
+    void testMultilineBase64WithPadding() {
+        String input = "test message with padding";
+        String b64 = hackvertor.convert("<@base64>" + input + "</@base64>", hackvertor);
+        assertTrue(b64.endsWith("="));
+        String multilineB64 = b64.substring(0, 16) + "\n" + b64.substring(16);
+        String decoded = hackvertor.convert("<@auto_decode_no_decrypt>" + multilineB64 + "</@auto_decode_no_decrypt>", hackvertor);
+        assertEquals("<@base64>" + input + "</@base64>", decoded);
+    }
+
+    @Test
+    void testMultilineBase64PaddingOnOwnLine() {
+        String input = "a".repeat(515);
+        String b64 = hackvertor.convert("<@base64>" + input + "</@base64>", hackvertor);
+        StringBuilder wrapped = new StringBuilder();
+        for (int i = 0; i < b64.length(); i += 76) {
+            if (i > 0) wrapped.append("\n");
+            wrapped.append(b64, i, Math.min(i + 76, b64.length()));
+        }
+        assertTrue(wrapped.toString().endsWith("="));
+        String decoded = hackvertor.convert("<@auto_decode_no_decrypt>" + wrapped + "</@auto_decode_no_decrypt>", hackvertor);
+        assertEquals("<@base64>" + input + "</@base64>", decoded);
+    }
+
+    @Test
+    void testMultilineBase64WithUtf8Content() {
+        String input = "a".repeat(513) + "©";
+        String b64 = hackvertor.convert("<@base64>" + input + "</@base64>", hackvertor);
+        StringBuilder wrapped = new StringBuilder();
+        for (int i = 0; i < b64.length(); i += 76) {
+            if (i > 0) wrapped.append("\n");
+            wrapped.append(b64, i, Math.min(i + 76, b64.length()));
+        }
+        assertTrue(wrapped.toString().endsWith("="));
+        String decoded = hackvertor.convert("<@auto_decode_no_decrypt>" + wrapped + "</@auto_decode_no_decrypt>", hackvertor);
+        assertEquals("<@base64>" + input + "</@base64>", decoded);
+    }
+
+    @Test
+    void testSingleLineBase64WithLatin1Content() {
+        String input = "© 2026 PortSwigger Ltd. All rights reserved.";
+        String b64 = hackvertor.convert("<@base64>" + input + "</@base64>", hackvertor);
+        String decoded = hackvertor.convert("<@auto_decode_no_decrypt>" + b64 + "</@auto_decode_no_decrypt>", hackvertor);
+        assertEquals("<@base64>" + input + "</@base64>", decoded);
+    }
 }

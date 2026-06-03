@@ -1306,8 +1306,12 @@ public class Convertors {
     }
 
     static String decode_base32(String str) {
-        Base32 base32 = new Base32();
-        return helpers.bytesToString(base32.decode(str.getBytes()));
+        try {
+            Base32 base32 = new Base32();
+            return helpers.bytesToString(base32.decode(str.getBytes()));
+        } catch (Exception e) {
+            return str;
+        }
     }
 
     static String base58_encode(String str) {
@@ -1315,7 +1319,11 @@ public class Convertors {
     }
 
     static String decode_base58(String str) {
-        return helpers.bytesToString(Base58.decode(str));
+        try {
+            return helpers.bytesToString(Base58.decode(str));
+        } catch (Exception e) {
+            return str;
+        }
     }
 
     static String base64Encode(String str) {
@@ -1324,11 +1332,10 @@ public class Convertors {
 
     static String decode_base64(String str) {
         try {
-            str = decodeBytesPreservingBinary(helpers.base64Decode(str));
+            return decodeBytesPreservingBinary(helpers.base64Decode(str));
         } catch (Exception e) {
-            stderr.println(e.getMessage());
+            return str;
         }
-        return str;
     }
 
     private static String decodeBytesPreservingBinary(byte[] bytes) {
@@ -1410,19 +1417,20 @@ public class Convertors {
     }
 
     static String decode_base64url(String str) {
-        str = str.replaceAll("-", "+");
-        str = str.replaceAll("_", "/");
-        switch (str.length() % 4) {
-            case 0:
-                break;
+        String padded = str.replace("-", "+").replace("_", "/");
+        switch (padded.length() % 4) {
             case 2:
-                str += "==";
+                padded += "==";
                 break;
             case 3:
-                str += "=";
+                padded += "=";
                 break;
         }
-        return decodeBytesPreservingBinary(helpers.base64Decode(str));
+        try {
+            return decodeBytesPreservingBinary(helpers.base64Decode(padded));
+        } catch (Exception e) {
+            return str;
+        }
     }
 
     static String burp_urlencode(String str) {
@@ -3374,6 +3382,20 @@ public class Convertors {
         return Pattern.compile((checkStart ? "^" : "") + "[a-zA-Z0-9+/]{4,}=*$", Pattern.CASE_INSENSITIVE).matcher(str).find() && str.length() % 4 == 0;
     }
 
+    static String stripWhitespaceIfMultiLineBase64(String str) {
+        if (str.indexOf('\n') < 0 && str.indexOf('\r') < 0) {
+            return null;
+        }
+        String stripped = str.replaceAll("\\s+", "");
+        if (stripped.length() < 4 || stripped.length() % 4 != 0) {
+            return null;
+        }
+        if (!BASE64_WITH_WHITESPACE_PATTERN.matcher(stripped).matches()) {
+            return null;
+        }
+        return stripped;
+    }
+
     private static final Pattern ASCII_PATTERN = Pattern.compile("^[\\x00-\\x7f]+$");
     private static final Pattern PRINTABLE_ASCII_OR_SPACES_PATTERN = Pattern.compile("^[\\x09\\x0d\\x0a\\x20-\\x7f]+$");
     private static final Pattern GZIP_PATTERN = Pattern.compile("^\\x1f\\x8b\\x08");
@@ -3413,6 +3435,8 @@ public class Convertors {
     private static final Pattern UTF7_SEQUENCE_PATTERN = Pattern.compile("\\+[A-Za-z0-9+/]+-");
     private static final Pattern CHARCODE_SEQUENCE_PATTERN = Pattern.compile("(?:\\d{2,3}[,\\s])+\\d{2,3}");
     private static final Pattern BASE64_SEQUENCE_PATTERN = Pattern.compile("(?<![a-zA-Z0-9+/])[a-zA-Z0-9+/]{4,}={0,2}(?![a-zA-Z0-9+/=])");
+    private static final Pattern BASE64_MULTILINE_SEQUENCE_PATTERN = Pattern.compile("(?<![a-zA-Z0-9+/])(?:[a-zA-Z0-9+/]{4})+(?:[\\r\\n]+(?:[a-zA-Z0-9+/]{4})+)+(?:[\\r\\n]*[a-zA-Z0-9+/]{0,3}={1,2})?(?![a-zA-Z0-9+/=])");
+    private static final Pattern BASE64_WITH_WHITESPACE_PATTERN = Pattern.compile("^[a-zA-Z0-9+/]+={0,2}$");
     private static final Pattern BASE32_SEQUENCE_PATTERN = Pattern.compile("(?<![A-Z2-7])[A-Z2-7]{4,}={0,6}(?![A-Z2-7=])");
     private static final Pattern BASE64URL_SEQUENCE_PATTERN = Pattern.compile("(?<![A-Za-z0-9_-])[A-Za-z0-9_-]*[_-][A-Za-z0-9_-]*(?![A-Za-z0-9_-])");
     private static final Pattern BASE58_SEQUENCE_PATTERN = Pattern.compile("(?<![a-zA-Z0-9])[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{8,}(?![a-zA-Z0-9])");
@@ -3465,6 +3489,55 @@ public class Convertors {
         return isAscii(str) || isGzip(str) || isDeflate(str);
     }
 
+    private static boolean isPrintableTextOrCompressed(String str) {
+        if (isGzip(str) || isDeflate(str)) {
+            return true;
+        }
+        if (str.isEmpty()) {
+            return false;
+        }
+        int i = 0;
+        while (i < str.length()) {
+            int cp = str.codePointAt(i);
+            i += Character.charCount(cp);
+            if (cp == 0x09 || cp == 0x0A || cp == 0x0D) {
+                continue;
+            }
+            if (cp < 0x20 || cp == 0x7F || cp == 0xFFFD || Character.isISOControl(cp)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean isMostlyAsciiOrCompressed(String str) {
+        if (isGzip(str) || isDeflate(str)) {
+            return true;
+        }
+        if (str.isEmpty()) {
+            return false;
+        }
+        int asciiCount = 0;
+        int totalCount = 0;
+        int i = 0;
+        while (i < str.length()) {
+            int cp = str.codePointAt(i);
+            i += Character.charCount(cp);
+            totalCount++;
+            if (cp == 0x09 || cp == 0x0A || cp == 0x0D) {
+                asciiCount++;
+                continue;
+            }
+            if (cp < 0x20 || cp == 0x7F || cp == 0xFFFD || Character.isISOControl(cp)) {
+                return false;
+            }
+            if (cp <= 0x7F) {
+                asciiCount++;
+            }
+        }
+        return asciiCount * 4 >= totalCount * 3;
+    }
+
     private static boolean isValidBaseEncodedContent(String str) {
         if (isGzip(str) || isDeflate(str)) {
             return true;
@@ -3473,6 +3546,14 @@ public class Convertors {
             return false;
         }
         return hasMajorityAlphaNum(str) || isJsonLike(str) || isXmlOrHtmlLike(str);
+    }
+
+    public static String smartDecode(String str) {
+        String full = auto_decode_no_decrypt(str);
+        if (!full.equals(str)) {
+            return full;
+        }
+        return auto_decode_partial(str);
     }
 
     static String auto_decode(String str) {
@@ -3511,6 +3592,7 @@ public class Convertors {
         findMatches(str, HEX_SPACED_SEQUENCE_PATTERN, "hex_spaced", matches);
         findMatches(str, UTF7_SEQUENCE_PATTERN, "utf7", matches);
         findMatches(str, CHARCODE_SEQUENCE_PATTERN, "charcode", matches);
+        findMatches(str, BASE64_MULTILINE_SEQUENCE_PATTERN, "base64_multiline", matches);
         findMatches(str, BASE64_SEQUENCE_PATTERN, "base64", matches);
         findMatches(str, BASE32_SEQUENCE_PATTERN, "base32", matches);
         findMatches(str, BASE64URL_SEQUENCE_PATTERN, "base64url", matches);
@@ -3534,16 +3616,26 @@ public class Convertors {
                 continue;
             }
 
-            DecodeResult decodeResult = decodeMatchedSequence(match.matched, match.type);
-            if (decodeResult != null && !decodeResult.decoded.equals(match.matched) && isAsciiOrCompressed(decodeResult.decoded)) {
-                result.append(str, lastEnd, match.start);
-                DecompressResult decompressResult = decompressIfNeeded(decodeResult.decoded);
-                result.append(decodeResult.openTag);
-                result.append(decompressResult.openTags);
-                result.append(decompressResult.decoded);
-                result.append(decompressResult.closeTags);
-                result.append(decodeResult.closeTag);
-                lastEnd = match.end;
+            try {
+                DecodeResult decodeResult = decodeMatchedSequence(match.matched, match.type);
+                if (decodeResult == null || decodeResult.decoded.equals(match.matched)) {
+                    continue;
+                }
+                boolean contentOk = match.type.equals("base64_multiline")
+                        ? isPrintableTextOrCompressed(decodeResult.decoded)
+                        : isAsciiOrCompressed(decodeResult.decoded);
+                if (contentOk) {
+                    result.append(str, lastEnd, match.start);
+                    DecompressResult decompressResult = decompressIfNeeded(decodeResult.decoded);
+                    result.append(decodeResult.openTag);
+                    result.append(decompressResult.openTags);
+                    result.append(decompressResult.decoded);
+                    result.append(decompressResult.closeTags);
+                    result.append(decodeResult.closeTag);
+                    lastEnd = match.end;
+                }
+            } catch (Exception e) {
+                stderr.println(e.getMessage());
             }
         }
 
@@ -3644,6 +3736,22 @@ public class Convertors {
                 }
                 tagName = "base64";
                 break;
+            case "base64_multiline": {
+                String stripped = encoded.replaceAll("\\s+", "");
+                if (stripped.length() < 4 || stripped.length() % 4 != 0) {
+                    return null;
+                }
+                try {
+                    decoded = decode_base64(stripped);
+                    if (!isPrintableTextOrCompressed(decoded)) {
+                        return null;
+                    }
+                } catch (Exception e) {
+                    return null;
+                }
+                tagName = "base64";
+                break;
+            }
             case "base32":
                 if (encoded.length() < 8 || encoded.length() % 8 != 0) {
                     return null;
@@ -3872,10 +3980,21 @@ public class Convertors {
             }
             if (isBase64(str, true) && !matched) {
                 test = decode_base64(str);
-                if (isAsciiOrCompressed(test)) {
+                if (isMostlyAsciiOrCompressed(test)) {
                     str = test;
                     matched = true;
                     appendTags(openTags, closeTags, "base64");
+                }
+            }
+            if (!matched) {
+                String strippedBase64 = stripWhitespaceIfMultiLineBase64(str);
+                if (strippedBase64 != null) {
+                    test = decode_base64(strippedBase64);
+                    if (isPrintableTextOrCompressed(test)) {
+                        str = test;
+                        matched = true;
+                        appendTags(openTags, closeTags, "base64");
+                    }
                 }
             }
             if (BASE64URL_PATTERN.matcher(str).find() && str.length() >= 4 && !matched) {
