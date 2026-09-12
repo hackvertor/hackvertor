@@ -42,6 +42,7 @@ import static java.awt.GridBagConstraints.BOTH;
 
 public class HackvertorPanel extends JPanel {
 
+    private static final double JIGSAW_INPUT_SHARE = 0.65;
     private static final String TAG_MODE_CARD = "tagMode";
     private static final String JIGSAW_MODE_CARD = "jigsawMode";
 
@@ -50,6 +51,8 @@ public class HackvertorPanel extends JPanel {
     private final HackvertorInput outputArea;
     private final JigsawBoard jigsawBoard;
     private final boolean jigsawAvailable;
+    private final boolean outputHidden;
+    private JScrollPane outputScroll;
     private boolean jigsawModeActive;
     private boolean syncingJigsaw = false;
     private CardLayout inputCardLayout;
@@ -68,6 +71,7 @@ public class HackvertorPanel extends JPanel {
         this.outputArea = new HackvertorInput();
         this.jigsawBoard = new JigsawBoard(hackvertor);
         this.jigsawAvailable = !isMessageEditor;
+        this.outputHidden = hideOutput;
         this.history = new HackvertorHistory(isMessageEditor);
         Utils.configureTextArea(this.inputArea);
         Utils.configureTextArea(this.outputArea);
@@ -283,7 +287,7 @@ public class HackvertorPanel extends JPanel {
                 }
             }
         });
-        final JScrollPane outputScroll = new JScrollPane(outputArea);
+        outputScroll = new JScrollPane(outputArea);
         final JLabel outputLabel = new JLabel("Output:");
         final JLabel outputLenLabel = new JLabel("0");
         applyLengthStyle(outputLenLabel);
@@ -673,9 +677,13 @@ public class HackvertorPanel extends JPanel {
         c.anchor = GridBagConstraints.WEST;
         inputLabelsPanel.add(inputRealLenLabel, c);
         if(jigsawAvailable) {
-            inputLabelsPanel.add(inputModeSelector);
-            inputLabelsPanel.add(addTextPieceButton);
-            inputLabelsPanel.add(clearBoardButton);
+            JPanel jigsawControls = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+            jigsawControls.add(inputModeSelector);
+            jigsawControls.add(addTextPieceButton);
+            jigsawControls.add(clearBoardButton);
+            c = GridbagUtils.createConstraints(0, 1, 2, GridBagConstraints.NONE, 0, 0, 0, 0, CENTER);
+            c.anchor = GridBagConstraints.WEST;
+            this.add(jigsawControls, c);
         }
         if(!hideOutput) {
             this.add(inputLabelsPanel, GridbagUtils.createConstraints(0, 2, 1, GridBagConstraints.NONE, 0, 0, 0, 0, CENTER));
@@ -723,6 +731,12 @@ public class HackvertorPanel extends JPanel {
         c.weightx = 1.0;
         // Always show the hex view so users can edit/paste hex even when the output panel is hidden
         this.add(hexScroll, c);
+        this.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent event) {
+                updateInputOutputSplit();
+            }
+        });
         boolean startInJigsawMode = jigsawAvailable && isJigsawModeEnabled();
         inputModeSelector.setSelectedIndex(startInJigsawMode ? 0 : 1);
         addTextPieceButton.setEnabled(startInJigsawMode);
@@ -759,6 +773,17 @@ public class HackvertorPanel extends JPanel {
             jigsawBoard.loadFromText(inputArea.getText());
         }
         inputCardLayout.show(inputContainer, jigsawModeActive ? JIGSAW_MODE_CARD : TAG_MODE_CARD);
+        updateInputOutputSplit();
+    }
+
+    private void updateInputOutputSplit() {
+        if (outputHidden || outputScroll == null || getWidth() <= 0) {
+            return;
+        }
+        int inputWidth = (int) Math.round(getWidth() * (jigsawModeActive ? JIGSAW_INPUT_SHARE : 0.5));
+        inputContainer.setPreferredSize(new Dimension(inputWidth, 1));
+        outputScroll.setPreferredSize(new Dimension(getWidth() - inputWidth, 1));
+        revalidate();
     }
 
     private void rebuildJigsawBoard() {

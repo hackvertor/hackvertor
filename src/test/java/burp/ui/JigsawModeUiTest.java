@@ -52,6 +52,23 @@ public class JigsawModeUiTest {
     }
 
     @Test
+    void tagModeSplitsInputAndOutputEvenly() {
+        UiTestSupport.selectInputMode(window, UiTestSupport.TAG_MODE);
+        window.robot().waitForIdle();
+        int difference = Math.abs(inputPaneWidth() - outputPaneWidth());
+        Assertions.assertTrue(difference <= 2,
+                "tag mode should split evenly but input was " + inputPaneWidth() + " and output " + outputPaneWidth());
+    }
+
+    @Test
+    void jigsawModeGivesTheCanvasMoreRoomThanTheOutput() {
+        UiTestSupport.selectInputMode(window, UiTestSupport.JIGSAW_MODE);
+        window.robot().waitForIdle();
+        Assertions.assertTrue(inputPaneWidth() > outputPaneWidth(),
+                "jigsaw canvas should be wider but input was " + inputPaneWidth() + " and output " + outputPaneWidth());
+    }
+
+    @Test
     void textPieceAndTagPieceProduceTagsAndOutput() throws Exception {
         UiTestSupport.selectInputMode(window, UiTestSupport.JIGSAW_MODE);
         clearBoard();
@@ -76,6 +93,16 @@ public class JigsawModeUiTest {
         Assertions.assertEquals("<@base64>test</@base64>", GuiActionRunner.execute(() -> inputArea().getText()));
         UiTestSupport.selectInputMode(window, UiTestSupport.JIGSAW_MODE);
         Assertions.assertEquals(2, jigsawPieces().length, "Tags should be rebuilt as jigsaw pieces");
+    }
+
+    private int inputPaneWidth() {
+        return GuiActionRunner.execute(() ->
+                SwingUtilities.getAncestorOfClass(JScrollPane.class, inputArea()).getParent().getWidth());
+    }
+
+    private int outputPaneWidth() {
+        return GuiActionRunner.execute(() ->
+                SwingUtilities.getAncestorOfClass(JScrollPane.class, outputArea()).getWidth());
     }
 
     private void clearBoard() {
