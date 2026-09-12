@@ -72,7 +72,6 @@ public class HackvertorInput extends JTextArea {
     }
 
     public void getFontSizeFromBurp() {
-        callbacks.customizeUiComponent(this);
         this.changeFontSize(this.getFont().getSize());
     }
 
