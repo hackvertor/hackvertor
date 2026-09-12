@@ -10,11 +10,14 @@ import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class JigsawTagPiece extends JigsawPiece {
 
-    private static final int MIN_ARGUMENT_COLUMNS = 3;
+    private static final int MIN_ARGUMENT_COLUMNS = 4;
     private static final int MAX_ARGUMENT_COLUMNS = 24;
+    private static final Pattern SIGNATURE = Pattern.compile("^[\\w$]+\\((.*)\\)$");
 
     private final Tag tag;
     private final boolean selfClosing;
@@ -41,12 +44,48 @@ public class JigsawTagPiece extends JigsawPiece {
         name.setToolTipText(tag.tooltip);
         makeDraggable(name);
         add(name);
-        addArgumentEditor(tag.argument1, argumentAt(arguments, 0));
-        addArgumentEditor(tag.argument2, argumentAt(arguments, 1));
-        addArgumentEditor(tag.argument3, argumentAt(arguments, 2));
-        addArgumentEditor(tag.argument4, argumentAt(arguments, 3));
+        List<TagArgument> declared = declaredArguments();
+        List<String> names = parameterNames(declared.size());
+        for (int index = 0; index < declared.size(); index++) {
+            addArgumentEditor(declared.get(index), argumentAt(arguments, index),
+                    index < names.size() ? names.get(index) : null);
+        }
         setToolTipText(tag.tooltip);
         setSize(getPreferredSize());
+    }
+
+    private List<TagArgument> declaredArguments() {
+        List<TagArgument> declared = new ArrayList<>();
+        for (TagArgument argument : new TagArgument[]{tag.argument1, tag.argument2, tag.argument3, tag.argument4}) {
+            if (argument != null) {
+                declared.add(argument);
+            }
+        }
+        return declared;
+    }
+
+    private List<String> parameterNames(int argumentCount) {
+        List<String> names = new ArrayList<>();
+        if (argumentCount == 0 || tag.tooltip == null) {
+            return names;
+        }
+        String tooltip = tag.tooltip;
+        int comment = tooltip.indexOf("//");
+        if (comment > -1) {
+            tooltip = tooltip.substring(0, comment);
+        }
+        Matcher signature = SIGNATURE.matcher(tooltip.trim());
+        if (!signature.matches() || signature.group(1).isBlank()) {
+            return names;
+        }
+        for (String parameter : signature.group(1).split(",")) {
+            String[] words = parameter.trim().split("\\s+");
+            names.add(words[words.length - 1]);
+        }
+        if (names.size() == argumentCount + 1) {
+            names.remove(0);
+        }
+        return names.size() == argumentCount ? names : new ArrayList<>();
     }
 
     private String argumentAt(List<String> arguments, int index) {
@@ -56,14 +95,24 @@ public class JigsawTagPiece extends JigsawPiece {
         return arguments.get(index);
     }
 
-    private void addArgumentEditor(TagArgument argument, String value) {
+    private void addArgumentEditor(TagArgument argument, String value, String name) {
         if (argument == null) {
             return;
         }
         String initial = value != null ? value : argument.value;
+        String description = name != null ? name + " (" + argument.type + ")" : argument.type;
+        if (name != null) {
+            JLabel label = new JLabel(name + ":");
+            label.setForeground(JigsawColours.PARAMETER_NAME);
+            label.setFont(label.getFont().deriveFont(Font.PLAIN, label.getFont().getSize() - 1f));
+            label.setToolTipText(description);
+            makeDraggable(label);
+            add(label);
+        }
         if ("boolean".equalsIgnoreCase(argument.type)) {
             JComboBox<String> choice = new JComboBox<>(new String[]{"true", "false"});
             choice.setSelectedItem("false".equalsIgnoreCase(initial) ? "false" : "true");
+            choice.setToolTipText(description);
             choice.addActionListener(event -> board.pieceEdited(this));
             argumentEditors.add(choice);
             add(choice);
@@ -73,7 +122,7 @@ public class JigsawTagPiece extends JigsawPiece {
         field.setForeground(JigsawColours.TEXT);
         field.setBackground(JigsawColours.EDITOR_BACKGROUND);
         field.setCaretColor(JigsawColours.TEXT);
-        field.setToolTipText(argument.type);
+        field.setToolTipText(description);
         field.getDocument().addDocumentListener(new DocumentListener() {
             public void insertUpdate(DocumentEvent event) {
                 argumentChanged(field);

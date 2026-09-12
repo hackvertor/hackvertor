@@ -17,6 +17,8 @@ import org.junit.jupiter.api.Test;
 
 import javax.swing.*;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.List;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.io.PrintWriter;
@@ -183,6 +185,75 @@ public class JigsawBoardTest {
         dragPiece(lastPiece(board), 300, 120);
         dragPiece(lastPiece(board), -300, -120);
         assertEquals("<@base64>hello</@base64>", serialize(board));
+    }
+
+    @Test
+    public void tagArgumentsCanBeEditedOnThePiece() {
+        JigsawBoard board = board();
+        onBoard(() -> board.loadFromText("<@hex(' ')>foo</@hex>"));
+        JTextField separator = argumentFields(lastPiece(board)).get(0);
+        assertEquals(" ", separator.getText());
+        onBoard(() -> separator.setText("-"));
+        assertEquals("<@hex('-')>foo</@hex>", serialize(board));
+    }
+
+    @Test
+    public void eachTagArgumentGetsItsOwnEditor() {
+        JigsawBoard board = board();
+        onBoard(() -> board.loadFromText("<@substring(0,5)>hello world</@substring>"));
+        List<JTextField> fields = argumentFields(lastPiece(board));
+        assertEquals(2, fields.size());
+        onBoard(() -> fields.get(1).setText("3"));
+        assertEquals("<@substring(0,3)>hello world</@substring>", serialize(board));
+    }
+
+    @Test
+    public void booleanArgumentsAreEditedWithAChoice() {
+        JigsawBoard board = board();
+        onBoard(() -> board.loadFromText("<@set_variable1(false)>x</@set_variable1>"));
+        JComboBox<?> choice = (JComboBox<?>) componentsOfType(lastPiece(board), JComboBox.class).get(0);
+        onBoard(() -> choice.setSelectedItem("true"));
+        assertEquals("<@set_variable1(true)>x</@set_variable1>", serialize(board));
+    }
+
+    @Test
+    public void argumentEditorsAreLabelledWithTheParameterName() {
+        JigsawBoard board = board();
+        onBoard(() -> board.loadFromText("<@substring(0,5)>hello world</@substring>"));
+        List<String> labels = new ArrayList<>();
+        for (java.awt.Component component : componentsOfType(lastPiece(board), JLabel.class)) {
+            labels.add(((JLabel) component).getText());
+        }
+        assertTrue(labels.contains("start:"), "expected a start label but had " + labels);
+        assertTrue(labels.contains("end:"), "expected an end label but had " + labels);
+    }
+
+    @Test
+    public void clickingATagWithArgumentsUsesItsDefaults() {
+        JigsawBoard board = board();
+        onBoard(() -> {
+            board.addTextPiece("foo");
+            board.addTagPiece(tag("hex"));
+        });
+        assertEquals("<@hex(' ')>foo</@hex>", serialize(board));
+    }
+
+    private List<JTextField> argumentFields(JigsawPiece piece) {
+        List<JTextField> fields = new ArrayList<>();
+        for (java.awt.Component component : componentsOfType(piece, JTextField.class)) {
+            fields.add((JTextField) component);
+        }
+        return fields;
+    }
+
+    private List<java.awt.Component> componentsOfType(JigsawPiece piece, Class<?> type) {
+        List<java.awt.Component> matches = new ArrayList<>();
+        for (java.awt.Component component : piece.getComponents()) {
+            if (type.isInstance(component)) {
+                matches.add(component);
+            }
+        }
+        return matches;
     }
 
     @Test

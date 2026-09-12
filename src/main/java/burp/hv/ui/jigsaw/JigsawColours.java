@@ -10,6 +10,7 @@ public class JigsawColours {
     public static final Color SELECTION = new Color(232, 118, 0);
     public static final Color REMOVAL = new Color(198, 40, 40);
     public static final Color TEXT = Color.decode("#202020");
+    public static final Color PARAMETER_NAME = Color.decode("#5a5a5a");
     public static final Color TEXT_PIECE = Color.decode("#e8e2d5");
     public static final Color EDITOR_BACKGROUND = Color.decode("#fffdf7");
 
