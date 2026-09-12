@@ -6,6 +6,7 @@ import burp.hv.HackvertorHttpHandler;
 import burp.hv.ai.AI;
 import burp.hv.utils.GridbagUtils;
 import burp.hv.utils.Utils;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import javax.swing.*;
@@ -28,6 +29,7 @@ public class Settings {
     private final String settingsName;
     private IBurpExtenderCallbacks callbacks;
     private boolean isModified = false;
+    private static final int SETTINGS_CONTENT_WIDTH = 800;
 
     public static void showSettingsWindow() {
         Settings settings = new Settings("general", HackvertorExtension.callbacks);
@@ -37,22 +39,18 @@ public class Settings {
         settingsWindow.getContentPane().removeAll();
         settingsWindow.setTitle("Settings");
         settingsWindow.setResizable(false);
-        settingsWindow.setPreferredSize(new Dimension(820, 660));
+        // Sized from the scroll pane below so the buttons at the bottom of the settings are never cut off.
+        settingsWindow.setPreferredSize(null);
         Container pane = settingsWindow.getContentPane();
         try {
-            Map<String, Integer> columns = new HashMap<>();
-            columns.put("AI", 1);
-            columns.put("Tag permissions", 1);
-            columns.put("Statistics", 2);
-            columns.put("Misc", 2);
-            columns.put("Requests", 2);
-            columns.put("System", 2);
-            JPanel settingsInterface = settings.buildInterface(settingsWindow, 200, 25,10, columns, HackvertorExtension.generalSettings);
+            JPanel settingsInterface = settings.buildInterface(settingsWindow, 200, 25,10, categoryColumns(), HackvertorExtension.generalSettings);
             settingsInterface.setAutoscrolls(true);
-            settingsInterface.setPreferredSize(new Dimension(800, 620));
+            int contentHeight = settingsInterface.getPreferredSize().height;
+            settingsInterface.setPreferredSize(new Dimension(SETTINGS_CONTENT_WIDTH, contentHeight));
             JScrollPane settingsScroll = new JScrollPane(settingsInterface);
             settingsScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
             settingsScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+            settingsScroll.setPreferredSize(new Dimension(SETTINGS_CONTENT_WIDTH + 20, Math.min(contentHeight + 4, maxSettingsHeight())));
             pane.setLayout(new GridBagLayout());
             pane.add(settingsScroll, createConstraints(0, 0, 1, GridBagConstraints.BOTH, 1, 1, 5, 5, CENTER));
         } catch (UnregisteredSettingException | InvalidTypeSettingException e) {
@@ -63,8 +61,31 @@ public class Settings {
         Utils.makeWindowVisible(settingsWindow);
     }
 
+    /**
+     * The tallest the settings can be drawn without running off the screen. Anything above this
+     * scrolls instead.
+     */
+    private static int maxSettingsHeight() {
+        return Math.max(400, GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds().height - 80);
+    }
+
+    /**
+     * Which column of the settings window each category is rendered in.
+     */
+    public static Map<String, Integer> categoryColumns() {
+        Map<String, Integer> columns = new HashMap<>();
+        columns.put("AI", 1);
+        columns.put("Tag permissions", 1);
+        columns.put("Hotkeys", 1);
+        columns.put("Statistics", 2);
+        columns.put("Misc", 2);
+        columns.put("Requests", 2);
+        columns.put("System", 2);
+        return columns;
+    }
+
     public enum SettingType  {
-            Boolean, String, Password, Integer
+            Boolean, String, Password, Integer, Choice
     }
 
     public Settings(String settingsName, IBurpExtenderCallbacks callbacks) {
@@ -108,6 +129,22 @@ public class Settings {
         setting.put("description", description);
         setting.put("default", defaultValue);
         setting.put("type", "String");
+        setting.put("category", category);
+        this.settings.put(name, setting);
+        this.defaults.put(name, setting);
+    }
+    public void registerChoiceSetting(String name, String defaultValue, String[] options, String description, String category) {
+        addCategory(category, name);
+        JSONObject setting;
+        if(this.settings.has(name)) {
+            setting = (JSONObject) this.settings.get(name);
+        } else {
+            setting = new JSONObject();
+        }
+        setting.put("description", description);
+        setting.put("default", defaultValue);
+        setting.put("options", new JSONArray(options));
+        setting.put("type", "Choice");
         setting.put("category", category);
         this.settings.put(name, setting);
         this.defaults.put(name, setting);
@@ -169,7 +206,7 @@ public class Settings {
     public String getString(String name) throws UnregisteredSettingException, InvalidTypeSettingException {
         JSONObject setting = this.getSetting(name);
         String type = setting.getString("type");
-        if(SettingType.String.name().equals(type) || SettingType.Password.name().equals(type)) {
+        if(SettingType.String.name().equals(type) || SettingType.Password.name().equals(type) || SettingType.Choice.name().equals(type)) {
             if(setting.has("value")) {
                 return setting.getString("value");
             } else {
@@ -195,7 +232,7 @@ public class Settings {
     public void setString(String name, String value) throws UnregisteredSettingException, InvalidTypeSettingException {
         JSONObject setting = this.getSetting(name);
         String type = setting.getString("type");
-        if(SettingType.String.name().equals(type) || SettingType.Password.name().equals(type)) {
+        if(SettingType.String.name().equals(type) || SettingType.Password.name().equals(type) || SettingType.Choice.name().equals(type)) {
             setting.put("value", value);
             isModified = true;
             return;
@@ -378,6 +415,37 @@ public class Settings {
                         if(!AI.isAiSupported() && categoryName.equals("AI")) {
                             field.setEnabled(false);
                         }
+                    }
+                    case "Choice" -> {
+                        JLabel label = new JLabel(currentSetting.getString("description"));
+                        label.setPreferredSize(new Dimension(componentWidth, componentHeight));
+                        JSONArray optionsArray = currentSetting.has("options")
+                                ? currentSetting.getJSONArray("options")
+                                : this.defaults.getJSONObject(name).getJSONArray("options");
+                        String[] options = new String[optionsArray.length()];
+                        for(int i = 0; i < optionsArray.length(); i++) {
+                            options[i] = optionsArray.getString(i);
+                        }
+                        JComboBox<String> comboBox = new JComboBox<>(options);
+                        comboBox.setName(name);
+                        comboBox.setSelectedItem(this.getString(name));
+                        comboBox.setPreferredSize(new Dimension(componentWidth, componentHeight));
+                        categoryContainer.add(label, addMarginToGbc(createConstraints(0, componentRow, 1, GridBagConstraints.BOTH, 1, 0, spacing, spacing, GridBagConstraints.WEST), 0, 5, 0,0));
+                        categoryContainer.add(new JLabel(), createConstraints(1, componentRow, 1, GridBagConstraints.BOTH, 1, 0, spacing, spacing, GridBagConstraints.WEST));
+                        componentRow++;
+                        categoryContainer.add(comboBox, createConstraints(0, componentRow, 2, GridBagConstraints.BOTH, 1, 0, spacing, spacing, GridBagConstraints.WEST));
+                        comboBox.addActionListener(e -> {
+                            Object selected = comboBox.getSelectedItem();
+                            if(selected == null) {
+                                return;
+                            }
+                            try {
+                                settings.setString(name, selected.toString());
+                            } catch (UnregisteredSettingException | InvalidTypeSettingException ex) {
+                                callbacks.printError(ex.toString());
+                                throw new RuntimeException(ex);
+                            }
+                        });
                     }
                     case "Boolean" -> {
                         JSONObject defaultSetting = this.defaults.getJSONObject(name);

@@ -1,5 +1,6 @@
 package burp.hv.ui;
 
+import burp.hv.settings.HotkeyModifier;
 import burp.hv.*;
 import burp.hv.settings.InvalidTypeSettingException;
 import burp.hv.settings.JigsawModeSetting;
@@ -438,8 +439,8 @@ public class HackvertorPanel extends JPanel {
 
         final JButton decode = new JButton("Smart Decode");
         UIUtils.applyPrimaryStyle(decode);
-        decode.setToolTipText("Decode selected text, or decode partial matches in full input if nothing selected (Ctrl+Alt+D)");
-        inputArea.getInputMap().put(KeyStroke.getKeyStroke("control alt D"), "smartDecode");
+        decode.setToolTipText("Decode selected text, or decode partial matches in full input if nothing selected (" + HotkeyModifier.combo("D") + ")");
+        inputArea.getInputMap().put(HotkeyModifier.keyStroke("D"), "smartDecode");
         SmartDecodeAction smartDecodeAction = new SmartDecodeAction(this.inputArea, null, hackvertor);
         inputArea.getActionMap().put("smartDecode", smartDecodeAction);
 
@@ -452,7 +453,7 @@ public class HackvertorPanel extends JPanel {
         smartPaste.setToolTipText("Partial smart decode the clipboard and paste it at the caret (Ctrl+Shift+V)");
         smartPaste.addActionListener(smartPasteAction);
 
-        inputArea.getInputMap().put(KeyStroke.getKeyStroke("control alt F"), "findTag");
+        inputArea.getInputMap().put(HotkeyModifier.keyStroke("F"), "findTag");
         inputArea.getActionMap().put("findTag", new AbstractAction("findTag") {
             public void actionPerformed(ActionEvent evt) {
                 ArrayList<Tag> tags = hackvertor.getTags();
@@ -461,7 +462,7 @@ public class HackvertorPanel extends JPanel {
             }
         });
 
-        inputArea.getInputMap().put(KeyStroke.getKeyStroke("control alt M"), "multiEncoder");
+        inputArea.getInputMap().put(HotkeyModifier.keyStroke("M"), "multiEncoder");
         inputArea.getActionMap().put("multiEncoder", new AbstractAction("multiEncoder") {
             public void actionPerformed(ActionEvent evt) {
                 String selectedText = inputArea.getSelectedText();

@@ -1,5 +1,6 @@
 package burp.hv.ui;
 
+import burp.hv.settings.HotkeyModifier;
 import burp.api.montoya.core.ToolType;
 import burp.api.montoya.http.message.requests.HttpRequest;
 import burp.api.montoya.http.message.responses.HttpResponse;
@@ -212,7 +213,7 @@ public class HackvertorContextMenu implements ContextMenuItemsProvider {
         menu.add(learnFromThisRequest);
         JMenuItem autodecodeConvert;
         if(hasHotKey) {
-            autodecodeConvert = new JMenuItem("Smart decode (CTRL+Alt+D)");
+            autodecodeConvert = new JMenuItem("Smart decode (" + HotkeyModifier.combo("D") + ")");
         } else {
             autodecodeConvert = new JMenuItem("Smart decode");
         }
@@ -248,7 +249,7 @@ public class HackvertorContextMenu implements ContextMenuItemsProvider {
         menu.add(autodecodeConvert);
 
         // Multi Encoder feature
-        JMenuItem multiEncoder = new JMenuItem("Multi Encoder (Ctrl+Alt+M)");
+        JMenuItem multiEncoder = new JMenuItem("Multi Encoder (" + HotkeyModifier.combo("M") + ")");
         multiEncoder.setEnabled(start != end);
         multiEncoder.addActionListener(e -> {
             if (event.invocationType() == InvocationType.MESSAGE_EDITOR_REQUEST || event.invocationType() == InvocationType.MESSAGE_VIEWER_REQUEST) {
