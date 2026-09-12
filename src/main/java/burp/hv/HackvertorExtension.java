@@ -22,6 +22,7 @@ import burp.api.montoya.ui.contextmenu.MessageEditorHttpRequestResponse;
 import burp.api.montoya.ui.hotkey.HotKey;
 import burp.api.montoya.ui.hotkey.HotKeyContext;
 import burp.api.montoya.ui.hotkey.HotKeyHandler;
+import burp.hv.settings.HotkeyModifier;
 import burp.hv.settings.Settings;
 import burp.hv.tags.CustomTags;
 import burp.hv.tags.Tag;
@@ -51,7 +52,7 @@ import static burp.hv.utils.TagUtils.generateTagActionListener;
 public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, IExtensionStateListener, IMessageEditorTabFactory {
     //TODO Unset on unload
     public static String extensionName = "Hackvertor";
-    public static String version = "v2.2.60";
+    public static String version = "v2.2.64";
     public static Supplier<String> sharedGetTagExecutionKey = null;
     public static Function<String, String> sharedConvert = null;
     public static JFrame HackvertorFrame = null;
@@ -223,7 +224,7 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
 
     private void registerAllHotkeys(MontoyaApi montoyaApi, Burp burp) {
         List<HotkeyDefinition> hotkeys = Arrays.asList(
-            new HotkeyDefinition("Convert", "Ctrl+Alt+H", event -> {
+            new HotkeyDefinition("Convert", HotkeyModifier.combo("H"), event -> {
                 if (event.messageEditorRequestResponse().isEmpty()) {
                     return;
                 }
@@ -236,13 +237,13 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
                     event.messageEditorRequestResponse().get().setRequest(HttpRequest.httpRequest(request.httpService(), HackvertorExtension.hackvertor.convert(request.toString(), HackvertorExtension.hackvertor)));
                 }
             }),
-            new HotkeyDefinition("Find a tag", "Ctrl+Alt+F", event -> {
+            new HotkeyDefinition("Find a tag", HotkeyModifier.combo("F"), event -> {
                 ArrayList<Tag> tags = HackvertorExtension.hackvertor.getTags();
                 TagFinderWindow finderWindow = new TagFinderWindow(montoyaApi, event, tags,
                     (tagName, window) -> { /* Callback handled internally */ });
                 finderWindow.show();
             }),
-            new HotkeyDefinition("Insert last tag", "Ctrl+Alt+I", event -> {
+            new HotkeyDefinition("Insert last tag", HotkeyModifier.combo("I"), event -> {
                 if(lastTagUsed == null) {
                     return;
                 }
@@ -250,27 +251,27 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
                 Tag tagObj = TagUtils.getTagByTagName(tags, lastTagUsed);
                 generateTagActionListener(event, tagObj).actionPerformed(null);
             }),
-            new HotkeyDefinition("Smart decode", "Ctrl+Alt+D", createSmartDecodeHandler()),
+            new HotkeyDefinition("Smart decode", HotkeyModifier.combo("D"), createSmartDecodeHandler()),
             new HotkeyDefinition("Smart paste", "Ctrl+Shift+V", createSmartPasteHandler()),
-            new HotkeyDefinition("Multi Encoder", "Ctrl+Alt+M", createMultiEncoderHandler(montoyaApi)),
+            new HotkeyDefinition("Multi Encoder", HotkeyModifier.combo("M"), createMultiEncoderHandler(montoyaApi)),
             burp.hasCapability(Burp.Capability.REGISTER_HOTKEY_IN_ALL_CONTEXTS)
-                ? HotkeyDefinition.forAllContexts("New custom tag", "Ctrl+Alt+N", event -> CustomTags.showCreateEditTagDialog(false, null))
-                : new HotkeyDefinition("New custom tag", "Ctrl+Alt+N", event -> CustomTags.showCreateEditTagDialog(false, null)),
+                ? HotkeyDefinition.forAllContexts("New custom tag", HotkeyModifier.combo("N"), event -> CustomTags.showCreateEditTagDialog(false, null))
+                : new HotkeyDefinition("New custom tag", HotkeyModifier.combo("N"), event -> CustomTags.showCreateEditTagDialog(false, null)),
             burp.hasCapability(Burp.Capability.REGISTER_HOTKEY_IN_ALL_CONTEXTS)
-                ? HotkeyDefinition.forAllContexts("List custom tags", "Ctrl+Alt+L", event -> CustomTags.showListTagsDialog())
-                : new HotkeyDefinition("List custom tags", "Ctrl+Alt+L", event -> CustomTags.showListTagsDialog()),
+                ? HotkeyDefinition.forAllContexts("List custom tags", HotkeyModifier.combo("L"), event -> CustomTags.showListTagsDialog())
+                : new HotkeyDefinition("List custom tags", HotkeyModifier.combo("L"), event -> CustomTags.showListTagsDialog()),
             burp.hasCapability(Burp.Capability.REGISTER_HOTKEY_IN_ALL_CONTEXTS)
-                ? HotkeyDefinition.forAllContexts("Global variables", "Ctrl+Alt+V", event -> Variables.showGlobalVariablesWindow())
-                : new HotkeyDefinition("Global variables", "Ctrl+Alt+V", event -> Variables.showGlobalVariablesWindow()),
+                ? HotkeyDefinition.forAllContexts("Global variables", HotkeyModifier.combo("V", "G"), event -> Variables.showGlobalVariablesWindow())
+                : new HotkeyDefinition("Global variables", HotkeyModifier.combo("V", "G"), event -> Variables.showGlobalVariablesWindow()),
             burp.hasCapability(Burp.Capability.REGISTER_HOTKEY_IN_ALL_CONTEXTS)
-                ? HotkeyDefinition.forAllContexts("Tag Automator", "Ctrl+Alt+A", event -> TagAutomator.showRulesDialog())
-                : new HotkeyDefinition("Tag Automator", "Ctrl+Alt+A", event -> TagAutomator.showRulesDialog()),
+                ? HotkeyDefinition.forAllContexts("Tag Automator", HotkeyModifier.combo("A"), event -> TagAutomator.showRulesDialog())
+                : new HotkeyDefinition("Tag Automator", HotkeyModifier.combo("A"), event -> TagAutomator.showRulesDialog()),
             burp.hasCapability(Burp.Capability.REGISTER_HOTKEY_IN_ALL_CONTEXTS)
-                ? HotkeyDefinition.forAllContexts("Settings", "Ctrl+Alt+S", event -> Settings.showSettingsWindow())
-                : new HotkeyDefinition("Settings", "Ctrl+Alt+S", event -> Settings.showSettingsWindow()),
+                ? HotkeyDefinition.forAllContexts("Settings", HotkeyModifier.combo("S"), event -> Settings.showSettingsWindow())
+                : new HotkeyDefinition("Settings", HotkeyModifier.combo("S"), event -> Settings.showSettingsWindow()),
             burp.hasCapability(Burp.Capability.REGISTER_HOTKEY_IN_ALL_CONTEXTS)
-                ? HotkeyDefinition.forAllContexts("Show tag store", "Ctrl+Alt+T", event -> TagStore.showTagStore())
-                : new HotkeyDefinition("Show tag store", "Ctrl+Alt+T", event -> TagStore.showTagStore())
+                ? HotkeyDefinition.forAllContexts("Show tag store", HotkeyModifier.combo("T"), event -> TagStore.showTagStore())
+                : new HotkeyDefinition("Show tag store", HotkeyModifier.combo("T"), event -> TagStore.showTagStore())
         );
 
         for (HotkeyDefinition hotkey : hotkeys) {

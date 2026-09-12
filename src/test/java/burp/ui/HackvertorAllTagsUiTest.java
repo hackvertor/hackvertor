@@ -91,6 +91,7 @@ public class HackvertorAllTagsUiTest {
 
         window = new FrameFixture(frame);
         window.show();
+        UiTestSupport.selectInputMode(window, UiTestSupport.TAG_MODE);
     }
 
     @AfterEach

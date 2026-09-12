@@ -369,7 +369,7 @@ public class Hackvertor {
 
     private void initDateTags() {
         addTag(Tag.Category.Date, "timestamp", false, "timestamp()");
-        addTag(Tag.Category.Date, "date", false, "date(String format)",
+        addTag(Tag.Category.Date, "date", false, "date(String format, String timezone)",
                "string", "yyyy-MM-dd HH:mm:ss", "string", "GMT");
     }
 
@@ -672,7 +672,7 @@ public class Hackvertor {
     private void initVariableTags() {
         // Variable management
         addTag(Tag.Category.Variables, "set_variable1", true,
-               "Special tag that lets you store the results of a conversion. Change variable1 to your own variable name. The argument specifies if the variable is global.",
+               "set_variable1(Boolean global)//Special tag that lets you store the results of a conversion. Change variable1 to your own variable name. The argument specifies if the variable is global.",
                "boolean", "false");
 
         addTag(Tag.Category.Variables, "increment_var", false,
@@ -690,16 +690,16 @@ public class Hackvertor {
         addTag(Tag.Category.Variables, "context_request", false, "context_request(String codeExecuteKey)",
                "string", tagCodeExecutionKey);
 
-        addTag(Tag.Category.Variables, "context_url", false, "context_url(String properties, String codeExecuteKey",
+        addTag(Tag.Category.Variables, "context_url", false, "context_url(String properties, String codeExecuteKey)",
                "string", "$protocol $host $path $file $query $port", "string", tagCodeExecutionKey);
 
         addTag(Tag.Category.Variables, "context_body", false, "context_body(String codeExecuteKey)",
                "string", tagCodeExecutionKey);
 
-        addTag(Tag.Category.Variables, "context_header", false, "context_url(String headerName, String codeExecuteKey",
+        addTag(Tag.Category.Variables, "context_header", false, "context_header(String headerName, String codeExecuteKey)",
                "string", "$headerName", "string", tagCodeExecutionKey);
 
-        addTag(Tag.Category.Variables, "context_param", false, "context_url(String paramName, String codeExecuteKey",
+        addTag(Tag.Category.Variables, "context_param", false, "context_param(String paramName, String codeExecuteKey)",
                "string", "$paramName", "string", tagCodeExecutionKey);
     }
 
