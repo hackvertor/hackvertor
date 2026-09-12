@@ -2,6 +2,7 @@ package burp.hv.ui;
 
 import burp.hv.*;
 import burp.hv.settings.InvalidTypeSettingException;
+import burp.hv.settings.JigsawModeSetting;
 import burp.hv.settings.UnregisteredSettingException;
 import burp.hv.tags.Tag;
 import burp.hv.tags.TagStore;
@@ -181,7 +182,7 @@ public class HackvertorPanel extends JPanel {
             setJigsawMode(jigsaw);
             addTextPieceButton.setEnabled(jigsaw);
             clearBoardButton.setEnabled(jigsaw);
-            persistJigsawMode(jigsaw);
+            JigsawModeSetting.setJigsawMode(jigsaw);
         });
         final JLabel inputLabel = new JLabel("Input:");
         final JLabel inputLenLabel = new JLabel("0");
@@ -737,34 +738,11 @@ public class HackvertorPanel extends JPanel {
                 updateInputOutputSplit();
             }
         });
-        boolean startInJigsawMode = jigsawAvailable && isJigsawModeEnabled();
+        boolean startInJigsawMode = jigsawAvailable && JigsawModeSetting.isJigsawMode();
         inputModeSelector.setSelectedIndex(startInJigsawMode ? 0 : 1);
         addTextPieceButton.setEnabled(startInJigsawMode);
         clearBoardButton.setEnabled(startInJigsawMode);
         setJigsawMode(startInJigsawMode);
-    }
-
-    private boolean isJigsawModeEnabled() {
-        if (generalSettings == null) {
-            return true;
-        }
-        try {
-            return generalSettings.getBoolean("jigsawMode");
-        } catch (UnregisteredSettingException | InvalidTypeSettingException e) {
-            return true;
-        }
-    }
-
-    private void persistJigsawMode(boolean jigsaw) {
-        if (generalSettings == null) {
-            return;
-        }
-        try {
-            generalSettings.setBoolean("jigsawMode", jigsaw);
-            generalSettings.save();
-        } catch (UnregisteredSettingException | InvalidTypeSettingException e) {
-            callbacks.printError("Error saving settings:" + e);
-        }
     }
 
     private void setJigsawMode(boolean jigsaw) {

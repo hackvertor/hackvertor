@@ -85,7 +85,6 @@ public class Utils {
         settings.registerBooleanSetting("allowAiTags", false, "Use AI in tags", "AI", null);
         settings.registerBooleanSetting("debugAi", false, "Debug AI requests", "AI", null);
         settings.registerBooleanSetting("learnFromRepeater", false, "Use AI to learn from repeater", "AI", "This is experimental. It will send your entire repeater requests to the AI in order to learn encodings. Are you sure you want to enable this?");
-        settings.registerBooleanSetting("jigsawMode", true, "Use jigsaw mode for the input", "Misc", null);
         settings.registerBooleanSetting("sortTagCategories", true, "Alphabetically sort tag categories", "Misc", null);
         settings.registerBooleanSetting("allowAutoConvertClipboard", false, "Auto convert clipboard","Misc", null);
         settings.registerBooleanSetting("showOutputInMessageEditor", false, "Show the output panel in the message editor","Misc", null);

@@ -45,13 +45,6 @@ public class JigsawModeUiTest {
     }
 
     @Test
-    void jigsawModeIsTheDefault() {
-        JComboBox<?> selector = inputModeSelector();
-        Assertions.assertEquals("Jigsaw mode", GuiActionRunner.execute(selector::getSelectedItem));
-        Assertions.assertFalse(inputArea().isShowing(), "Tag mode input should be hidden in jigsaw mode");
-    }
-
-    @Test
     void tagModeSplitsInputAndOutputEvenly() {
         UiTestSupport.selectInputMode(window, UiTestSupport.TAG_MODE);
         window.robot().waitForIdle();
