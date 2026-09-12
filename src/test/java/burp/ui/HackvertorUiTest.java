@@ -87,6 +87,7 @@ public class HackvertorUiTest {
 
         window = new FrameFixture(frame);
         window.show(); // ensures AssertJ knows it’s visible
+        UiTestSupport.selectInputMode(window, UiTestSupport.TAG_MODE);
     }
 
     @Test

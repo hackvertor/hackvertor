@@ -22,6 +22,7 @@ import java.awt.event.ActionListener;
 import java.util.*;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -33,6 +34,10 @@ public class TagUtils {
     public static String tagNameRegex = "[^\\w]";
 
     public static JScrollPane createButtons(List<Tag> tags, final JTextArea inputArea, Tag.Category displayCategory, String searchTag, Boolean regex) {
+        return createButtons(tags, inputArea, displayCategory, searchTag, regex, null);
+    }
+
+    public static JScrollPane createButtons(List<Tag> tags, final JTextArea inputArea, Tag.Category displayCategory, String searchTag, Boolean regex, Consumer<Tag> tagClickHandler) {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JScrollPane scrollFrame = new JScrollPane(panel, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
@@ -44,41 +49,49 @@ public class TagUtils {
             if ((displayCategory != null && displayCategory.equals(tagObj.category)) || (StringUtils.isNotEmpty(searchTag) && (regex ? Pattern.compile(searchTag).matcher(tagObj.name).find() : tagObj.name.contains(searchTag)))) {
                 btn.putClientProperty("tag", tagObj);
                 btn.addActionListener(e -> {
-                    String selectedText = inputArea.getSelectedText();
-                    if (selectedText == null) {
-                        selectedText = "";
-                    }
-                    String[] tagStartEnd = Convertors.generateTagStartEnd(tagObj);
-                    String tagStart = tagStartEnd[0];
-                    String tagEnd = tagStartEnd[1];
-                    String replacedText = tagStart + selectedText + tagEnd;
-                    int start = inputArea.getSelectionStart();
-                    int end = start + replacedText.length();
-                    inputArea.replaceSelection(replacedText);
-                    inputArea.select(start + tagStart.length(), end - tagEnd.length());
-                    int selectionStart = inputArea.getSelectionStart();
-                    int selectionEnd = inputArea.getSelectionEnd();
-                    Highlighter.Highlight[] highlights = inputArea.getHighlighter().getHighlights();
-                    for (Highlighter.Highlight highlight : highlights) {
-                        int highlightStart = highlight.getStartOffset();
-                        int highlightEnd = highlight.getEndOffset();
-                        if ((highlightStart < selectionEnd && highlightEnd > selectionStart)) {
-                            continue;
-                        }
-                        inputArea.select(highlight.getStartOffset(), highlight.getEndOffset());
-                        selectedText = inputArea.getSelectedText();
-                        if (selectedText != null) {
-                            tagStartEnd = Convertors.generateTagStartEnd(tagObj);
-                            tagStart = tagStartEnd[0];
-                            tagEnd = tagStartEnd[1];
-                            inputArea.replaceSelection(tagStart + selectedText + tagEnd);
-                        }
+                    if (tagClickHandler != null) {
+                        tagClickHandler.accept(tagObj);
+                    } else {
+                        insertTagIntoInput(tagObj, inputArea);
                     }
                 });
                 panel.add(btn);
             }
         }
         return scrollFrame;
+    }
+
+    public static void insertTagIntoInput(Tag tagObj, final JTextArea inputArea) {
+        String selectedText = inputArea.getSelectedText();
+        if (selectedText == null) {
+            selectedText = "";
+        }
+        String[] tagStartEnd = Convertors.generateTagStartEnd(tagObj);
+        String tagStart = tagStartEnd[0];
+        String tagEnd = tagStartEnd[1];
+        String replacedText = tagStart + selectedText + tagEnd;
+        int start = inputArea.getSelectionStart();
+        int end = start + replacedText.length();
+        inputArea.replaceSelection(replacedText);
+        inputArea.select(start + tagStart.length(), end - tagEnd.length());
+        int selectionStart = inputArea.getSelectionStart();
+        int selectionEnd = inputArea.getSelectionEnd();
+        Highlighter.Highlight[] highlights = inputArea.getHighlighter().getHighlights();
+        for (Highlighter.Highlight highlight : highlights) {
+            int highlightStart = highlight.getStartOffset();
+            int highlightEnd = highlight.getEndOffset();
+            if ((highlightStart < selectionEnd && highlightEnd > selectionStart)) {
+                continue;
+            }
+            inputArea.select(highlight.getStartOffset(), highlight.getEndOffset());
+            selectedText = inputArea.getSelectedText();
+            if (selectedText != null) {
+                tagStartEnd = Convertors.generateTagStartEnd(tagObj);
+                tagStart = tagStartEnd[0];
+                tagEnd = tagStartEnd[1];
+                inputArea.replaceSelection(tagStart + selectedText + tagEnd);
+            }
+        }
     }
 
     public static String elementSequenceToString(List<Element> elements){

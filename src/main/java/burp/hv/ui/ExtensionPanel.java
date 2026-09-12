@@ -96,7 +96,7 @@ public class ExtensionPanel extends JTabbedPaneClosable {
         int tabIndex = tabs.getSelectedIndex();
         String text = tabs.getTitleAt(tabIndex);
         if(text.equals("Custom")) {
-            tabs.setComponentAt(tabIndex, TagUtils.createButtons(hackvertor.getTags(), selectedPanel.getInputArea(), Tag.Category.Custom, null, false));
+            tabs.setComponentAt(tabIndex, TagUtils.createButtons(hackvertor.getTags(), selectedPanel.getInputArea(), Tag.Category.Custom, null, false, selectedPanel.getTagClickHandler()));
         }
     }
 

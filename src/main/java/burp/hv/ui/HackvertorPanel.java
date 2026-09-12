@@ -5,6 +5,7 @@ import burp.hv.settings.InvalidTypeSettingException;
 import burp.hv.settings.UnregisteredSettingException;
 import burp.hv.tags.Tag;
 import burp.hv.tags.TagStore;
+import burp.hv.ui.jigsaw.JigsawBoard;
 import burp.hv.utils.GridbagUtils;
 import burp.hv.utils.TagUtils;
 import burp.hv.utils.Utils;
@@ -30,6 +31,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.concurrent.*;
+import java.util.function.Consumer;
 
 import static burp.hv.HackvertorExtension.*;
 import static burp.hv.Convertors.*;
@@ -40,9 +42,18 @@ import static java.awt.GridBagConstraints.BOTH;
 
 public class HackvertorPanel extends JPanel {
 
+    private static final String TAG_MODE_CARD = "tagMode";
+    private static final String JIGSAW_MODE_CARD = "jigsawMode";
+
     private final Hackvertor hackvertor;
     private final HackvertorInput inputArea;
     private final HackvertorInput outputArea;
+    private final JigsawBoard jigsawBoard;
+    private final boolean jigsawAvailable;
+    private boolean jigsawModeActive;
+    private boolean syncingJigsaw = false;
+    private CardLayout inputCardLayout;
+    private JPanel inputContainer;
     private JTabbedPane tabs;
     private final HackvertorHistory history;
     private boolean isNavigatingHistory = false;
@@ -55,6 +66,8 @@ public class HackvertorPanel extends JPanel {
         this.hackvertor = hackvertor;
         this.inputArea = new HackvertorInput();
         this.outputArea = new HackvertorInput();
+        this.jigsawBoard = new JigsawBoard(hackvertor);
+        this.jigsawAvailable = !isMessageEditor;
         this.history = new HackvertorHistory(isMessageEditor);
         Utils.configureTextArea(this.inputArea);
         Utils.configureTextArea(this.outputArea);
@@ -127,6 +140,45 @@ public class HackvertorPanel extends JPanel {
 
         inputArea.getInputMap().put(KeyStroke.getKeyStroke("control Y"), "Redo");
         final JScrollPane inputScroll = new JScrollPane(inputArea);
+        final JScrollPane jigsawScroll = new JScrollPane(jigsawBoard);
+        inputCardLayout = new CardLayout();
+        inputContainer = new JPanel(inputCardLayout);
+        inputContainer.add(inputScroll, TAG_MODE_CARD);
+        inputContainer.add(jigsawScroll, JIGSAW_MODE_CARD);
+        jigsawBoard.setChangeListener(text -> {
+            syncingJigsaw = true;
+            inputArea.setText(text);
+            syncingJigsaw = false;
+        });
+        inputArea.getDocument().addDocumentListener(new DocumentListener() {
+            public void changedUpdate(DocumentEvent documentEvent) {
+                rebuildJigsawBoard();
+            }
+
+            public void insertUpdate(DocumentEvent documentEvent) {
+                rebuildJigsawBoard();
+            }
+
+            public void removeUpdate(DocumentEvent documentEvent) {
+                rebuildJigsawBoard();
+            }
+        });
+        final JComboBox<String> inputModeSelector = new JComboBox<>(new String[]{"Jigsaw mode", "Tag mode"});
+        inputModeSelector.setName("inputModeSelector");
+        inputModeSelector.setToolTipText("Switch the input between jigsaw pieces and raw tags");
+        final JButton addTextPieceButton = new JButton("+Text");
+        addTextPieceButton.setToolTipText("Add a text piece to the jigsaw board");
+        addTextPieceButton.addActionListener(e -> jigsawBoard.addTextPiece(""));
+        final JButton clearBoardButton = new JButton("Clear board");
+        clearBoardButton.setToolTipText("Remove every piece from the jigsaw board");
+        clearBoardButton.addActionListener(e -> jigsawBoard.clear());
+        inputModeSelector.addActionListener(e -> {
+            boolean jigsaw = inputModeSelector.getSelectedIndex() == 0;
+            setJigsawMode(jigsaw);
+            addTextPieceButton.setEnabled(jigsaw);
+            clearBoardButton.setEnabled(jigsaw);
+            persistJigsawMode(jigsaw);
+        });
         final JLabel inputLabel = new JLabel("Input:");
         final JLabel inputLenLabel = new JLabel("0");
         applyLengthStyle(inputLenLabel);
@@ -620,6 +672,11 @@ public class HackvertorPanel extends JPanel {
         c.insets = new Insets(5, 5, 5, 5);
         c.anchor = GridBagConstraints.WEST;
         inputLabelsPanel.add(inputRealLenLabel, c);
+        if(jigsawAvailable) {
+            inputLabelsPanel.add(inputModeSelector);
+            inputLabelsPanel.add(addTextPieceButton);
+            inputLabelsPanel.add(clearBoardButton);
+        }
         if(!hideOutput) {
             this.add(inputLabelsPanel, GridbagUtils.createConstraints(0, 2, 1, GridBagConstraints.NONE, 0, 0, 0, 0, CENTER));
         }
@@ -628,7 +685,7 @@ public class HackvertorPanel extends JPanel {
         c.fill = BOTH;
         c.weightx = 0.5;
         c.weighty = 1.0;
-        this.add(inputScroll, c);
+        this.add(inputContainer, c);
         JPanel outputLabelsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         c = GridbagUtils.createConstraints(0, 1, 1, GridBagConstraints.NONE, 0, 0, 0, 0, CENTER);
         c.insets = new Insets(5, 5, 5, 5);
@@ -666,6 +723,67 @@ public class HackvertorPanel extends JPanel {
         c.weightx = 1.0;
         // Always show the hex view so users can edit/paste hex even when the output panel is hidden
         this.add(hexScroll, c);
+        boolean startInJigsawMode = jigsawAvailable && isJigsawModeEnabled();
+        inputModeSelector.setSelectedIndex(startInJigsawMode ? 0 : 1);
+        addTextPieceButton.setEnabled(startInJigsawMode);
+        clearBoardButton.setEnabled(startInJigsawMode);
+        setJigsawMode(startInJigsawMode);
+    }
+
+    private boolean isJigsawModeEnabled() {
+        if (generalSettings == null) {
+            return true;
+        }
+        try {
+            return generalSettings.getBoolean("jigsawMode");
+        } catch (UnregisteredSettingException | InvalidTypeSettingException e) {
+            return true;
+        }
+    }
+
+    private void persistJigsawMode(boolean jigsaw) {
+        if (generalSettings == null) {
+            return;
+        }
+        try {
+            generalSettings.setBoolean("jigsawMode", jigsaw);
+            generalSettings.save();
+        } catch (UnregisteredSettingException | InvalidTypeSettingException e) {
+            callbacks.printError("Error saving settings:" + e);
+        }
+    }
+
+    private void setJigsawMode(boolean jigsaw) {
+        jigsawModeActive = jigsawAvailable && jigsaw;
+        if (jigsawModeActive) {
+            jigsawBoard.loadFromText(inputArea.getText());
+        }
+        inputCardLayout.show(inputContainer, jigsawModeActive ? JIGSAW_MODE_CARD : TAG_MODE_CARD);
+    }
+
+    private void rebuildJigsawBoard() {
+        if (!jigsawModeActive || syncingJigsaw) {
+            return;
+        }
+        SwingUtilities.invokeLater(() -> {
+            if (jigsawModeActive && !syncingJigsaw) {
+                jigsawBoard.loadFromText(inputArea.getText());
+            }
+        });
+    }
+
+    public JigsawBoard getJigsawBoard() {
+        return jigsawBoard;
+    }
+
+    public Consumer<Tag> getTagClickHandler() {
+        return tag -> {
+            if (jigsawModeActive) {
+                jigsawBoard.addTagPiece(tag);
+            } else {
+                TagUtils.insertTagIntoInput(tag, inputArea);
+            }
+        };
     }
 
     public JTabbedPane buildTabbedPane(boolean shouldSelectInput){
@@ -685,7 +803,7 @@ public class HackvertorPanel extends JPanel {
             Collections.sort(categories);
         }
         for (String category : categories) {
-            tabs.addTab(category, TagUtils.createButtons(hackvertor.getTags(), inputArea, Tag.Category.valueOf(category), null, false));
+            tabs.addTab(category, TagUtils.createButtons(hackvertor.getTags(), inputArea, Tag.Category.valueOf(category), null, false, getTagClickHandler()));
         }
 
         JPanel tagStoreContainer = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -703,9 +821,9 @@ public class HackvertorPanel extends JPanel {
             public void stateChanged(ChangeEvent e) {
                 int tabIndex = tabs.getSelectedIndex();
                 if (tabs.getTitleAt(tabIndex).equals("Custom")) {
-                    tabs.setComponentAt(tabIndex, TagUtils.createButtons(hackvertor.getTags(), inputArea, Tag.Category.Custom, null, false));
+                    tabs.setComponentAt(tabIndex, TagUtils.createButtons(hackvertor.getTags(), inputArea, Tag.Category.Custom, null, false, getTagClickHandler()));
                 } else if(tabs.getTitleAt(tabIndex).equals("Globals")) {
-                    tabs.setComponentAt(tabIndex, TagUtils.createButtons(hackvertor.getTags(), inputArea, Tag.Category.Globals, null, false));
+                    tabs.setComponentAt(tabIndex, TagUtils.createButtons(hackvertor.getTags(), inputArea, Tag.Category.Globals, null, false, getTagClickHandler()));
 
                 }
             }

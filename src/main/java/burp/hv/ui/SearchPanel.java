@@ -108,7 +108,7 @@ public class SearchPanel extends JPanel {
 
     void searchTags(String input, JPanel tagsPanel, Boolean regex) {
         tagsPanel.removeAll();
-        JScrollPane tags = TagUtils.createButtons(hackvertor.getTags(), hackvertorPanel.getInputArea(), null, input, regex);
+        JScrollPane tags = TagUtils.createButtons(hackvertor.getTags(), hackvertorPanel.getInputArea(), null, input, regex, hackvertorPanel.getTagClickHandler());
         tags.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
         tags.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
         tags.setPreferredSize(new Dimension(1500, 40));
