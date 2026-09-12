@@ -1,5 +1,18 @@
 # Changelog
 
+## Version v2.2.61 (2026-09-12)
+
+- Fixed border when loading Burp. Customise component gives the input a weird border.
+- Merge branch 'master' into master
+- Update CHANGELOG.md for v2.2.60
+- Update BappManifest.bmf
+- Merge pull request #45 from hackvertor/master
+- Update BappManifest.bmf
+- Classes and arrows.
+- Merge pull request #44 from hackvertor/master
+- Update BappManifest.bmf
+- Update CHANGELOG.md for v2.2.51
+
 ## Version v2.2.60 (2026-06-03)
 
 - Bumped version
