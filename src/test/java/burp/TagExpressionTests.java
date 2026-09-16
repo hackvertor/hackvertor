@@ -92,7 +92,19 @@ public class TagExpressionTests extends BaseHackvertorTest {
     void whitespaceAroundOperatorsIsOptional() {
         assertEquals("Zm9v", convert(check("{}") + "&&<@base64>foo</@base64>"));
         assertEquals("Zm9v", convert(check("{}") + "  \t &&  \t <@base64>foo</@base64>"));
-        assertEquals("Zm9v", convert(check("{}") + "\n&&\n<@base64>foo</@base64>"));
+    }
+
+    @Test
+    void aLineEndingOnAnOperatorContinuesOntoTheNextLine() {
+        assertEquals("Zm9v", convert(check("{}") + " &&\n<@base64>foo</@base64>"));
+        assertEquals("Zm9v", convert(check("nope") + " ||\n  <@base64>foo</@base64>"));
+        assertEquals("Zm9v", convert(check("{}") + " &&\n!" + check("nope") + " &&\n<@base64>foo</@base64>"));
+    }
+
+    @Test
+    void anOperatorStartingALineDoesNotContinueThePreviousLine() {
+        //The first line is a complete expression, so it ends there.
+        assertEquals("true\n&&\nZm9v", convert(check("{}") + "\n&&\n<@base64>foo</@base64>"));
     }
 
     @Test
@@ -161,6 +173,34 @@ public class TagExpressionTests extends BaseHackvertorTest {
 
         assertEquals("YmFy", convert("<@check(startsWith,'" + key + "')>foobar</@check> && <@base64>bar</@base64>"));
         assertEquals("", convert("<@check(startsWith,'" + key + "')>nope</@check> && <@base64>bar</@base64>"));
+    }
+
+    @Test
+    void eachLineIsItsOwnExpression() {
+        String input = check("isJson", "{}") + " && That is JSON\n"
+                + "!" + check("isJson", "blah") + " && That is not JSON";
+        assertEquals("That is JSON\nThat is not JSON", convert(input));
+    }
+
+    @Test
+    void lineBreaksBetweenExpressionsArePreserved() {
+        String input = check("isJson", "{}") + " && a\r\n"
+                + "\n"
+                + check("isJson", "{}") + " && b\n";
+        assertEquals("a\r\n\nb\n", convert(input));
+    }
+
+    @Test
+    void anExpressionDoesNotSpanALineBreak() {
+        //The && on the second line has no check tag of its own, so it stays literal text.
+        String input = check("isJson", "{}") + " && a\n"
+                + "b && c";
+        assertEquals("a\nb && c", convert(input));
+    }
+
+    @Test
+    void lineBreaksInsideATagBelongToThatTag() {
+        assertEquals("YQpi", convert(check("isJson", "{}") + " && <@base64>a\nb</@base64>"));
     }
 
     @Test

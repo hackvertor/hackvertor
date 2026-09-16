@@ -5,6 +5,8 @@ import burp.parser.ParseException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Tag expressions: two or more operands combined with {@code &&} or {@code ||}, optionally
@@ -19,6 +21,8 @@ import java.util.List;
  *     <li>Evaluation short circuits, an operand whose result cannot change the outcome is never run.</li>
  *     <li>Falsy operands are an empty output, the text {@code false} and an operand that threw an error.</li>
  *     <li>Boolean results (a check tag or a negation) render as nothing, like a boolean in JSX.</li>
+ *     <li>An expression ends at a line break, so a document can hold one expression per line.
+ *         A line ending on an operator continues onto the next line.</li>
  * </ul>
  *
  * Operators are only treated as operators when the element list contains at least one
@@ -30,6 +34,8 @@ import java.util.List;
 public final class TagExpressions {
 
     public static final String CHECK_TAG = "check";
+
+    private static final Pattern LINE_BREAK = Pattern.compile("\\R");
 
     /**
      * Converts a balanced run of elements into its output. Implemented by the caller so the
@@ -52,10 +58,79 @@ public final class TagExpressions {
         if (!containsCheckTag(elements)) {
             return elements;
         }
-        List<Element> resolved = resolveNestedExpressions(elements, evaluator);
-        List<Item> items = tokenise(resolved);
+        return resolveLines(resolveNestedExpressions(elements, evaluator), evaluator);
+    }
+
+    /**
+     * Evaluates each line as its own expression, so that a document can hold one expression per
+     * line. The line breaks themselves are kept verbatim. A line break inside a tag belongs to
+     * that tag, so only the line breaks at this level split expressions.
+     */
+    private static List<Element> resolveLines(List<Element> elements, OperandEvaluator evaluator)
+            throws ParseException {
+        List<Element> output = new ArrayList<>();
+        List<Element> line = new ArrayList<>();
+        for (int i = 0; i < elements.size(); i++) {
+            Element element = elements.get(i);
+            int end = isOpenTag(element) ? findMatchingEndTag(elements, i) : -1;
+            if (end != -1) {
+                line.addAll(elements.subList(i, end + 1));
+                i = end;
+                continue;
+            }
+            if (!(element instanceof Element.TextElement textElement)) {
+                line.add(element);
+                continue;
+            }
+            String content = textElement.getContent();
+            Matcher lineBreak = LINE_BREAK.matcher(content);
+            int position = 0;
+            while (lineBreak.find()) {
+                String before = content.substring(position, lineBreak.start());
+                if (!before.isEmpty()) {
+                    line.add(new Element.TextElement(before));
+                }
+                position = lineBreak.end();
+                if (awaitsAnOperand(line)) {
+                    //The line ends on an operator, so the expression continues on the next line.
+                    //Keeping the line break as text means a line that turns out not to be an
+                    //expression after all still renders exactly as it was written.
+                    line.add(new Element.TextElement(lineBreak.group()));
+                    continue;
+                }
+                output.addAll(resolveLine(line, evaluator));
+                output.add(new Element.TextElement(lineBreak.group()));
+                line = new ArrayList<>();
+            }
+            String remainder = content.substring(position);
+            if (!remainder.isEmpty()) {
+                line.add(position == 0 ? element : new Element.TextElement(remainder));
+            }
+        }
+        output.addAll(resolveLine(line, evaluator));
+        return output;
+    }
+
+    /**
+     * True when the line ends on an operator that has no operand yet, which is what lets an
+     * expression be written across several lines.
+     */
+    private static boolean awaitsAnOperand(List<Element> line) {
+        List<Item> items = tokenise(line);
+        return !items.isEmpty() && items.get(items.size() - 1).isOperator();
+    }
+
+    /**
+     * Evaluates one line, which is only an expression when it holds both a check tag and an
+     * operator. Anything else is left exactly as it was parsed.
+     */
+    private static List<Element> resolveLine(List<Element> line, OperandEvaluator evaluator) throws ParseException {
+        if (!containsCheckTag(line)) {
+            return line;
+        }
+        List<Item> items = tokenise(line);
         if (items.stream().noneMatch(Item::isOperator)) {
-            return resolved;
+            return line;
         }
         Value value = new ExpressionParser(items, evaluator).parse().evaluate();
         return List.of(new Element.TextElement(value.render()));
