@@ -1,5 +1,18 @@
 # Changelog
 
+## Version v2.2.65 (2026-09-16)
+
+- Created a check tag that allows you to call in built or custom tags to enable you to perform expressions on tag input.
+- Allowed a setting to customise hotkeys
+- Allowed a setting to customise hotkeys
+- Remembered mode choice
+- Remembered mode choice
+- Fixed width in tag mode
+- Added tag parameters to jigsaw piece
+- Added jigsaw mode
+- Added jigsaw mode
+- Update CHANGELOG.md for v2.2.61
+
 ## Version v2.2.61 (2026-09-12)
 
 - Fixed border when loading Burp. Customise component gives the input a weird border.
