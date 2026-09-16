@@ -2,6 +2,7 @@ package burp.parser;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedList;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -60,5 +61,52 @@ class HackvertorParserTest {
         LinkedList<Element> parsed = HackvertorParser.parse(tagWithArgsAndSpace);
         assertEquals(1, parsed.size());
         assertInstanceOf(Element.SelfClosingTag.class, parsed.get(0));
+    }
+
+    @Test
+    void parseExpressionOperators() throws ParseException {
+        LinkedList<Element> parsed = HackvertorParser.parse("<@check(a)>{}</@check> && !<@base64>foo</@base64>");
+        assertEquals(Element.Operator.Type.AND, operatorAt(parsed, "&&").getType());
+        assertEquals(Element.Operator.Type.NOT, operatorAt(parsed, "!").getType());
+        assertEquals(Element.Operator.Type.OR,
+                operatorAt(HackvertorParser.parse("a || b"), "||").getType());
+    }
+
+    @Test
+    void operatorsAreTextElementsSoTheyRoundTrip() throws ParseException {
+        String[] inputs = {
+                "a && b || !c",
+                "a & b | c ! d",
+                "&&",
+                "||!&|",
+                "1 && 2 || 3"
+        };
+        for (String input : inputs) {
+            LinkedList<Element> parsed = HackvertorParser.parse(input);
+            assertEquals(input, parsed.stream().map(Object::toString).collect(Collectors.joining()));
+            for (Element element : parsed) {
+                assertInstanceOf(Element.TextElement.class, element, input);
+            }
+        }
+        String withTags = "<@base64>a!b && c</@base64>";
+        assertEquals(withTags, HackvertorParser.parse(withTags).stream()
+                .map(Object::toString).collect(Collectors.joining()));
+    }
+
+    @Test
+    void loneOperatorCharactersStayText() throws ParseException {
+        LinkedList<Element> parsed = HackvertorParser.parse("a&b");
+        assertEquals(3, parsed.size());
+        assertEquals("a&b", parsed.stream().map(Object::toString).collect(Collectors.joining()));
+        assertFalse(parsed.get(1) instanceof Element.Operator);
+    }
+
+    private static Element.Operator operatorAt(LinkedList<Element> parsed, String symbol) {
+        return parsed.stream()
+                .filter(element -> element instanceof Element.Operator)
+                .map(element -> (Element.Operator) element)
+                .filter(operator -> operator.getContent().equals(symbol))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("No " + symbol + " operator found"));
     }
 }

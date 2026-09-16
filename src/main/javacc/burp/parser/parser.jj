@@ -69,7 +69,11 @@ TOKEN_MGR_DECLS : {
 }
 
 <DEFAULT> TOKEN: {
-  <TEXT: (~["<"])+> //Anything excluding <
+  <AND_OP: "&&">
+  | <OR_OP: "||">
+  | <NOT_OP: "!">
+  | <TEXT: (~["<", "&", "|", "!"])+> //Anything excluding < and the expression operator characters
+  | <OPERATOR_CHAR: ["&", "|"]> //A lone & or | is ordinary text
   | <LESSTHAN: "<">
 }
 
@@ -126,9 +130,13 @@ LinkedList<Element> ElementSequence() :
     elements = StartTag() { return elements; }
     | elements = CloseTag() { return elements; }
     | <LESSTHAN> { elements.add(new Element.TextElement("<")); return elements;}
+    | <AND_OP> { elements.add(new Element.Operator(Element.Operator.Type.AND)); return elements; }
+    | <OR_OP> { elements.add(new Element.Operator(Element.Operator.Type.OR)); return elements; }
+    | <NOT_OP> { elements.add(new Element.Operator(Element.Operator.Type.NOT)); return elements; }
     | (
          text = <TEXT> | text = <ST_ERR> | text = <IT_ERR> | text = <ARG_ERR> | text = <QUOTED_STRING_VAL>
         | text = <LITERAL_VAL> | text = <COMMA> | text = <ARGS_END> | text = <TAG_END> | text = <SELF_CLOSE_TAG_END>
+        | text = <OPERATOR_CHAR>
       ) { elements.add(new Element.TextElement(text.image)); return elements; }
     }catch(ParseException ex){ //Catch any unexpected inputs including EOF and try to recover
         token_source.SwitchTo(DEFAULT);

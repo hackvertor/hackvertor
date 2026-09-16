@@ -502,6 +502,13 @@ public class Hackvertor {
     }
 
     private void initConditionTags() {
+        addTag(Tag.Category.Conditions, "check", true,
+               "check(String input, String tagName, String codeExecuteKey)//Runs the named built in or custom tag against the input and returns true or false. Combine checks with && and || to build tag expressions, and negate them with !.",
+               "string", "isJson", "string", tagCodeExecutionKey);
+        addTag(Tag.Category.Conditions, "isJson", true,
+               "isJson(String input)//Returns true when the input is a JSON object or array.");
+        addTag(Tag.Category.Conditions, "isNumeric", true,
+               "isNumeric(String input)//Returns true when the input is a decimal number, with an optional sign, fraction and exponent.");
         addTag(Tag.Category.Conditions, "if_regex", true, "if_regex(String str, String regex, String value)",
                "string", "regex", "string", "value");
         addTag(Tag.Category.Conditions, "if_not_regex", true, "if_not_regex(String str, String regex, String value)",

@@ -88,6 +88,40 @@ public class Element {
         }
     }
 
+    /**
+     * A tag expression operator (&&, || or !).
+     *
+     * Extends TextElement so that every existing consumer that is unaware of expressions
+     * treats an operator as the literal text it was parsed from. Expressions are only
+     * evaluated when a check tag is present, see burp.hv.TagExpressions.
+     */
+    public static class Operator extends TextElement {
+        public enum Type {
+            AND("&&"), OR("||"), NOT("!");
+
+            private final String symbol;
+
+            Type(String symbol) {
+                this.symbol = symbol;
+            }
+
+            public String getSymbol() {
+                return symbol;
+            }
+        }
+
+        private final Type type;
+
+        public Operator(Type type) {
+            super(type.getSymbol());
+            this.type = type;
+        }
+
+        public Type getType() {
+            return type;
+        }
+    }
+
     public static class TextElement extends Element{
         String content;
         public TextElement(String text){

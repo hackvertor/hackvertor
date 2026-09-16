@@ -45,6 +45,7 @@ import org.codehaus.groovy.control.CompilationFailedException;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.HostAccess;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.python.core.PyException;
 import org.python.core.PyObject;
@@ -165,11 +166,63 @@ public class Convertors {
     private static String processCustomTag(String tag, String output, ArrayList<String> arguments,
                                           HashMap<String, String> variableMap, JSONArray customTags,
                                           Hackvertor hackvertor) throws ParseException {
+        JSONObject customTag = findCustomTag(customTags, tag);
+        if (customTag == null) {
+            return null;
+        }
+        return executeCustomTag(customTag, output, arguments, variableMap, customTags, hackvertor);
+    }
+
+    /**
+     * Runs the named built in or custom tag against the input and returns "true" or "false".
+     * Intended for use in tag expressions, see {@link TagExpressions}. Protected by the tag code
+     * execution key because a custom tag runs custom code.
+     */
+    static String check(String input, String name, String executionKey,
+                        HashMap<String, String> variableMap, JSONArray customTags,
+                        Hackvertor hackvertor) throws ParseException {
+        String errorMessage = CustomTags.checkTagExecutionPermissions(executionKey);
+        if (errorMessage != null) {
+            throw new ParseException("check tag: " + errorMessage);
+        }
+        if (StringUtils.isEmpty(name)) {
+            throw new ParseException("check tag: No tag name specified");
+        }
+        String result;
+        //Custom tags are always stored with a "_" prefix, so a bare name can only be a built in tag.
+        if (!name.startsWith("_") && TAG_REGISTRY.containsKey(name)) {
+            result = callTag(variableMap, customTags, name, input, new ArrayList<>(), hackvertor);
+        } else {
+            result = checkCustomTag(input, name, executionKey, variableMap, customTags, hackvertor);
+        }
+        return Boolean.toString(TagExpressions.isTruthy(result));
+    }
+
+    private static String checkCustomTag(String input, String name, String executionKey,
+                                         HashMap<String, String> variableMap, JSONArray customTags,
+                                         Hackvertor hackvertor) throws ParseException {
+        String tagName = name.startsWith("_") ? name : "_" + name;
+        JSONObject customTag = findCustomTag(customTags, tagName);
+        if (customTag == null) {
+            throw new ParseException("check tag: Unknown tag \"" + name + "\"");
+        }
+        //The custom tag reads its execution key from the argument after its own arguments, and a
+        //check only supplies the key, so pad the arguments it declared with their defaults.
+        ArrayList<String> arguments = new ArrayList<>();
+        int numberOfArgs = customTag.has("numberOfArgs") ? customTag.getInt("numberOfArgs") : 0;
+        for (int i = 1; i <= numberOfArgs; i++) {
+            String defaultKey = "argument" + i + "Default";
+            arguments.add(customTag.has(defaultKey) ? customTag.getString(defaultKey) : "");
+        }
+        arguments.add(executionKey);
+        return executeCustomTag(customTag, input, arguments, variableMap, customTags, hackvertor);
+    }
+
+    private static JSONObject findCustomTag(JSONArray customTags, String tagName) {
         for (int i = 0; i < customTags.length(); i++) {
             JSONObject customTag = (JSONObject) customTags.get(i);
-            String customTagName = customTag.getString("tagName");
-            if(customTagName.equals(tag)) {
-                return executeCustomTag(customTag, output, arguments, variableMap, customTags, hackvertor);
+            if (tagName.equals(customTag.getString("tagName"))) {
+                return customTag;
             }
         }
         return null;
@@ -465,6 +518,12 @@ public class Convertors {
             Integer.toString(guess_key_length(output)));
 
         // Conditional operations
+        TAG_REGISTRY.put("check", (output, args, vars, custom, hv) ->
+            check(output, getString(args, 0), getString(args, 1), vars, custom, hv));
+
+        TAG_REGISTRY.put("isJson", (output, args, vars, custom, hv) -> isJson(output));
+        TAG_REGISTRY.put("isNumeric", (output, args, vars, custom, hv) -> isNumeric(output));
+
         TAG_REGISTRY.put("if_regex", (output, args, vars, custom, hv) ->
             if_regex(output, getString(args, 0), getString(args, 1)));
         TAG_REGISTRY.put("if_not_regex", (output, args, vars, custom, hv) ->
@@ -679,6 +738,8 @@ public class Convertors {
         try {
             tagElements = HackvertorParser.parse(input);
             tagElements = weakConvertPreProcessSetTags(variables, customTags, tagElements);
+            tagElements = new LinkedList<>(TagExpressions.resolve(new ArrayList<>(tagElements),
+                    operand -> weakConvert(variables, customTags, new Stack<>(), new LinkedList<>(operand), hackvertor)));
             return weakConvert(variables, customTags, new Stack<>(), tagElements, hackvertor);
         }catch (Exception e){
             StringWriter sw = new StringWriter();
@@ -2309,6 +2370,34 @@ public class Convertors {
             }
         }
         return regexMatcher.appendTail(result).toString();
+    }
+
+    /**
+     * True when the input is a JSON object or array. Intended as a check tag predicate.
+     */
+    static String isJson(String input) {
+        String trimmed = input == null ? "" : input.trim();
+        try {
+            if (trimmed.startsWith("{")) {
+                new JSONObject(trimmed);
+                return "true";
+            }
+            if (trimmed.startsWith("[")) {
+                new JSONArray(trimmed);
+                return "true";
+            }
+        } catch (JSONException ignored) {
+        }
+        return "false";
+    }
+
+    /**
+     * True when the input is a decimal number, with an optional sign, fraction and exponent.
+     * Intended as a check tag predicate.
+     */
+    static String isNumeric(String input) {
+        String trimmed = input == null ? "" : input.trim();
+        return Boolean.toString(trimmed.matches("[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?"));
     }
 
     static String if_regex(String str, String regex, String value) {
