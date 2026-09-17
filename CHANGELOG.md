@@ -1,5 +1,10 @@
 # Changelog
 
+## Version v2.2.67 (2026-09-17)
+
+- Added a what's new tab to advertise new features
+- Update CHANGELOG.md for v2.2.66
+
 ## Version v2.2.66 (2026-09-16)
 
 - Fix bug where new line didn't start a new expression
