@@ -19,6 +19,14 @@ import static burp.hv.HackvertorExtension.montoyaApi;
 public class ExtensionPanel extends JTabbedPaneClosable {
     private int tabCounter = 1;
 
+    /**
+     * Guards against re-entering the change listener while a tab is being added. Inserting a tab
+     * before the selected one makes JTabbedPane shift the selection and fire a change event, and
+     * at that point "..." is still the selected tab, so without this the listener would add
+     * another panel, and another, forever.
+     */
+    private boolean addingPanel = false;
+
     private final Hackvertor hackvertor;
 
     public ExtensionPanel(Hackvertor hackvertor){
@@ -26,7 +34,10 @@ public class ExtensionPanel extends JTabbedPaneClosable {
         this.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentShown(ComponentEvent e) {
-                HackvertorPanel selectedPanel = (HackvertorPanel) getComponentAt(ExtensionPanel.this.getSelectedIndex());
+                HackvertorPanel selectedPanel = ExtensionPanel.this.getSelectedConvertorPanel();
+                if (selectedPanel == null) {
+                    return;
+                }
                 selectedPanel.getInputArea().requestFocusInWindow();
                 boolean allowAutoConvertClipboard;
                 if(HackvertorExtension.generalSettings == null) {
@@ -47,51 +58,86 @@ public class ExtensionPanel extends JTabbedPaneClosable {
             }
         });
 
+        this.addFixedTabTitle(WhatsNewPanel.TITLE);
+
         //TODO Move to HackvertorPanel class
         this.addTab("1", new HackvertorPanel(hackvertor, true, false, false));
-        this.addTab("...", new JPanel());
+        this.addFixedTabs();
         this.addChangeListener(new ChangeListener() {
             public void stateChanged(ChangeEvent e) {
+                if (ExtensionPanel.this.addingPanel) {
+                    return;
+                }
                 if (ExtensionPanel.this.getSelectedIndex() == -1) {
                     return;
                 }
                 if (ExtensionPanel.this.clickedDelete) {
                     ExtensionPanel.this.clickedDelete = false;
-                    if (ExtensionPanel.this.getTabCount() > 1) {
-                        if (ExtensionPanel.this.getSelectedIndex() == ExtensionPanel.this.getTabCount() - 1) {
-                            ExtensionPanel.this.setSelectedIndex(ExtensionPanel.this.getTabCount() - 2);
-                        }
-                        return;
+                    //Closing a tab can leave a fixed tab selected, which would show an empty panel.
+                    if (ExtensionPanel.this.getSelectedConvertorPanel() == null
+                            && !ExtensionPanel.this.selectNearestConvertorTab()) {
+                        ExtensionPanel.this.addNewPanel();
                     }
+                    return;
                 }
                 if (ExtensionPanel.this.getTitleAt(ExtensionPanel.this.getSelectedIndex()).equals("...")) {
-                    tabCounter++;
-                    HackvertorPanel panel = new HackvertorPanel(hackvertor, true, false, false);
-                    ExtensionPanel.this.remove(ExtensionPanel.this.getSelectedIndex());
-                    ExtensionPanel.this.addTab(tabCounter + "", panel);
-                    ExtensionPanel.this.addTab("...", new JPanel());
-                    ExtensionPanel.this.setSelectedIndex(ExtensionPanel.this.getTabCount() - 2);
+                    ExtensionPanel.this.addNewPanel();
                 } else {
                     // Refresh history when a regular tab is selected
-                    try {
-                        HackvertorPanel selectedPanel = (HackvertorPanel) ExtensionPanel.this.getComponentAt(ExtensionPanel.this.getSelectedIndex());
-                        if (selectedPanel != null) {
-                            selectedPanel.refreshHistory();
-                        }
-                    } catch (ClassCastException ex) {
-                        // Ignore if not a HackvertorPanel
+                    HackvertorPanel selectedPanel = ExtensionPanel.this.getSelectedConvertorPanel();
+                    if (selectedPanel != null) {
+                        selectedPanel.refreshHistory();
                     }
                 }
             }
         });
     }
 
+    /**
+     * The selected convertor panel, or null when a fixed tab such as "..." or What's new is selected.
+     */
+    public HackvertorPanel getSelectedConvertorPanel() {
+        int index = getSelectedIndex();
+        if (index < 0 || index >= getTabCount()) {
+            return null;
+        }
+        return getComponentAt(index) instanceof HackvertorPanel panel ? panel : null;
+    }
+
+    /**
+     * Selects the convertor tab nearest to the current selection, preferring the one to the left.
+     * Returns false when there are no convertor tabs left.
+     */
+    private boolean selectNearestConvertorTab() {
+        for (int i = Math.min(getSelectedIndex(), getTabCount() - 1); i >= 0; i--) {
+            if (getComponentAt(i) instanceof HackvertorPanel) {
+                setSelectedIndex(i);
+                return true;
+            }
+        }
+        for (int i = 0; i < getTabCount(); i++) {
+            if (getComponentAt(i) instanceof HackvertorPanel) {
+                setSelectedIndex(i);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Adds the tabs that belong to the extension rather than the user. "..." has to stay directly
+     * after the convertor tabs because that is what creates a new one when selected.
+     */
+    private void addFixedTabs() {
+        this.addTab("...", new JPanel());
+        this.addTab(WhatsNewPanel.TITLE, new WhatsNewPanel());
+    }
+
     public void refresh() {
-        int index = ExtensionPanel.this.getSelectedIndex();
-        if (index == -1) {
+        HackvertorPanel selectedPanel = getSelectedConvertorPanel();
+        if (selectedPanel == null) {
             return;
         }
-        HackvertorPanel selectedPanel = (HackvertorPanel) getComponentAt(index);
         JTabbedPane tabs = selectedPanel.getTabs();
         int tabIndex = tabs.getSelectedIndex();
         String text = tabs.getTitleAt(tabIndex);
@@ -103,8 +149,18 @@ public class ExtensionPanel extends JTabbedPaneClosable {
     public HackvertorPanel addNewPanel(){
         HackvertorPanel panel = new HackvertorPanel(hackvertor, true, false, false);
         tabCounter++;
-        this.insertTab(String.valueOf(tabCounter), null, panel, null, this.getTabCount() - 1);
-        this.setSelectedIndex(this.getTabCount() - 2);
+        int index = this.indexOfTab("...");
+        if (index == -1) {
+            index = this.getTabCount();
+        }
+        addingPanel = true;
+        try {
+            this.insertTab(String.valueOf(tabCounter), null, panel, null, index);
+            this.setSelectedIndex(index);
+        } finally {
+            addingPanel = false;
+        }
+        panel.refreshHistory();
         return panel;
     }
 
@@ -119,8 +175,7 @@ public class ExtensionPanel extends JTabbedPaneClosable {
 
             // Save all tabs except the "..." tab
             for (int i = 0; i < this.getTabCount(); i++) {
-                String title = this.getTitleAt(i);
-                if (title.equals("...")) {
+                if (this.isFixedTab(i)) {
                     continue;
                 }
 
@@ -188,8 +243,7 @@ public class ExtensionPanel extends JTabbedPaneClosable {
                 this.setActualTabTitle(i, name);
             }
 
-            // Add the "..." tab at the end
-            this.addTab("...", new JPanel());
+            this.addFixedTabs();
 
             // Restore tab counter
             if (state.has("tabCounter")) {
@@ -199,7 +253,7 @@ public class ExtensionPanel extends JTabbedPaneClosable {
             // Restore selected index
             if (state.has("selectedIndex")) {
                 int selectedIndex = state.getInt("selectedIndex");
-                if (selectedIndex >= 0 && selectedIndex < this.getTabCount() - 1) {
+                if (selectedIndex >= 0 && selectedIndex < tabsState.length()) {
                     SwingUtilities.invokeLater(() -> {
                         this.setSelectedIndex(selectedIndex);
                     });
@@ -211,7 +265,7 @@ public class ExtensionPanel extends JTabbedPaneClosable {
             // If restoration fails, ensure we have at least the default setup
             this.removeAll();
             this.addTab("1", new HackvertorPanel(hackvertor, true, false, false));
-            this.addTab("...", new JPanel());
+            this.addFixedTabs();
             tabCounter = 1;
         }
     }

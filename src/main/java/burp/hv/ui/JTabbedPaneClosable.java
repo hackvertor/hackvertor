@@ -5,12 +5,28 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.HashSet;
+import java.util.Set;
 
 public class JTabbedPaneClosable extends JTabbedPane {
     public boolean clickedDelete = false;
 
+    /** Titles of tabs that belong to the extension rather than the user, so they get no close button. */
+    private final Set<String> fixedTabTitles = new HashSet<>(Set.of("..."));
+
     public JTabbedPaneClosable() {
         super();
+    }
+
+    /**
+     * Marks a title as a fixed tab. Must be called before the tab is inserted.
+     */
+    public void addFixedTabTitle(String title) {
+        fixedTabTitles.add(title);
+    }
+
+    public boolean isFixedTab(int index) {
+        return index >= 0 && index < getTabCount() && fixedTabTitles.contains(getTitleAt(index));
     }
 
     @Override
@@ -53,7 +69,7 @@ public class JTabbedPaneClosable extends JTabbedPane {
     @Override
     public void insertTab(String title, Icon icon, Component component, String tip, int index) {
         super.insertTab(title, icon, component, tip, index);
-        if (!title.equals("...")) {
+        if (!fixedTabTitles.contains(title)) {
             CloseButtonTab closeTab = new CloseButtonTab(component, title, icon);
             setTabComponentAt(index, closeTab);
             // Show close button if this is the selected tab
