@@ -7,6 +7,7 @@ import burp.hv.tags.CustomTags;
 import burp.hv.tags.Tag;
 import burp.hv.ui.jigsaw.JigsawBoard;
 import burp.hv.ui.jigsaw.JigsawPiece;
+import burp.hv.ui.jigsaw.JigsawTagPiece;
 import burp.hv.utils.TagUtils;
 import burp.hv.utils.Utils;
 import burp.stubs.StubCallbacks;
@@ -119,6 +120,27 @@ public class JigsawBoardTest {
     @Test
     public void unknownTagRoundTrips() {
         assertRoundTrip("<@notarealtag>hello</@notarealtag>");
+    }
+
+    @Test
+    public void namedSetVariableTagIsParsedAsATagPiece() {
+        JigsawBoard board = board();
+        String text = "<@set_email(true)>test@test.tld</@set_email>";
+        onBoard(() -> board.loadFromText(text));
+        assertEquals(2, board.pieces().size());
+        assertTrue(board.pieces().stream().anyMatch(piece -> piece instanceof JigsawTagPiece
+                && ((JigsawTagPiece) piece).getTag().name.equals("set_email")));
+        assertEquals(text, serialize(board));
+    }
+
+    @Test
+    public void namedGetVariableTagIsParsedAsATagPiece() {
+        JigsawBoard board = board();
+        String text = "<@get_email/>";
+        onBoard(() -> board.loadFromText(text));
+        assertEquals(1, board.pieces().size());
+        assertTrue(board.pieces().get(0) instanceof JigsawTagPiece);
+        assertEquals(text, serialize(board));
     }
 
     @Test

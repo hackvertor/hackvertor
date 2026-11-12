@@ -13,6 +13,11 @@ import java.util.List;
 
 class JigsawTextParser {
 
+    private static final String SET_PREFIX = "set_";
+    private static final String GET_PREFIX = "get_";
+    private static final String SET_TEMPLATE = "set_variable1";
+    private static final String GET_TEMPLATE = "get_variable1";
+
     private final JigsawBoard board;
     private final Collection<Tag> tags;
 
@@ -158,12 +163,40 @@ class JigsawTextParser {
     }
 
     private Tag findTag(String identifier) {
+        Tag tag = findTagByName(identifier);
+        if (tag != null) {
+            return tag;
+        }
+        String lower = identifier.toLowerCase();
+        if (lower.startsWith(SET_PREFIX) && lower.length() > SET_PREFIX.length()) {
+            return variableTag(SET_TEMPLATE, identifier);
+        }
+        if (lower.startsWith(GET_PREFIX) && lower.length() > GET_PREFIX.length()) {
+            return variableTag(GET_TEMPLATE, identifier);
+        }
+        return null;
+    }
+
+    private Tag findTagByName(String identifier) {
         for (Tag tag : tags) {
             if (tag.name.equalsIgnoreCase(identifier)) {
                 return tag;
             }
         }
         return null;
+    }
+
+    private Tag variableTag(String templateName, String identifier) {
+        Tag template = findTagByName(templateName);
+        if (template == null) {
+            return null;
+        }
+        Tag tag = new Tag(template.category, identifier, template.hasInput, template.tooltip);
+        tag.argument1 = template.argument1;
+        tag.argument2 = template.argument2;
+        tag.argument3 = template.argument3;
+        tag.argument4 = template.argument4;
+        return tag;
     }
 
     private List<JigsawPiece> piecesFor(Node node, Tag tag) {
