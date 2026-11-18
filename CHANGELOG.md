@@ -1,5 +1,17 @@
 # Changelog
 
+## Version v2.2.68 (2026-11-12)
+
+- Fix Jigsaw mode parsing of named set_/get_ variable tags
+- Merge branch 'master' into master
+- Update CHANGELOG.md for v2.2.67
+- Update BappManifest.bmf
+- Update CHANGELOG.md for v2.2.64
+- Merge pull request #47 from hackvertor/master
+- Update BappManifest.bmf
+- Update CHANGELOG.md for v2.2.60
+- Merge pull request #46 from hackvertor/master
+
 ## Version v2.2.67 (2026-09-17)
 
 - Added a what's new tab to advertise new features
