@@ -14,3 +14,6 @@ out/
 
 # Ignore unrelased montoya APIs
 /libs/
+
+# macOS
+.DS_Store

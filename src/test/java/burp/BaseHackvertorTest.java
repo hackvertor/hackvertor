@@ -8,6 +8,7 @@ import burp.hv.utils.Utils;
 import burp.stubs.StubCallbacks;
 import burp.stubs.StubExtensionHelpers;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.assertj.swing.edt.GuiActionRunner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
 
@@ -46,8 +47,7 @@ public abstract class BaseHackvertorTest {
         HackvertorExtension.setHelpers(new StubExtensionHelpers());
         
         // Initialize settings and callbacks
-        JFrame jFrame = new JFrame("Test");
-        StubCallbacks callbacks = new StubCallbacks(jFrame);
+        StubCallbacks callbacks = new StubCallbacks();
         IExtensionHelpers helpers = callbacks.getHelpers();
         
         // Set up HackvertorExtension static fields
@@ -57,10 +57,8 @@ public abstract class BaseHackvertorTest {
         HackvertorExtension.stdout = new PrintWriter(callbacks.getStdout(), true);
         HackvertorExtension.tagCodeExecutionKey = CustomTags.generateRandomCodeExecutionKey();
 
-        // Generate Hackvertor menu bar
-        JMenuBar menuBar = new JMenuBar();
-        menuBar.add(Utils.generateHackvertorMenuBar());
-        jFrame.setJMenuBar(menuBar);
+        // Generate Hackvertor menu bar, on the EDT like any other Swing component
+        GuiActionRunner.execute(() -> new JMenuBar().add(Utils.generateHackvertorMenuBar()));
 
         // Add security provider
         Security.addProvider(new BouncyCastleProvider());

@@ -77,6 +77,8 @@ tasks.withType(Jar) {
 test {
     useJUnitPlatform()
     jvmArgs '--add-opens', 'java.base/java.util=ALL-UNNAMED'
+    // The UI tests drive Swing without a display, so they run on CI and never pop up windows.
+    systemProperty 'java.awt.headless', 'true'
 }
 
 shadowJar {

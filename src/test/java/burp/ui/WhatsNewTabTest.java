@@ -39,7 +39,7 @@ public class WhatsNewTabTest {
     static void setUp() {
         hackvertor = GuiActionRunner.execute(() -> {
             HackvertorExtension.setHelpers(new StubExtensionHelpers());
-            StubCallbacks callbacks = new StubCallbacks(new JFrame("Test"));
+            StubCallbacks callbacks = new StubCallbacks();
             HackvertorExtension.callbacks = callbacks;
             HackvertorExtension.helpers = callbacks.getHelpers();
             HackvertorExtension.stderr = new PrintWriter(callbacks.getStderr(), true);

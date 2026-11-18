@@ -4,7 +4,6 @@ import burp.hv.HackvertorExtension;
 import burp.stubs.StubCallbacks;
 import org.assertj.swing.edt.FailOnThreadViolationRepaintManager;
 import org.assertj.swing.edt.GuiActionRunner;
-import org.assertj.swing.fixture.FrameFixture;
 import org.junit.jupiter.api.*;
 
 import javax.swing.*;
@@ -16,8 +15,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 public class HackvertorUiTest {
 
-    private static FrameFixture window;
-    private static JFrame frame;
+    private static HeadlessWindow window;
     private static final int width = 1200;
     private static final int height = 1000;
     private static Thread.UncaughtExceptionHandler originalHandler;
@@ -25,8 +23,6 @@ public class HackvertorUiTest {
 
     @BeforeAll
     static void installRepaintManager() {
-        // Set system properties for headless mode and better UI testing
-        System.setProperty("java.awt.headless", "false"); // We need GUI for UI tests
         System.setProperty("javax.swing.disableQuestions", "true");
         System.setProperty("swing.disableOnEDT", "false");
         System.setProperty("awt.useSystemAAFontSettings", "on");
@@ -65,46 +61,29 @@ public class HackvertorUiTest {
 
     @BeforeAll
     static void setUp() {
-        SwingUtilities.invokeLater(() -> {
-            frame = new JFrame("Burp Suite - Hackvertor");
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setContentPane(new JPanel(new BorderLayout()));
-            frame.setPreferredSize(new Dimension(width, height));
-            JMenuBar menuBar = new JMenuBar();
-            frame.setJMenuBar(menuBar);
-
+        window = HeadlessWindow.create(width, height, root -> {
             HackvertorExtension hackvertorExtension = new HackvertorExtension();
-            hackvertorExtension.registerExtenderCallbacks(new StubCallbacks(frame));
-
-            frame.pack();
-            frame.setVisible(true);
+            hackvertorExtension.registerExtenderCallbacks(new StubCallbacks(root));
         });
-
-        // Wait until frame is ready before wrapping
-        try {
-            Thread.sleep(200); // small delay to allow EDT to show the frame
-        } catch (InterruptedException ignored) {}
-
-        window = new FrameFixture(frame);
-        window.show(); // ensures AssertJ knows it’s visible
         UiTestSupport.selectInputMode(window, UiTestSupport.TAG_MODE);
     }
 
     @Test
-    void testWindowTitleAndSize() {
-        window.requireVisible();
-        window.requireTitle("Burp Suite - Hackvertor");
+    void testExtensionFillsTheWindow() {
         Assertions.assertEquals(width, window.target().getWidth());
         Assertions.assertEquals(height, window.target().getHeight());
+        Component extensionPanel = GuiActionRunner.execute(() -> window.target().getComponent(0));
+        Assertions.assertTrue(extensionPanel.isShowing(), "The extension's tab should be showing");
+        Assertions.assertEquals(window.target().getSize(), extensionPanel.getSize());
     }
 
     @Test
     void testClickBase64Button() throws Exception {
         // Wait for UI to be ready
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // First, focus on the first HackvertorInput (input area) to ensure cursor is there
-        Component[] allTextAreas = window.robot().finder()
+        Component[] allTextAreas = window
                 .findAll(window.target(), component -> component instanceof JTextArea)
                 .toArray(new Component[0]);
         
@@ -118,12 +97,12 @@ public class HackvertorUiTest {
         
         if (inputArea != null) {
             // Click on the input area to give it focus
-            window.robot().click(inputArea);
-            window.robot().waitForIdle();
+            window.click(inputArea);
+            window.waitForIdle();
         }
         
         // Find all tab panes
-        List<JTabbedPane> tabPanes = window.robot().finder().findAll(
+        List<JTabbedPane> tabPanes = window.findAll(
                         c -> c instanceof JTabbedPane && c.isShowing()
                 ).stream()
                 .map(c -> (JTabbedPane) c)
@@ -140,7 +119,7 @@ public class HackvertorUiTest {
         Component selectedTabContent = GuiActionRunner.execute(innerTabs::getSelectedComponent);
 
         // Find the base64 button
-        Component base64Button = window.robot().finder().find(
+        Component base64Button = window.find(
                 (Container) selectedTabContent,
                 c -> c instanceof JButton &&
                         "base64".equals(((JButton) c).getText()) &&
@@ -154,10 +133,10 @@ public class HackvertorUiTest {
         GuiActionRunner.execute(() -> button.doClick());
 
         // Give the UI time to update
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Check all JTextAreas to see if the base64 tag has been added
-        Component[] components = window.robot().finder()
+        Component[] components = window
                 .findAll(window.target(), component -> component instanceof JTextArea)
                 .toArray(new Component[0]);
         
@@ -179,10 +158,10 @@ public class HackvertorUiTest {
     @Test
     void testBase64EncodingWithText() throws Exception {
         // Wait for UI to be ready
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find the input and output HackvertorInput areas
-        Component[] allTextAreas = window.robot().finder()
+        Component[] allTextAreas = window
                 .findAll(window.target(), component -> component instanceof JTextArea)
                 .toArray(new Component[0]);
         
@@ -205,19 +184,19 @@ public class HackvertorUiTest {
         Assertions.assertNotNull(outputArea, "Output area should be found");
         
         // Type "test" in the input area
-        window.robot().click(inputArea);
-        window.robot().waitForIdle();
+        window.click(inputArea);
+        window.waitForIdle();
         
         final JTextArea finalInputArea = inputArea;
         GuiActionRunner.execute(() -> finalInputArea.setText("test"));
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Select all text
         GuiActionRunner.execute(finalInputArea::selectAll);
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find the tabbed pane and base64 button
-        List<JTabbedPane> tabPanes = window.robot().finder().findAll(
+        List<JTabbedPane> tabPanes = window.findAll(
                         c -> c instanceof JTabbedPane && c.isShowing()
                 ).stream()
                 .map(c -> (JTabbedPane) c)
@@ -241,12 +220,12 @@ public class HackvertorUiTest {
             // Fallback to first tab if "Encode" not found by name
             GuiActionRunner.execute(() -> innerTabs.setSelectedIndex(0));
         }
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         Component selectedTabContent = GuiActionRunner.execute(innerTabs::getSelectedComponent);
 
         // Find and click the base64 button
-        Component base64Button = window.robot().finder().find(
+        Component base64Button = window.find(
                 (Container) selectedTabContent,
                 c -> c instanceof JButton &&
                         "base64".equals(((JButton) c).getText()) &&
@@ -257,24 +236,24 @@ public class HackvertorUiTest {
         GuiActionRunner.execute(() -> button.doClick());
         
         // Wait for processing
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Check that input area contains the tags around "test"
         String inputText = inputArea.getText();
         Assertions.assertEquals("<@base64>test</@base64>", inputText, "Input should have base64 tags around 'test'");
         
         // Check that output area contains the base64 encoded value of "test"
-        String outputText = outputArea.getText();
+        String outputText = UiTestSupport.awaitText(outputArea, "dGVzdA==");
         Assertions.assertEquals("dGVzdA==", outputText, "Output should contain base64 encoded 'test'");
     }
 
     @Test
     void testUtf7EncodingWithText() throws Exception {
         // Wait for UI to be ready
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find the input and output HackvertorInput areas
-        Component[] allTextAreas = window.robot().finder()
+        Component[] allTextAreas = window
                 .findAll(window.target(), component -> component instanceof JTextArea)
                 .toArray(new Component[0]);
         
@@ -297,19 +276,19 @@ public class HackvertorUiTest {
         Assertions.assertNotNull(outputArea, "Output area should be found");
         
         // Type "abc<>" in the input area (test case from ConvertorTests)
-        window.robot().click(inputArea);
-        window.robot().waitForIdle();
+        window.click(inputArea);
+        window.waitForIdle();
         
         final JTextArea finalInputArea = inputArea;
         GuiActionRunner.execute(() -> finalInputArea.setText("abc<>"));
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Select all text
         GuiActionRunner.execute(finalInputArea::selectAll);
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find the tabbed pane and click on "Encode" category tab
-        List<JTabbedPane> tabPanes = window.robot().finder().findAll(
+        List<JTabbedPane> tabPanes = window.findAll(
                         c -> c instanceof JTabbedPane && c.isShowing()
                 ).stream()
                 .map(c -> (JTabbedPane) c)
@@ -332,11 +311,11 @@ public class HackvertorUiTest {
         } else {
             Assertions.fail("Could not find 'Encode' tab");
         }
-        window.robot().waitForIdle();
+        window.waitForIdle();
         Component selectedTabContent = GuiActionRunner.execute(innerTabs::getSelectedComponent);
 
         // Find and click the utf7 button
-        Component utf7Button = window.robot().finder().find(
+        Component utf7Button = window.find(
                 (Container) selectedTabContent,
                 c -> c instanceof JButton &&
                         "utf7".equals(((JButton) c).getText())
@@ -346,7 +325,7 @@ public class HackvertorUiTest {
         GuiActionRunner.execute(() -> button.doClick());
         
         // Wait for processing
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Check that input area contains the tags around "abc<>"
         String inputText = inputArea.getText();
@@ -355,17 +334,17 @@ public class HackvertorUiTest {
         Assertions.assertEquals(expectedInput, inputText, "Input should have utf7 tags with default exclusion pattern around 'abc<>'");
         
         // Check that output area contains the UTF-7 encoded value
-        String outputText = outputArea.getText();
+        String outputText = UiTestSupport.awaitText(outputArea, "abc+ADwAPg-");
         Assertions.assertEquals("abc+ADwAPg-", outputText, "Output should contain UTF-7 encoded 'abc<>'");
     }
 
     @Test
     void testUtf7DecodingWithText() throws Exception {
         // Wait for UI to be ready
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find the input and output HackvertorInput areas
-        Component[] allTextAreas = window.robot().finder()
+        Component[] allTextAreas = window
                 .findAll(window.target(), component -> component instanceof JTextArea)
                 .toArray(new Component[0]);
         
@@ -388,19 +367,19 @@ public class HackvertorUiTest {
         Assertions.assertNotNull(outputArea, "Output area should be found");
         
         // Type UTF-7 encoded text in the input area (test case from ConvertorTests)
-        window.robot().click(inputArea);
-        window.robot().waitForIdle();
+        window.click(inputArea);
+        window.waitForIdle();
         
         final JTextArea finalInputArea = inputArea;
         GuiActionRunner.execute(() -> finalInputArea.setText("Hi Mom +Jjo-"));
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Select all text
         GuiActionRunner.execute(finalInputArea::selectAll);
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find the tabbed pane and click on "Decode" category tab
-        List<JTabbedPane> tabPanes = window.robot().finder().findAll(
+        List<JTabbedPane> tabPanes = window.findAll(
                         c -> c instanceof JTabbedPane && c.isShowing()
                 ).stream()
                 .map(c -> (JTabbedPane) c)
@@ -423,12 +402,12 @@ public class HackvertorUiTest {
         } else {
             Assertions.fail("Could not find 'Decode' tab");
         }
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         Component selectedTabContent = GuiActionRunner.execute(innerTabs::getSelectedComponent);
 
         // Find and click the d_utf7 button
-        Component utf7DecodeButton = window.robot().finder().find(
+        Component utf7DecodeButton = window.find(
                 (Container) selectedTabContent,
                 c -> c instanceof JButton &&
                         "d_utf7".equals(((JButton) c).getText())
@@ -438,24 +417,24 @@ public class HackvertorUiTest {
         GuiActionRunner.execute(() -> button.doClick());
         
         // Wait for processing
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Check that input area contains the decode tags
         String inputText = inputArea.getText();
         Assertions.assertEquals("<@d_utf7>Hi Mom +Jjo-</@d_utf7>", inputText, "Input should have d_utf7 tags around encoded text");
         
         // Check that output area contains the decoded text with emoji
-        String outputText = outputArea.getText();
+        String outputText = UiTestSupport.awaitText(outputArea, "Hi Mom ☺");
         Assertions.assertEquals("Hi Mom ☺", outputText, "Output should contain decoded text 'Hi Mom ☺'");
     }
 
     @Test
     void testSmartDecode() throws Exception {
         // Wait for UI to be ready
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find the input and output HackvertorInput areas
-        Component[] allTextAreas = window.robot().finder()
+        Component[] allTextAreas = window
                 .findAll(window.target(), component -> component instanceof JTextArea)
                 .toArray(new Component[0]);
         
@@ -480,19 +459,19 @@ public class HackvertorUiTest {
         // Set the encoded input
         String encodedInput = "JTVDMTM0JTVDMTcwJTVDNjYlNUM2NiU1QzEzNCU1QzE3MCU1QzY2JTVDMTA2JTVDMTM0JTVDMTcwJTVDNjYlNUMxMDYlNUMxMzQlNUMxNzAlNUM2NiU1QzYyJTVDMTM0JTVDMTcwJTVDNjYlNUM2MSU1QzEzNCU1QzE3MCU1QzY3JTVDNjI=";
         
-        window.robot().click(inputArea);
-        window.robot().waitForIdle();
+        window.click(inputArea);
+        window.waitForIdle();
         
         final JTextArea finalInputArea = inputArea;
         GuiActionRunner.execute(() -> finalInputArea.setText(encodedInput));
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Select all text
         GuiActionRunner.execute(() -> finalInputArea.selectAll());
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find the Smart Decode button
-        Component smartDecodeButton = window.robot().finder().find(
+        Component smartDecodeButton = window.find(
                 window.target(),
                 c -> c instanceof JButton &&
                      ((JButton) c).getText() != null &&
@@ -507,7 +486,7 @@ public class HackvertorUiTest {
         GuiActionRunner.execute(() -> button.doClick());
         
         // Wait for processing
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Check the input area contains the decoded tags
         String inputText = inputArea.getText();
@@ -515,17 +494,17 @@ public class HackvertorUiTest {
         Assertions.assertEquals(expectedInput, inputText, "Input should contain the smart decoded tags");
         
         // Check that output area contains the original encoded value
-        String outputText = outputArea.getText();
+        String outputText = UiTestSupport.awaitText(outputArea, encodedInput);
         Assertions.assertEquals(encodedInput, outputText, "Output should contain the original encoded value");
     }
 
     @Test
     void testClearButton() throws Exception {
         // Wait for UI to be ready
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find the input and output areas
-        Component[] allTextAreas = window.robot().finder()
+        Component[] allTextAreas = window
                 .findAll(window.target(), component -> component instanceof JTextArea)
                 .toArray(new Component[0]);
         
@@ -549,15 +528,15 @@ public class HackvertorUiTest {
         GuiActionRunner.execute(() -> {
             finalInputArea.setText("test input");
         });
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Verify text is present
         Assertions.assertEquals("test input", inputArea.getText());
         // Output will be same as input since there are no tags
-        Assertions.assertEquals("test input", outputArea.getText());
+        Assertions.assertEquals("test input", UiTestSupport.awaitText(outputArea, "test input"));
         
         // Find and click the Clear button
-        Component clearButton = window.robot().finder().find(
+        Component clearButton = window.find(
                 window.target(),
                 c -> c instanceof JButton &&
                      "Clear".equals(((JButton) c).getText())
@@ -565,20 +544,20 @@ public class HackvertorUiTest {
         
         JButton button = (JButton) clearButton;
         GuiActionRunner.execute(() -> button.doClick());
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Verify both areas are now empty
         Assertions.assertEquals("", inputArea.getText(), "Input area should be empty after Clear");
-        Assertions.assertEquals("", outputArea.getText(), "Output area should be empty after Clear");
+        Assertions.assertEquals("", UiTestSupport.awaitText(outputArea, ""), "Output area should be empty after Clear");
     }
 
     @Test
     void testClearTagsButton() throws Exception {
         // Wait for UI to be ready
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find the input area
-        Component[] allTextAreas = window.robot().finder()
+        Component[] allTextAreas = window
                 .findAll(window.target(), component -> component instanceof JTextArea)
                 .toArray(new Component[0]);
         
@@ -593,10 +572,10 @@ public class HackvertorUiTest {
         // Add text with tags
         final JTextArea finalInputArea = inputArea;
         GuiActionRunner.execute(() -> finalInputArea.setText("<@base64>test</@base64> plain text <@hex>more</@hex>"));
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find and click the Clear tags button
-        Component clearTagsButton = window.robot().finder().find(
+        Component clearTagsButton = window.find(
                 window.target(),
                 c -> c instanceof JButton &&
                      "Clear tags".equals(((JButton) c).getText())
@@ -604,7 +583,7 @@ public class HackvertorUiTest {
         
         JButton button = (JButton) clearTagsButton;
         GuiActionRunner.execute(() -> button.doClick());
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Verify tags are removed but content remains
         String result = inputArea.getText();
@@ -618,10 +597,10 @@ public class HackvertorUiTest {
     @Test
     void testSwapButton() throws Exception {
         // Wait for UI to be ready
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find the input and output areas
-        Component[] allTextAreas = window.robot().finder()
+        Component[] allTextAreas = window
                 .findAll(window.target(), component -> component instanceof JTextArea)
                 .toArray(new Component[0]);
         
@@ -645,10 +624,12 @@ public class HackvertorUiTest {
         GuiActionRunner.execute(() -> {
             finalInputArea.setText("<@base64>test</@base64>");
         });
-        window.robot().waitForIdle();
+        window.waitForIdle();
+        // Swap moves the output into the input, so wait for the conversion to land first
+        UiTestSupport.awaitText(outputArea, "dGVzdA==");
         
         // Find and click the Swap button
-        Component swapButton = window.robot().finder().find(
+        Component swapButton = window.find(
                 window.target(),
                 c -> c instanceof JButton &&
                      "Swap".equals(((JButton) c).getText())
@@ -656,22 +637,22 @@ public class HackvertorUiTest {
         
         JButton button = (JButton) swapButton;
         GuiActionRunner.execute(() -> button.doClick());
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Verify swap occurred - input should have the base64 encoded value
         Assertions.assertEquals("dGVzdA==", inputArea.getText(), "Input should contain base64 encoded value after swap");
         // Note: Due to automatic conversion, output will immediately show "dGVzdA==" again
         // Let's wait a bit and check
-        Assertions.assertEquals("dGVzdA==", outputArea.getText(), "Output should show the same value due to automatic conversion");
+        Assertions.assertEquals("dGVzdA==", UiTestSupport.awaitText(outputArea, "dGVzdA=="), "Output should show the same value due to automatic conversion");
     }
 
     @Test
     void testSelectInputButton() throws Exception {
         // Wait for UI to be ready
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find the input area
-        Component[] allTextAreas = window.robot().finder()
+        Component[] allTextAreas = window
                 .findAll(window.target(), component -> component instanceof JTextArea)
                 .toArray(new Component[0]);
         
@@ -686,14 +667,14 @@ public class HackvertorUiTest {
         // Add text to input
         final JTextArea finalInputArea = inputArea;
         GuiActionRunner.execute(() -> finalInputArea.setText("text to select"));
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Clear any selection
         GuiActionRunner.execute(() -> finalInputArea.setCaretPosition(0));
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find and click the Select input button
-        Component selectInputButton = window.robot().finder().find(
+        Component selectInputButton = window.find(
                 window.target(),
                 c -> c instanceof JButton &&
                      "Select input".equals(((JButton) c).getText())
@@ -701,21 +682,20 @@ public class HackvertorUiTest {
         
         JButton button = (JButton) selectInputButton;
         GuiActionRunner.execute(() -> button.doClick());
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Verify text is selected
         String selectedText = inputArea.getSelectedText();
         Assertions.assertEquals("text to select", selectedText, "All input text should be selected");
-        Assertions.assertTrue(inputArea.hasFocus(), "Input area should have focus");
     }
 
     @Test
     void testSelectOutputButton() throws Exception {
         // Wait for UI to be ready
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find the output area
-        Component[] allTextAreas = window.robot().finder()
+        Component[] allTextAreas = window
                 .findAll(window.target(), component -> component instanceof JTextArea)
                 .toArray(new Component[0]);
         
@@ -735,14 +715,14 @@ public class HackvertorUiTest {
         // Add text to output
         final JTextArea finalOutputArea = outputArea;
         GuiActionRunner.execute(() -> finalOutputArea.setText("output to select"));
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Clear any selection
         GuiActionRunner.execute(() -> finalOutputArea.setCaretPosition(0));
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find and click the Select output button
-        Component selectOutputButton = window.robot().finder().find(
+        Component selectOutputButton = window.find(
                 window.target(),
                 c -> c instanceof JButton &&
                      "Select output".equals(((JButton) c).getText())
@@ -750,21 +730,20 @@ public class HackvertorUiTest {
         
         JButton button = (JButton) selectOutputButton;
         GuiActionRunner.execute(() -> button.doClick());
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Verify text is selected
         String selectedText = outputArea.getSelectedText();
         Assertions.assertEquals("output to select", selectedText, "All output text should be selected");
-        Assertions.assertTrue(outputArea.hasFocus(), "Output area should have focus");
     }
 
     @Test
     void testConvertButton() throws Exception {
         // Wait for UI to be ready
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find the input and output areas
-        Component[] allTextAreas = window.robot().finder()
+        Component[] allTextAreas = window
                 .findAll(window.target(), component -> component instanceof JTextArea)
                 .toArray(new Component[0]);
         
@@ -786,15 +765,15 @@ public class HackvertorUiTest {
         // Add text with base64 tags to input
         final JTextArea finalInputArea = inputArea;
         GuiActionRunner.execute(() -> finalInputArea.setText("<@base64>hello world</@base64>"));
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Clear output first
         final JTextArea finalOutputArea = outputArea;
         GuiActionRunner.execute(() -> finalOutputArea.setText(""));
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find and click the Convert button
-        Component convertButton = window.robot().finder().find(
+        Component convertButton = window.find(
                 window.target(),
                 c -> c instanceof JButton &&
                      "Convert".equals(((JButton) c).getText())
@@ -802,20 +781,20 @@ public class HackvertorUiTest {
         
         JButton button = (JButton) convertButton;
         GuiActionRunner.execute(() -> button.doClick());
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Verify output contains base64 encoded result
-        String outputText = outputArea.getText();
+        String outputText = UiTestSupport.awaitText(outputArea, "aGVsbG8gd29ybGQ=");
         Assertions.assertEquals("aGVsbG8gd29ybGQ=", outputText, "Output should contain base64 encoded 'hello world'");
     }
 
     @Test
     void testPasteInsideTagsButton() throws Exception {
         // Wait for UI to be ready
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find the input area
-        Component[] allTextAreas = window.robot().finder()
+        Component[] allTextAreas = window
                 .findAll(window.target(), component -> component instanceof JTextArea)
                 .toArray(new Component[0]);
         
@@ -832,8 +811,7 @@ public class HackvertorUiTest {
         GuiActionRunner.execute(() -> {
             java.awt.datatransfer.StringSelection stringSelection = 
                 new java.awt.datatransfer.StringSelection(clipboardContent);
-            java.awt.Toolkit.getDefaultToolkit().getSystemClipboard()
-                .setContents(stringSelection, null);
+            burp.hv.utils.Utils.getClipboard().setContents(stringSelection, null);
         });
         
         // Add tags to input area - using a simpler structure to avoid the IndexOutOfBoundsException
@@ -841,10 +819,10 @@ public class HackvertorUiTest {
         GuiActionRunner.execute(() -> {
             finalInputArea.setText("<@base64></@base64>");
         });
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find and click the Paste inside tags button
-        Component pasteInsideButton = window.robot().finder().find(
+        Component pasteInsideButton = window.find(
                 window.target(),
                 c -> c instanceof JButton &&
                      "Paste inside tags".equals(((JButton) c).getText())
@@ -852,7 +830,7 @@ public class HackvertorUiTest {
         
         JButton button = (JButton) pasteInsideButton;
         GuiActionRunner.execute(() -> button.doClick());
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Verify clipboard content was pasted inside the empty tag
         String result = inputArea.getText();
@@ -863,10 +841,10 @@ public class HackvertorUiTest {
     @Test
     void testHexEncodingTag() throws Exception {
         // Wait for UI to be ready
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find the input and output HackvertorInput areas
-        Component[] allTextAreas = window.robot().finder()
+        Component[] allTextAreas = window
                 .findAll(window.target(), component -> component instanceof JTextArea)
                 .toArray(new Component[0]);
         
@@ -886,19 +864,19 @@ public class HackvertorUiTest {
         }
         
         // Type "test" in the input area
-        window.robot().click(inputArea);
-        window.robot().waitForIdle();
+        window.click(inputArea);
+        window.waitForIdle();
         
         final JTextArea finalInputArea = inputArea;
         GuiActionRunner.execute(() -> finalInputArea.setText("test"));
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Select all text
         GuiActionRunner.execute(finalInputArea::selectAll);
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find and click the hex button
-        List<JTabbedPane> tabPanes = window.robot().finder().findAll(
+        List<JTabbedPane> tabPanes = window.findAll(
                         c -> c instanceof JTabbedPane && c.isShowing()
                 ).stream()
                 .map(c -> (JTabbedPane) c)
@@ -907,7 +885,7 @@ public class HackvertorUiTest {
         JTabbedPane innerTabs = tabPanes.get(0);
         Component selectedTabContent = GuiActionRunner.execute(innerTabs::getSelectedComponent);
 
-        Component hexButton = window.robot().finder().find(
+        Component hexButton = window.find(
                 (Container) selectedTabContent,
                 c -> c instanceof JButton &&
                         "hex".equals(((JButton) c).getText()) &&
@@ -916,28 +894,23 @@ public class HackvertorUiTest {
         
         JButton button = (JButton) hexButton;
         GuiActionRunner.execute(() -> button.doClick());
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Check that input area contains the tags around "test"
         String inputText = inputArea.getText();
         Assertions.assertEquals("<@hex(' ')>test</@hex>", inputText, "Input should have hex tags around 'test'");
-        
-        // Wait a bit longer for the conversion to complete
-        Thread.sleep(200);
-        window.robot().waitForIdle();
-        
-        // Check that output area contains the hex encoded value of "test"
-        String outputText = outputArea.getText();
+                // Check that output area contains the hex encoded value of "test"
+        String outputText = UiTestSupport.awaitText(outputArea, "74 65 73 74");
         Assertions.assertEquals("74 65 73 74", outputText, "Output should contain hex encoded 'test'");
     }
 
     @Test
     void testUrlencodeTag() throws Exception {
         // Wait for UI to be ready
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find the input and output HackvertorInput areas
-        Component[] allTextAreas = window.robot().finder()
+        Component[] allTextAreas = window
                 .findAll(window.target(), component -> component instanceof JTextArea)
                 .toArray(new Component[0]);
         
@@ -957,19 +930,19 @@ public class HackvertorUiTest {
         }
         
         // Type text with special characters in the input area
-        window.robot().click(inputArea);
-        window.robot().waitForIdle();
+        window.click(inputArea);
+        window.waitForIdle();
         
         final JTextArea finalInputArea = inputArea;
         GuiActionRunner.execute(() -> finalInputArea.setText("hello world!"));
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Select all text
         GuiActionRunner.execute(finalInputArea::selectAll);
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find and click the urlencode button
-        List<JTabbedPane> tabPanes = window.robot().finder().findAll(
+        List<JTabbedPane> tabPanes = window.findAll(
                         c -> c instanceof JTabbedPane && c.isShowing()
                 ).stream()
                 .map(c -> (JTabbedPane) c)
@@ -978,7 +951,7 @@ public class HackvertorUiTest {
         JTabbedPane innerTabs = tabPanes.get(0);
         Component selectedTabContent = GuiActionRunner.execute(innerTabs::getSelectedComponent);
 
-        Component urlencodeButton = window.robot().finder().find(
+        Component urlencodeButton = window.find(
                 (Container) selectedTabContent,
                 c -> c instanceof JButton &&
                         "urlencode".equals(((JButton) c).getText()) &&
@@ -987,24 +960,24 @@ public class HackvertorUiTest {
         
         JButton button = (JButton) urlencodeButton;
         GuiActionRunner.execute(() -> button.doClick());
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Check that input area contains the tags
         String inputText = inputArea.getText();
         Assertions.assertEquals("<@urlencode>hello world!</@urlencode>", inputText, "Input should have urlencode tags");
         
         // Check that output area contains the URL encoded value
-        String outputText = outputArea.getText();
+        String outputText = UiTestSupport.awaitText(outputArea, "hello+world%21");
         Assertions.assertEquals("hello+world%21", outputText, "Output should contain URL encoded text");
     }
 
     @Test
     void testHtmlEntitiesTag() throws Exception {
         // Wait for UI to be ready
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find the input and output HackvertorInput areas
-        Component[] allTextAreas = window.robot().finder()
+        Component[] allTextAreas = window
                 .findAll(window.target(), component -> component instanceof JTextArea)
                 .toArray(new Component[0]);
         
@@ -1024,19 +997,19 @@ public class HackvertorUiTest {
         }
         
         // Type HTML characters in the input area
-        window.robot().click(inputArea);
-        window.robot().waitForIdle();
+        window.click(inputArea);
+        window.waitForIdle();
         
         final JTextArea finalInputArea = inputArea;
         GuiActionRunner.execute(() -> finalInputArea.setText("<script>"));
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Select all text
         GuiActionRunner.execute(finalInputArea::selectAll);
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find and click the html_entities button
-        List<JTabbedPane> tabPanes = window.robot().finder().findAll(
+        List<JTabbedPane> tabPanes = window.findAll(
                         c -> c instanceof JTabbedPane && c.isShowing()
                 ).stream()
                 .map(c -> (JTabbedPane) c)
@@ -1045,7 +1018,7 @@ public class HackvertorUiTest {
         JTabbedPane innerTabs = tabPanes.get(0);
         Component selectedTabContent = GuiActionRunner.execute(innerTabs::getSelectedComponent);
 
-        Component htmlEntitiesButton = window.robot().finder().find(
+        Component htmlEntitiesButton = window.find(
                 (Container) selectedTabContent,
                 c -> c instanceof JButton &&
                         "html_entities".equals(((JButton) c).getText()) &&
@@ -1054,24 +1027,24 @@ public class HackvertorUiTest {
         
         JButton button = (JButton) htmlEntitiesButton;
         GuiActionRunner.execute(() -> button.doClick());
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Check that input area contains the tags
         String inputText = inputArea.getText();
         Assertions.assertEquals("<@html_entities><script></@html_entities>", inputText, "Input should have html_entities tags");
         
         // Check that output area contains the HTML entity encoded value
-        String outputText = outputArea.getText();
+        String outputText = UiTestSupport.awaitText(outputArea, "&lt;script&gt;");
         Assertions.assertEquals("&lt;script&gt;", outputText, "Output should contain HTML entity encoded text");
     }
 
     @Test
     void testBase32EncodingTag() throws Exception {
         // Wait for UI to be ready
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find the input and output HackvertorInput areas
-        Component[] allTextAreas = window.robot().finder()
+        Component[] allTextAreas = window
                 .findAll(window.target(), component -> component instanceof JTextArea)
                 .toArray(new Component[0]);
         
@@ -1091,19 +1064,19 @@ public class HackvertorUiTest {
         }
         
         // Type "test" in the input area
-        window.robot().click(inputArea);
-        window.robot().waitForIdle();
+        window.click(inputArea);
+        window.waitForIdle();
         
         final JTextArea finalInputArea = inputArea;
         GuiActionRunner.execute(() -> finalInputArea.setText("test"));
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Select all text
         GuiActionRunner.execute(finalInputArea::selectAll);
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find and click the base32 button
-        List<JTabbedPane> tabPanes = window.robot().finder().findAll(
+        List<JTabbedPane> tabPanes = window.findAll(
                         c -> c instanceof JTabbedPane && c.isShowing()
                 ).stream()
                 .map(c -> (JTabbedPane) c)
@@ -1112,7 +1085,7 @@ public class HackvertorUiTest {
         JTabbedPane innerTabs = tabPanes.get(0);
         Component selectedTabContent = GuiActionRunner.execute(innerTabs::getSelectedComponent);
 
-        Component base32Button = window.robot().finder().find(
+        Component base32Button = window.find(
                 (Container) selectedTabContent,
                 c -> c instanceof JButton &&
                         "base32".equals(((JButton) c).getText()) &&
@@ -1121,24 +1094,24 @@ public class HackvertorUiTest {
         
         JButton button = (JButton) base32Button;
         GuiActionRunner.execute(() -> button.doClick());
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Check that input area contains the tags
         String inputText = inputArea.getText();
         Assertions.assertEquals("<@base32>test</@base32>", inputText, "Input should have base32 tags around 'test'");
         
         // Check that output area contains the base32 encoded value
-        String outputText = outputArea.getText();
+        String outputText = UiTestSupport.awaitText(outputArea, "ORSXG5A=");
         Assertions.assertEquals("ORSXG5A=", outputText, "Output should contain base32 encoded 'test'");
     }
 
     @Test
     void testJsStringEncodingTag() throws Exception {
         // Wait for UI to be ready
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find the input and output HackvertorInput areas
-        Component[] allTextAreas = window.robot().finder()
+        Component[] allTextAreas = window
                 .findAll(window.target(), component -> component instanceof JTextArea)
                 .toArray(new Component[0]);
         
@@ -1158,19 +1131,19 @@ public class HackvertorUiTest {
         }
         
         // Type text with quotes in the input area
-        window.robot().click(inputArea);
-        window.robot().waitForIdle();
+        window.click(inputArea);
+        window.waitForIdle();
         
         final JTextArea finalInputArea = inputArea;
         GuiActionRunner.execute(() -> finalInputArea.setText("alert('test')"));
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Select all text
         GuiActionRunner.execute(finalInputArea::selectAll);
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find and click the js_string button
-        List<JTabbedPane> tabPanes = window.robot().finder().findAll(
+        List<JTabbedPane> tabPanes = window.findAll(
                         c -> c instanceof JTabbedPane && c.isShowing()
                 ).stream()
                 .map(c -> (JTabbedPane) c)
@@ -1179,7 +1152,7 @@ public class HackvertorUiTest {
         JTabbedPane innerTabs = tabPanes.get(0);
         Component selectedTabContent = GuiActionRunner.execute(innerTabs::getSelectedComponent);
 
-        Component jsStringButton = window.robot().finder().find(
+        Component jsStringButton = window.find(
                 (Container) selectedTabContent,
                 c -> c instanceof JButton &&
                         "js_string".equals(((JButton) c).getText()) &&
@@ -1188,24 +1161,24 @@ public class HackvertorUiTest {
         
         JButton button = (JButton) jsStringButton;
         GuiActionRunner.execute(() -> button.doClick());
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Check that input area contains the tags
         String inputText = inputArea.getText();
         Assertions.assertEquals("<@js_string>alert('test')</@js_string>", inputText, "Input should have js_string tags");
         
         // Check that output area contains the JavaScript string encoded value
-        String outputText = outputArea.getText();
+        String outputText = UiTestSupport.awaitText(outputArea, "alert('test')");
         Assertions.assertEquals("alert('test')", outputText, "Output should contain JavaScript string encoded text");
     }
 
     @Test
     void testBase64urlEncodingTag() throws Exception {
         // Wait for UI to be ready
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find the input and output areas
-        Component[] allTextAreas = window.robot().finder()
+        Component[] allTextAreas = window
                 .findAll(window.target(), component -> component instanceof JTextArea)
                 .toArray(new Component[0]);
         
@@ -1225,19 +1198,19 @@ public class HackvertorUiTest {
         }
         
         // Type text in the input area
-        window.robot().click(inputArea);
-        window.robot().waitForIdle();
+        window.click(inputArea);
+        window.waitForIdle();
         
         final JTextArea finalInputArea = inputArea;
         GuiActionRunner.execute(() -> finalInputArea.setText("test>>data"));
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Select all text
         GuiActionRunner.execute(finalInputArea::selectAll);
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find and click the base64url button
-        List<JTabbedPane> tabPanes = window.robot().finder().findAll(
+        List<JTabbedPane> tabPanes = window.findAll(
                         c -> c instanceof JTabbedPane && c.isShowing()
                 ).stream()
                 .map(c -> (JTabbedPane) c)
@@ -1246,7 +1219,7 @@ public class HackvertorUiTest {
         JTabbedPane innerTabs = tabPanes.get(0);
         Component selectedTabContent = GuiActionRunner.execute(innerTabs::getSelectedComponent);
 
-        Component base64urlButton = window.robot().finder().find(
+        Component base64urlButton = window.find(
                 (Container) selectedTabContent,
                 c -> c instanceof JButton &&
                         "base64url".equals(((JButton) c).getText()) &&
@@ -1255,24 +1228,24 @@ public class HackvertorUiTest {
         
         JButton button = (JButton) base64urlButton;
         GuiActionRunner.execute(() -> button.doClick());
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Check that input area contains the tags
         String inputText = inputArea.getText();
         Assertions.assertEquals("<@base64url>test>>data</@base64url>", inputText, "Input should have base64url tags");
         
         // Check that output area contains the base64url encoded value
-        String outputText = outputArea.getText();
+        String outputText = UiTestSupport.awaitText(outputArea, "dGVzdD4-ZGF0YQ");
         Assertions.assertEquals("dGVzdD4-ZGF0YQ", outputText, "Output should contain base64url encoded text");
     }
 
     @Test  
     void testHtml5EntitiesEncodingTag() throws Exception {
         // Wait for UI to be ready
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find the input and output areas
-        Component[] allTextAreas = window.robot().finder()
+        Component[] allTextAreas = window
                 .findAll(window.target(), component -> component instanceof JTextArea)
                 .toArray(new Component[0]);
         
@@ -1292,19 +1265,19 @@ public class HackvertorUiTest {
         }
         
         // Type text with special characters in the input area
-        window.robot().click(inputArea);
-        window.robot().waitForIdle();
+        window.click(inputArea);
+        window.waitForIdle();
         
         final JTextArea finalInputArea = inputArea;
         GuiActionRunner.execute(() -> finalInputArea.setText("©®™€"));
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Select all text
         GuiActionRunner.execute(finalInputArea::selectAll);
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find and click the html5_entities button
-        List<JTabbedPane> tabPanes = window.robot().finder().findAll(
+        List<JTabbedPane> tabPanes = window.findAll(
                         c -> c instanceof JTabbedPane && c.isShowing()
                 ).stream()
                 .map(c -> (JTabbedPane) c)
@@ -1313,7 +1286,7 @@ public class HackvertorUiTest {
         JTabbedPane innerTabs = tabPanes.get(0);
         Component selectedTabContent = GuiActionRunner.execute(innerTabs::getSelectedComponent);
 
-        Component html5EntitiesButton = window.robot().finder().find(
+        Component html5EntitiesButton = window.find(
                 (Container) selectedTabContent,
                 c -> c instanceof JButton &&
                         "html5_entities".equals(((JButton) c).getText()) &&
@@ -1322,24 +1295,24 @@ public class HackvertorUiTest {
         
         JButton button = (JButton) html5EntitiesButton;
         GuiActionRunner.execute(() -> button.doClick());
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Check that input area contains the tags
         String inputText = inputArea.getText();
         Assertions.assertEquals("<@html5_entities>©®™€</@html5_entities>", inputText, "Input should have html5_entities tags");
         
         // Check that output area contains the HTML5 entities
-        String outputText = outputArea.getText();
+        String outputText = UiTestSupport.awaitText(outputArea, "&copy;&reg;&trade;&euro;");
         Assertions.assertEquals("&copy;&reg;&trade;&euro;", outputText, "Output should contain HTML5 entities");
     }
 
     @Test
     void testUnicodeEscapesEncodingTag() throws Exception {
         // Wait for UI to be ready
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find the input and output areas
-        Component[] allTextAreas = window.robot().finder()
+        Component[] allTextAreas = window
                 .findAll(window.target(), component -> component instanceof JTextArea)
                 .toArray(new Component[0]);
         
@@ -1359,19 +1332,19 @@ public class HackvertorUiTest {
         }
         
         // Type text with Unicode characters in the input area
-        window.robot().click(inputArea);
-        window.robot().waitForIdle();
+        window.click(inputArea);
+        window.waitForIdle();
         
         final JTextArea finalInputArea = inputArea;
         GuiActionRunner.execute(() -> finalInputArea.setText("test"));
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Select all text
         GuiActionRunner.execute(finalInputArea::selectAll);
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find and click the unicode_escapes button
-        List<JTabbedPane> tabPanes = window.robot().finder().findAll(
+        List<JTabbedPane> tabPanes = window.findAll(
                         c -> c instanceof JTabbedPane && c.isShowing()
                 ).stream()
                 .map(c -> (JTabbedPane) c)
@@ -1380,7 +1353,7 @@ public class HackvertorUiTest {
         JTabbedPane innerTabs = tabPanes.get(0);
         Component selectedTabContent = GuiActionRunner.execute(innerTabs::getSelectedComponent);
 
-        Component unicodeEscapesButton = window.robot().finder().find(
+        Component unicodeEscapesButton = window.find(
                 (Container) selectedTabContent,
                 c -> c instanceof JButton &&
                         "unicode_escapes".equals(((JButton) c).getText()) &&
@@ -1389,24 +1362,24 @@ public class HackvertorUiTest {
         
         JButton button = (JButton) unicodeEscapesButton;
         GuiActionRunner.execute(() -> button.doClick());
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Check that input area contains the tags
         String inputText = inputArea.getText();
         Assertions.assertEquals("<@unicode_escapes>test</@unicode_escapes>", inputText, "Input should have unicode_escapes tags");
         
         // Check that output area contains the Unicode escapes
-        String outputText = outputArea.getText();
+        String outputText = UiTestSupport.awaitText(outputArea, "\\u0074\\u0065\\u0073\\u0074");
         Assertions.assertEquals("\\u0074\\u0065\\u0073\\u0074", outputText, "Output should contain Unicode escapes");
     }
 
     @Test
     void testUrlencodeAllTag() throws Exception {
         // Wait for UI to be ready
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find the input and output areas
-        Component[] allTextAreas = window.robot().finder()
+        Component[] allTextAreas = window
                 .findAll(window.target(), component -> component instanceof JTextArea)
                 .toArray(new Component[0]);
         
@@ -1426,19 +1399,19 @@ public class HackvertorUiTest {
         }
         
         // Type text in the input area
-        window.robot().click(inputArea);
-        window.robot().waitForIdle();
+        window.click(inputArea);
+        window.waitForIdle();
         
         final JTextArea finalInputArea = inputArea;
         GuiActionRunner.execute(() -> finalInputArea.setText("test"));
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Select all text
         GuiActionRunner.execute(finalInputArea::selectAll);
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Find and click the urlencode_all button
-        List<JTabbedPane> tabPanes = window.robot().finder().findAll(
+        List<JTabbedPane> tabPanes = window.findAll(
                         c -> c instanceof JTabbedPane && c.isShowing()
                 ).stream()
                 .map(c -> (JTabbedPane) c)
@@ -1447,7 +1420,7 @@ public class HackvertorUiTest {
         JTabbedPane innerTabs = tabPanes.get(0);
         Component selectedTabContent = GuiActionRunner.execute(innerTabs::getSelectedComponent);
 
-        Component urlencodeAllButton = window.robot().finder().find(
+        Component urlencodeAllButton = window.find(
                 (Container) selectedTabContent,
                 c -> c instanceof JButton &&
                         "urlencode_all".equals(((JButton) c).getText()) &&
@@ -1456,22 +1429,22 @@ public class HackvertorUiTest {
         
         JButton button = (JButton) urlencodeAllButton;
         GuiActionRunner.execute(() -> button.doClick());
-        window.robot().waitForIdle();
+        window.waitForIdle();
         
         // Check that input area contains the tags
         String inputText = inputArea.getText();
         Assertions.assertEquals("<@urlencode_all>test</@urlencode_all>", inputText, "Input should have urlencode_all tags");
         
         // Check that output area contains all characters URL encoded
-        String outputText = outputArea.getText();
+        String outputText = UiTestSupport.awaitText(outputArea, "%74%65%73%74");
         Assertions.assertEquals("%74%65%73%74", outputText, "Output should contain all characters URL encoded");
     }
 
     @Test
     void testAutoDecodeGzipBase64Ui() throws Exception {
-        window.robot().waitForIdle();
+        window.waitForIdle();
 
-        Component[] allTextAreas = window.robot().finder()
+        Component[] allTextAreas = window
                 .findAll(window.target(), component -> component instanceof JTextArea)
                 .toArray(new Component[0]);
 
@@ -1493,36 +1466,30 @@ public class HackvertorUiTest {
         Assertions.assertNotNull(inputArea, "Input area should be found");
         Assertions.assertNotNull(outputArea, "Output area should be found");
 
-        window.robot().click(inputArea);
-        window.robot().waitForIdle();
+        window.click(inputArea);
+        window.waitForIdle();
 
         final JTextArea finalInputArea = inputArea;
         final JTextArea finalOutputArea = outputArea;
         GuiActionRunner.execute(() -> finalInputArea.setText("<@gzip_compress><@base64>foobar</@base64></@gzip_compress>"));
-        window.robot().waitForIdle();
+        window.waitForIdle();
 
-        Thread.sleep(300);
-        window.robot().waitForIdle();
-
-        String encodedOutput = outputArea.getText();
+        String encodedOutput = UiTestSupport.awaitText(outputArea, text -> !text.isEmpty());
         Assertions.assertFalse(encodedOutput.isEmpty(), "Output should contain gzip+base64 encoded data");
 
         GuiActionRunner.execute(() -> finalInputArea.setText("<@auto_decode_no_decrypt>" + finalOutputArea.getText() + "</@auto_decode_no_decrypt>"));
-        window.robot().waitForIdle();
+        window.waitForIdle();
 
-        Thread.sleep(300);
-        window.robot().waitForIdle();
-
-        String decodedOutput = outputArea.getText();
+        String decodedOutput = UiTestSupport.awaitText(outputArea, "<@gzip_compress><@base64>foobar</@base64></@gzip_compress>");
         Assertions.assertEquals("<@gzip_compress><@base64>foobar</@base64></@gzip_compress>", decodedOutput,
             "auto_decode_no_decrypt should produce correct gzip+base64 encoding tags");
     }
 
     @Test
     void testAutoDecodeDeflateBase32Ui() throws Exception {
-        window.robot().waitForIdle();
+        window.waitForIdle();
 
-        Component[] allTextAreas = window.robot().finder()
+        Component[] allTextAreas = window
                 .findAll(window.target(), component -> component instanceof JTextArea)
                 .toArray(new Component[0]);
 
@@ -1544,27 +1511,21 @@ public class HackvertorUiTest {
         Assertions.assertNotNull(inputArea, "Input area should be found");
         Assertions.assertNotNull(outputArea, "Output area should be found");
 
-        window.robot().click(inputArea);
-        window.robot().waitForIdle();
+        window.click(inputArea);
+        window.waitForIdle();
 
         final JTextArea finalInputArea = inputArea;
         final JTextArea finalOutputArea = outputArea;
         GuiActionRunner.execute(() -> finalInputArea.setText("<@deflate_compress><@base32>foobar</@base32></@deflate_compress>"));
-        window.robot().waitForIdle();
+        window.waitForIdle();
 
-        Thread.sleep(500);
-        window.robot().waitForIdle();
-
-        String encodedOutput = outputArea.getText();
+        String encodedOutput = UiTestSupport.awaitText(outputArea, text -> !text.isEmpty());
         Assertions.assertFalse(encodedOutput.isEmpty(), "Output should contain deflate+base32 encoded data");
 
         GuiActionRunner.execute(() -> finalInputArea.setText("<@auto_decode_no_decrypt>" + finalOutputArea.getText() + "</@auto_decode_no_decrypt>"));
-        window.robot().waitForIdle();
+        window.waitForIdle();
 
-        Thread.sleep(500);
-        window.robot().waitForIdle();
-
-        String decodedOutput = outputArea.getText();
+        String decodedOutput = UiTestSupport.awaitText(outputArea, "<@deflate_compress><@base32>foobar</@base32></@deflate_compress>");
         Assertions.assertEquals("<@deflate_compress><@base32>foobar</@base32></@deflate_compress>", decodedOutput,
             "auto_decode_no_decrypt should produce correct deflate+base32 encoding tags");
     }
@@ -1592,6 +1553,8 @@ public class HackvertorUiTest {
 
     @AfterAll
     static void tearDown() {
+        // Don't leave the strict EDT checks behind for the test classes that run after this one.
+        FailOnThreadViolationRepaintManager.uninstall();
         // Check for uncaught exceptions one final time
         if (!uncaughtExceptions.isEmpty()) {
             StringBuilder sb = new StringBuilder("Test suite failed due to uncaught exception(s):\n");

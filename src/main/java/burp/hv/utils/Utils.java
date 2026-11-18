@@ -15,6 +15,7 @@ import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -92,6 +93,22 @@ public class Utils {
         settings.registerBooleanSetting("fixWebsocketMojibake", false, "Attempt to undo common UTF-8 mojibake in WebSocket text payloads", "Misc", "This attempts to reverse double-encoding when binary is treated as text. Use with caution.");
         settings.registerChoiceSetting(HotkeyModifier.SETTING_NAME, HotkeyModifier.CTRL_ALT, HotkeyModifier.OPTIONS, "Hotkey modifier (reload extension to apply)", "Hotkeys");
         settings.registerStringSetting("pythonModulePath", "", "Python module path","System");
+    }
+
+    private static Clipboard headlessClipboard;
+
+    /**
+     * The system clipboard. AWT refuses to hand that out when running headless (as the UI tests do), so an
+     * in-process clipboard stands in for it there.
+     */
+    public static synchronized Clipboard getClipboard() {
+        if (GraphicsEnvironment.isHeadless()) {
+            if (headlessClipboard == null) {
+                headlessClipboard = new Clipboard("Hackvertor");
+            }
+            return headlessClipboard;
+        }
+        return Toolkit.getDefaultToolkit().getSystemClipboard();
     }
 
     public static JFrame getHackvertorWindowInstance() {
@@ -207,7 +224,7 @@ public class Utils {
                         "  // Code-executing tag (python). These require the execution key passed as the last argument.\n" +
                         "  logging().logToOutput(hackvertorConvert.apply(\"<@python('output = input.upper()','\" + executionKey + \"')>test</@python>\"));\n" +
                         "}";
-                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(bambdaCode), null);
+                Utils.getClipboard().setContents(new StringSelection(bambdaCode), null);
             }
         });
         hvMenuBar.add(createCustomTagsMenu);

@@ -11,7 +11,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import javax.swing.JComboBox;
-import javax.swing.JFrame;
 import javax.swing.JPanel;
 import java.awt.Component;
 import java.awt.Container;
@@ -22,11 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class HotkeyModifierSettingUiTest {
 
-    private JFrame settingsWindow;
-
     @BeforeEach
     void setUp() {
-        StubCallbacks callbacks = new StubCallbacks(new JFrame("Test"));
+        StubCallbacks callbacks = new StubCallbacks();
         HackvertorExtension.callbacks = callbacks;
         HackvertorExtension.stderr = new PrintWriter(callbacks.getStderr(), true);
         HackvertorExtension.stdout = new PrintWriter(callbacks.getStdout(), true);
@@ -36,10 +33,6 @@ public class HotkeyModifierSettingUiTest {
 
     @AfterEach
     void tearDown() {
-        if (settingsWindow != null) {
-            GuiActionRunner.execute(() -> settingsWindow.dispose());
-            settingsWindow = null;
-        }
         HackvertorExtension.generalSettings = null;
     }
 
@@ -60,9 +53,9 @@ public class HotkeyModifierSettingUiTest {
 
     private JComboBox<?> hotkeyModifierSelector() {
         JPanel settingsPanel = GuiActionRunner.execute(() -> {
-            settingsWindow = new JFrame("Settings");
             try {
-                return HackvertorExtension.generalSettings.buildInterface(settingsWindow, 200, 25, 10,
+                //No settings window, there can't be one when running headless.
+                return HackvertorExtension.generalSettings.buildInterface(null, 200, 25, 10,
                         Settings.categoryColumns(), HackvertorExtension.generalSettings);
             } catch (Exception e) {
                 throw new RuntimeException(e);

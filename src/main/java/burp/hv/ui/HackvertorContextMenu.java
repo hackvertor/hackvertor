@@ -167,7 +167,7 @@ public class HackvertorContextMenu implements ContextMenuItemsProvider {
         copyUrl.addActionListener(e -> {
             String converted = HackvertorExtension.hackvertor.convert(event.messageEditorRequestResponse().get().requestResponse().request().toString(), HackvertorExtension.hackvertor);
             StringSelection stringSelection = new StringSelection(HttpRequest.httpRequest(event.messageEditorRequestResponse().get().requestResponse().httpService(), converted).url());
-            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+            Clipboard clipboard = Utils.getClipboard();
             clipboard.setContents(stringSelection, null);
         });
         menu.add(copyUrl);

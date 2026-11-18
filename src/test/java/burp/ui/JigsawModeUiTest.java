@@ -3,7 +3,6 @@ package burp.ui;
 import burp.hv.HackvertorExtension;
 import burp.stubs.StubCallbacks;
 import org.assertj.swing.edt.GuiActionRunner;
-import org.assertj.swing.fixture.FrameFixture;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -14,29 +13,14 @@ import java.awt.*;
 
 public class JigsawModeUiTest {
 
-    private static FrameFixture window;
-    private static JFrame frame;
+    private static HeadlessWindow window;
 
     @BeforeAll
     static void setUp() {
-        System.setProperty("java.awt.headless", "false");
-        SwingUtilities.invokeLater(() -> {
-            frame = new JFrame("Burp Suite - Hackvertor");
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setContentPane(new JPanel(new BorderLayout()));
-            frame.setPreferredSize(new Dimension(1200, 1000));
-            frame.setJMenuBar(new JMenuBar());
+        window = HeadlessWindow.create(1200, 1000, root -> {
             HackvertorExtension hackvertorExtension = new HackvertorExtension();
-            hackvertorExtension.registerExtenderCallbacks(new StubCallbacks(frame));
-            frame.pack();
-            frame.setVisible(true);
+            hackvertorExtension.registerExtenderCallbacks(new StubCallbacks(root));
         });
-        try {
-            Thread.sleep(200);
-        } catch (InterruptedException ignored) {
-        }
-        window = new FrameFixture(frame);
-        window.show();
     }
 
     @AfterAll
@@ -47,7 +31,7 @@ public class JigsawModeUiTest {
     @Test
     void tagModeSplitsInputAndOutputEvenly() {
         UiTestSupport.selectInputMode(window, UiTestSupport.TAG_MODE);
-        window.robot().waitForIdle();
+        window.waitForIdle();
         int difference = Math.abs(inputPaneWidth() - outputPaneWidth());
         Assertions.assertTrue(difference <= 2,
                 "tag mode should split evenly but input was " + inputPaneWidth() + " and output " + outputPaneWidth());
@@ -56,7 +40,7 @@ public class JigsawModeUiTest {
     @Test
     void jigsawModeGivesTheCanvasMoreRoomThanTheOutput() {
         UiTestSupport.selectInputMode(window, UiTestSupport.JIGSAW_MODE);
-        window.robot().waitForIdle();
+        window.waitForIdle();
         Assertions.assertTrue(inputPaneWidth() > outputPaneWidth(),
                 "jigsaw canvas should be wider but input was " + inputPaneWidth() + " and output " + outputPaneWidth());
     }
@@ -67,10 +51,9 @@ public class JigsawModeUiTest {
         clearBoard();
         addTextPiece("test");
         clickTagButton("base64");
-        window.robot().waitForIdle();
-        Thread.sleep(400);
-        Assertions.assertEquals("<@base64>test</@base64>", GuiActionRunner.execute(() -> inputArea().getText()));
-        Assertions.assertEquals("dGVzdA==", GuiActionRunner.execute(() -> outputArea().getText()));
+        window.waitForIdle();
+        Assertions.assertEquals("<@base64>test</@base64>", UiTestSupport.awaitText(inputArea(), "<@base64>test</@base64>"));
+        Assertions.assertEquals("dGVzdA==", UiTestSupport.awaitText(outputArea(), "dGVzdA=="));
     }
 
     @Test
@@ -79,8 +62,8 @@ public class JigsawModeUiTest {
         clearBoard();
         addTextPiece("test");
         clickTagButton("base64");
-        window.robot().waitForIdle();
-        Thread.sleep(400);
+        window.waitForIdle();
+        UiTestSupport.awaitText(inputArea(), "<@base64>test</@base64>");
         UiTestSupport.selectInputMode(window, UiTestSupport.TAG_MODE);
         Assertions.assertTrue(inputArea().isShowing(), "Tag mode input should be visible in tag mode");
         Assertions.assertEquals("<@base64>test</@base64>", GuiActionRunner.execute(() -> inputArea().getText()));
@@ -100,43 +83,43 @@ public class JigsawModeUiTest {
 
     private void clearBoard() {
         clickButton("Clear board");
-        window.robot().waitForIdle();
+        window.waitForIdle();
     }
 
     private void addTextPiece(String text) {
         clickButton("+Text");
-        window.robot().waitForIdle();
-        JTextArea editor = (JTextArea) window.robot().finder().find(window.target(),
+        window.waitForIdle();
+        JTextArea editor = (JTextArea) window.find(window.target(),
                 component -> component instanceof JTextArea
                         && component.getParent() != null
                         && component.getParent().getClass().getName().endsWith("JigsawTextPiece"));
         GuiActionRunner.execute(() -> editor.setText(text));
-        window.robot().waitForIdle();
+        window.waitForIdle();
     }
 
     private void clickButton(String label) {
-        JButton button = (JButton) window.robot().finder().find(window.target(),
+        JButton button = (JButton) window.find(window.target(),
                 component -> component instanceof JButton && label.equals(((JButton) component).getText()));
         GuiActionRunner.execute(() -> button.doClick());
     }
 
     private void clickTagButton(String tagName) {
-        JTabbedPane tabs = (JTabbedPane) window.robot().finder().findAll(
+        JTabbedPane tabs = (JTabbedPane) window.findAll(
                 component -> component instanceof JTabbedPane && component.isShowing()).iterator().next();
         Component category = GuiActionRunner.execute(tabs::getSelectedComponent);
-        JButton button = (JButton) window.robot().finder().find((Container) category,
+        JButton button = (JButton) window.find((Container) category,
                 component -> component instanceof JButton && tagName.equals(((JButton) component).getText()));
         GuiActionRunner.execute(() -> button.doClick());
     }
 
     private Component[] jigsawPieces() {
-        return window.robot().finder().findAll(window.target(),
+        return window.findAll(window.target(),
                 component -> component.getClass().getName().startsWith("burp.hv.ui.jigsaw.Jigsaw")
                         && component.getClass().getName().endsWith("Piece")).toArray(new Component[0]);
     }
 
     private JComboBox<?> inputModeSelector() {
-        return (JComboBox<?>) window.robot().finder().find(window.target(),
+        return (JComboBox<?>) window.find(window.target(),
                 component -> component instanceof JComboBox && "inputModeSelector".equals(component.getName()));
     }
 
@@ -149,7 +132,7 @@ public class JigsawModeUiTest {
     }
 
     private JTextArea hackvertorInput(int index) {
-        Component[] areas = window.robot().finder().findAll(window.target(),
+        Component[] areas = window.findAll(window.target(),
                 component -> component.getClass().getName().equals("burp.hv.ui.HackvertorInput")).toArray(new Component[0]);
         return (JTextArea) areas[index];
     }

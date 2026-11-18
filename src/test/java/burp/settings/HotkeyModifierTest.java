@@ -11,7 +11,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import javax.swing.JFrame;
 import javax.swing.KeyStroke;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -20,7 +19,7 @@ public class HotkeyModifierTest {
 
     @BeforeEach
     void setUp() {
-        HackvertorExtension.generalSettings = new Settings("general", new StubCallbacks(new JFrame("Test")));
+        HackvertorExtension.generalSettings = new Settings("general", new StubCallbacks());
         Utils.registerGeneralSettings(HackvertorExtension.generalSettings);
     }
 

@@ -421,7 +421,7 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
 
     public static String readClipboardString() {
         try {
-            return (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
+            return (String) Utils.getClipboard().getData(DataFlavor.stringFlavor);
         } catch (UnsupportedFlavorException | IOException e) {
             return null;
         }

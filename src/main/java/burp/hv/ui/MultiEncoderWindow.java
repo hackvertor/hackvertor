@@ -1,5 +1,6 @@
 package burp.hv.ui;
 
+import burp.hv.utils.Utils;
 import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.http.message.HttpRequestResponse;
 import burp.api.montoya.http.message.requests.HttpRequest;
@@ -791,7 +792,7 @@ public class MultiEncoderWindow {
             output.append(variantsToCopy.get(i));
         }
         StringSelection selection = new StringSelection(output.toString());
-        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+        Clipboard clipboard = Utils.getClipboard();
         clipboard.setContents(selection, null);
 
         if (!filterText.isEmpty()) {

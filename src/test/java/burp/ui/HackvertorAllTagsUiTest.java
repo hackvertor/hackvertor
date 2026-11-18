@@ -4,7 +4,6 @@ import burp.hv.HackvertorExtension;
 import burp.stubs.StubCallbacks;
 import org.assertj.swing.edt.FailOnThreadViolationRepaintManager;
 import org.assertj.swing.edt.GuiActionRunner;
-import org.assertj.swing.fixture.FrameFixture;
 import org.junit.jupiter.api.*;
 
 import javax.swing.*;
@@ -20,8 +19,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 public class HackvertorAllTagsUiTest {
 
-    private static FrameFixture window;
-    private static JFrame frame;
+    private static HeadlessWindow window;
     private static final int width = 1200;
     private static final int height = 1000;
     private static Thread.UncaughtExceptionHandler originalHandler;
@@ -29,8 +27,6 @@ public class HackvertorAllTagsUiTest {
 
     @BeforeAll
     static void installRepaintManager() {
-        // Set system properties for headless mode and better UI testing
-        System.setProperty("java.awt.headless", "false"); // We need GUI for UI tests
         System.setProperty("javax.swing.disableQuestions", "true");
         System.setProperty("swing.disableOnEDT", "false");
         System.setProperty("awt.useSystemAAFontSettings", "on");
@@ -69,28 +65,10 @@ public class HackvertorAllTagsUiTest {
 
     @BeforeAll
     static void setUp() {
-        SwingUtilities.invokeLater(() -> {
-            frame = new JFrame("Burp Suite - Hackvertor");
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setContentPane(new JPanel(new BorderLayout()));
-            frame.setPreferredSize(new Dimension(width, height));
-            JMenuBar menuBar = new JMenuBar();
-            frame.setJMenuBar(menuBar);
-
+        window = HeadlessWindow.create(width, height, root -> {
             HackvertorExtension hackvertorExtension = new HackvertorExtension();
-            hackvertorExtension.registerExtenderCallbacks(new StubCallbacks(frame));
-
-            frame.pack();
-            frame.setVisible(true);
+            hackvertorExtension.registerExtenderCallbacks(new StubCallbacks(root));
         });
-
-        // Wait until frame is ready before wrapping
-        try {
-            Thread.sleep(200);
-        } catch (InterruptedException ignored) {}
-
-        window = new FrameFixture(frame);
-        window.show();
         UiTestSupport.selectInputMode(window, UiTestSupport.TAG_MODE);
     }
 
@@ -117,6 +95,8 @@ public class HackvertorAllTagsUiTest {
 
     @AfterAll
     static void tearDown() {
+        // Don't leave the strict EDT checks behind for the test classes that run after this one.
+        FailOnThreadViolationRepaintManager.uninstall();
         // Check for uncaught exceptions one final time
         if (!uncaughtExceptions.isEmpty()) {
             StringBuilder sb = new StringBuilder("Test suite failed due to uncaught exception(s):\n");
@@ -142,10 +122,9 @@ public class HackvertorAllTagsUiTest {
     }
 
     private void testTagButton(String categoryName, String buttonName, String inputText, String expectedTagPrefix, String expectedOutput) throws Exception {
-        window.robot().waitForIdle();
-        Thread.sleep(100);
+        window.waitForIdle();
 
-        Component[] allTextAreas = window.robot().finder()
+        Component[] allTextAreas = window
                 .findAll(window.target(), component -> component instanceof JTextArea)
                 .toArray(new Component[0]);
 
@@ -167,8 +146,8 @@ public class HackvertorAllTagsUiTest {
         Assertions.assertNotNull(inputArea, "Input area should be found");
         Assertions.assertNotNull(outputArea, "Output area should be found");
 
-        window.robot().click(inputArea);
-        window.robot().waitForIdle();
+        window.click(inputArea);
+        window.waitForIdle();
 
         final JTextArea finalInputArea = inputArea;
         GuiActionRunner.execute(() -> {
@@ -176,12 +155,12 @@ public class HackvertorAllTagsUiTest {
             finalInputArea.revalidate();
             finalInputArea.repaint();
         });
-        window.robot().waitForIdle();
+        window.waitForIdle();
 
         GuiActionRunner.execute(finalInputArea::selectAll);
-        window.robot().waitForIdle();
+        window.waitForIdle();
 
-        List<JTabbedPane> tabPanes = window.robot().finder().findAll(
+        List<JTabbedPane> tabPanes = window.findAll(
                         c -> c instanceof JTabbedPane && c.isShowing()
                 ).stream()
                 .map(c -> (JTabbedPane) c)
@@ -203,11 +182,11 @@ public class HackvertorAllTagsUiTest {
         } else {
             Assertions.fail("Could not find '" + categoryName + "' tab");
         }
-        window.robot().waitForIdle();
+        window.waitForIdle();
 
         Component selectedTabContent = GuiActionRunner.execute(innerTabs::getSelectedComponent);
 
-        Component button = window.robot().finder().find(
+        Component button = window.find(
                 (Container) selectedTabContent,
                 c -> c instanceof JButton &&
                         buttonName.equals(((JButton) c).getText())
@@ -216,12 +195,10 @@ public class HackvertorAllTagsUiTest {
         JButton jButton = (JButton) button;
         GuiActionRunner.execute(() -> jButton.doClick());
 
-        window.robot().waitForIdle();
-        Thread.sleep(200);
-        window.robot().waitForIdle();
+        window.waitForIdle();
 
         String actualInput = inputArea.getText();
-        String actualOutput = outputArea.getText();
+        String actualOutput = UiTestSupport.awaitText(outputArea, expectedOutput);
 
         Assertions.assertTrue(actualInput.startsWith(expectedTagPrefix),
             "Expected input to start with '" + expectedTagPrefix + "' but was: " + actualInput);
@@ -239,7 +216,7 @@ public class HackvertorAllTagsUiTest {
             finalOutputArea.revalidate();
             finalOutputArea.repaint();
         });
-        window.robot().waitForIdle();
+        window.waitForIdle();
     }
 
     // ============ ENCODE CATEGORY TESTS ============

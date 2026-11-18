@@ -18,10 +18,21 @@ import java.util.Map;
 
 public class StubCallbacks implements IBurpExtenderCallbacks {
 
-    private JFrame frame;
+    private final Container suiteTabHost;
 
-    public StubCallbacks(JFrame frame){
-        this.frame = frame;
+    /**
+     * @param suiteTabHost where addSuiteTab puts the extension's tab. A plain panel rather than a JFrame so the
+     *                     tests can run headless.
+     */
+    /**
+     * For tests that never add a suite tab. A bare AWT container, unlike a Swing one, is safe to create off the EDT.
+     */
+    public StubCallbacks() {
+        this(new Container());
+    }
+
+    public StubCallbacks(Container suiteTabHost){
+        this.suiteTabHost = suiteTabHost;
     }
 
     @Override
@@ -391,8 +402,8 @@ public class StubCallbacks implements IBurpExtenderCallbacks {
 
     @Override
     public void addSuiteTab(ITab iTab) {
-        frame.getContentPane().add(iTab.getUiComponent(), BorderLayout.CENTER);
-        frame.pack();
+        suiteTabHost.add(iTab.getUiComponent(), BorderLayout.CENTER);
+        suiteTabHost.validate();
     }
 
     @Override

@@ -320,7 +320,7 @@ public class CustomTags {
                     }
                     customTagCopy.put("author",author);
                     customTagCopy.put("description",description);
-                    Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+                    Clipboard clipboard = Utils.getClipboard();
                     StringSelection customTagCopyJSON = new StringSelection(customTagCopy.toString(3));
                     clipboard.setContents(customTagCopyJSON, null);
                     HackvertorExtension.alert("Copied JSON data to clipboard.");
@@ -780,7 +780,7 @@ public class CustomTags {
             }
         });
         exportButton.addActionListener(e -> {
-            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+            Clipboard clipboard = Utils.getClipboard();
             StringSelection customTagsJSON = new StringSelection(HackvertorExtension.hackvertor.getCustomTags().toString());
             clipboard.setContents(customTagsJSON, null);
         });
@@ -790,7 +790,7 @@ public class CustomTags {
                 return;
             }
             try {
-                String tagsJSON = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
+                String tagsJSON = (String) Utils.getClipboard().getData(DataFlavor.stringFlavor);
                 if (tagsJSON != null && !tagsJSON.isEmpty()) {
                     try {
                         JSONArray tags = new JSONArray(tagsJSON);

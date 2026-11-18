@@ -32,16 +32,26 @@ public class Settings {
     private static final int SETTINGS_CONTENT_WIDTH = 800;
 
     public static void showSettingsWindow() {
-        Settings settings = new Settings("general", HackvertorExtension.callbacks);
-        Utils.registerGeneralSettings(settings);
-        settings.load();
         JFrame settingsWindow = Utils.getHackvertorWindowInstance();
         settingsWindow.getContentPane().removeAll();
         settingsWindow.setTitle("Settings");
         settingsWindow.setResizable(false);
-        // Sized from the scroll pane below so the buttons at the bottom of the settings are never cut off.
+        // Sized from the settings pane so the buttons at the bottom of the settings are never cut off.
         settingsWindow.setPreferredSize(null);
         Container pane = settingsWindow.getContentPane();
+        pane.setLayout(new GridBagLayout());
+        pane.add(buildSettingsPane(settingsWindow, maxSettingsHeight()), settingsPaneConstraints());
+        Utils.makeWindowVisible(settingsWindow);
+    }
+
+    /**
+     * The scrollable settings form shown in the settings window. It is as tall as its content, so nothing is
+     * cut off, until it reaches maxHeight and scrolls instead.
+     */
+    public static JScrollPane buildSettingsPane(JFrame settingsWindow, int maxHeight) {
+        Settings settings = new Settings("general", HackvertorExtension.callbacks);
+        Utils.registerGeneralSettings(settings);
+        settings.load();
         try {
             JPanel settingsInterface = settings.buildInterface(settingsWindow, 200, 25,10, categoryColumns(), HackvertorExtension.generalSettings);
             settingsInterface.setAutoscrolls(true);
@@ -50,15 +60,20 @@ public class Settings {
             JScrollPane settingsScroll = new JScrollPane(settingsInterface);
             settingsScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
             settingsScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-            settingsScroll.setPreferredSize(new Dimension(SETTINGS_CONTENT_WIDTH + 20, Math.min(contentHeight + 4, maxSettingsHeight())));
-            pane.setLayout(new GridBagLayout());
-            pane.add(settingsScroll, createConstraints(0, 0, 1, GridBagConstraints.BOTH, 1, 1, 5, 5, CENTER));
+            settingsScroll.setPreferredSize(new Dimension(SETTINGS_CONTENT_WIDTH + 20, Math.min(contentHeight + 4, maxHeight)));
+            return settingsScroll;
         } catch (UnregisteredSettingException | InvalidTypeSettingException e) {
             HackvertorExtension.callbacks.printError("Error building interface:" + e);
             HackvertorExtension.callbacks.printError(Arrays.toString(e.getStackTrace()));
             throw new RuntimeException(e);
         }
-        Utils.makeWindowVisible(settingsWindow);
+    }
+
+    /**
+     * How the settings pane is placed in the settings window's GridBagLayout content pane.
+     */
+    public static GridBagConstraints settingsPaneConstraints() {
+        return createConstraints(0, 0, 1, GridBagConstraints.BOTH, 1, 1, 5, 5, CENTER);
     }
 
     /**
@@ -512,11 +527,11 @@ public class Settings {
             status.setText("Successfully updated settings.");
         });
         int containerRow = 2;
-        buttonsContainer.add(new Label(), GridbagUtils.createConstraints(0, 0, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, CENTER));
+        buttonsContainer.add(new JLabel(), GridbagUtils.createConstraints(0, 0, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, CENTER));
         buttonsContainer.add(closeSettingsBtn, GridbagUtils.addMarginToGbc(GridbagUtils.createConstraints(1, 0, 1, GridBagConstraints.NONE, 0, 0, 5, 5, CENTER), 2, 2, 2, 2));
         buttonsContainer.add(resetSettingsBtn, GridbagUtils.addMarginToGbc(GridbagUtils.createConstraints(2, 0, 1, GridBagConstraints.NONE, 0, 0, 5, 5, CENTER), 2, 2, 2, 2));
         buttonsContainer.add(updateSettingsBtn, GridbagUtils.addMarginToGbc(GridbagUtils.createConstraints(3, 0, 1, GridBagConstraints.NONE, 0, 0, 5, 5, CENTER), 2, 2, 2, 2));
-        buttonsContainer.add(new Label(), GridbagUtils.createConstraints(4, 0, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, CENTER));
+        buttonsContainer.add(new JLabel(), GridbagUtils.createConstraints(4, 0, 1, GridBagConstraints.BOTH, 0, 0, 5, 5, CENTER));
         closeSettingsBtn.addActionListener(e -> {
             if(isModified) {
                 int confirm = JOptionPane.showConfirmDialog(settingsWindow, "Are you sure you have unsaved settings?");

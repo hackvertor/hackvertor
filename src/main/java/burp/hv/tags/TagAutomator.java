@@ -159,7 +159,7 @@ public class TagAutomator {
         exportButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+                Clipboard clipboard = Utils.getClipboard();
                 StringSelection rulesJSON = new StringSelection(rules.toString(2));
                 clipboard.setContents(rulesJSON, null);
                 JOptionPane.showMessageDialog(rulesWindow,
@@ -179,8 +179,7 @@ public class TagAutomator {
                 
                 if (result == JOptionPane.YES_OPTION) {
                     try {
-                        String jsonData = (String) Toolkit.getDefaultToolkit()
-                            .getSystemClipboard().getData(DataFlavor.stringFlavor);
+                        String jsonData = (String) Utils.getClipboard().getData(DataFlavor.stringFlavor);
                         if (jsonData != null && !jsonData.isEmpty()) {
                             JSONArray importedRules = new JSONArray(jsonData);
                             rules = importedRules;

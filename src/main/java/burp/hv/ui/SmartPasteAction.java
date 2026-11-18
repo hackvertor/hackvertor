@@ -1,5 +1,6 @@
 package burp.hv.ui;
 
+import burp.hv.utils.Utils;
 import burp.hv.Convertors;
 
 import javax.swing.*;
@@ -19,7 +20,7 @@ public class SmartPasteAction extends AbstractAction {
     public void actionPerformed(ActionEvent e) {
         String clipboard;
         try {
-            clipboard = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
+            clipboard = (String) Utils.getClipboard().getData(DataFlavor.stringFlavor);
         } catch (UnsupportedFlavorException | IOException ex) {
             return;
         }

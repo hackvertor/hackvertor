@@ -13,7 +13,7 @@ public class TestExtension {
         jFrame.setContentPane(new JPanel(new BorderLayout()));
         jFrame.setPreferredSize(new Dimension(1200,1000));
         HackvertorExtension hackvertorExtension = new HackvertorExtension();
-        hackvertorExtension.registerExtenderCallbacks(new StubCallbacks(jFrame));
+        hackvertorExtension.registerExtenderCallbacks(new StubCallbacks(jFrame.getContentPane()));
         JMenuBar menuBar = new JMenuBar();
         menuBar.add(Utils.generateHackvertorMenuBar());
         jFrame.setJMenuBar(menuBar);

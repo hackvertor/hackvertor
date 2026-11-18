@@ -89,7 +89,7 @@ public class Variables {
                     return;
                 }
                 String key = variableCombo.getSelectedItem().toString();
-                Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+                Clipboard clipboard = Utils.getClipboard();
                 StringSelection variableTag = new StringSelection("<@get_"+key+"/>");
                 clipboard.setContents(variableTag, null);
             }
