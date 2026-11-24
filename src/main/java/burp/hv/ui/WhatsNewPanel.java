@@ -23,6 +23,16 @@ public class WhatsNewPanel extends JPanel {
     }
 
     private static final List<Feature> FEATURES = List.of(
+            new Feature("Tag execution key protection", "v2.2.69",
+                    "If tags fail to convert, for example because Burp Scanner mutated them, Hackvertor now redacts "
+                            + "your tag execution key before the request is sent so it can never leak to the target. "
+                            + "This covers every outgoing HTTP request and WebSocket message, and the key is detected "
+                            + "in any case and in common encodings such as URL, HTML entity, unicode escape, hex and "
+                            + "base64. The first redaction from each tool is logged in the extension's error output."),
+            new Feature("Tags off by default in Scanner and Intruder", "v2.2.69",
+                    "Tags are no longer processed in Scanner and Intruder by default. Turn them back on under "
+                            + "<em>Hackvertor &rarr; Settings &rarr; Tag permissions</em>. If you've already "
+                            + "saved a choice for these settings it is kept."),
             new Feature("Jigsaw mode", "v2.2.61",
                     "Build conversions by dragging tag pieces together instead of typing tags by hand. "
                             + "Switch between <em>Jigsaw mode</em> and <em>Tag mode</em> with the dropdown above the input, "
