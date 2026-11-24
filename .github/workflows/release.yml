@@ -40,8 +40,14 @@ jobs:
       - name: Check if version changed
         id: check_version
         run: |
-          # Get the previous version from the last commit
-          git show HEAD~1:src/main/java/burp/hv/HackvertorExtension.java > prev_file.java 2>/dev/null || echo "File not found in previous commit"
+          # Compare against the commit before this push, so a version bump anywhere in a multi-commit push is
+          # detected. Fall back to the previous commit for manual runs, new branches, or if it's not in history.
+          BASE="${{ github.event.before }}"
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            BASE="HEAD~1"
+          fi
+          echo "Comparing against $BASE"
+          git show "$BASE":src/main/java/burp/hv/HackvertorExtension.java > prev_file.java 2>/dev/null || { rm -f prev_file.java; echo "File not found in $BASE"; }
           
           if [ -f prev_file.java ]; then
             PREV_VERSION=$(grep -E '^\s*public static String version = "v[0-9]+\.[0-9]+\.[0-9]+";' prev_file.java | sed -E 's/.*"(v[0-9]+\.[0-9]+\.[0-9]+)".*/\1/' || echo "none")
