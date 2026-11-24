@@ -72,9 +72,9 @@ public class Utils {
 
     public static void registerGeneralSettings(Settings settings) {
         settings.registerBooleanSetting("tagsInProxy", false, "Allow tags in Proxy", "Tag permissions", null);
-        settings.registerBooleanSetting("tagsInIntruder", true, "Allow tags in Intruder", "Tag permissions", null);
+        settings.registerBooleanSetting("tagsInIntruder", false, "Allow tags in Intruder", "Tag permissions", null);
         settings.registerBooleanSetting("tagsInRepeater", true, "Allow tags in Repeater", "Tag permissions", null);
-        settings.registerBooleanSetting("tagsInScanner", true, "Allow tags in Scanner", "Tag permissions", null);
+        settings.registerBooleanSetting("tagsInScanner", false, "Allow tags in Scanner", "Tag permissions", null);
         settings.registerBooleanSetting("tagsInExtensions", true, "Allow tags in Extensions", "Tag permissions", null);
         settings.registerBooleanSetting("tagsInResponse", false, "Allow tags in HTTP response", "Tag permissions", null);
         settings.registerBooleanSetting("tagsInWebSockets", false, "Allow tags in WebSockets", "Tag permissions", null);
