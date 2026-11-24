@@ -1,10 +1,12 @@
 package burp.hv;
 
+import burp.api.montoya.core.ByteArray;
 import burp.api.montoya.websocket.*;
 import java.nio.charset.StandardCharsets;
 import burp.hv.settings.InvalidTypeSettingException;
 import burp.hv.settings.UnregisteredSettingException;
 import burp.hv.ui.HackvertorPanel;
+import burp.hv.utils.ExecutionKeyRedactor;
 
 /**
  * Montoya WebSocket message handler that logs processing and shows the Hackvertor panel for messages.
@@ -78,7 +80,7 @@ public class HackvertorMontoyaMessageHandler implements MessageHandler {
     @Override
     public TextMessageAction handleTextMessage(TextMessage textMessage) {
         if (HackvertorExtension.hackvertor == null) {
-            return TextMessageAction.continueWith(textMessage.payload());
+            return TextMessageAction.continueWith(redactText(textMessage.payload()));
         }
         // safeLogOutput("Hackvertor processing websocket textmessage");
 
@@ -151,13 +153,13 @@ public class HackvertorMontoyaMessageHandler implements MessageHandler {
             // }
         }
 
-        return TextMessageAction.continueWith(finalPayload);
+        return TextMessageAction.continueWith(redactText(finalPayload));
     }
 
     @Override
     public BinaryMessageAction handleBinaryMessage(BinaryMessage binaryMessage) {
         if (HackvertorExtension.hackvertor == null) {
-            return BinaryMessageAction.continueWith(binaryMessage.payload());
+            return BinaryMessageAction.continueWith(redactBinary(binaryMessage.payload()));
         }
         // safeLogOutput("Hackvertor processing websocket binarymessage");
         
@@ -189,6 +191,27 @@ public class HackvertorMontoyaMessageHandler implements MessageHandler {
             // String debugMsg = String.format("Hackvertor processed websocket binary message (direction=%s, len=%d)", direction, len);
             // try { safeLogOutput(debugMsg); } catch (Exception ignored) {}
         }
-        return BinaryMessageAction.continueWith(binaryMessage);
+        return BinaryMessageAction.continueWith(redactBinary(binaryMessage.payload()));
+    }
+
+    // Tags that failed to convert (or weren't converted because tags are disabled) would leak the tag execution key
+    private static String redactText(String payload) {
+        if (!ExecutionKeyRedactor.containsKey(payload)) return payload;
+        logRedaction();
+        return ExecutionKeyRedactor.redact(payload);
+    }
+
+    private static ByteArray redactBinary(ByteArray payload) {
+        if (payload == null) return null;
+        byte[] bytes = payload.getBytes();
+        if (!ExecutionKeyRedactor.containsKey(bytes)) return payload;
+        logRedaction();
+        return ByteArray.byteArray(ExecutionKeyRedactor.redact(bytes));
+    }
+
+    private static void logRedaction() {
+        if (!ExecutionKeyRedactor.shouldLogRedaction("WebSockets")) return;
+        safeLogError("Hackvertor redacted the tag execution key from a WebSocket message. The tags were probably not converted."
+                + " Further redactions from WebSockets will not be logged.");
     }
 }

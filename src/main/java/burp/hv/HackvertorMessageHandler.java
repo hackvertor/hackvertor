@@ -1,6 +1,8 @@
 package burp.hv;
 
+import burp.api.montoya.core.ByteArray;
 import burp.api.montoya.websocket.*;
+import burp.hv.utils.ExecutionKeyRedactor;
 import burp.hv.settings.InvalidTypeSettingException;
 import burp.hv.settings.UnregisteredSettingException;
 
@@ -18,14 +20,16 @@ public class HackvertorMessageHandler implements MessageHandler {
         if(tagsInWebSockets) {
             if (textMessage.payload().contains("<@")) {
                 String converted = HackvertorExtension.hackvertor.convert(textMessage.payload(), HackvertorExtension.hackvertor);
-                return TextMessageAction.continueWith(converted);
+                return TextMessageAction.continueWith(ExecutionKeyRedactor.redact(converted));
             }
         }
-        return TextMessageAction.continueWith(textMessage);
+        return TextMessageAction.continueWith(ExecutionKeyRedactor.redact(textMessage.payload()));
     }
 
     @Override
     public BinaryMessageAction handleBinaryMessage(BinaryMessage binaryMessage) {
-        return BinaryMessageAction.continueWith(binaryMessage);
+        byte[] bytes = binaryMessage.payload().getBytes();
+        if (!ExecutionKeyRedactor.containsKey(bytes)) return BinaryMessageAction.continueWith(binaryMessage);
+        return BinaryMessageAction.continueWith(ByteArray.byteArray(ExecutionKeyRedactor.redact(bytes)));
     }
 }

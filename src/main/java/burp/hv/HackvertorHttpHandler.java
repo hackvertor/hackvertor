@@ -1,5 +1,6 @@
 package burp.hv;
 
+import burp.api.montoya.core.ByteArray;
 import burp.api.montoya.core.ToolType;
 import burp.api.montoya.http.handler.HttpRequestToBeSent;
 import burp.api.montoya.http.handler.HttpResponseReceived;
@@ -12,6 +13,7 @@ import burp.hv.ai.LearnFromRepeater;
 import burp.hv.settings.InvalidTypeSettingException;
 import burp.hv.settings.UnregisteredSettingException;
 import burp.hv.tags.TagAutomator;
+import burp.hv.utils.ExecutionKeyRedactor;
 import burp.hv.utils.TagUtils;
 import org.json.JSONArray;
 
@@ -24,6 +26,16 @@ import static burp.hv.HackvertorExtension.requestHistory;
 public class HackvertorHttpHandler implements burp.api.montoya.http.handler.HttpHandler {
     @Override
     public RequestToBeSentAction handleHttpRequestToBeSent(HttpRequestToBeSent req) {
+        try {
+            return processRequest(req);
+        } catch (RuntimeException e) {
+            // Never let an unconverted request (which may contain the tag execution key) escape on failure
+            montoyaApi.logging().logToError("Hackvertor failed to process request: " + e);
+            return RequestToBeSentAction.continueWith(redactRequest(req));
+        }
+    }
+
+    private RequestToBeSentAction processRequest(HttpRequestToBeSent req) {
         boolean learnFromRepeater;
         boolean allowAiToGenerateCode;
         boolean autoUpdateContentLength;
@@ -47,10 +59,10 @@ public class HackvertorHttpHandler implements burp.api.montoya.http.handler.Http
                 HackvertorExtension.requestHistory = new ArrayList<>();
                 LearnFromRepeater.learn(headersAndParameters, allowAiToGenerateCode);
             } else {
-                HackvertorExtension.requestHistory.add(req);
+                HackvertorExtension.requestHistory.add(redactRequest(req));
             }
         }
-        if(!TagUtils.shouldProcessTags(req.toolSource().toolType())) return null;
+        if(!TagUtils.shouldProcessTags(req.toolSource().toolType())) return redactIfNeeded(req);
 
         String requestStr = new String(req.toByteArray().getBytes(), StandardCharsets.UTF_8);
         String tool = getToolFromToolType(req.toolSource().toolType());
@@ -73,13 +85,38 @@ public class HackvertorHttpHandler implements burp.api.montoya.http.handler.Http
             } else {
                 converted = HackvertorExtension.hackvertor.convert(requestStr, HackvertorExtension.hackvertor);
             }
+            if (ExecutionKeyRedactor.containsKey(converted)) {
+                logRedaction(req);
+                converted = ExecutionKeyRedactor.redact(converted);
+            }
             HttpRequest convertedReq = HttpRequest.httpRequest(req.httpService(), converted);
             if (autoUpdateContentLength) {
                 convertedReq = convertedReq.withUpdatedHeader("Content-Length", convertedReq.body().length()+"");
             }
             return RequestToBeSentAction.continueWith(convertedReq);
         }
-        return null;
+        return redactIfNeeded(req);
+    }
+
+    private static RequestToBeSentAction redactIfNeeded(HttpRequestToBeSent req) {
+        HttpRequest redacted = redactRequest(req);
+        if (redacted == req) return null;
+        logRedaction(req);
+        return RequestToBeSentAction.continueWith(redacted);
+    }
+
+    private static HttpRequest redactRequest(HttpRequest req) {
+        byte[] bytes = req.toByteArray().getBytes();
+        if (!ExecutionKeyRedactor.containsKey(bytes)) return req;
+        return HttpRequest.httpRequest(req.httpService(), ByteArray.byteArray(ExecutionKeyRedactor.redact(bytes)));
+    }
+
+    private static void logRedaction(HttpRequestToBeSent req) {
+        String toolName = req.toolSource().toolType().toolName();
+        if (!ExecutionKeyRedactor.shouldLogRedaction(toolName)) return;
+        montoyaApi.logging().logToError("Hackvertor redacted the tag execution key from a " + toolName
+                + " request to " + req.httpService().host() + ". The tags were probably not converted, e.g. because they were mutated by Burp Scanner or tags are disabled for this tool."
+                + " Further redactions from " + toolName + " will not be logged.");
     }
 
     @Override
@@ -101,7 +138,8 @@ public class HackvertorHttpHandler implements burp.api.montoya.http.handler.Http
             try {
                 responseStr = HackvertorExtension.executorService.submit(() -> TagAutomator.applyRules(finalResponseStr, "response", tool, "HTTP")).get();
             } catch (Exception ignored) {}
-            return ResponseReceivedAction.continueWith(HttpResponse.httpResponse(HackvertorExtension.hackvertor.convert(responseStr, HackvertorExtension.hackvertor)));
+            String converted = ExecutionKeyRedactor.redact(HackvertorExtension.hackvertor.convert(responseStr, HackvertorExtension.hackvertor));
+            return ResponseReceivedAction.continueWith(HttpResponse.httpResponse(converted));
         } catch (UnregisteredSettingException | InvalidTypeSettingException e) {
             HackvertorExtension.callbacks.printError("Error loading settings:" + e);
             throw new RuntimeException(e);
