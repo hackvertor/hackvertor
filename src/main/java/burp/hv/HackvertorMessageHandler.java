@@ -28,8 +28,8 @@ public class HackvertorMessageHandler implements MessageHandler {
 
     @Override
     public BinaryMessageAction handleBinaryMessage(BinaryMessage binaryMessage) {
-        byte[] bytes = binaryMessage.payload().getBytes();
-        if (!ExecutionKeyRedactor.containsKey(bytes)) return BinaryMessageAction.continueWith(binaryMessage);
-        return BinaryMessageAction.continueWith(ByteArray.byteArray(ExecutionKeyRedactor.redact(bytes)));
+        ByteArray payload = binaryMessage.payload();
+        if (!ExecutionKeyRedactor.containsKey(ExecutionKeyRedactor.ByteSource.of(payload))) return BinaryMessageAction.continueWith(binaryMessage);
+        return BinaryMessageAction.continueWith(ByteArray.byteArray(ExecutionKeyRedactor.redact(payload.getBytes())));
     }
 }

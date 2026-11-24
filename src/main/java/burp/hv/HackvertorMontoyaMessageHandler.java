@@ -202,11 +202,9 @@ public class HackvertorMontoyaMessageHandler implements MessageHandler {
     }
 
     private static ByteArray redactBinary(ByteArray payload) {
-        if (payload == null) return null;
-        byte[] bytes = payload.getBytes();
-        if (!ExecutionKeyRedactor.containsKey(bytes)) return payload;
+        if (payload == null || !ExecutionKeyRedactor.containsKey(ExecutionKeyRedactor.ByteSource.of(payload))) return payload;
         logRedaction();
-        return ByteArray.byteArray(ExecutionKeyRedactor.redact(bytes));
+        return ByteArray.byteArray(ExecutionKeyRedactor.redact(payload.getBytes()));
     }
 
     private static void logRedaction() {
