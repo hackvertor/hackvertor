@@ -29,6 +29,7 @@ import burp.hv.tags.Tag;
 import burp.hv.tags.TagAutomator;
 import burp.hv.tags.TagStore;
 import burp.hv.ui.*;
+import burp.hv.utils.ExecutionKeyRedactor;
 import burp.hv.utils.TagUtils;
 import burp.hv.utils.Utils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -133,7 +134,10 @@ public class HackvertorExtension implements BurpExtension, IBurpExtender, ITab, 
             Variables.loadGlobalVariables();
             registerPayloadProcessors();
             Function<String, String> sharedConvert = (input) -> hackvertor.convert(input, hackvertor);
-            Supplier<String> sharedGetTagExecutionKey = () -> tagCodeExecutionKey;
+            Supplier<String> sharedGetTagExecutionKey = () -> {
+                ExecutionKeyRedactor.markKeyInUse();
+                return tagCodeExecutionKey;
+            };
             System.getProperties().put("hackvertor.convert", sharedConvert);
             System.getProperties().put("hackvertor.getTagExecutionKey", sharedGetTagExecutionKey);
 

@@ -24,11 +24,17 @@ import java.util.concurrent.ConcurrentHashMap;
  * Every match is replaced with a placeholder of the same length, so body lengths (and Content-Length headers)
  * remain valid. Byte data is scanned through a Latin-1 view so binary content is never copied or re-encoded.
  * The scan is a single linear pass because it runs on every outgoing request.
+ * <p>
+ * The key is regenerated every time the extension loads, so it can only appear in traffic after Hackvertor has
+ * handed it out: by inserting a tag that takes it as an argument, rehydrating tags, giving it to another extension,
+ * or exposing it to tag code as the executionKey variable. Until one of those happens nothing needs scanning, so the
+ * checks that use the current key return immediately. Every hand-out point must call {@link #markKeyInUse()}.
  */
 public class ExecutionKeyRedactor {
     public static final String REDACTED = "REDACTEDREDACTEDREDACTEDREDACTED";
     private static final Set<String> loggedSources = ConcurrentHashMap.newKeySet();
     private static volatile KeyMatcher cached;
+    private static volatile boolean keyInUse = false;
 
     /** Random access to bytes without copying them, e.g. backed by a byte[] or a Montoya ByteArray. */
     public interface ByteSource {
@@ -58,24 +64,45 @@ public class ExecutionKeyRedactor {
         return loggedSources.add(source);
     }
 
+    /** Records that the current key has been handed out and may now appear in traffic. */
+    public static void markKeyInUse() {
+        keyInUse = true;
+    }
+
+    /** Marks the key as in use if the text (e.g. a tag about to be shown to or inserted by the user) contains it. */
+    public static void markKeyInUseIfPresent(String text) {
+        String key = HackvertorExtension.tagCodeExecutionKey;
+        if (!keyInUse && text != null && key != null && text.contains(key)) {
+            keyInUse = true;
+        }
+    }
+
+    public static boolean isKeyInUse() {
+        return keyInUse;
+    }
+
+    static void resetKeyInUseForTesting() {
+        keyInUse = false;
+    }
+
     public static boolean containsKey(CharSequence input) {
-        return containsKey(input, HackvertorExtension.tagCodeExecutionKey);
+        return keyInUse && containsKey(input, HackvertorExtension.tagCodeExecutionKey);
     }
 
     public static boolean containsKey(byte[] input) {
-        return containsKey(input, HackvertorExtension.tagCodeExecutionKey);
+        return keyInUse && containsKey(input, HackvertorExtension.tagCodeExecutionKey);
     }
 
     public static boolean containsKey(ByteSource input) {
-        return containsKey(input, HackvertorExtension.tagCodeExecutionKey);
+        return keyInUse && containsKey(input, HackvertorExtension.tagCodeExecutionKey);
     }
 
     public static String redact(String input) {
-        return redact(input, HackvertorExtension.tagCodeExecutionKey);
+        return keyInUse ? redact(input, HackvertorExtension.tagCodeExecutionKey) : input;
     }
 
     public static byte[] redact(byte[] input) {
-        return redact(input, HackvertorExtension.tagCodeExecutionKey);
+        return keyInUse ? redact(input, HackvertorExtension.tagCodeExecutionKey) : input;
     }
 
     public static boolean containsKey(CharSequence input, String key) {

@@ -26,6 +26,7 @@ import groovy.lang.GroovyShell;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.EncoderException;
 import org.apache.commons.codec.binary.Base32;
+import burp.hv.utils.ExecutionKeyRedactor;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.codec.net.QuotedPrintableCodec;
 import org.apache.commons.compress.compressors.CompressorException;
@@ -703,6 +704,7 @@ public class Convertors {
         if(tagObj.argument2 != null) args.add(tagObj.argument2.value);
         if(tagObj.argument3 != null) args.add(tagObj.argument3.value);
         if(tagObj.argument4 != null) args.add(tagObj.argument4.value);
+        for (String arg : args) ExecutionKeyRedactor.markKeyInUseIfPresent(arg);
 
         if (tagObj.hasInput) {
             tag[0] = new Element.StartTag(tagObj.name, args).toString();
@@ -4402,6 +4404,7 @@ public class Convertors {
             PythonInterpreter pythonInterpreter = new PythonInterpreter();
             pythonInterpreter.set("hackvertor", hackvertor);
             pythonInterpreter.set("input", input);
+            ExecutionKeyRedactor.markKeyInUse();
             pythonInterpreter.set("executionKey", executionKey);
             pythonInterpreter.set("variableMap", variableMap);
             pythonInterpreter.set("customTags", customTags);
@@ -4476,6 +4479,7 @@ public class Convertors {
             javaInterpreter.set("input", input);
             javaInterpreter.set("hackvertor", hackvertor);
             javaInterpreter.set("variableMap", variableMap);
+            ExecutionKeyRedactor.markKeyInUse();
             javaInterpreter.set("executionKey", executionKey);
             javaInterpreter.set("customTags", customTags);
             if (hackvertor != null) {
@@ -4583,6 +4587,7 @@ public class Convertors {
         data.setProperty("input", input);
         data.setVariable("hackvertor", hackvertor);
         data.setVariable("variableMap", variableMap);
+        ExecutionKeyRedactor.markKeyInUse();
         data.setVariable("executionKey", executionKey);
         data.setVariable("customTags", customTags);
         if (hackvertor != null) {
@@ -4613,6 +4618,7 @@ public class Convertors {
         try {
             Context context = Context.newBuilder("js").allowIO(true).allowHostAccess(HostAccess.ALL).build();
             context.getBindings("js").putMember("input", input);
+            ExecutionKeyRedactor.markKeyInUse();
             context.getBindings("js").putMember("executionKey", executionKey);
             context.getBindings("js").putMember("hackvertor", hackvertor);
             if (hackvertor != null) {

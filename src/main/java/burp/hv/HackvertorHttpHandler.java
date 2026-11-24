@@ -125,6 +125,7 @@ public class HackvertorHttpHandler implements burp.api.montoya.http.handler.Http
     }
 
     private static HttpRequest redactRequest(HttpRequest req) {
+        if (!ExecutionKeyRedactor.isKeyInUse()) return req;
         ByteArray bytes = req.toByteArray();
         if (!ExecutionKeyRedactor.containsKey(ExecutionKeyRedactor.ByteSource.of(bytes))) return req;
         return HttpRequest.httpRequest(req.httpService(), ByteArray.byteArray(ExecutionKeyRedactor.redact(bytes.getBytes())));

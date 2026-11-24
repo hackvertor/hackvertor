@@ -9,6 +9,7 @@ import burp.hv.tags.Tag;
 import burp.hv.tags.TagStore;
 import burp.hv.ui.jigsaw.JigsawBoard;
 import burp.hv.utils.GridbagUtils;
+import burp.hv.utils.ExecutionKeyRedactor;
 import burp.hv.utils.TagUtils;
 import burp.hv.utils.Utils;
 import burp.parser.Element;
@@ -510,6 +511,7 @@ public class HackvertorPanel extends JPanel {
             int confirm = JOptionPane.showConfirmDialog(this, "Are you sure? This will replace any tag execution key with your current one. You should not run this on untrusted code");
             if(confirm == 0) {
                 String existingText = this.inputArea.getSelectedText();
+                ExecutionKeyRedactor.markKeyInUse();
                 this.inputArea.replaceSelection(existingText.replaceAll("[a-f0-9]{32}", tagCodeExecutionKey));
             }
         });

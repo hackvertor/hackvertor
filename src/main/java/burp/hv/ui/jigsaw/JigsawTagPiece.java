@@ -1,6 +1,7 @@
 package burp.hv.ui.jigsaw;
 
 import burp.hv.tags.Tag;
+import burp.hv.utils.ExecutionKeyRedactor;
 import burp.hv.tags.TagArgument;
 import burp.parser.Element;
 
@@ -100,6 +101,7 @@ public class JigsawTagPiece extends JigsawPiece {
             return;
         }
         String initial = value != null ? value : argument.value;
+        ExecutionKeyRedactor.markKeyInUseIfPresent(initial);
         String description = name != null ? name + " (" + argument.type + ")" : argument.type;
         if (name != null) {
             JLabel label = new JLabel(name + ":");
